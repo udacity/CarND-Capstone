@@ -30,7 +30,7 @@ TYPE = {
     'trafficlights': TrafficLightArray,
     'steer_cmd': SteeringCmd,
     'brake_cmd': BrakeCmd,
-    'throttle_cmd': ThrottleCmd
+    'throttle_cmd': ThrottleCmd,
     'image':Image
 }
 
@@ -119,8 +119,21 @@ class Bridge(object):
         cloud_message = pcl2.create_cloud_xyz32(header, pts)
         return cloud_message
 
+    def broadcast_transform(self, name, position, orientation):
+        br = tf.TransformBroadcaster()
+        br.sendTransform(position,
+            orientation,
+            rospy.Time.now(),
+            name,
+            "world")
+
     def publish_odometry(self, data):
         pose = self.create_pose(data['x'], data['y'], data['z'], data['yaw'])
+
+        position = (data['x'], data['y'], data['z'])
+        orientation = tf.transformations.quaternion_from_euler(0, 0, math.pi * data['yaw']/180.)
+        self.broadcast_transform("base_link", position, orientation)
+
         self.publishers['current_pose'].publish(pose)
         self.vel = data['velocity']* 0.44704
         self.angular = self.calc_angular(data['yaw'] * math.pi/180.)
