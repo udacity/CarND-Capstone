@@ -20,4 +20,5 @@ source devel/setup.sh
 roslaunch launch/styx.launch
 ```
 3. Run the simulator
+
 ![unity running](imgs/unity.png)
