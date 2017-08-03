@@ -19,10 +19,5 @@ catkin_make
 source devel/setup.sh
 roslaunch launch/styx.launch
 ```
-3. In terminal, specify path to Unity simulator
-```bash
-What is the full path to your Unity simulator?
-/home/calebkirksey/Desktop/lights_no_auto_no_cars/ros_test.x86_64
-```
-The virtual car should start moving in the Unity simulator
+3. Run the simulator
 ![unity running](imgs/unity.png)
