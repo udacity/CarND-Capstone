@@ -30,7 +30,7 @@ TYPE = {
     'trafficlights': TrafficLightArray,
     'steer_cmd': SteeringCmd,
     'brake_cmd': BrakeCmd,
-    'throttle_cmd': ThrottleCmd
+    'throttle_cmd': ThrottleCmd,
     'image':Image
 }
 

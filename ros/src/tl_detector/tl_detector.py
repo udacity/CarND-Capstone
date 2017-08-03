@@ -6,7 +6,7 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane, Waypoint
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
-from light_classification_model.tl_classifier import TLClassifier
+from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 from traffic_light_config import config
@@ -110,8 +110,8 @@ class TLDetector(object):
         fx = config.camera_info.focal_length_x
         fy = config.camera_info.focal_length_y
 
-        imageWidth = config.camera_info.image_width
-        imageHeight = config.camera_info.image_height
+        image_width = config.camera_info.image_width
+        image_height = config.camera_info.image_height
 
         # get transform between pose of camera and world frame
         trans = None
@@ -169,7 +169,8 @@ class TLDetector(object):
         """
         light = None
         light_positions = config.light_positions
-        car_position = self.get_closest_waypoint(self.pose.pose)
+        if(self.pose):
+            car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
 
