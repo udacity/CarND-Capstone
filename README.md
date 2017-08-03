@@ -2,7 +2,6 @@
 
 * [ROS](http://wiki.ros.org/indigo/Installation/Ubuntu)
 * [Dataspeed DBW](https://bitbucket.org/DataspeedInc/dbw_mkz_ros)
-* [Autoware](https://github.com/CPFL/Autoware)
 
 Download the [Udacity Simulator](https://github.com/udacity/self-driving-car-sim).
 
