@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import Float32, Int32
-from geometry_msgs.msg import PoseStamped, Pose, Point
+from std_msgs.msg import Int32
+from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
-from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge, CvBridgeError
+from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 from traffic_light_config import config
-import rospkg
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -25,6 +24,14 @@ class TLDetector(object):
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+
+        '''
+        /vehicle/traffic_lights helps you acquire an accurate ground truth data source for the traffic light
+        classifier, providing the location and current color state of all traffic lights in the
+        simulator. This state can be used to generate classified images or subbed into your solution to
+        help you work on another single component of the node. This topic won't be available when
+        testing your solution in real life so don't rely on it in the final submission.
+        '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/camera/image_raw', Image, self.image_cb)
 
@@ -33,7 +40,6 @@ class TLDetector(object):
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
-        self.rospack = rospkg.RosPack()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
@@ -117,15 +123,13 @@ class TLDetector(object):
         trans = None
         try:
             now = rospy.Time.now()
-            self.listener.waitForTransform("/car",
+            self.listener.waitForTransform("/base_link",
                   "/world", now, rospy.Duration(1.0))
-            (trans, rot) = self.listener.lookupTransform("/car",
+            (trans, rot) = self.listener.lookupTransform("/base_link",
                   "/world", now)
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
-            trans = (1.0, 1.0, 1.0)
-            rot = (1.0, 1.0, 1.0, 1.0)
 
         #TODO Use tranform and rotation to calculate 2D position of light in image
 
