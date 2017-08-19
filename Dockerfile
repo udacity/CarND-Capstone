@@ -10,7 +10,7 @@ RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python get-pip.py
 
 # carnd requirements
-RUN git clone https://github.com/mwolfram/CarND-Capstone.git
+RUN git clone https://github.com/eva-carnd/CarND-Capstone.git
 RUN pip install -r CarND-Capstone/requirements.txt
 
 RUN ./ros_entrypoint.sh
