@@ -9,6 +9,7 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
+import math
 from traffic_light_config import config
 
 STATE_COUNT_THRESHOLD = 3
@@ -51,7 +52,7 @@ class TLDetector(object):
     def pose_cb(self, msg):
         self.pose = msg
 
-    def waypoints_cb(self, waypoints):
+    def waypoints_cb(self, waypoints): # type: Lane
         self.waypoints = waypoints
 
     def traffic_cb(self, msg):
@@ -162,6 +163,11 @@ class TLDetector(object):
         #Get classification
         return self.light_classifier.get_classification(cv_image)
 
+    def euclidean_distance(self, p1x, p1y, p2x, p2y):
+        x_dist = p1x - p2y
+        y_dist = p1x - p2y
+        return math.sqrt(x_dist*x_dist + y_dist*y_dist)
+
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -174,9 +180,17 @@ class TLDetector(object):
         light = None
         light_positions = config.light_positions
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+            closest_waypoint_index = self.get_closest_waypoint(self.pose.pose)
+            closest_waypoint_ps = self.waypoints.waypoints[closest_waypoint].pose
 
         #TODO find the closest visible traffic light (if one exists)
+        closest_light_position = None
+        closest_light_distance = float("inf")
+        for light_position in config.light_positions:
+            distance = self.euclidean_distance(light_position[0], light_position[1], closest_waypoint_ps.pose.position.x, closest_waypoint_ps.pose.position.y)
+            if distance < closest_light_distance:
+                closest_light_distance = distance
+                closest_light_position = position
 
         if light:
             state = self.get_light_state(light)
