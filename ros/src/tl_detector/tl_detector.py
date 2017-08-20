@@ -179,18 +179,18 @@ class TLDetector(object):
         """
         light = None
         light_positions = config.light_positions
-        if(self.pose):
+        if(self.pose and self.waypoints):
             closest_waypoint_index = self.get_closest_waypoint(self.pose.pose)
-            closest_waypoint_ps = self.waypoints.waypoints[closest_waypoint].pose
+            closest_waypoint_ps = self.waypoints.waypoints[closest_waypoint_index].pose
 
-        #TODO find the closest visible traffic light (if one exists)
-        closest_light_position = None
-        closest_light_distance = float("inf")
-        for light_position in config.light_positions:
-            distance = self.euclidean_distance(light_position[0], light_position[1], closest_waypoint_ps.pose.position.x, closest_waypoint_ps.pose.position.y)
-            if distance < closest_light_distance:
-                closest_light_distance = distance
-                closest_light_position = position
+            #TODO find the closest visible traffic light (if one exists)
+            closest_light_position = None
+            closest_light_distance = float("inf")
+            for light_position in config.light_positions:
+                distance = self.euclidean_distance(light_position[0], light_position[1], closest_waypoint_ps.pose.position.x, closest_waypoint_ps.pose.position.y)
+                if distance < closest_light_distance:
+                    closest_light_distance = distance
+                    closest_light_position = light_position
 
         if light:
             state = self.get_light_state(light)
