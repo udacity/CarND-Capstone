@@ -58,7 +58,16 @@ class DBWNode(object):
 
         # TODO: Subscribe to all the topics you need to
 
+        self.dbw_enabled = False
+
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.set_dbw_enabled)
+        
         self.loop()
+
+
+    def set_dbw_enabled(self, dbw_enabled):
+        self.dbw_enabled = dbw_enabled
+
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
@@ -70,8 +79,10 @@ class DBWNode(object):
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            rospy.loginfo("""DBW enabled: {}""".format(self.dbw_enabled))
+            if self.dbw_enabled:
+                throttle, brake, steer = 0.5, 0.0, 0.0
+                # self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
