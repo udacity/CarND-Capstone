@@ -4,7 +4,7 @@
         <param name="vehicle_mass" value="1736.35" />
         <param name="fuel_capacity" value="13.5" />
         <param name="brake_deadband" value=".1" />
-        <param name="decel_limit" value="-5." />
+        <param name="decel_limit" value="-1." />
         <param name="accel_limit" value="1." />
         <param name="wheel_radius" value="0.2413" />
         <param name="wheel_base" value="2.8498" />
