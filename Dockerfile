@@ -13,8 +13,8 @@ RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python get-pip.py
 
 # carnd requirements
-RUN git clone https://github.com/eva-carnd/CarND-Capstone.git
-RUN pip install -r CarND-Capstone/requirements.txt
+RUN wget https://raw.githubusercontent.com/eva-carnd/CarND-Capstone/master/requirements.txt
+RUN pip install -r requirements.txt
 
 # Dataspeed DBW
 RUN wget https://bitbucket.org/DataspeedInc/dbw_mkz_ros/raw/default/dbw_mkz/scripts/sdk_install.bash
