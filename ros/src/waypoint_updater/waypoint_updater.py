@@ -75,6 +75,7 @@ class WaypointUpdater(object):
 
         final_wps = Lane()
         final_wps.waypoints = wps
+        final_wps.header.stamp = rospy.Time(0)
 
         self.final_waypoints_pub.publish(final_wps)
 
@@ -123,6 +124,8 @@ class WaypointUpdater(object):
             closest_len = dist
             dist = dl(waypoints[closest_waypoint+1].pose.pose.position, pose.position)
             closest_waypoint += 1
+
+        # rospy.loginfo("""Waypoint dist {} len {}""".format(dist, closest_len))
 
         return closest_waypoint
 
