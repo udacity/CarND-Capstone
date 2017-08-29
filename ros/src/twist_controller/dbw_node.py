@@ -57,15 +57,18 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
+        self.controller = Controller(kp=0.8, ki=0.0, kd=0.6, max_accel= accel_limit, max_decel= decel_limit)
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
         # TODO: Subscribe to all the topics you need to
 
         self.dbw_enabled = False
+        self.controller_reset = False
         self.current_velocity = 0.0
         self.ref_velocity = 0.0
         self.ref_angular_velocity = 0.0
+
+        self.prev_time = rospy.Time(0).to_sec()
 
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.set_dbw_enabled)
 
@@ -82,12 +85,16 @@ class DBWNode(object):
         self.current_velocity = velocity.twist.linear.x
 
     def set_twist_cmd(self, twist):
-        self.ref_velocity = twist.twist.linear.x
+        # self.ref_velocity = twist.twist.linear.x
+        self.ref_velocity = abs(twist.twist.linear.x) # temporary solution to negative velocities
         self.ref_angular_velocity = twist.twist.angular.z
         
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
+        current_time = rospy.Time.now().to_sec()
+        sample_time = current_time - self.prev_time #float(1.0/50.0) # 50Hz????????????????? 
+        self.prev_time = current_time
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -99,10 +106,18 @@ class DBWNode(object):
             rospy.loginfo("""DBW enabled: {}""".format(self.dbw_enabled))
             # rospy.loginfo("""Ref Velocity: {} - Ref Angular V.: {} - Curr V.: {}""".format(self.ref_velocity, self.ref_angular_velocity, self.current_velocity))
             if self.dbw_enabled:
+                if not self.controller_reset:
+                    self.controller.reset()
+                    self.controller_reset = True
                 # steer = self.yaw_controller.get_steering(self.ref_velocity, self.ref_angular_velocity, self.current_velocity)
+                
                 steer = self.yaw_controller.get_steering(self.current_velocity, self.ref_angular_velocity, self.current_velocity)
-                throttle, brake = 0.5, 0.0
+                velocity_error = self.ref_velocity - self.current_velocity
+                rospy.loginfo("""Velocity Ref: {} - Curr: {} - Err: {}""".format(self.ref_velocity, self.current_velocity, velocity_error))
+                throttle, brake = self.controller.control(velocity_error, sample_time)
                 self.publish(throttle, brake, steer)
+            else:
+                self.controller_reset = False
             rate.sleep()
 
     def publish(self, throttle, brake, steer):

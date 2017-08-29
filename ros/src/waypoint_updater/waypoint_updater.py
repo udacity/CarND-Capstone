@@ -75,7 +75,6 @@ class WaypointUpdater(object):
 
         final_wps = Lane()
         final_wps.waypoints = wps
-        final_wps.header.stamp = rospy.Time(0)
 
         self.final_waypoints_pub.publish(final_wps)
 
