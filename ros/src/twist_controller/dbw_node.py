@@ -70,7 +70,8 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        self.controller = Controller(kp=0.8, ki=0.0, kd=0.6, vc=vc) # TODO p,i,d as params
+        self.controller = Controller(kp=0.4, ki=0.0, kd=0.5, vc=vc) # TODO p,i,d as params
+
 
         self.dbw_enabled = False
         self.controller_reset = False
@@ -103,6 +104,7 @@ class DBWNode(object):
                 if not self.controller_reset:
                     self.controller.reset()
                     self.controller_reset = True
+
 
                 # TODO re-add this output
                 #rospy.loginfo("""Velocity Ref: {} - Curr: {} - Err: {}""".format(self.ref_velocity, self.current_velocity, velocity_error))
