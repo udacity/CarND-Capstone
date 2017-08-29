@@ -1,34 +1,43 @@
+import rospy
 from pid import PID
+from yaw_controller import YawController
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
-
 class Controller(object):
-    def __init__(self, kp, ki, kd, max_accel, max_decel):
-    	self.kp = kp
+    def __init__(self, kp, ki, kd, vc):
+
+        self.kp = kp
     	self.ki = ki
     	self.kd = kd
-    	self.max_accel = max_accel
-    	self.max_decel = max_decel
+    	self.max_accel = vc.accel_limit
+    	self.max_decel = vc.accel_limit
 
-    	self.pid = PID(self.kp, self.ki, self.kd, mn=self.max_decel, mx=self.max_accel)
+        self.linear_controller = PID(self.kp, self.ki, self.kd, mn=self.max_decel, mx=self.max_accel)
+        self.angular_controller = YawController(vc.wheel_base, vc.steer_ratio, vc.min_speed, vc.max_lat_accel, vc.max_steer_angle)
 
+        # TODO this is not so good
+        self.last_run_time = rospy.get_time()
 
     def reset(self):
-    	self.pid.reset()
-    	
+        self.linear_controller.reset()
+        # self.angular_controller.reset() # TODO there is no reset command here, is this ok?
 
-    def control(self, error, sample_time):
-        # Return throttle, brake
-        brake = 0.0
-        throttle = 0.0
+    def control(self, current_velocity, twist_cmd):
 
-        value = self.pid.step(error, sample_time)
+        time_now = rospy.get_time()
+        time_elapsed = time_now - self.last_run_time
+        linear_reference_velocity = abs(twist_cmd.twist.linear.x) # accounting for negative twist_cmds
+        angular_reference_velocity = twist_cmd.twist.angular.z
+        linear_error = linear_reference_velocity - current_velocity.twist.linear.x
 
-        if (value > 0.0):
-        	throttle = value
-        else:
-        	brake = value
+        linear = self.linear_controller.step(linear_error, time_elapsed)
+        angular = self.angular_controller.get_steering(current_velocity.twist.linear.x, angular_reference_velocity, linear_reference_velocity)
 
-        return throttle, brake
+        self.last_run_time = time_now
+
+        throttle = linear if linear > 0.0 else 0.0
+        brake = -linear if linear <= 0.0 else 0.0
+
+        return throttle, brake, angular
