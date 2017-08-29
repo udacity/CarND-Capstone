@@ -123,9 +123,13 @@ class WaypointUpdater(object):
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)#  + (a.z-b.z)**2)
 
         closest_len = 100000
-        # no need to start from 0, instead start looking from closest wp from previous run
-        closest_waypoint = self.closest_waypoint #0 
-        next_waypoint = self.closest_waypoint #0 
+        # no need to start from 0, instead start looking from closest wp from 'just' previous run
+        if self.closest_waypoint > 20:
+            closest_waypoint = self.closest_waypoint - 20#0 
+            next_waypoint = self.closest_waypoint -20 #0 
+        else:
+            closest_waypoint = 0 
+            next_waypoint = 0
         num_waypoints = self.num_waypoints
         dist = dl(waypoints[closest_waypoint].pose.pose.position, pose.position)
 
