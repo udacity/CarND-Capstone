@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import rospy
+import tf
+
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -37,14 +39,51 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.waypoints = None
+        self.num_waypoints = 0
+        self.closest_waypoint = 0
 
         rospy.spin()
 
     def pose_cb(self, msg):
+        
+        # pos_x = msg.pose.position.x
+        # pos_y = msg.pose.position.y
+        # pos_z = msg.pose.position.z
+
+        # orient_x = msg.pose.orientation.x
+        # orient_y = msg.pose.orientation.y
+        # orient_z = msg.pose.orientation.z
+        # orient_w = msg.pose.orientation.w
+
+        # quaternion = (orient_x, orient_y, orient_z, orient_w)
+        # euler = tf.transformations.euler_from_quaternion(quaternion)
+        # yaw = euler[2]
+
+        # rospy.loginfo("""Pose callback: {} {} {} {}""".format(pos_x, pos_y, pos_z, yaw))
+
+        wps = []
+        
+        if self.waypoints:
+            ix = self.next_waypoint(self.waypoints,msg.pose)
+            ix_end = ix+LOOKAHEAD_WPS
+            if ix_end > self.num_waypoints:
+                ix_end = self.num_waypoints
+            wps = [self.waypoints[x] for x in range(ix,ix_end)]
+            # rospy.loginfo("""Waypoint {}: {}""".format(ix,self.waypoints[ix]))
+
+
+        final_wps = Lane()
+        final_wps.waypoints = wps
+
+        self.final_waypoints_pub.publish(final_wps)
+
         # TODO: Implement
         pass
 
     def waypoints_cb(self, waypoints):
+        self.waypoints = waypoints.waypoints
+        self.num_waypoints = len(self.waypoints)
         # TODO: Implement
         pass
 
@@ -69,6 +108,53 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    def find_closest_waypoint(self, waypoints, pose):
+        
+       
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
+        closest_len = 100000
+        closest_waypoint = 0
+        num_waypoints = self.num_waypoints
+        dist = dl(waypoints[closest_waypoint].pose.pose.position, pose.position)
+
+        while (dist < closest_len) and (closest_waypoint < num_waypoints):
+            closest_len = dist
+            dist = dl(waypoints[closest_waypoint+1].pose.pose.position, pose.position)
+            closest_waypoint += 1
+
+        # rospy.loginfo("""Waypoint dist {} len {}""".format(dist, closest_len))
+
+        return closest_waypoint
+
+    def next_waypoint(self, waypoints, pose):
+
+        closest_waypoint = self.find_closest_waypoint(waypoints, pose)
+
+        pose_x = pose.position.x
+        pose_y = pose.position.y
+
+        pose_orient_x = pose.orientation.x
+        pose_orient_y = pose.orientation.y
+        pose_orient_z = pose.orientation.z
+        pose_orient_w = pose.orientation.w
+
+        quaternion = (pose_orient_x, pose_orient_y, pose_orient_z, pose_orient_w)
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+        pose_yaw = euler[2]
+
+        wp = waypoints[closest_waypoint]
+        wp_x = wp.pose.pose.position.x
+        wp_y = wp.pose.pose.position.y
+
+        heading = math.atan2((wp_y - pose_y),(wp_x - pose_x))
+
+        if (pose_yaw > (math.pi/4)):
+            closest_waypoint += 1
+
+        return closest_waypoint
+
 
 
 if __name__ == '__main__':
