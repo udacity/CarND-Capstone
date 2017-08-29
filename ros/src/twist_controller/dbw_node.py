@@ -57,7 +57,8 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `TwistController` object
-        self.controller = Controller(kp=0.8, ki=0.0, kd=0.6, max_accel= accel_limit, max_decel= decel_limit)
+        # self.controller = Controller(kp=0.4, ki=0.0, kd=0.3, max_accel= accel_limit, max_decel= decel_limit)
+        self.controller = Controller(kp=0.4, ki=0.0, kd=0.5, max_accel= accel_limit, max_decel= decel_limit)
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
         # TODO: Subscribe to all the topics you need to
@@ -109,7 +110,7 @@ class DBWNode(object):
                 if not self.controller_reset:
                     self.controller.reset()
                     self.controller_reset = True
-                # steer = self.yaw_controller.get_steering(self.ref_velocity, self.ref_angular_velocity, self.current_velocity)
+                #steer = self.yaw_controller.get_steering(self.ref_velocity, self.ref_angular_velocity, self.current_velocity)
                 
                 steer = self.yaw_controller.get_steering(self.current_velocity, self.ref_angular_velocity, self.current_velocity)
                 velocity_error = self.ref_velocity - self.current_velocity

@@ -66,11 +66,19 @@ class WaypointUpdater(object):
         
         if self.waypoints:
             ix = self.next_waypoint(self.waypoints,msg.pose)
+            self.closest_waypoint = ix
             ix_end = ix+LOOKAHEAD_WPS
             if ix_end > self.num_waypoints:
                 ix_end = self.num_waypoints
-            wps = [self.waypoints[x] for x in range(ix,ix_end)]
-            # rospy.loginfo("""Waypoint {}: {}""".format(ix,self.waypoints[ix]))
+            #wps = [self.waypoints[x] for x in range(ix,ix_end)]
+            #rospy.loginfo("""Waypoints {} to {}""".format(ix,ix_end))
+            for i in range(ix, ix_end):
+                velocity = 12.0
+                #self.set_waypoint_velocity(self.waypoints, i, velocity)
+                wp = self.waypoints[i]
+                wps.append(wp)
+
+
 
 
         final_wps = Lane()
@@ -112,19 +120,26 @@ class WaypointUpdater(object):
     def find_closest_waypoint(self, waypoints, pose):
         
        
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)#  + (a.z-b.z)**2)
 
         closest_len = 100000
-        closest_waypoint = 0
+        # no need to start from 0, instead start looking from closest wp from previous run
+        closest_waypoint = self.closest_waypoint #0 
+        next_waypoint = self.closest_waypoint #0 
         num_waypoints = self.num_waypoints
         dist = dl(waypoints[closest_waypoint].pose.pose.position, pose.position)
 
         while (dist < closest_len) and (closest_waypoint < num_waypoints):
+            closest_waypoint = next_waypoint
             closest_len = dist
             dist = dl(waypoints[closest_waypoint+1].pose.pose.position, pose.position)
-            closest_waypoint += 1
+            next_waypoint += 1
 
-        # rospy.loginfo("""Waypoint dist {} len {}""".format(dist, closest_len))
+        dist_prev = dl(waypoints[closest_waypoint-1].pose.pose.position, pose.position)
+        dist_curr = dl(waypoints[closest_waypoint].pose.pose.position, pose.position)
+        dist_next = dl(waypoints[closest_waypoint+1].pose.pose.position, pose.position)
+
+        rospy.loginfo("""Waypoint dist {} {} {}""".format(dist_prev, dist_curr, dist_next))
 
         return closest_waypoint
 
