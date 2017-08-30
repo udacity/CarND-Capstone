@@ -31,7 +31,7 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -46,7 +46,7 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        
+
         # pos_x = msg.pose.position.x
         # pos_y = msg.pose.position.y
         # pos_z = msg.pose.position.z
@@ -63,7 +63,7 @@ class WaypointUpdater(object):
         # rospy.loginfo("""Pose callback: {} {} {} {}""".format(pos_x, pos_y, pos_z, yaw))
 
         wps = []
-        
+
         if self.waypoints:
             ix = self.next_waypoint(self.waypoints,msg.pose)
             self.closest_waypoint = ix
@@ -92,6 +92,7 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
         self.num_waypoints = len(self.waypoints)
+        self.base_waypoints_sub.unregister()
         # TODO: Implement
         pass
 
@@ -118,14 +119,14 @@ class WaypointUpdater(object):
         return dist
 
     def find_closest_waypoint(self, waypoints, pose):
-        
-       
+
+
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)#  + (a.z-b.z)**2)
 
         closest_len = 100000
         # no need to start from 0, instead start looking from closest wp from previous run
-        closest_waypoint = self.closest_waypoint #0 
-        next_waypoint = self.closest_waypoint #0 
+        closest_waypoint = self.closest_waypoint #0
+        next_waypoint = self.closest_waypoint #0
         num_waypoints = self.num_waypoints
         dist = dl(waypoints[closest_waypoint].pose.pose.position, pose.position)
 
