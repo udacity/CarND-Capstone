@@ -70,7 +70,12 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        self.controller = Controller(kp=0.4, ki=0.0, kd=0.5, vc=vc) # TODO p,i,d as params
+        #self.controller = Controller(kp=0.4, ki=0.0, kd=0.5, vc=vc) # working: car stays on track, but throttle oscillates a lot
+        # self.controller = Controller(kp=0.2, ki=0.001, kd=0.15, vc=vc) # sort of OK
+        # self.controller = Controller(kp=0.8, ki=0.005, kd=0.5, vc=vc) # better
+        # self.controller = Controller(kp=0.8, ki=0.005, kd=0.5, vc=vc) # fine
+        self.controller = Controller(kp=1.2, ki=0.005, kd=0.5, vc=vc) # fine
+        
 
 
         self.dbw_enabled = False
@@ -94,7 +99,7 @@ class DBWNode(object):
         self.latest_twist_cmd = twist_cmd
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(10) # 50Hz ###################################################################
 
         while not rospy.is_shutdown():
 
