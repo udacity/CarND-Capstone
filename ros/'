@@ -32,8 +32,6 @@ class WaypointUpdater(object):
         self.base_waypoints = None
         self.next_waypoints = None
         self.is_signal_red = False
-        self.prev_pose = None
-        self.move_car = False
 
         rospy.init_node('waypoint_updater')
 
@@ -54,12 +52,10 @@ class WaypointUpdater(object):
                 wp_base_size = len(self.base_waypoints.waypoints)
                 # rospy.loginfo('wp_base_size: {}'.format(wp_base_size)) # 10902 wps at start
                 next_wp_i = self.next_waypoint(self.cur_pose.pose, self.base_waypoints.waypoints)
+                #rospy.loginfo("next wp index %s",next_wp_i)
                 if self.is_signal_red == True:
-                     rospy.loginfo("set velocity to 0")
-                     self.set_waypoint_velocity(self.base_waypoints.waypoints,next_wp_i,0)
-                elif self.move_car == True:
-                     self.set_waypoint_velocity(self.base_waypoints.waypoints,next_wp_i,5)
-                     self.move_car = False
+                     rospy.loginfo("set to 0")
+                     self.set_waypoint_velocity(self.base_waypoints.waypoints,next_wp_i+100,0)
                 next_waypoints = self.base_waypoints.waypoints[next_wp_i:next_wp_i+LOOKAHEAD_WPS]
 
                 # publish
@@ -85,15 +81,17 @@ class WaypointUpdater(object):
              waypoint = msg.data
              #self.set_waypoint_velocity(self.base_waypoints.waypoints,waypoint,0)
         else:
-             if self.prev_pose == None:
-                    self.prev_pose = self.cur_pose
-             else:
-                    if self.prev_pose.pose.position.x == self.cur_pose.pose.position.x and self.prev_pose.pose.position.y == self.cur_pose.pose.position.y:
-                         self.is_signal_red = False
-                         rospy.loginfo("velocity 0 hence changing the state")
-                         self.move_car = True
-                    self.prev_pose = self.cur_pose
+             #rospy.loginfo("cur pose -----%s",self.cur_pose)
+             #rospy.loginfo("test")
+
+             next_wp_i = self.next_waypoint(self.cur_pose.pose, self.base_waypoints.waypoints)
+             velocity  = self.get_waypoint_velocity(self.base_waypoints.waypoints[next_wp_i-1])
+             rospy.loginfo("velocity == %s", velocity)
+             if velocity == 0:
+                 rospy.loginfo("velocity 0 changing the stae")
+                 #self.is_signal_red = False
         
+       # rospy.loginfo(" after loop  setting to 0 %s",self.base_waypoints.waypoints[10].twist.twist.linear.x )
         pass
 
     def obstacle_cb(self, msg):
@@ -104,8 +102,10 @@ class WaypointUpdater(object):
         return waypoint.twist.twist.linear.x
 
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+       # rospy.loginfo("setting to 0 %s",waypoints[waypoint].twist.twist.linear.x )
         waypoints[waypoint].twist.twist.linear.x = velocity
      
+       # rospy.loginfo(" after setting to 0 %s",waypoints[waypoint].twist.twist.linear.x )
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
