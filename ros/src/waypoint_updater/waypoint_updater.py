@@ -2,11 +2,13 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint,TrafficLightArray
 from std_msgs.msg import Int32
+from styx_msgs.msg import Lane, Waypoint, TrafficLightArray, TrafficLight
 import numpy as np
 import tf
 import math
+import std_msgs.msg
+from std_msgs.msg import Bool, Float64, Int32
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -24,7 +26,11 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-DEBUG = False
+DEBUG         = False
+MAX_DIST      = 50.0
+BREAK_DIST    = 5.0
+SLOW_VELOCITY = 1.5
+FULL_VELOCITY = 4.5
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -42,6 +48,14 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.velocity_pub = rospy.Publisher('velocity_reference', Float64, queue_size=1)
+        self.velocity_reference = 0.0
+
+        self.tl_pos_x = None
+        self.tl_pos_y = None
+        self.tl_color = None 
+
+       # rospy.Subscriber('/traffic_waypoint', TrafficLight, self.tl_cb)
 
         self.publish()
 
@@ -68,17 +82,48 @@ class WaypointUpdater(object):
                 final_waypoints_msg.header.stamp = rospy.Time(0)
                 final_waypoints_msg.waypoints = next_waypoints
                 self.final_waypoints_pub.publish(final_waypoints_msg)
+
+                # Obtain light position
+                if self.tl_color is not None:
+                    x_ego   = self.cur_pose.pose.position.x
+                    y_ego   = self.cur_pose.pose.position.y
+
+                    pose_quaternion = (self.cur_pose.pose.orientation.x, self.cur_pose.pose.orientation.y, self.cur_pose.pose.orientation.z, self.cur_pose.pose.orientation.w)
+                    (_, _, yaw) = tf.transformations.euler_from_quaternion(pose_quaternion)
+                    sin_yaw = math.sin(yaw)
+                    cos_yaw = math.cos(yaw)
+
+                    light_pos_vehicle = self.convert_ego_to_vehicle(x_ego, y_ego, cos_yaw, sin_yaw, self.tl_pos_x, self.tl_pos_y)
+
+                    # Set reference velocity
+                    if ( ((light_pos_vehicle[0] < MAX_DIST) and (light_pos_vehicle[0] >= BREAK_DIST)) and (self.tl_color == 0) ):
+                        self.velocity_reference = SLOW_VELOCITY
+                        if DEBUG:
+                            rospy.logerr('Slow velocity')
+                    elif ( ((light_pos_vehicle[0] < BREAK_DIST) and (light_pos_vehicle[0] > 0.0)) and (self.tl_color == 0) ):
+                        self.velocity_reference = 0.0
+                        if DEBUG:
+                            rospy.logerr('Break')
+                    else:
+                        self.velocity_reference = FULL_VELOCITY
+                        if DEBUG:
+                            rospy.logerr('Full velocity')
+
+                    self.velocity_pub.publish(self.velocity_reference)
+
             rate.sleep()
 
     def pose_cb(self, msg):
         self.cur_pose = msg
-
+                           
     def waypoints_cb(self, msg):
         self.base_waypoints = msg
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         rospy.loginfo("message = %s", msg)
+        if DEBUG:
+            rospy.logerr('Got TL')
         if msg.data  >=  0: 
              self.is_signal_red = True
              rospy.loginfo("data %s signal  = true", msg.data)
@@ -99,6 +144,13 @@ class WaypointUpdater(object):
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
+
+   # def tl_cb(self, msg):
+   #     self.tl_pos_x = msg.pose.pose.position.x
+   #     self.tl_pos_y = msg.pose.pose.position.y
+   #     self.tl_color = msg.state
+   #     if DEBUG:
+   #         rospy.logerr('Got TL')
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
@@ -125,6 +177,15 @@ class WaypointUpdater(object):
                 closest_len = dist
                 closest_wp_i = i
         return closest_wp_i
+
+    def convert_ego_to_vehicle(self, x_ego, y_ego, cos_yaw, sin_yaw, p_x, p_y):
+        x_trans = p_x - x_ego
+        y_trans = p_y - y_ego
+
+        x_veh   =  x_trans * cos_yaw + y_trans * sin_yaw 
+        y_veh   = -x_trans * sin_yaw + y_trans * cos_yaw 
+
+        return (x_veh, y_veh)
 
     def next_waypoint(self, pose, waypoints):
         closest_wp_i = self.closest_waypoint(pose, waypoints)
