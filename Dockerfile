@@ -1,4 +1,4 @@
-FROM osrf/ros:indigo-desktop-full
+FROM osrf/ros:kinetic-desktop-full
 
 RUN apt-get update
 
@@ -6,7 +6,11 @@ RUN apt-get install -y \
 	wget \
 	openssh-server \
 	vim \
-	screen
+	screen \
+	sudo
+
+# Fix missing TCP protocol in python socket
+RUN apt-get -y -o Dpkg::Options::="--force-confmiss" install --reinstall netbase
 
 # install pip
 RUN wget https://bootstrap.pypa.io/get-pip.py
@@ -22,16 +26,18 @@ RUN chmod +x sdk_install.bash
 RUN /bin/bash -c "./ros_entrypoint.sh && echo $ROS_DISTRO && ./sdk_install.bash"
 # TODO here the upgrade is not executed with -y option!
 
+#RUN apt-get -y install locales
+
 # Environment / Locales
-ENV LANGUAGE en_US.UTF-8
-ENV LANG en_US.UTF-8
-ENV LC_ALL en_US.UTF-8
-RUN locale-gen en_US.UTF-8
-RUN dpkg-reconfigure locales
+#ENV LANGUAGE en_US.UTF-8
+#ENV LANG en_US.UTF-8
+#ENV LC_ALL en_US.UTF-8
+#RUN locale-gen en_US.UTF-8
+#RUN dpkg-reconfigure locales
 
 # Allow root access over ssh
 RUN echo "root:Docker!" | chpasswd
-RUN sed -i '/PermitRootLogin without-password/c\PermitRootLogin yes' /etc/ssh/sshd_config
+RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
 
 # Run startup script to init the workspace
 COPY startup.sh ./startup.sh
