@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" />
+<!-- 	<node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" /> -->
+	<!-- TODO: Tempory print to output for debugging, turn it off later -->
+    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" output="screen" />
 </launch>
