@@ -57,7 +57,7 @@ class DBWNode(object):
         # Define Subscribers 
         rospy.Subscriber("/current_velocity", TwistStamped, callback_function)
         rospy.Subscriber("/twist_cmd", TwistStamped, callback_function)
-        rospy.Subscriber("/vehicle/dbw_enabled", Bool, callback_function)
+        rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
 
         self.loop()
 
@@ -92,6 +92,13 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
+    def dbw_enable_cb(self, msg): 
+        # Could we use something like self.dbw_enabled = msg.Data? 
+        if(msg.data): 
+            self.dbw_enabled = True
+        else
+            self.dbw_enabled = False
 
 
 if __name__ == '__main__':
