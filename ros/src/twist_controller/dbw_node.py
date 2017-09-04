@@ -54,11 +54,10 @@ class DBWNode(object):
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
 
-        # TODO: Subscribe to all the topics you need to
         # Define Subscribers 
-        subscriber_crt_vel = rospy.Subscriber("/current_velocity", message_type, callback_function)
-        subscriber_twsist_cmd = rospy.Subscriber("/twist_cmd", message_type, callback_function)
-        subscriber_dbw_enabled = rospy.Subscriber("/vehicle/dbw_enabled", message_type, callback_function)
+        rospy.Subscriber("/current_velocity", TwistStamped, callback_function)
+        rospy.Subscriber("/twist_cmd", TwistStamped, callback_function)
+        rospy.Subscriber("/vehicle/dbw_enabled", Bool, callback_function)
 
         self.loop()
 
