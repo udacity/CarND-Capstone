@@ -4,6 +4,11 @@ MAX_NUM = float('inf')
 
 class PID(object):
     def __init__(self, kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM):
+        """
+        param: kp - Proportional term
+        param: ki - Integral term
+        param: Kd - Derivative term 
+        """
         self.kp = kp
         self.ki = ki
         self.kd = kd
