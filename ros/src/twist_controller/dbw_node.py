@@ -94,12 +94,7 @@ class DBWNode(object):
         self.brake_pub.publish(bcmd)
 
     def dbw_enable_cb(self, msg): 
-        # Could we use something like self.dbw_enabled = msg.Data? 
-        if(msg.data): 
-            self.dbw_enabled = True
-        else
-            self.dbw_enabled = False
-
+        self.dbw_enabled = msg.data
 
 if __name__ == '__main__':
     DBWNode()
