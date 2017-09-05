@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import socketio
 import eventlet
@@ -36,6 +36,7 @@ def telemetry(sid, data):
     bridge.publish_odometry(data)
     for i in range(len(msgs)):
         topic, data = msgs.pop(0)
+        print("Sending : ",topic)
         sio.emit(topic, data=data, skip_sid=True)
 
 @sio.on('control')
