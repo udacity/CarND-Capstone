@@ -12,7 +12,23 @@ class Controller(object):
         self._yaw_controller = YawController(wheel_base,steer_ratio,min_speed,max_lat_accel,max_steer_angle)
         pass
 
-    def control(self, *args, **kwargs):
+    def control(self, plv, pav, clv, dbw_enabled, dt):
+        throttle = 0
+        brake = 0
+        steer = 0
+        if(dbw_enabled == True):
+            throttle = self._pid_controller.step(clv - plv, dt)
+            if(throttle < 0):
+                brake = -1 * throttle
+                throttle = 0
+            steer = self._yaw_controller.get_steering(plv, pav, clv)
+
+        else:
+            self._pid_controller.reset()
+            throttle = 0
+            brake = 0
+            steer = 0
+
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
-        return 1., 0., 0.
+        return throttle, brake, steer

@@ -3,7 +3,7 @@
 import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import TwistStamped, Twist
 import math
 
 from twist_controller import Controller
@@ -61,7 +61,7 @@ class DBWNode(object):
 
         self._dbw_enabled = True
         self._twist_stamped = TwistStamped()
-        self._curr_vel = 0
+        self._curr_vel = Twist()
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
@@ -72,11 +72,26 @@ class DBWNode(object):
 
     def loop(self):
         rate = rospy.Rate(10) # 50Hz
+        time = rospy.get_time()
+        while time == 0:
+            time = rospy.get_time()
+
         while not rospy.is_shutdown():
             rospy.loginfo("Looping in DBW")
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            throttle, brake, steering = self.controller.control( )
+            vel_mag = lambda a : math.sqrt((a.x ** 2) + (a.y **2) + (a.z ** 2))
+            lin_vel = vel_mag(self._twist_stamped.twist.linear)
+            ang_vel = vel_mag(self._twist_stamped.twist.angular)
+            cur_vel_mag = vel_mag(self._curr_vel.linear)
+            new_time= rospy.get_time()
+            dt      = new_time - time
+            time = new_time
+            throttle, brake, steering = self.controller.control( lin_vel,
+                                                                 ang_vel,
+                                                                 cur_vel_mag,
+                                                                 self._dbw_enabled,
+                                                                 dt)
                                                                  #<proposed linear velocity>,
                                                                  #<proposed angular velocity>,
                                                                  #<current linear velocity>,
@@ -90,7 +105,7 @@ class DBWNode(object):
         self._curr_vel = msg.twist
 
     def twist_cmd_cb(self, msg):
-        self._twist_stamped = msg.twist
+        self._twist_stamped = msg
 
     def dbw_enabled_cb(self, msg):
         self._dbw_enabled = msg
