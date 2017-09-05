@@ -38,4 +38,9 @@ roslaunch launch/styx.launch
 ```
 4. Run the simulator
 
+### Debug and Test
+We put all the tests under `test` package, which is NOT automatically launched in `styx.launch`, so that running tests will be seperated from running styx. Most of the tests are implemented as subscriber of certain channels, so that the messages posted from the publishing nodes can be verified. It can also be used for debugging, e.g., by using `rospy.loginfo` for certain channels.
+
+To run a specific test, use `rosrun`, e.g.
+`rosrun test test_waypoint_updater.py`
 

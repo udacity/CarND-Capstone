@@ -33,20 +33,41 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        # The rate of the `/final_waypoints` publishing will be the same as the 
+        # `/current_pose` than `/base_waypoints`, since the second one rarely change.
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        # keep the base_waypoints since they are repeated every cycle
+        self.base_waypoints = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        cur_pose =  msg.pose
+        # need to benchmark whether going through all base points
+        # is fast enough, otherwise, we may need to keep the points
+        # that have been passed
+        if self.base_waypoints is None: return
+
+        next_wp_index = None
+        for i, waypoint in enumerate(self.base_waypoints):
+            if self.waypoint_is_aheadof_car(waypoint, cur_pose):
+                # next way point as the first one ahead of car
+                next_wp_index = i
+                break
+        # rospy.loginfo("found next_wp_index = %i" % next_wp_index)
+        if next_wp_index is not None:
+            lane = Lane()
+            # lane.header.frame_id = '/world'
+            # lane.header.stamp = rospy.Time(0)
+            lane.waypoints = self.base_waypoints[next_wp_index:next_wp_index+LOOKAHEAD_WPS]
+            self.final_waypoints_pub.publish(lane)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        rospy.loginfo("waypoints infor....")
+        # 10902 waypoints for the simulation env
+        if self.base_waypoints is None:
+            self.base_waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -69,6 +90,15 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+    def waypoint_is_aheadof_car(self, waypoint, car_pose):
+        """Return if a waypoint is ahead of the car.
+        Ideally it should use the Frenet coordinates? But here we just use x
+        of world coordinates
+        """
+        wp_x = waypoint.pose.pose.position.x
+        car_x = car_pose.position.x
+        # rospy.loginfo("wp_x=%g, car_x=%g" % (wp_x, car_x))
+        return wp_x >= car_x
 
 
 if __name__ == '__main__':
