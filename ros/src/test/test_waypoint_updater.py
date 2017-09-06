@@ -31,11 +31,12 @@ class TestWaypointUpdater(object):
 
     def base_wp_cb(self, msg):
         waypoints = msg.waypoints # 10902 waypoints
-        rospy.loginfo("%i waypoints" % len(waypoints))
-        x = waypoints[0].pose.pose.position.x
-        y = waypoints[0].pose.pose.position.y
-        z = waypoints[0].pose.pose.position.z
-        rospy.loginfo("first wp: x=%g, y=%g, z=%g" % (x, y, z))
+        # rospy.loginfo("%i waypoints" % len(waypoints))
+        # x = waypoints[0].pose.pose.position.x
+        # y = waypoints[0].pose.pose.position.y
+        # z = waypoints[0].pose.pose.position.z
+        # rospy.loginfo("first wp: x=%g, y=%g, z=%g" % (x, y, z))
+        rospy.loginfo("base_waypoints header: %s" % str(msg.header))
 
     def final_wp_cb(self, msg):
         rospy.loginfo("Verifying /final_waypoints MSG")
