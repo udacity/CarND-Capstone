@@ -39,7 +39,7 @@ class WaypointUpdater(object):
         # asychronizedly receive data from subscried topics
         self.base_waypoints_msg = None
         self.current_pose_msg = None
-        self.publish_rate = 40 # compared to rate of subscribers
+        self.publish_rate = 40 # doesnt make sense if >= 40, which is /current_pose rate
 
         # publish waypoints in a loop with explicit rate
         self.loop()
