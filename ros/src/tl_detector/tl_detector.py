@@ -9,7 +9,7 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
-from traffic_light_config import config
+import yaml
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -34,6 +34,9 @@ class TLDetector(object):
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/camera/image_raw', Image, self.image_cb)
+
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
@@ -113,11 +116,10 @@ class TLDetector(object):
 
         """
 
-        fx = config.camera_info.focal_length_x
-        fy = config.camera_info.focal_length_y
-
-        image_width = config.camera_info.image_width
-        image_height = config.camera_info.image_height
+        fx = self.config['camera_info']['focal_length_x']
+        fy = self.config['camera_info']['focal_length_y']
+        image_width = self.config['camera_info']['image_width']
+        image_height = self.config['camera_info']['image_height']
 
         # get transform between pose of camera and world frame
         trans = None
@@ -172,7 +174,7 @@ class TLDetector(object):
 
         """
         light = None
-        light_positions = config.light_positions
+        light_positions = self.config['light_positions']
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
