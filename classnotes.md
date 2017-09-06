@@ -63,3 +63,10 @@ In details
 - `/vehicle/throttle_cmd`: dbw_mkz_msgs/ThrottleCmd
 - `/vehicle/steering_cmd`: dbw_mkz_msgs/SteeringCmd
 - `/vehicle/brake_cmd`: dbw_mkz_msgs/BrakeCmd
+
+## Team Work
+
+Github repos for team
+- https://github.com/priya-dwivedi
+- https://github.com/siddikui
+- https://github.com/ra9hur
