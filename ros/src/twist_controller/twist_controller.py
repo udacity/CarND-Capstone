@@ -1,5 +1,6 @@
 from yaw_controller import YawController
 from pid import PID
+import rospy
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -17,7 +18,7 @@ class Controller(object):
         brake = 0
         steer = 0
         if(dbw_enabled == True):
-            throttle = self._pid_controller.step(clv - plv, dt)
+            throttle = self._pid_controller.step(plv - clv, dt)
             if(throttle < 0):
                 brake = -1 * throttle
                 throttle = 0
@@ -31,4 +32,7 @@ class Controller(object):
 
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
+        rospy.loginfo("Throttle = " + str(throttle))
+        rospy.loginfo("Brake = " + str(brake))
+        rospy.loginfo("DBW Enabled = " + str(dbw_enabled))
         return throttle, brake, steer
