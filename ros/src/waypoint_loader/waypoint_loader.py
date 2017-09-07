@@ -72,7 +72,9 @@ class WaypointLoader(object):
         return waypoints
 
     def publish(self, waypoints):
-        rate = rospy.Rate(40)
+        # Rate reduced from 40 to 0.1 for large performance increase
+        # Don't really see the need to continously send the same base waypoints at all?!
+        rate = rospy.Rate(0.1)
         while not rospy.is_shutdown():
             lane = Lane()
             lane.header.frame_id = '/world'
