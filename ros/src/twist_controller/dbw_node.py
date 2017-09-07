@@ -4,7 +4,12 @@ import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import PoseStamped
+from styx_msgs.msg import Lane, Waypoint
 import math
+
+import numpy as np
+from scipy.interpolate import CubicSpline
 
 from twist_controller import Controller
 
@@ -54,24 +59,75 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
+        args = {
+            'vehicle_mass': vehicle_mass,
+            'fuel_capacity': fuel_capacity,
+            'brake_deadband': brake_deadband,
+            'decel_limit': decel_limit,
+            'accel_limit': accel_limit,
+            'wheel_radius': wheel_radius,
+            'wheel_base': wheel_base,
+            'steer_ratio': steer_ratio,
+            'max_lat_accel': max_lat_accel,
+            'max_steer_angle': max_steer_angle
+        }
 
-        # TODO: Subscribe to all the topics you need to
+        self.controller = Controller(**args)
 
+        # Subscribe to all the topics you need to
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbwEnabled_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.currvelocity_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twistcmd_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+
+        # other member variables
+        self.my_dbwEnabled = True
+        self.my_current_velocity = None
+        self.my_twist_command = None
+        self.pose = None
+        self.waypoints = None
+
+        # start loop
         self.loop()
+
+    def dbwEnabled_cb(self,dbwEnb):
+        self.my_dbwEnabled = dbwEnb
+
+    def currvelocity_cb(self,velocity):
+        self.my_current_velocity = velocity
+
+    def twistcmd_cb(self,twistcmd):
+        self.my_twist_command = twistcmd
+
+    def pose_cb(self, msg):
+        self.pose = msg
+
+    def waypoints_cb(self, waypoints):
+        self.waypoints = waypoints
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+
+            if (self.my_twist_command is not None):
+                set_linear_velocity = self.my_twist_command.twist.linear.x
+                set_angular_velocity = self.my_twist_command.twist.angular.z
+                if (self.my_current_velocity is not None):
+                    set_curr_velocity = self.my_current_velocity.twist.linear.x
+                else:
+                    set_curr_velocity = 0.0
+
+                # cross-track error
+                cte = self.calc_cte()
+                dt = 0.02 #rospy rate
+
+                throttle, brake, steering = self.controller.control( cte, dt, set_linear_velocity, set_angular_velocity, set_curr_velocity)
+                # throttle, brake, steering = self.controller.control(self.my_current_velocity)
+                if (self.my_dbwEnabled==True):
+                    print cte, throttle, brake, steering
+                    self.publish(throttle, brake, steering)
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -92,6 +148,58 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+    def calc_cte(self):
+        cte = 0.0
+        if (self.waypoints is not None):
+            closestWPi = self.get_closest_waypoint()
+            interp_x = [
+                self.waypoints.waypoints[closestWPi-1].pose.pose.position.x,
+                self.waypoints.waypoints[closestWPi].pose.pose.position.x,
+                self.waypoints.waypoints[closestWPi+1].pose.pose.position.x ]
+            interp_y = [
+                self.waypoints.waypoints[closestWPi-1].pose.pose.position.y,
+                self.waypoints.waypoints[closestWPi].pose.pose.position.y,
+                self.waypoints.waypoints[closestWPi+1].pose.pose.position.y ]
+            cs = CubicSpline(interp_x, interp_y)
+            t = np.linspace(interp_x[0], interp_x[2], 100)
+            best_dist = 9999.99
+            for i in range(len(t)):
+                this_dist = math.sqrt( (self.pose.pose.position.x-t[i])**2 +
+                                        (self.pose.pose.position.y-cs(t[i]))**2 +
+                                        (self.pose.pose.position.z-0.0)**2 )
+                if (this_dist<best_dist):
+                    best_dist = this_dist
+            cte = best_dist
+
+        if (cte != 0.0):
+            # sign of cte
+            angle1 = math.atan2(interp_y[1]-interp_y[0],interp_x[1]-interp_x[0])
+            angle2 = math.atan2(interp_y[2]-interp_y[0],interp_x[2]-interp_x[0])
+            angle3 = math.atan2(self.pose.pose.position.y-interp_y[0],self.pose.pose.position.x-interp_x[0])
+            # simplified case for now (ignore sharp turns, and discard middle point):
+            if (angle3<angle2):
+                cte = cte
+            else:
+                cte = -cte
+
+        return cte
+
+    def get_closest_waypoint(self):
+        """Identifies the closest path waypoint to the current pose position
+        Returns: int: index of the closest waypoint in self.waypoints
+        """
+        best_dist = 9999.99
+        best_i = -1
+        if (self.pose is not None):
+            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+            for i in range(len(self.waypoints.waypoints)):
+                this_dist = dl(self.pose.pose.position,self.waypoints.waypoints[i].pose.pose.position)
+                if (this_dist<best_dist):
+                    best_dist = this_dist
+                    best_i = i
+        else:
+            rospy.logerr('Could not find current pose.')
+        return best_i
 
 if __name__ == '__main__':
     DBWNode()

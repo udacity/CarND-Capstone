@@ -96,12 +96,15 @@ class WaypointUpdater(object):
         """
         best_dist = 9999.99
         best_i = -1
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(len(self.waypoints.waypoints)):
-            this_dist = dl(self.pose.pose.position,self.waypoints.waypoints[i].pose.pose.position)
-            if (this_dist<best_dist):
-                best_dist = this_dist
-                best_i = i
+        if (self.pose is not None):
+            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+            for i in range(len(self.waypoints.waypoints)):
+                this_dist = dl(self.pose.pose.position,self.waypoints.waypoints[i].pose.pose.position)
+                if (this_dist<best_dist):
+                    best_dist = this_dist
+                    best_i = i
+        else:
+            rospy.logerr('Could not find current pose.')
 
         return best_i
 
