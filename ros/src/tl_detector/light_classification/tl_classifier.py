@@ -54,7 +54,7 @@ class TLClassifier(object):
         return TrafficLight.UNKNOWN
 
 	
-    def get_classification(self, image):
+    def get_classification_v2(self, image):
         """Determines the color of the traffic light in the image
 
         Args:
@@ -75,7 +75,7 @@ class TLClassifier(object):
  
 
 
-    def get_classification_v1(self, image):
+    def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
         Args:
