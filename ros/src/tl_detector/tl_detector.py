@@ -11,6 +11,8 @@ import tf
 import cv2
 import yaml
 
+import pdb
+
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
@@ -98,10 +100,27 @@ class TLDetector(object):
 
         Returns:
             int: index of the closest waypoint in self.waypoints
-
         """
         #TODO implement
-        return 0
+
+        # Brute-force method has been applied
+        # Future: something more efficient
+
+        pos = pose.position
+        closest_dist = 10**6
+        closest_ind = 0
+        if self.waypoints is None:
+            #print('no waypoints, returning 0')
+            return None
+        else:
+            for i,waypoint in enumerate(self.waypoints.waypoints):
+                way = waypoint.pose.pose.position
+                dist = ((pos.x - way.x)**2 + (pos.y - way.y)**2)**0.50
+                if dist < closest_dist:
+                    closest_ind = i
+                    closest_dist = dist
+            #print(closest_ind)
+            return closest_ind
 
 
     def project_to_image_plane(self, point_in_world):
