@@ -3,8 +3,10 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 
 import math
+import tf
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -21,34 +23,60 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+## Control Parameters
+# Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 200 
+# Car speed in simulator (or real env) is MPH, whereas ROS uses MPS
+MPH_TO_MPS = 0.44704
+# max car speed
+MAX_SPEED = 10 * MPH_TO_MPS # m/s 
 
 
 class WaypointUpdater(object):
+    """The purpose of the node is to publish a fixed number of waypoints ahead of the vehicle with the correct target velocities, depending on traffic lights and obstacles.
+
+        - subscribed topics:
+            - `/base_waypoints`: repeated list of all points
+            - `/obstacle_waypoints`: NOT THERE!
+            - `/traffic_waypoint`
+            - `/current_pose`
+        - published topics:
+            - `/final_waypoints`: only waypoints ahead up to `LOOKAHEAD_WPS`.
+        - node files:
+            - `waypoint_updater/waypoint_updater.py`
+    """
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb) # 40-45 hz
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb) # 40 hz
-
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb) # 10 hz
+        rospy.Subscriber('/obstacle_waypoints', PoseStamped, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
         # asychronizedly receive data from subscried topics
+        ## all waypoints on the map
         self.base_waypoints_msg = None
-        self.current_pose_msg = None
+        ## current car pose (position and orientation)
+        self.car_pose = None
+        ## traffic way point index
+        self.traffic_wp_index = None
+
+        ## rate to publish to final_waypoints
         self.publish_rate = 40 # doesnt make sense if >= 40, which is /current_pose rate
+
 
         # publish waypoints in a loop with explicit rate
         self.loop()
 
         rospy.spin()
 
+    ############# Callback for subscription ##################################
+
     def pose_cb(self, msg):
         # update it everytime when received
-        self.current_pose_msg = msg
+        self.car_pose = msg.pose
 
     def waypoints_cb(self, waypoints):
         # 10902 waypoints for the simulation env
@@ -64,63 +92,7 @@ class WaypointUpdater(object):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
-    def get_waypoint_velocity(self, waypoint):
-        return waypoint.twist.twist.linear.x
-
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
-
-    def distance(self, waypoints, wp1, wp2):
-        dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
-        return dist
-
-    def dist(self, waypoint, current_pose_msg):
-        wp_x = waypoint.pose.pose.position.x
-        wp_y = waypoint.pose.pose.position.y
-        wp_z = waypoint.pose.pose.position.z
-        car_x = current_pose_msg.pose.position.x
-        car_y = current_pose_msg.pose.position.y
-        car_z = current_pose_msg.pose.position.z
-
-        dx = wp_x - car_x
-        dy = wp_y - car_y
-        dz = wp_z - car_z
-        return math.sqrt(dx*dx + dy*dy + dz*dz)
-
-    def ahead_of(self, waypoint, current_pose_msg):
-        wp_x = waypoint.pose.pose.position.x
-        wp_y = waypoint.pose.pose.position.y
-        wp_z = waypoint.pose.pose.position.z
-        car_x = current_pose_msg.pose.position.x
-        car_y = current_pose_msg.pose.position.y
-        car_z = current_pose_msg.pose.position.z
-
-        dx = wp_x - car_x
-        dy = wp_y - car_y
-        dz = wp_z - car_z
-
-        return dx < 0
-
-    def next_waypoint(self):
-        """Get the index of next waypoint ahead of the car, based on
-        received current_pose of car and base_waypoints
-        """
-        waypoints = self.base_waypoints_msg.waypoints
-        next_wp_index = 0
-        next_wp_dist = self.dist(waypoints[0], self.current_pose_msg)#float('inf')
-        for i, wp in enumerate(waypoints):
-            if not self.ahead_of(wp, self.current_pose_msg):
-                continue
-            else:
-                d = self.dist(wp, self.current_pose_msg)
-                if d < next_wp_dist:
-                    next_wp_dist = d
-                    next_wp_index = i
-        return next_wp_index
+    ###################### Pulishing loop ###################################
 
     def loop(self):
         """Publish to /final_waypoints with waypoints ahead of car
@@ -128,15 +100,112 @@ class WaypointUpdater(object):
         rate = rospy.Rate(self.publish_rate)
         while not rospy.is_shutdown():
             # publishing nothing when receiving nothing
-            if (self.current_pose_msg is None) or (self.base_waypoints_msg is None):
+            if (self.car_pose is None) or (self.base_waypoints_msg is None):
                 continue
-            lane = Lane()
-            lane.header = self.base_waypoints_msg.header
+
+            target_speed = MAX_SPEED
+            frame_id = self.base_waypoints_msg.header.frame_id
             lane_start = self.next_waypoint()
-            lane.waypoints = self.base_waypoints_msg.waypoints[lane_start:lane_start+LOOKAHEAD_WPS]
+            waypoints = self.base_waypoints_msg.waypoints[lane_start:lane_start+LOOKAHEAD_WPS]
+            for waypoint in waypoints:
+                self.set_waypoint_velocity(waypoint, target_speed)
+            lane = self.make_lane_msg(frame_id, waypoints)
+
             self.final_waypoints_pub.publish(lane)
 
             rate.sleep()
+
+    ######################### Helper functions ################################
+
+    def get_waypoint_velocity(self, waypoint):
+        return waypoint.twist.twist.linear.x
+
+    def set_waypoint_velocity(self, waypoint, velocity):
+        waypoint.twist.twist.linear.x = velocity
+
+    def get_waypoint_coordinates(self, waypoint):
+        wp_x = waypoint.pose.pose.position.x
+        wp_y = waypoint.pose.pose.position.y
+        wp_z = waypoint.pose.pose.position.z
+        return (wp_x, wp_y, wp_z)
+
+    def get_car_coordinates(self, car_pose):
+        car_x = car_pose.position.x
+        car_y = car_pose.position.y
+        car_z = car_pose.position.z
+        return (car_x, car_y, car_z)
+
+    def get_car_euler(self, car_pose):
+        """Return roll, pitch, yaw from car's pose
+        """
+        return tf.transformations.euler_from_quaternion([
+            car_pose.orientation.x,
+            car_pose.orientation.y,
+            car_pose.orientation.z,
+            car_pose.orientation.w])
+
+    def make_lane_msg(self, frame_id, waypoints):
+        """This should be the job of lane constructor
+        """
+        lane = Lane()
+        lane.header.frame_id = frame_id
+        lane.header.stamp = rospy.Time.now()
+        lane.waypoints = waypoints
+        return lane
+
+    def distance(self, waypoint, car_pose):
+        wp_x, wp_y, wp_z = self.get_waypoint_coordinates(waypoint)
+        car_x, car_y, car_z = self.get_car_coordinates(car_pose)
+
+        dx = wp_x - car_x
+        dy = wp_y - car_y
+        dz = wp_z - car_z
+        return math.sqrt(dx*dx + dy*dy + dz*dz)
+
+    def inner_product(self, vec1, vec2):
+        return sum([v1*v2 for v1, v2 in zip(vec1, vec2)])
+
+    def ahead_of(self, waypoint, car_pose):
+        """If a waypoint is ahead of the car based on its current pose.
+        Logic: In the local coordinate system (car as origin), the angel
+        between the waypoint vector and the car's current yaw vector should be
+        less than 90, which also means their innter product should be positive.
+        """
+        wp_x, wp_y, wp_z = self.get_waypoint_coordinates(waypoint)
+        car_x, car_y, car_z = self.get_car_coordinates(car_pose)
+        _, _, car_yaw = self.get_car_euler(car_pose)
+
+        wp_vector = (wp_x-car_x, wp_y-car_y)
+        yaw_vector = (math.cos(car_yaw), math.sin(car_yaw))
+
+        return self.inner_product(wp_vector, yaw_vector) > 0
+
+        # deprecated simple rules for the test case
+        # dx = wp_x - car_x
+        # dy = wp_y - car_y
+        # dz = wp_z - car_z
+
+        # return dx < 0
+
+    def next_waypoint(self):
+        """Get the index of next waypoint ahead of the car, based on
+        received current_pose of car and base_waypoints
+        """
+        waypoints = self.base_waypoints_msg.waypoints
+        next_wp_index = 0
+        next_wp_dist = float('inf')
+        for i, wp in enumerate(waypoints):
+            if not self.ahead_of(wp, self.car_pose):
+                continue
+            else:
+                d = self.distance(wp, self.car_pose)
+                if d < next_wp_dist:
+                    next_wp_dist = d
+                    next_wp_index = i
+                    # return here means we don't really care about the close distance
+                    # but only that the next waypoint is ahead of the car
+                    # break 
+        return next_wp_index
 
 
 if __name__ == '__main__':
