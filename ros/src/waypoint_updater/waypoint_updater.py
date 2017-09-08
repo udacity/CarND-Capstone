@@ -41,28 +41,52 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self._waypoints = Lane()
         self._pose = PoseStamped()
-        self._base_vel = 20
+        self._pose_initialized = False
+        self._waypoints_initialized = False
+        self._base_vel = 10
+        self._debug_print = False
+
+        self.go()
 
         rospy.spin()
 
-    def pose_cb(self, msg):
-        self._pose = msg
-        closest_wp = self.closest_waypoint()
-        final_wps = []
-        num_wps = len(self._waypoints.waypoints)
-        out_msg = Lane()
-        rospy.loginfo("Got new pose : " + str(msg.pose.position.x) + ", "
-                + str(msg.pose.position.y) + ", " + str(msg.pose.position.z))
-        rospy.loginfo("Orientation : " + str(msg.pose.orientation.x) + ", " + str(msg.pose.orientation.y)
-                + ", " + str(msg.pose.orientation.z) + ", " + str(msg.pose.orientation.w))
-        for i in range(LOOKAHEAD_WPS ):
-            if(i < LOOKAHEAD_WPS - 1):
-                self.eval_waypoint_vel( (closest_wp + i) % num_wps, (closest_wp + i + 1) % num_wps,
-                        (closest_wp + i + 2) % num_wps)
-            final_wps.append(self._waypoints.waypoints[(closest_wp + i)%num_wps])
+    def go(self):
+        rate = rospy.Rate(5)
+        while not rospy.is_shutdown():
+            if(True == self._pose_initialized):
+                if(True == self._waypoints_initialized):
+                    closest_wp = self.closest_waypoint()
+                    rospy.loginfo("Closest waypoint : " + str(self._waypoints.waypoints[closest_wp].pose.pose.position.x)
+                            + ", " + str(self._waypoints.waypoints[closest_wp].pose.pose.position.y))
+                    final_wps = []
+                    num_wps = len(self._waypoints.waypoints)
+                    out_msg = Lane()
+                    rospy.loginfo("Orientation : " + str(self._pose.pose.orientation.x) + ", " + str(self._pose.pose.orientation.y)
+                            + ", " + str(self._pose.pose.orientation.z) + ", " + str(self._pose.pose.orientation.w))
+                    for i in range(LOOKAHEAD_WPS ):
+                        if(i < LOOKAHEAD_WPS - 1):
+                            self.eval_waypoint_vel( (closest_wp + i) % num_wps, (closest_wp + i + 1) % num_wps,
+                                    (closest_wp + i + 2) % num_wps)
+                        final_wps.append(self._waypoints.waypoints[(closest_wp + i)%num_wps])
 
-        out_msg.waypoints = final_wps
-        self.final_waypoints_pub.publish(out_msg)
+                    if self._debug_print == True:
+                    #   self._debug_print = False
+                        for i in range(len(final_wps)):
+                            rospy.logerr(str(final_wps[i].pose.pose.position.x) + ", " + str(final_wps[i].pose.pose.position.y))
+
+                    out_msg.waypoints = final_wps
+                    self.final_waypoints_pub.publish(out_msg)
+
+            rate.sleep()
+
+
+
+    def pose_cb(self, msg):
+        self._pose_initialized = True
+        self._pose = msg
+
+        rospy.loginfo("Got new pose : " + str(msg.pose.position.x) + ", "
+                      + str(msg.pose.position.y) + ", " + str(msg.pose.position.z))
 
     def eval_waypoint_vel(self, cur_waypoint, next_waypoint, next_next_waypoint):
         '''
@@ -92,6 +116,7 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, waypoints):
         self._waypoints = waypoints
+        self._waypoints_initialized = True
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
