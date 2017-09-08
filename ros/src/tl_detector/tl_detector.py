@@ -158,7 +158,8 @@ class TLDetector(object):
         self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        if light:
+            x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
 
@@ -194,11 +195,8 @@ class TLDetector(object):
                     closest_light_distance = distance
                     closest_light_position = light_position
 
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+        state = self.get_light_state(light)
+        return -1, state
 
 if __name__ == '__main__':
     try:
