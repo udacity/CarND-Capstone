@@ -25,6 +25,8 @@ class TLClassifier(object):
                           1: TrafficLight.RED,
                           2: TrafficLight.GREEN}
 
+        self.debug_print = True
+
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -46,6 +48,8 @@ class TLClassifier(object):
                 preds = self.model.predict(image)[0]
             pred_index = np.argmax(preds)
             pred = self.pred_dict[pred_index]
+            if self.debug_print:
+                print('TLClassifier', pred, preds)
         else:
             pred = TrafficLight.UNKNOWN
 
