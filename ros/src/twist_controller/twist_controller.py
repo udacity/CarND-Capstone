@@ -20,9 +20,11 @@ class Controller(object):
         if(dbw_enabled == True):
             throttle = self._pid_controller.step(plv - clv, dt)
             if(throttle < 0):
-                brake = -1 * throttle
+                brake = -10000 * throttle
                 throttle = 0
             steer = self._yaw_controller.get_steering(plv, pav, clv)
+            rospy.loginfo("plv=%f, clv=%f, pav=%f ",throttle,clv, pav)
+
 
         else:
             self._pid_controller.reset()

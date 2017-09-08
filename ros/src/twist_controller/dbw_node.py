@@ -125,6 +125,7 @@ class DBWNode(object):
         scmd = SteeringCmd()
         scmd.enable = True
         scmd.steering_wheel_angle_cmd = steer
+        rospy.loginfo("Publishing steering=%f ",steer)
         self.steer_pub.publish(scmd)
 
         if(brake != 0):

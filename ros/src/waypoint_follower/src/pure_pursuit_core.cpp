@@ -389,11 +389,11 @@ geometry_msgs::TwistStamped PurePursuit::go()
     return outputZero();
   }
 
-  // ROS_INFO("next_target : ( %lf , %lf , %lf)", next_target.x, next_target.y,next_target.z);
+  ROS_INFO("next_target : ( %lf , %lf , %lf), num : %d", position_of_next_target_.x, position_of_next_target_.y,
+      position_of_next_target_.z, num_of_next_waypoint_);
 
   return outputTwist(calcTwist(calcCurvature(position_of_next_target_), getCmdVelocity(0)));
 
-// ROS_INFO("linear : %lf, angular : %lf",twist.twist.linear.x,twist.twist.angular.z);
 
 #ifdef LOG
   std::ofstream ofs("/tmp/pure_pursuit.log", std::ios::app);

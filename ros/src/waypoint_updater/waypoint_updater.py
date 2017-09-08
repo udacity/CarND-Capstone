@@ -57,13 +57,15 @@ class WaypointUpdater(object):
                 + ", " + str(msg.pose.orientation.z) + ", " + str(msg.pose.orientation.w))
         for i in range(LOOKAHEAD_WPS ):
             if(i < LOOKAHEAD_WPS - 1):
-                self.eval_waypoint_vel( (closest_wp + i) % num_wps, (closest_wp + i + 1) % num_wps)
+                self.eval_waypoint_vel( (closest_wp + i) % num_wps, (closest_wp + i + 1) % num_wps,
+                        (closest_wp + i + 2) % num_wps)
             final_wps.append(self._waypoints.waypoints[(closest_wp + i)%num_wps])
 
         out_msg.waypoints = final_wps
         self.final_waypoints_pub.publish(out_msg)
 
-    def eval_waypoint_vel(self, cur_waypoint, next_waypoint):
+    def eval_waypoint_vel(self, cur_waypoint, next_waypoint, next_next_waypoint):
+        '''
         v_tot = self._base_vel
         wp1_x = self._waypoints.waypoints[cur_waypoint].pose.pose.position.x
         wp1_y = self._waypoints.waypoints[cur_waypoint].pose.pose.position.y
@@ -75,9 +77,17 @@ class WaypointUpdater(object):
             theta = (wp2_y - wp1_y) / (wp2_x - wp1_x)
         v_x = v_tot * math.sin(theta)
         v_y = v_tot * math.cos(theta)
-        self._waypoints.waypoints[cur_waypoint].twist.twist.linear.x = v_x;
-        self._waypoints.waypoints[cur_waypoint].twist.twist.linear.y = v_y;
-        self._waypoints.waypoints[cur_waypoint].twist.twist.linear.z = 0;
+        self._waypoints.waypoints[cur_waypoint].twist.twist.linear.x = v_x
+        self._waypoints.waypoints[cur_waypoint].twist.twist.linear.y = v_y
+        self._waypoints.waypoints[cur_waypoint].twist.twist.linear.z = 0
+        self._waypoints.waypoints[cur_waypoint].twist.twist.angular.x = 1
+        '''
+        self._waypoints.waypoints[cur_waypoint].twist.twist.linear.x = self._base_vel
+        self._waypoints.waypoints[cur_waypoint].twist.twist.angular.z = 50
+        self._waypoints.waypoints[cur_waypoint].twist.twist.angular.y = 50
+        self._waypoints.waypoints[cur_waypoint].twist.twist.angular.x = 50
+
+
 
 
     def waypoints_cb(self, waypoints):
