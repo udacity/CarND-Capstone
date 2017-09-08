@@ -1,3 +1,4 @@
+# Author: Guy Hadash
 # Source: https://github.com/mynameisguy/TrafficLightChallenge-DeepLearning-Nexar
 
 ## dirs confs
