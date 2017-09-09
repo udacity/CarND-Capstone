@@ -101,7 +101,7 @@ class WaypointUpdater(object):
 
                     self.velocity_pub.publish(self.velocity_reference)
 
-        rate.sleep()
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.cur_pose = msg
