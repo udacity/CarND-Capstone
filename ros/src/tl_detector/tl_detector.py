@@ -9,7 +9,11 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
+import math
 import yaml
+from attrdict import AttrDict
+from traffic_light_config import config
+
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -55,10 +59,11 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        #rospy.loginfo("GROUND TRUTH Traffic Lights (%s)", msg.lights)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -101,7 +106,20 @@ class TLDetector(object):
 
         """
         #TODO implement
-        return 0
+        def dl(a, b):
+            return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+
+        #rospy.loginfo("Waypoints LENGTH (%s)", len(self.waypoints))
+
+        closest_wp = len(self.waypoints) + 1
+        closest_dist = 100000
+        for i in range(len(self.waypoints)):
+            dist = dl(self.waypoints[i].pose.pose.position, pose)
+            if (dist < closest_dist):
+                closest_wp = i
+                closest_dist = dist
+
+        return closest_wp
 
 
     def project_to_image_plane(self, point_in_world):
@@ -174,11 +192,34 @@ class TLDetector(object):
 
         """
         light = None
+        light_wp = -1
         light_positions = self.config['light_positions']
+        rospy.logdebug("light_positions (%s)", light_positions)
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+            car_position = self.get_closest_waypoint(self.pose.pose.position)
+            rospy.logdebug("closest_waypoint car (%s)", car_position)
 
         #TODO find the closest visible traffic light (if one exists)
+        min_diff = 10000
+        for light_position in light_positions :
+            tmp_light_wp = self.get_closest_waypoint(AttrDict({'x': light_position[0], 'y': light_position[1]}))
+            #rospy.loginfo("closest_waypoint light (%s)", tmp_light_wp)
+            diff_position = (tmp_light_wp - car_position)
+            if diff_position >= 0 and diff_position < min_diff :
+                min_diff = diff_position
+                light_wp = tmp_light_wp
+                light = light_position
+
+        rospy.loginfo("Upcoming closest light to vehicle's position (%s, %s) is nearest to waypoint index  (%s) and location (%s, %s)",
+                          self.pose.pose.position.x,
+                          self.pose.pose.position.y,
+                          light_wp,
+                          light[0],
+                          light[1])
+        rospy.loginfo("Light's nearest Waypoint (%s) Details (%s)",  light_wp, self.waypoints[light_wp].pose.pose.position)
+
+        # Remove below line once traffic light classifier is done
+        return light_wp, TrafficLight.RED
 
         if light:
             state = self.get_light_state(light)
