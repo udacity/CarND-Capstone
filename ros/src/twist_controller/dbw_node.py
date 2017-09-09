@@ -54,6 +54,7 @@ class DBWNode(object):
 		self.current_velocity = None # Commig from /current_velocity
 		self.final_waypoints = None # Commig from /final_waypoints
 		self.current_pose = None # Commig from /current_pose
+		self.init_time = rospy.get_rostime()
 
 		# Define PID controller for throttle. brake and steering
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
@@ -89,8 +90,21 @@ class DBWNode(object):
 			#                                                     <any other argument you need>)
 			if self.dbw_enabled and self.final_waypoints is not None:
 
-				crt_time = rospy.get_time()
+				crt_time = rospy.get_rostime()
+
+				# Get delta_t in sec. 
+				dt = current_time - self.previous_loop_time
+				dt = dt.secs + (1e-9 * dt.nsecs)
+
+				# Reset time within the loop (so that we only compute the time of one loop iteration)
+				self.init_time = current_time
+				
+				# Get linear velocity and CTE. Velocity is the difference between current and desired speed in the future. 
+				velocity = self.final_waypoints[1].twist.twist.linear.x - self.current_velocity.linear.x
 				cte = dbw_utils.get_cte(self.final_waypoints, self.current_pose_cb)
+
+				# Finally, compute throttle, brake and steer angle to use
+				throttle, brake, steering = self.controller.control(velocity, cte, dt)
 
 				self.publish(throttle, brake, steer)
 			rate.sleep()
@@ -117,7 +131,11 @@ class DBWNode(object):
 		self.brake_pub.publish(bcmd)
 
 	def dbw_enable_cb(self, msg): 
-		self.dbw_enabled = msg.data
+		self.dbw_enabled = bool(msg.data)
+		if(dbw_enabled): 
+			self.steering_pid.reset()
+			self.throttle_pid.reset()
+			self.brake_pid.reset()
 
 	def current_velocity_cb(self, msg):
 		self.current_velocity = msg.twist
