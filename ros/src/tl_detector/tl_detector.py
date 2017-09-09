@@ -192,6 +192,7 @@ class TLDetector(object):
 
         """
         light = None
+        car_position = None
         light_wp = -1
         light_positions = self.config['light_positions']
         rospy.logdebug("light_positions (%s)", light_positions)
@@ -201,21 +202,20 @@ class TLDetector(object):
 
         #TODO find the closest visible traffic light (if one exists)
         min_diff = 10000
-        for light_position in light_positions :
+        for i in range(len(light_positions)) :
+            light_position = light_positions[i]
             tmp_light_wp = self.get_closest_waypoint(AttrDict({'x': light_position[0], 'y': light_position[1]}))
             #rospy.loginfo("closest_waypoint light (%s)", tmp_light_wp)
             diff_position = (tmp_light_wp - car_position)
             if diff_position >= 0 and diff_position < min_diff :
                 min_diff = diff_position
                 light_wp = tmp_light_wp
-                light = light_position
+                light = self.lights[i]
 
-        rospy.loginfo("Upcoming closest light to vehicle's position (%s, %s) is nearest to waypoint index  (%s) and location (%s, %s)",
-                          self.pose.pose.position.x,
-                          self.pose.pose.position.y,
-                          light_wp,
-                          light[0],
-                          light[1])
+        rospy.loginfo("Upcoming closest light to vehicle's position (%s, %s) is nearest to waypoint index  (%s) and is "
+                      "at location (%s, %s, %s)",
+                          self.pose.pose.position.x, self.pose.pose.position.y,
+                          light_wp, light.pose.pose.position.x, light.pose.pose.position.y, light.pose.pose.position.z)
         rospy.loginfo("Light's nearest Waypoint (%s) Details (%s)",  light_wp, self.waypoints[light_wp].pose.pose.position)
 
         # Remove below line once traffic light classifier is done
