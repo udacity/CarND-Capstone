@@ -81,23 +81,17 @@ class DBWNode(object):
 	def loop(self):
 		rate = rospy.Rate(50) # 50Hz
 		while not rospy.is_shutdown():
-			# TODO: Get predicted throttle, brake, and steering using `twist_controller`
-			# You should only publish the control commands if dbw is enabled
-			# throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-			#                                                     <proposed angular velocity>,
-			#                                                     <current linear velocity>,
-			#                                                     <dbw status>,
-			#                                                     <any other argument you need>)
+
 			if self.dbw_enabled and self.final_waypoints is not None:
 
 				crt_time = rospy.get_rostime()
 
 				# Get delta_t in sec. 
-				dt = current_time - self.previous_loop_time
+				dt = crt_time - self.init_time
 				dt = dt.secs + (1e-9 * dt.nsecs)
 
 				# Reset time within the loop (so that we only compute the time of one loop iteration)
-				self.init_time = current_time
+				self.init_time = crt_time
 				
 				# Get linear velocity and CTE. Velocity is the difference between current and desired speed in the future. 
 				velocity = self.final_waypoints[1].twist.twist.linear.x - self.current_velocity.linear.x
