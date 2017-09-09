@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import copy
 
 import pdb
 
@@ -175,7 +176,8 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        # Do we need this since we are given x,y already?
+        #x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
 
@@ -197,11 +199,38 @@ class TLDetector(object):
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
+        if not car_position:
+            return -1, TrafficLight.UNKNOWN
 
         #TODO find the closest visible traffic light (if one exists)
+        light_pos_wp = []
+        light_list = []
+        for light_pos in light_positions:
+            light_x = light_pos[0]
+            light_y = light_pos[1]
+            this_light = copy.deepcopy(self.pose)
+            this_light.pose.position.x = light_x
+            this_light.pose.position.y = light_y
+            this_light_pos = self.get_closest_waypoint(this_light.pose)
+
+            this_light = copy.deepcopy(this_light)
+            light_pos_wp.append(this_light_pos)
+            light_list.append(this_light)
+
+        delta_wp = [wp-car_position for wp in light_pos_wp]
+        min_delta_wp = min(d for d in delta_wp if d>=0)
+        light_wp_ind = delta_wp.index(min_delta_wp)
+
+        visible_num_wp = 100
+        if min_delta_wp < visible_num_wp:
+            light = light_list[light_wp_ind]
+            light_wp = light_pos_wp[light_wp_ind]
 
         if light:
             state = self.get_light_state(light)
+            print("light output")
+            print(car_position)
+            print(light_wp, state)
             return light_wp, state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
