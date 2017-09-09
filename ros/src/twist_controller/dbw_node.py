@@ -8,6 +8,7 @@ import math
 
 from twist_controller import Controller
 from pid import PID
+import dbw_utils
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -51,6 +52,8 @@ class DBWNode(object):
 		self.dbw_enabled = False  # Coming from /vehicle/dbw_enabled
 		self.twist_command = None # Commig from /twist_cmd
 		self.current_velocity = None # Commig from /current_velocity
+		self.final_waypoints = None # Commig from /final_waypoints
+		self.current_pose = None # Commig from /current_pose
 
 		# Define PID controller for throttle. brake and steering
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
@@ -62,13 +65,15 @@ class DBWNode(object):
 		self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
 		self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
-		# TODO: Create `TwistController` object
+		# Instantiate a Controller object
 		self.controller = TwistController(self.throttle_pid, self.brake_pid, self.steering_pid)
 
 		# Define Subscribers 
 		rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_cb)
 		rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cb)
 		rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
+		rospy.Subscriber("/current_pose", PoseStamped, self.current_pose_cb, queue_size=1)
+		rospy.Subscriber("/final_waypoints", styx_msgs.msg.Lane, self.final_waypoints_cb)
 
 		self.loop()
 
@@ -83,10 +88,16 @@ class DBWNode(object):
 			#                                                     <dbw status>,
 			#                                                     <any other argument you need>)
 			if self.dbw_enabled:
+
+				cte = dbw_utils.get_cte(self.final_waypoints, )
+
 				self.publish(throttle, brake, steer)
 			rate.sleep()
 
 	def publish(self, throttle, brake, steer):
+		"""
+		All the parameters values should be in the range [0,1] as per Undacity requirements
+		"""
 		tcmd = ThrottleCmd()
 		tcmd.enable = True
 		tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
@@ -112,6 +123,12 @@ class DBWNode(object):
 
 	def twist_cb(self, msg): 
 		self.twist_cmd = msg.twist 
+
+	def final_waypoints_cb(self, msg): 
+		self.final_waypoints = msg.waypoints
+
+	def self.current_pose_cb(self, msg): 
+		self.current_pose_cb = msg.pose
 
 if __name__ == '__main__':
 	DBWNode()
