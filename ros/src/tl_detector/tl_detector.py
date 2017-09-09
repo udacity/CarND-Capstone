@@ -12,7 +12,6 @@ import cv2
 import math
 import yaml
 from attrdict import AttrDict
-from traffic_light_config import config
 
 
 STATE_COUNT_THRESHOLD = 3
