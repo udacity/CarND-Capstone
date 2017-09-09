@@ -87,9 +87,10 @@ class DBWNode(object):
 			#                                                     <current linear velocity>,
 			#                                                     <dbw status>,
 			#                                                     <any other argument you need>)
-			if self.dbw_enabled:
+			if self.dbw_enabled and self.final_waypoints is not None:
 
-				cte = dbw_utils.get_cte(self.final_waypoints, )
+				crt_time = rospy.get_time()
+				cte = dbw_utils.get_cte(self.final_waypoints, self.current_pose_cb)
 
 				self.publish(throttle, brake, steer)
 			rate.sleep()
