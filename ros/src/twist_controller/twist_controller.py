@@ -18,9 +18,11 @@ class Controller(object):
 		self.brake = brake 
 		self.steering = steering
 
-	def control(self, *args, **kwargs):
-		throttle = 0
+	def control(self, vel_error, cte, dt):
 		brake = 0
 		steering = 0
 
-		return throttle, brake. steering
+		throttle = self.throttle.step(vel_error, dt)
+		steering = self.steering.step(cte, dt)
+
+		return throttle, brake, steering
