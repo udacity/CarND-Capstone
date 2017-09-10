@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-
+import math
 import rospy
+import tf
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-
-import math
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -37,16 +36,17 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.base_waypoints = None
+        self.pose = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.pose = msg
+        self.publish()
 
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+    def waypoints_cb(self, msg):
+        self.map_waypoints = msg
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -56,6 +56,42 @@ class WaypointUpdater(object):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
+    def publish(self):
+        if self.base_waypoints is not None:
+            closest_waypoint_idx = get_closest_waypoint()
+            m = min(len(base_waypoints), closest_waypoint_idx + LOOKAHEAD_WPS)
+            final_waypoints = base_waypoints[closest_waypoint_idx:m]
+            published_lane = Lane()
+            published_lane.header.stamp = rospy.Time.now()
+            published_lane.waypoints = final_waypoints
+            self.final_waypoints_pub.publish(published_lane)
+
+    def get_closest_waypoint(self):
+        pose = self.pose
+        current_position = pose.pose.position
+        closest_gap = float('inf')
+        closest_gap_idx = 0
+
+        for idx, waypoint in enumerate(self.base_waypoints):
+            waypoint_position = waypoint.pose.pose.position
+            dx = current_position.x - waypoint_position.x
+            dy = current_position.y - waypoint_position.y
+            gap = dx*dx + dy*dy
+
+            if gap < closest_gap:
+                roll, pitch, yaw = tf.transformations.euler_from_quarternion(
+                    [pose.orientation.x, pose.orientation.y,
+                     pose.orientation.z, pose.orientation.w])
+                heading_x = pose.position.x
+                heading_y = pose.position.y
+                gap_x = waypoint.pose.pose.position.x - heading_x
+                gap_y = waypoint.pose.pose.position.y - heading_y
+                x = gap_x * cos(0 - yaw) - gap_y * sin(0 - yaw)
+                if x > 0:
+                    closest_gap = gap
+                    closest_gap_idx = idx
+        return closest_gap_idx
+
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
@@ -63,6 +99,7 @@ class WaypointUpdater(object):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
     def distance(self, waypoints, wp1, wp2):
+        """ Get total distance between two waypoints given their index"""
         dist = 0
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
