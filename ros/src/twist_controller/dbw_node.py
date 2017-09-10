@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
 import rospy
+import math
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
-import math
+from geometry_msgs.msg import PoseStamped
+import styx_msgs.msg
+import std_msgs.msg
 
 from twist_controller import Controller
 from pid import PID
@@ -67,7 +70,7 @@ class DBWNode(object):
 		self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
 		# Instantiate a Controller object
-		self.controller = TwistController(self.throttle_pid, self.brake_pid, self.steering_pid)
+		self.controller = Controller(self.throttle_pid, self.brake_pid, self.steering_pid)
 
 		# Define Subscribers 
 		rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_cb)
@@ -79,7 +82,7 @@ class DBWNode(object):
 		self.loop()
 
 	def loop(self):
-		rate = rospy.Rate(50) # 50Hz
+		rate = rospy.Rate(10) # 50Hz
 		while not rospy.is_shutdown():
 
 			if self.dbw_enabled and self.final_waypoints is not None:
@@ -100,7 +103,7 @@ class DBWNode(object):
 				# Finally, compute throttle, brake and steer angle to use
 				throttle, brake, steering = self.controller.control(velocity, cte, dt)
 
-				self.publish(throttle, brake, steer)
+				self.publish(throttle, brake, steering)
 			rate.sleep()
 
 	def publish(self, throttle, brake, steer):
@@ -126,7 +129,7 @@ class DBWNode(object):
 
 	def dbw_enable_cb(self, msg): 
 		self.dbw_enabled = bool(msg.data)
-		if(dbw_enabled): 
+		if(self.dbw_enabled): 
 			self.steering_pid.reset()
 			self.throttle_pid.reset()
 			self.brake_pid.reset()
@@ -140,7 +143,7 @@ class DBWNode(object):
 	def final_waypoints_cb(self, msg): 
 		self.final_waypoints = msg.waypoints
 
-	def self.current_pose_cb(self, msg): 
+	def current_pose_cb(self, msg): 
 		self.current_pose_cb = msg.pose
 
 if __name__ == '__main__':
