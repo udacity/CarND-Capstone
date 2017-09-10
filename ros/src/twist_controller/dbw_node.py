@@ -50,6 +50,7 @@ class DBWNode(object):
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
         self.waypoints = None
+        self.pose = None
         self.velocity = None
         self.dbw_enabled = False
         self.twist = None
@@ -77,6 +78,7 @@ class DBWNode(object):
 
         # Subscribe to all the topics you need to
         rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
@@ -117,6 +119,9 @@ class DBWNode(object):
 
     def final_waypoints_cb(self, msg):
         self.waypoints = msg.waypoints
+
+    def pose_cb(self, msg):
+        self.pose = msg.pose
 
     def current_velocity_cb(self, msg):
         self.velocity = msg.twist
