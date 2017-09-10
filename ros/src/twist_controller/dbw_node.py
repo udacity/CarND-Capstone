@@ -55,7 +55,7 @@ class DBWNode(object):
         self.sample_time = 1.0 / self.rate
 
         # alternative: kp=1.0, ki=0.001, kd=0.5 - more jiggle, but mostly stays inside the lane
-        self.steer_pid_ctrl = PID(kp=0.2, ki=0.004, kd=0.3, mn=-8.0, mx=8.0)  # sometimes lives lane
+        self.steer_pid_ctrl = PID(kp=0.7, ki=0.004, kd=0.3, mn=-8.0, mx=8.0)  # sometimes leaves lane
 
         self.dbw_enabled = True
         self.current_linear_velocity = 0.0
