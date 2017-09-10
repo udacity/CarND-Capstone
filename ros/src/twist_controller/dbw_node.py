@@ -10,6 +10,7 @@ from styx_msgs.msg import Lane
 
 from pid import PID
 from cte import CTE
+from dbw_logger import DBWLogger
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -52,7 +53,6 @@ class DBWNode(object):
 
         self.rate = 50  # Hz
         self.sample_time = 1.0 / self.rate
-        self.max_speed = 10.0  # m/s
 
         # alternative: kp=1.0, ki=0.001, kd=0.5 - more jiggle, but mostly stays inside the lane
         self.steer_pid_ctrl = PID(kp=0.2, ki=0.004, kd=0.3, mn=-8.0, mx=8.0)  # sometimes lives lane
@@ -63,6 +63,7 @@ class DBWNode(object):
         self.target_angular_velocity = 0.0
         self.final_waypoints = None
         self.current_pose = None
+        self.logger = DBWLogger(self, rate=1)
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
@@ -108,9 +109,11 @@ class DBWNode(object):
         while not rospy.is_shutdown():
             throttle, brake, steer = 1, None, None
 
-            if self.current_linear_velocity >= self.max_speed:
+            # todo: control throttle with PID controller
+            if self.current_linear_velocity >= self.target_linear_velocity:
                 throttle = 0.0
 
+            cte = None
             if self.final_waypoints is not None and self.current_pose is not None:
                 cte = CTE.compute_cte(self.final_waypoints, self.current_pose)
                 steer = self.steer_pid_ctrl.step(error=cte, sample_time=self.sample_time)
@@ -123,7 +126,7 @@ class DBWNode(object):
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
 
-            # todo: log complete state
+            self.logger.log(throttle, brake, steer, cte)
 
             # sending None for break, ensures we're not throttling/breaking at the same time
             if self.dbw_enabled:
