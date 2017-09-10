@@ -9,6 +9,7 @@ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from styx_msgs.msg import Lane
 from geometry_msgs.msg import TwistStamped
 from twist_controller import Controller
+from yaw_controller import YawController
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -61,14 +62,18 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # Create `TwistController` object
-        self.controller = TwistController({
+        self.controller = Controller(
             decel_limit=decel_limit,
             accel_limit=accel_limit,
             max_steer_angle=max_steer_angle
-        })
-        self.yaw_controller = YawController({
-            wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle
-        })
+        )
+        self.yaw_controller = YawController(
+            wheel_base=wheel_base,
+            steer_ratio=steer_ratio,
+            min_speed=0.0,
+            max_lat_accel=max_lat_accel,
+            max_steer_angle=max_steer_angle
+        )
 
         # Subscribe to all the topics you need to
         rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb)
