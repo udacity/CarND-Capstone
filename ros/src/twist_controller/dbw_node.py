@@ -59,7 +59,7 @@ class DBWNode(object):
 		# Define PID controller for throttle. brake and steering
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
 		self.brake_pid = PID(kp=50.0, ki=0.001, kd=0.15, mn=brake_deadband, mx=1500)
-		self.steering_pid = PID(kp=1.0, ki=0.001, kd=0.5, mn=, mx=max_steer_angle)
+		self.steering_pid = PID(kp=1.0, ki=0.001, kd=0.5, mn=-max_steer_angle, mx=max_steer_angle)
 
 		# Define Publishers
 		self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
