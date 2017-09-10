@@ -164,7 +164,8 @@ class TLDetector(object):
         #TODO use light location to zoom in on traffic light in image
 
         #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        pred, preds = self.light_classifier.get_classification(cv_image)
+        return pred
 
     def euclidean_distance(self, p1x, p1y, p2x, p2y):
         x_dist = p1x - p2y

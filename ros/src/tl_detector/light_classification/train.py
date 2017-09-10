@@ -156,6 +156,8 @@ if __name__ == '__main__':
     adam = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, decay=0.01)
     model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
 
+    model.load_weights("trained_model/challenge1.weights")
+
     tensorBoard = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=1, write_graph=True, write_images=True)
     earlyStopping = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=12, verbose=0, mode='auto')
     modelCheckpoints = keras.callbacks.ModelCheckpoint(MODELS_CHECKPOINTS_DIR +
@@ -169,4 +171,4 @@ if __name__ == '__main__':
                                 nb_val_samples=VALIDATE_IMAGES_PER_EPOCH,
                                 callbacks=[modelCheckpoints, tensorBoard, earlyStopping])
 
-    model.save_weights("challenge1.model")
+    model.save_weights("tl_finetune.model")

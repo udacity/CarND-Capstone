@@ -17,8 +17,7 @@ class TLClassifier(object):
         with self.graph.as_default():
             # Load model from https://github.com/mynameisguy/TrafficLightChallenge-DeepLearning-Nexar
             self.model = SqueezeNet(3, (IMAGE_HEIGHT, IMAGE_WIDTH, 3))
-            self.model.load_weights("light_classification/trained_model/challenge1.weights")
-            self.model.summary()
+            self.model.load_weights("light_classification/checkpoints/squeezeNet_224_224.00-0.09-0.99.hdf5")
             self.ready = True
 
         self.pred_dict = {0: TrafficLight.UNKNOWN,
@@ -37,6 +36,7 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        preds = None
         if self.ready:
             # SqueezeNet model expects RGB image input.
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -49,8 +49,15 @@ class TLClassifier(object):
             pred_index = np.argmax(preds)
             pred = self.pred_dict[pred_index]
             if self.debug_print:
-                print('TLClassifier', pred, preds)
+                print('TLClassifier', friendly_name(pred), preds)
         else:
             pred = TrafficLight.UNKNOWN
 
-        return pred
+        return (pred, preds)
+
+def friendly_name(pred):
+    pred_name_dict = {TrafficLight.UNKNOWN: "Unknown",
+                      TrafficLight.RED: "Red",
+                      TrafficLight.GREEN: "Green"}
+
+    return pred_name_dict[pred]
