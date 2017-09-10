@@ -3,7 +3,7 @@ GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
 
-class Controller(object):
+class TwistController(object):
     def __init__(self, *args, **kwargs):
         # TODO: Implement
         pass
