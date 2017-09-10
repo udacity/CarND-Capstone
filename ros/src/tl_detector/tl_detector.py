@@ -104,7 +104,7 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
+        #TODO_Done implement
         def dl(a, b):
             return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
@@ -199,7 +199,7 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose.position)
             rospy.logdebug("closest_waypoint car (%s)", car_position)
 
-        #TODO find the closest visible traffic light (if one exists)
+        #TODO_Done find the closest visible traffic light (if one exists)
         min_diff = 10000
         for i in range(len(light_positions)) :
             light_position = light_positions[i]
