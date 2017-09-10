@@ -56,9 +56,10 @@ class DBWNode(object):
         # TODO: Create `TwistController` object <Arguments you wish to provide>
         self.controller = Controller()
 
-        self.dbw_enabled = False
+        self.dbw_enabled = None
         self.current_velocity = None
         self.twist_cmd = None
+
 
         self.prev_clk = rospy.get_rostime().nsecs
         self.prev_clk_ready = False
@@ -69,6 +70,10 @@ class DBWNode(object):
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         self.loop()
+
+    def required_all(self):
+      required = [self.dbw_enabled, self.current_velocity, self.twist_cmd]
+      return all([p is not None for p in required])
 
     def curr_vel_cb(self, curr_vel_msg):
       rospy.loginfo("current_velocity = {}".format(curr_vel_msg.twist))
@@ -88,6 +93,11 @@ class DBWNode(object):
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
 
+            if not self.required_all():
+              rospy.loginfo('Waiting for all params ...')
+              continue
+
+            # TODO: Move clock to pid controllers
             clk = rospy.get_rostime()
             if not self.prev_clk_ready:
                 self.prev_clk_ready = True
@@ -103,8 +113,8 @@ class DBWNode(object):
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            if self.dbw_enabled:
+              self.publish(throttle, brake, steering)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
