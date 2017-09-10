@@ -32,7 +32,7 @@ class CTE:
 
         # fit degree 2 polynomial to waypoints
         degree = 2
-        coefficients = CTE.fit_polynomial(
+        coefficients = np.polyfit(
             rotated_waypoints_xy_origin[:, 0],
             rotated_waypoints_xy_origin[:, 1],
             degree)
@@ -47,7 +47,7 @@ class CTE:
 
         # compute trajectory's y coordinate at car x
         car_x, car_y = rotated_car_pose_origin[0], rotated_car_pose_origin[1]
-        trajectory_y = CTE.evaluate_polynomial(coefficients, car_x)
+        trajectory_y = np.polyval(coefficients, car_x)
 
         # compute cross-track error
         cte = -(car_y - trajectory_y)
@@ -64,17 +64,3 @@ class CTE:
             ])
 
         return np.array(points)
-
-    @staticmethod
-    def fit_polynomial(x, y, degree):
-        coeffs = np.polyfit(x, y, degree)
-        return np.flipud(coeffs)  # return lowest degree first
-
-    @staticmethod
-    def evaluate_polynomial(coeffs, x):
-        y = 0
-
-        for i, coeff in enumerate(coeffs):
-            y += coeff * (x ** i)
-
-        return y

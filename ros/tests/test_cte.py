@@ -26,39 +26,3 @@ def test_get_waypoints_xy():
 
     actual = CTE.get_waypoints_xy(waypoints)
     assert (expected == actual).all()
-
-
-def test_fit_polynomial__straight_line():
-    x, y, degree = [0, 5, 10], [7, 7, 7], 1
-
-    expected = [7, 0]
-    actual = CTE.fit_polynomial(x, y, degree)
-
-    assert np.allclose(expected, actual)
-
-
-def test_fit_polynomial__curve():
-    x, y, degree = [0, 2, 4], [3, 5, 7], 1
-
-    expected = [3, 1]
-    actual = CTE.fit_polynomial(x, y, degree)
-
-    assert np.allclose(expected, actual)
-
-
-def test_evaluate_polynomial__degree_1():
-    coefficients, x = [3.11, 5.7], 1
-
-    expected = 8.81
-    actual = CTE.evaluate_polynomial(coefficients, x)
-
-    assert expected == actual
-
-
-def test_evaluate_polynomial__degree_2():
-    coefficients, x = [3.11, 5.7, -2.8], 2
-
-    expected = 3.31
-    actual = CTE.evaluate_polynomial(coefficients, x)
-
-    assert np.isclose([expected], actual)
