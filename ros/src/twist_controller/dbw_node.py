@@ -72,11 +72,16 @@ class DBWNode(object):
         rate = rospy.Rate(SAMPLE_RATE) # 50Hz
         sample_time = 1./SAMPLE_RATE
         while not rospy.is_shutdown():
-            throttle, brake, steering = self.controller.control(self.target_linear_velocity, self.target_angular_velocity, self.current_linear_velocity, self.current_angular_velocity, self.dbw_enabled, sample_time)
+            throttle, brake, steering = self.controller.control(self.target_linear_velocity,
+                                                                self.target_angular_velocity,
+                                                                self.current_linear_velocity,
+                                                                self.current_angular_velocity,
+                                                                self.dbw_enabled, sample_time)
 
             # If drive by wire is enabled publish updated commands
             if self.dbw_enabled:
                 self.publish(throttle, brake, steering)
+
             rate.sleep()
 
     def dbw_enabled_cb(self, msg):
