@@ -42,7 +42,7 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        self.pose = msg
+        self.pose = msg.pose
         self.publish()
 
     def waypoints_cb(self, msg):
@@ -68,7 +68,7 @@ class WaypointUpdater(object):
 
     def get_closest_waypoint(self):
         pose = self.pose
-        current_position = pose.pose.position
+        current_position = pose.position
         closest_gap = float('inf')
         closest_gap_idx = 0
 
