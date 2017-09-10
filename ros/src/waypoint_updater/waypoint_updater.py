@@ -42,7 +42,8 @@ class WaypointUpdater(object):
                                                    queue_size=1)
 
         # TODO: Add other member variables you need below
-
+        self.waypoints = None
+        
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -60,6 +61,10 @@ class WaypointUpdater(object):
         #               self.cur_x, self.cur_y, self.cur_z,
         #               self.cur_orientation.x, self.cur_orientation.y,
         #               self.cur_orientation.z, self.cur_orientation.w)
+
+        if (self.waypoints is None):
+            rospy.logwarn("Received pose_cb before initial waypoints_cb")
+            return
 
         next_wp = self.next_waypoint(self.waypoints, msg.pose)
 
