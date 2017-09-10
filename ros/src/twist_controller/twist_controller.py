@@ -3,14 +3,13 @@ from pid import PID
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
-import math
 class Controller(object):
     def __init__(self, *args, **kwargs):
         # TODO: Implement
 
-        self.speed_controller = PID(2, 0.005, 0.5)
-	self.steering_controller = PID(2, 0.003, 1)
-	#self.brake_controller = PID(2, 0.002, 0.1)
+        self.speed_controller = PID(0.5, 0.02, 0.2)
+	self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
+	
 
     def control(self, *args, **kwargs):
         # TODO: Change the arg, kwarg list to suit your needs
@@ -23,7 +22,7 @@ class Controller(object):
 	dbw_en = args[4]
 	dt = args[5]
 
-	linear_vel_cte = target_linear_vel - current_linear_vel
+	linear_vel_cte = (target_linear_vel - current_linear_vel)
 	
 	#angular_vel_cte = target_angular_vel - current_angular_vel
 	angular_vel_cte = target_angular_vel
@@ -37,12 +36,13 @@ class Controller(object):
 	linear_vel = self.speed_controller.step(linear_vel_cte, dt)
 	steer = self.steering_controller.step(angular_vel_cte, dt)
 	
-	throttle = 1
+	print("Steering: ", steer)
+	throttle = 0
 	brake = 0
 	
 	if linear_vel > 0:
 	    throttle = linear_vel
 	else:
-	    brake = linear_vel
+	    brake = abs(linear_vel)
 
         return throttle, brake, steer
