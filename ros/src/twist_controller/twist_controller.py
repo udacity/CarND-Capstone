@@ -3,7 +3,7 @@ ONE_MPH = 0.44704
 
 # Import helper classes
 from  yaw_controller import YawController
-from lowpass import LowPassFilter 
+from lowpass import LowPassFilterCustom
 from pid import PID
 
 
@@ -18,11 +18,23 @@ class Controller(object):
 		self.brake = brake 
 		self.steering = steering
 
+		# Apply a LowPassFilter to smooth out values
+		self.throtlle_low_pass = LowPassFilterCustom(.8)
+		self.brake_low_pass = LowPassFilterCustom(.5)
+		self.steering_low_pass = LowPassFilterCustom(.5)
+
 	def control(self, vel_error, cte, dt):
 		brake = 0
-		steering = 0
-
-		throttle = self.throttle.step(vel_error, dt)
+		throttle = self.throtlle_low_pass.filt(self.throttle.step(vel_error, dt))
 		steering = self.steering.step(cte, dt)
+
+		if throttle > 0:
+			self.brake_low_pass.filt(0)
+			self.brake.reset()
+		else:
+			throttle = 0
+			self.throttle_pid.reset()
+			brake = self.brake.step(-vel_error, dt)
+			brake = self.brake_low_pass.filt(brake)
 
 		return throttle, brake, steering
