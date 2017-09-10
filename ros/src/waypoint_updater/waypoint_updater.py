@@ -59,30 +59,31 @@ class WaypointUpdater(object):
 
         wp = self.waypoints[closest_waypoint]
 
-        wp_orientation = wp.pose.pose.orientation
+        # wp_orientation = wp.pose.pose.orientation
         pose_orientation = pose.pose.orientation
 
-        wp_yaw = yaw_from_orientation(wp_orientation)
+        # wp_yaw = yaw_from_orientation(wp_orientation)
         pose_yaw = yaw_from_orientation(pose_orientation)
 
         angle = math.atan2(wp.pose.pose.position.y-pose.pose.position.y, wp.pose.pose.position.x-pose.pose.position.x)
-        rospy.loginfo('angle1 = {}'.format(angle))
-        rospy.loginfo('pose_yaw = {}'.format(pose_yaw))
+        # rospy.loginfo('angle1 = {}'.format(angle))
+        # rospy.loginfo('pose_yaw = {}'.format(pose_yaw))
         delta = abs(pose_yaw-angle)
         while delta > math.pi: delta -= math.pi
-        rospy.loginfo("delta1 = {}".format(delta))
+        # rospy.loginfo("delta1 = {}".format(delta))
         if (delta > math.pi/2):
             closest_waypoint += 1
             wp = self.waypoints[closest_waypoint]
-            rospy.loginfo('forward')
+            # rospy.loginfo('forward')
 
-        angle = math.atan2(wp.pose.pose.position.y-pose.pose.position.y, wp.pose.pose.position.x-pose.pose.position.x)
-        delta = abs(pose_yaw-angle)
-        while delta > math.pi: delta -= math.pi
+        # angle = math.atan2(wp.pose.pose.position.y-pose.pose.position.y, wp.pose.pose.position.x-pose.pose.position.x)
+        # delta = abs(pose_yaw-angle)
+        # while delta > math.pi: delta -= math.pi
 
-        rospy.loginfo('angle = {}'.format(angle))
-        rospy.loginfo("delta = {}".format(delta))
-        rospy.loginfo('wp_yaw = {}'.format(wp_yaw))
+        # rospy.loginfo('angle = {}'.format(angle))
+        # rospy.loginfo("delta = {}".format(delta))
+        # rospy.loginfo('wp_yaw = {}'.format(wp_yaw))
+        return closest_waypoint
 
     def pose_cb(self, pose):
         # TODO: Implement
@@ -95,6 +96,8 @@ class WaypointUpdater(object):
         # dists = [self.dist_pose_waypoint(pose, wp) for wp in self.waypoints]
         # closest_waypoint = dists.index(min(dists))
 
+        wp_next = self.next_waypoint_idx(pose)
+
         log_out = (self.cnt % 100 == 0)
 
         # rospy.loginfo("one point = {}".format(self.waypoints[0]))
@@ -102,7 +105,7 @@ class WaypointUpdater(object):
         # orientation = self.waypoints[closest_waypoint].pose.pose.orientation
 
         if log_out:
-            self.next_waypoint_idx(pose)
+            rospy.loginfo('wp_next = {}'.format(wp_next))
             # rospy.loginfo("dist min = [{}] = {}".format(closest_waypoint, dists[closest_waypoint]))
             # rospy.loginfo("yaw = {}".format(yaw_from_orientation(orientation)))
 
