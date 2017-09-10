@@ -2,7 +2,6 @@
 MIN_NUM = float('-inf')
 MAX_NUM = float('inf')
 
-
 class PID(object):
     def __init__(self, kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM):
         self.kp = kp

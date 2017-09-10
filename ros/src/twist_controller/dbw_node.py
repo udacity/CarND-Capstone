@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import rospy
+import math
+import numpy as np
+
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
+from styx_msgs.msg import Lane
 from geometry_msgs.msg import TwistStamped
-import math
-
 from twist_controller import Controller
 
 '''
@@ -46,6 +48,11 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        self.waypoints = None
+        self.velocity = None
+        self.dbw_enabled = False
+        self.twist = None
+
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
@@ -53,10 +60,21 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
+        # Create `TwistController` object
+        self.controller = TwistController({
+            decel_limit=decel_limit,
+            accel_limit=accel_limit,
+            max_steer_angle=max_steer_angle
+        })
+        self.yaw_controller = YawController({
+            wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle
+        })
 
-        # TODO: Subscribe to all the topics you need to
+        # Subscribe to all the topics you need to
+        rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         self.loop()
 
@@ -92,6 +110,20 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+    def final_waypoints_cb(self, msg):
+        self.waypoints = msg.waypoints
+
+    def current_velocity_cb(self, msg):
+        self.velocity = msg.twist
+
+    def twist_cmd_cb(self, msg):
+        self.twist = msg.twist
+
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = bool(msg.data)
+
+    def cte(self):
+        pass
 
 if __name__ == '__main__':
     DBWNode()
