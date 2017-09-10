@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 from traffic_light_config import config
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -17,7 +18,7 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
-        self.pose = None
+        self.car_pose = None
         self.waypoints = None
         self.camera_image = None
         self.lights = []
@@ -32,8 +33,13 @@ class TLDetector(object):
         help you work on another single component of the node. This topic won't be available when
         testing your solution in real life so don't rely on it in the final submission.
         '''
+
+        # mockup tl_dection for testing, reading groud-truth directy from `/vehicle/traffic_lights`
+        # TODO: use image classification for traffic light detection
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/camera/image_raw', Image, self.image_cb)
+
+        
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
@@ -49,13 +55,61 @@ class TLDetector(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        self.pose = msg
+        self.car_pose = msg.pose
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+
+    def ahead_of(self, waypoint, car_pose):
+        """If a waypoint is ahead of the car based on its current pose.
+        Logic: In the local coordinate system (car as origin), the angel
+        between the waypoint vector and the car's current yaw vector should be
+        less than 90, which also means their innter product should be positive.
+        """
+        wp_x, wp_y, wp_z = self.get_waypoint_coordinates(waypoint)
+        car_x, car_y, car_z = self.get_car_coordinates(car_pose)
+        _, _, car_yaw = self.get_car_euler(car_pose)
+
+        wp_vector = (wp_x-car_x, wp_y-car_y)
+        yaw_vector = (math.cos(car_yaw), math.sin(car_yaw))
+
+        return self.inner_product(wp_vector, yaw_vector) > 0
+
+    def get_car_euler(self, car_pose):
+        """Return roll, pitch, yaw from car's pose
+        """
+        return tf.transformations.euler_from_quaternion([
+            car_pose.orientation.x,
+            car_pose.orientation.y,
+            car_pose.orientation.z,
+            car_pose.orientation.w])
+
+    def get_car_coordinates(self, car_pose):
+        car_x = car_pose.position.x
+        car_y = car_pose.position.y
+        car_z = car_pose.position.z
+        return (car_x, car_y, car_z)
+
+    def get_waypoint_coordinates(self, waypoint):
+        wp_x = waypoint.pose.pose.position.x
+        wp_y = waypoint.pose.pose.position.y
+        wp_z = waypoint.pose.pose.position.z
+        return (wp_x, wp_y, wp_z)
+
+    def distance(self, waypoint, car_pose):
+        wp_x, wp_y, wp_z = self.get_waypoint_coordinates(waypoint)
+        car_x, car_y, car_z = self.get_car_coordinates(car_pose)
+
+        dx = wp_x - car_x
+        dy = wp_y - car_y
+        dz = wp_z - car_z
+        return math.sqrt(dx*dx + dy*dy + dz*dz)
+
+    def inner_product(self, vec1, vec2):
+        return sum([v1*v2 for v1, v2 in zip(vec1, vec2)])
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -171,18 +225,40 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
-        light_positions = config.light_positions
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+        # light = None
+        # light_positions = config.light_positions
+        # if(self.pose):
+        #     car_position = self.get_closest_waypoint(self.pose.pose)
 
-        #TODO find the closest visible traffic light (if one exists)
+        # #TODO find the closest visible traffic light (if one exists)
 
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+        # if light:
+        #     state = self.get_light_state(light)
+        #     return light_wp, state
+        # self.waypoints = None
+        # return -1, TrafficLight.UNKNOWN
+
+
+        traffic_light_indices = [290, 758, 2015, 2542, 6366, 7065, 8647, 9845]
+
+        ahead_light = None
+        ahead_light_dist = float('inf')
+        if self.car_pose:
+            for i, light in enumerate(self.lights):
+                light_pose = light.pose.pose
+                light_state = light.state
+                if light_state != TrafficLight.RED: continue # ignore non-red lights
+                light_wp = self.waypoints[traffic_light_indices[i]]
+                if self.ahead_of(light_wp, self.car_pose):
+                    d = self.distance(light_wp, self.car_pose)
+                    if d < ahead_light_dist:
+                        ahead_light = traffic_light_indices[i]
+                        ahead_light_dist = d
+
+        if ahead_light is not None:
+            return ahead_light, TrafficLight.RED
+        else:
+            return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
