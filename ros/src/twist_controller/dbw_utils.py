@@ -2,6 +2,9 @@
 Utils class for dbw_node 
 """
 
+import math
+import numpy as np
+
 def get_cte(final_waypoints, current_pose): 
 	"""
 	Using final_waypoints, compute the expected (x,y) position of the car and compare it to the actual position. 
