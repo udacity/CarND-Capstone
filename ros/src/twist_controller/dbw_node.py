@@ -11,6 +11,7 @@ from styx_msgs.msg import Lane
 from pid import PID
 from cte import CTE
 from dbw_logger import DBWLogger
+from yaw_controller import YawController
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -56,6 +57,7 @@ class DBWNode(object):
 
         # alternative: kp=1.0, ki=0.001, kd=0.5 - more jiggle, but mostly stays inside the lane
         self.steer_pid_ctrl = PID(kp=0.7, ki=0.004, kd=0.3, mn=-8.0, mx=8.0)  # sometimes leaves lane
+        self.steer_yaw_ctrl = YawController(wheel_base, steer_ratio, 0.0, max_lat_accel, max_steer_angle)
 
         self.dbw_enabled = True
         self.current_linear_velocity = 0.0
@@ -113,10 +115,19 @@ class DBWNode(object):
             if self.current_linear_velocity >= self.target_linear_velocity:
                 throttle = 0.0
 
-            cte = None
+            cte = 0.0
+            yaw_steer = 0.0
+
             if self.final_waypoints is not None and self.current_pose is not None:
                 cte = CTE.compute_cte(self.final_waypoints, self.current_pose)
                 steer = self.steer_pid_ctrl.step(error=cte, sample_time=self.sample_time)
+
+                yaw_steer = self.steer_yaw_ctrl.get_steering(
+                    self.target_linear_velocity,
+                    self.target_angular_velocity,
+                    self.current_linear_velocity)
+
+                steer = steer + yaw_steer
 
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -126,7 +137,7 @@ class DBWNode(object):
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
 
-            self.logger.log(throttle, brake, steer, cte)
+            self.logger.log(throttle, brake, steer, yaw_steer, cte)
 
             # sending None for break, ensures we're not throttling/breaking at the same time
             if self.dbw_enabled:

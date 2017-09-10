@@ -9,7 +9,7 @@ class DBWLogger:
         self.logging_interval = 1000 / rate
         self.last_time_logged = self.current_time()
 
-    def log(self, throttle, brake, steer, cte):
+    def log(self, throttle, brake, steer, yaw_steer, cte):
         if not self.should_log():
             return
 
@@ -26,11 +26,12 @@ class DBWLogger:
             self.dbw.target_angular_velocity
         )
 
-        line2 = 'car_xy: ({}, {}); cte: {}; steer: {}'.format(
+        line2 = 'car_xy: ({}, {}); cte: {}; steer: {} (+{})'.format(
             'None' if self.dbw.current_pose is None else self.dbw.current_pose.position.x,
             'None' if self.dbw.current_pose is None else self.dbw.current_pose.position.y,
             cte,
-            steer
+            steer,
+            yaw_steer
         )
 
         line0 = '--- dbw node '
