@@ -14,11 +14,9 @@ class ImageMsg:
         img = np.fromstring(msg.data, dtype=np.uint8)
         img = img.reshape(msg.height, msg.width)
         self.raw = img
-        # img = cv2.warpAffine(img, np.float32([[1,0,0],[0,1,-200]]), (msg.width, msg.height))
 
         # The test bags provided by Udacity contain images in BAYER_GB.
         self.bgr = cv2.cvtColor(img, cv2.COLOR_BAYER_GB2BGR)
-        self.rgb = cv2.cvtColor(img, cv2.COLOR_BAYER_GR2RGB)
 
 def save_np_image(npimg, fullpath, bbox = None):
     if bbox is not None:
