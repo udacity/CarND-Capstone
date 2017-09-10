@@ -63,6 +63,7 @@ class DBWNode(object):
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
+<<<<<<< Updated upstream
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
             # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
@@ -72,6 +73,17 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
+=======
+            throttle, brake, steering = self.controller.control(self.target_linear_velocity,
+                                                                self.target_angular_velocity,
+                                                                self.current_linear_velocity,
+                                                                self.current_angular_velocity,
+                                                                self.dbw_enabled, sample_time)
+
+            # If drive by wire is enabled publish updated commands
+            if self.dbw_enabled:
+                self.publish(throttle, brake, steering)
+>>>>>>> Stashed changes
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
