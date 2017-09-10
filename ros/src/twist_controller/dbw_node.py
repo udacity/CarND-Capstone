@@ -53,19 +53,52 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
+        # TODO: Create `TwistController` object <Arguments you wish to provide>
+        self.controller = Controller()
+
+        self.dbw_enabled = False
+        self.current_velocity = None
+        self.twist_cmd = None
+
+        self.prev_clk = rospy.get_rostime().nsecs
+        self.prev_clk_ready = False
 
         # TODO: Subscribe to all the topics you need to
+        rospy.Subscriber('/current_velocity', TwistStamped, self.curr_vel_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         self.loop()
+
+    def curr_vel_cb(self, curr_vel_msg):
+      rospy.loginfo("current_velocity = {}".format(curr_vel_msg.twist))
+      self.current_velocity = curr_vel_msg.twist
+
+    def twist_cmd_cb(self, twist_cmd_msg):
+      rospy.loginfo("twist_cmd = {}".format(twist_cmd_msg.twist))
+      self.twist_cmd = twist_cmd_msg.twist
+
+    def dbw_enabled_cb(self, dbw_enabled):
+      rospy.loginfo("dbw_enabled = {}".format(dbw_enabled.data))
+      self.dbw_enabled = dbw_enabled.data
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
+
+            clk = rospy.get_rostime()
+            if not self.prev_clk_ready:
+                self.prev_clk_ready = True
+                continue
+
+            # Yes, I now it will be always 0.02 but in case someone will change rate ...
+            delta_t = (clk.nsecs - self.prev_clk)*1e-9
+            rospy.loginfo('delta_t = {}'.format(delta_t))
+            self.prev_clk = clk.nsecs
+
+            throttle, brake, steering = self.controller.control() # <proposed linear velocity>,
             #                                                     <proposed angular velocity>,
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,

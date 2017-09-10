@@ -41,11 +41,12 @@ class WaypointUpdater(object):
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
         self.waypoints = None
 
+        # For Debugging
         self.cnt = 0
 
         rospy.spin()
@@ -96,7 +97,16 @@ class WaypointUpdater(object):
         # dists = [self.dist_pose_waypoint(pose, wp) for wp in self.waypoints]
         # closest_waypoint = dists.index(min(dists))
 
+        WP_NUM = len(self.waypoints)
+
         wp_next = self.next_waypoint_idx(pose)
+
+        final_waypoints = []
+        wp_i = wp_next
+        for i in range(LOOKAHEAD_WPS):
+          final_waypoints.append(self.waypoints[wp_i])
+          wp_i += 1
+
 
         log_out = (self.cnt % 100 == 0)
 
@@ -105,11 +115,21 @@ class WaypointUpdater(object):
         # orientation = self.waypoints[closest_waypoint].pose.pose.orientation
 
         if log_out:
-            rospy.loginfo('wp_next = {}'.format(wp_next))
+            rospy.loginfo('wp_next1 = {}'.format(wp_next))
+            rospy.loginfo('len wp = {}'.format(len(final_waypoints)))
             # rospy.loginfo("dist min = [{}] = {}".format(closest_waypoint, dists[closest_waypoint]))
             # rospy.loginfo("yaw = {}".format(yaw_from_orientation(orientation)))
 
         self.cnt += 1
+
+        self.publish(final_waypoints)
+
+    def publish(self, waypoints):
+      lane = Lane()
+      lane.header.frame_id = '/world'
+      lane.header.stamp = rospy.Time(0)
+      lane.waypoints = waypoints
+      self.final_waypoints_pub.publish(lane)
 
 
     def waypoints_cb(self, waypoints):
