@@ -7,7 +7,10 @@ from consts import DATASET_FOLDER, BATCH_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH
 
 class dataHandler:
     def getGenerators(self, batch_size=BATCH_SIZE):
-        datagen = image.ImageDataGenerator(rescale=1.0/255, shear_range=0.2,
+        datagen = image.ImageDataGenerator(rescale=1.0/255,
+                                           width_shift_range=0.2,
+                                           height_shift_range=0.2,
+                                           shear_range=0.2,
                                            zoom_range=0.2,
                                            rotation_range=5,
                                            horizontal_flip=True)
@@ -24,7 +27,7 @@ class dataHandler:
 
         print("creating validation generator")
         validation_generator = val_datagen.flow_from_directory(
-            DATASET_FOLDER + '/test',
+            DATASET_FOLDER + '/val',
             target_size=(IMAGE_HEIGHT, IMAGE_WIDTH),
             batch_size=batch_size,
             class_mode='categorical')
