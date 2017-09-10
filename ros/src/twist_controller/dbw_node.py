@@ -7,7 +7,7 @@ from geometry_msgs.msg import TwistStamped, PoseStamped
 from styx_msgs.msg import Lane
 import math
 
-from twist_controller import Controller
+from twist_controller import *
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -71,7 +71,11 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # Controllers
-        self.controller = Controller()
+        self.controller = Controller(
+                                vehicle_mass,
+                                wheel_radius,
+                                accel_limit,
+                                decel_limit)
 
         # Subscribers
         # whether manual (dbw_enabled=false) or self driving
@@ -113,8 +117,7 @@ class DBWNode(object):
                                     self.car_twist.angular.z)
                 current_velocity = (self.car_velocity.linear.x,
                                     self.car_velocity.angular.z)
-                # TODO: get predicted throttle, brake and steering
-                # using twist_controller
+
                 throttle, brake, steering = self.controller.control(
                     target_velocity,
                     current_velocity,

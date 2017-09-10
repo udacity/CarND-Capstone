@@ -61,7 +61,7 @@ class WaypointUpdater(object):
         ## current car pose (position and orientation)
         self.car_pose = None
         ## traffic way point index
-        self.traffic_wp_index = None
+        self.redlight_wp_index = None
 
         ## rate to publish to final_waypoints
         self.publish_rate = 40 # doesnt make sense if >= 40, which is /current_pose rate
@@ -85,8 +85,10 @@ class WaypointUpdater(object):
         self.base_waypoints_msg = waypoints
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        # index of next RED light in the base_waypionts list
+        self.redlight_wp_index = msg.data
+        if self.redlight_wp_index >= len(self.base_waypoints_msg.waypoints):
+            rospy.logerr("Traffic light prediction error!")
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -103,7 +105,12 @@ class WaypointUpdater(object):
             if (self.car_pose is None) or (self.base_waypoints_msg is None):
                 continue
 
+            ## decide target speed based on traffic light
             target_speed = MAX_SPEED
+            if self.red_light_ahead():
+                target_speed = 0
+
+            ## setup lane for final_waypoints
             frame_id = self.base_waypoints_msg.header.frame_id
             lane_start = self.next_waypoint()
             waypoints = self.base_waypoints_msg.waypoints[lane_start:lane_start+LOOKAHEAD_WPS]
@@ -111,6 +118,7 @@ class WaypointUpdater(object):
                 self.set_waypoint_velocity(waypoint, target_speed)
             lane = self.make_lane_msg(frame_id, waypoints)
 
+            ## publish final_waypoints
             self.final_waypoints_pub.publish(lane)
 
             rate.sleep()
@@ -186,6 +194,23 @@ class WaypointUpdater(object):
         # dz = wp_z - car_z
 
         # return dx < 0
+
+    def red_light_ahead(self):
+        base_waypoints = self.base_waypoints_msg.waypoints
+        if self.redlight_wp_index is None or self.base_waypoints_msg is None:
+            return False
+        elif self.redlight_wp_index >= len(base_waypoints): 
+        # traffic light prediction error, stop immediately
+            return True
+        else:
+            light_wp = base_waypoints[self.redlight_wp_index]
+            distance = self.distance(light_wp, self.car_pose)
+            # TODO: make the condition more reliable
+            # stops in 2 seconds with maximum speed
+            if distance <= MAX_SPEED * 2: 
+                return True
+            else:
+                return False
 
     def next_waypoint(self):
         """Get the index of next waypoint ahead of the car, based on
