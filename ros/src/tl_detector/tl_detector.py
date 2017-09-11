@@ -21,7 +21,8 @@ from math import sin,cos
 # Used to zoom test mapping of 3D world coordinates to 
 # image plane.
 # If true, requires keyboard input at each function call
-image_capture_mode = True
+image_capture_mode = False
+img_dir = 'test_img'
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -257,7 +258,7 @@ class TLDetector(object):
             cv2.line(cv_image,(u,v-100),(u,v+100),(0,0,255),5)
             
             # Specify filename and write image to it
-            img_path = 'test_img/%s.png'%datetime.datetime.now()
+            img_path = '%s/%s.png'%(img_dir,datetime.datetime.now())
             cv2.imwrite(img_path,cv_image)
             print('image written to:',img_path)
 
