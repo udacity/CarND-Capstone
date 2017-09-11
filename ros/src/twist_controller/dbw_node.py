@@ -6,7 +6,7 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import PoseStamped
-import styx_msgs.msg
+from styx_msgs.msg import Lane
 import std_msgs.msg
 
 from twist_controller import Controller
@@ -77,7 +77,7 @@ class DBWNode(object):
 		rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cb)
 		rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
 		rospy.Subscriber("/current_pose", PoseStamped, self.current_pose_cb, queue_size=1)
-		rospy.Subscriber("/final_waypoints", styx_msgs.msg.Lane, self.final_waypoints_cb)
+		rospy.Subscriber("/final_waypoints", Lane, self.final_waypoints_cb)
 
 		self.loop()
 
@@ -85,6 +85,7 @@ class DBWNode(object):
 		rate = rospy.Rate(10) # 50Hz
 		while not rospy.is_shutdown():
 
+			'''
 			#if self.dbw_enabled and self.final_waypoints is not None:
 			if True: 
 
@@ -100,13 +101,19 @@ class DBWNode(object):
 				self.init_time = crt_time
 				
 				# Get linear velocity and CTE. Velocity is the difference between current and desired speed in the future. 
-				velocity = self.final_waypoints[1].twist.twist.linear.x - self.current_velocity.linear.x
+				#velocity = self.final_waypoints[1].twist.twist.linear.x - self.current_velocity.linear.x
+				current_velocity = self.current_velocity.linear.x
+				target_velocity = self.twist_command.linear.x
+				velocity = target_belocity - current_velocity
+				
 				cte = dbw_utils.get_cte(self.final_waypoints, self.current_pose_cb)
 
 				# Finally, compute throttle, brake and steer angle to use
 				throttle, brake, steering = self.controller.control(velocity, cte, dt)
 
 				self.publish(throttle, brake, steering)
+			'''
+			self.publish(0.5, 0, 0)
 			rate.sleep()
 
 	def publish(self, throttle, brake, steer):
@@ -120,6 +127,7 @@ class DBWNode(object):
 		rospy.loginfo(throttle)
 		self.throttle_pub.publish(tcmd)
 
+		'''
 		scmd = SteeringCmd()
 		scmd.enable = True
 		scmd.steering_wheel_angle_cmd = steer
@@ -132,6 +140,7 @@ class DBWNode(object):
 		bcmd.pedal_cmd = brake
 		rospy.loginfo(brake)
 		self.brake_pub.publish(bcmd)
+		'''
 
 	def dbw_enable_cb(self, msg): 
 		self.dbw_enabled = bool(msg.data)
@@ -144,9 +153,10 @@ class DBWNode(object):
 		self.current_velocity = msg.twist
 
 	def twist_cb(self, msg): 
-		self.twist_cmd = msg.twist 
+		self.twist_command = msg.twist 
 
-	def final_waypoints_cb(self, msg): 
+	def final_waypoints_cb(self, msg):
+		rospy.loginfo("Get waypoints")
 		self.final_waypoints = msg.waypoints
 
 	def current_pose_cb(self, msg): 
