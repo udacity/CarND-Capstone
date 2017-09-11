@@ -23,6 +23,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+ONE_MPH = 0.44704 # mph to mps
+TARGET_SPEED = 10.0 * ONE_MPH
 
 dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
@@ -104,8 +106,10 @@ class WaypointUpdater(object):
         final_waypoints = []
         wp_i = wp_next
         for i in range(LOOKAHEAD_WPS):
-          final_waypoints.append(self.waypoints[wp_i])
-          wp_i += 1
+            waypoint = self.waypoints[wp_i]
+            waypoint.twist.twist.linear.x = TARGET_SPEED
+            final_waypoints.append(waypoint)
+            wp_i += 1
 
 
         log_out = (self.cnt % 100 == 0)
@@ -115,8 +119,10 @@ class WaypointUpdater(object):
         # orientation = self.waypoints[closest_waypoint].pose.pose.orientation
 
         if log_out:
+            rospy.loginfo('final_waypoints[0] = {}'.format(final_waypoints[0]))
             rospy.loginfo('wp_next1 = {}'.format(wp_next))
             rospy.loginfo('len wp = {}'.format(len(final_waypoints)))
+
             # rospy.loginfo("dist min = [{}] = {}".format(closest_waypoint, dists[closest_waypoint]))
             # rospy.loginfo("yaw = {}".format(yaw_from_orientation(orientation)))
 

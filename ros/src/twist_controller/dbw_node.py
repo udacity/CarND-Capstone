@@ -4,9 +4,12 @@ import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import PoseStamped
 import math
+import tf
 
 from twist_controller import Controller
+from yaw_controller import YawController
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -31,6 +34,11 @@ that we have created in the `__init__` function.
 
 '''
 
+def yaw_from_orientation(o):
+    # https://answers.ros.org/question/69754/quaternion-transformations-in-python/
+    q = (o.x, o.y, o.z, o.w)
+    return tf.transformations.euler_from_quaternion(q)[2]
+
 class DBWNode(object):
     def __init__(self):
         rospy.init_node('dbw_node')
@@ -54,11 +62,13 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `TwistController` object <Arguments you wish to provide>
-        self.controller = Controller()
+        self.controller = Controller(decel_limit, accel_limit, max_steer_angle)
+        self.yaw_controller = YawController(wheel_base, steer_ratio, 0.0, max_lat_accel, max_steer_angle)
 
         self.dbw_enabled = None
         self.current_velocity = None
         self.twist_cmd = None
+        self.pose = None
 
 
         self.prev_clk = rospy.get_rostime().nsecs
@@ -68,24 +78,30 @@ class DBWNode(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.curr_vel_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+
 
         self.loop()
 
     def required_all(self):
-      required = [self.dbw_enabled, self.current_velocity, self.twist_cmd]
+      required = [self.dbw_enabled, self.current_velocity, self.twist_cmd, self.pose]
       return all([p is not None for p in required])
 
     def curr_vel_cb(self, curr_vel_msg):
-      rospy.loginfo("current_velocity = {}".format(curr_vel_msg.twist))
+    #   rospy.loginfo("current_velocity = {}".format(curr_vel_msg.twist))
       self.current_velocity = curr_vel_msg.twist
 
     def twist_cmd_cb(self, twist_cmd_msg):
-      rospy.loginfo("twist_cmd = {}".format(twist_cmd_msg.twist))
+    #   rospy.loginfo("twist_cmd = {}".format(twist_cmd_msg.twist))
       self.twist_cmd = twist_cmd_msg.twist
 
     def dbw_enabled_cb(self, dbw_enabled):
-      rospy.loginfo("dbw_enabled = {}".format(dbw_enabled.data))
+    #   rospy.loginfo("dbw_enabled = {}".format(dbw_enabled.data))
       self.dbw_enabled = dbw_enabled.data
+
+    def pose_cb(self, pose):
+        # rospy.loginfo("pose = {}".format(pose.pose))
+        self.pose = pose.pose
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
@@ -105,16 +121,40 @@ class DBWNode(object):
 
             # Yes, I now it will be always 0.02 but in case someone will change rate ...
             delta_t = (clk.nsecs - self.prev_clk)*1e-9
-            rospy.loginfo('delta_t = {}'.format(delta_t))
+            # rospy.loginfo('delta_t = {}'.format(delta_t))
             self.prev_clk = clk.nsecs
 
-            throttle, brake, steering = self.controller.control() # <proposed linear velocity>,
+            target_linear_velocity = self.twist_cmd.linear.x
+            target_angular_velocity = self.twist_cmd.angular.z
+            current_linear_velocity = self.current_velocity.linear.x
+            current_angular_velocity = self.current_velocity.angular.z
+            current_yaw = yaw_from_orientation(self.pose.orientation)
+            rospy.loginfo("tlv = {}, clv = {}, tav = {}, cav = {}, cyaw = {}".format(
+                target_linear_velocity,
+                current_linear_velocity,
+                target_angular_velocity,
+                current_angular_velocity,
+                current_yaw))
+            # rospy.loginfo('current_yaw = {}'.format(current_yaw))
+
+            throttle, brake, steering = self.controller.control(
+                target_linear_velocity,
+                current_linear_velocity,
+                target_angular_velocity,
+                current_angular_velocity,
+                self.dbw_enabled) # <proposed linear velocity>,
             #                                                     <proposed angular velocity>,
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
+
+            steering1 = self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity)
+
+            rospy.loginfo("throttle, brake, steering = {}, {}, {}".format(throttle, brake, steering))
+            rospy.loginfo("steering1 = {}".format(steering1))
+
             if self.dbw_enabled:
-              self.publish(throttle, brake, steering)
+              self.publish(throttle, brake, steering1)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
