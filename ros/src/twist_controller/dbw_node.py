@@ -6,7 +6,6 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane
 import std_msgs.msg
 
 from twist_controller import Controller
@@ -56,7 +55,6 @@ class DBWNode(object):
 		self.dbw_enabled = True # Coming from /vehicle/dbw_enabled
 		self.twist_command = None # Commig from /twist_cmd
 		self.current_velocity = None # Commig from /current_velocity
-		self.final_waypoints = None # Commig from /final_waypoints
 		self.current_pose = None # Commig from /current_pose
 		self.init_time = rospy.get_rostime()
 
@@ -78,10 +76,7 @@ class DBWNode(object):
 		rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cb)
 		rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
 		rospy.Subscriber("/current_pose", PoseStamped, self.current_pose_cb, queue_size=1)
-		rospy.Subscriber("/final_waypoints", Lane, self.final_waypoints_cb)
-		
 
-		self.loop()
 
 	def loop(self):
 		rate = rospy.Rate(10) # 50Hz
@@ -158,10 +153,6 @@ class DBWNode(object):
 
 	def twist_cb(self, msg): 
 		self.twist_command = msg.twist 
-
-	def final_waypoints_cb(self, msg):
-		rospy.loginfo("Get waypoints")
-		self.final_waypoints = msg.waypoints
 
 	def current_pose_cb(self, msg): 
 		self.current_pose_cb = msg.pose
