@@ -37,9 +37,10 @@ that we have created in the `__init__` function.
 
 class DBWNode(object):
 	def __init__(self):
-		rospy.init_node('dbw_node')
+		rospy.init_node('dbw_node', log_level=rospy.INFO)
 
-		rospy.loginfo("dbw_node initialised")
+		rospy.loginfo("debug - dbw_node initialised")
+		print("dbw_node initialised")
 
 		vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
 		fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
@@ -54,40 +55,40 @@ class DBWNode(object):
 
 		# Init parameters to control the car 
 		#self.dbw_enabled = False  # Coming from /vehicle/dbw_enabled
-		rospy.loginfo("Defining variables...")
+		rospy.loginfo("debug - Defining variables...")
 		self.dbw_enabled = True # Coming from /vehicle/dbw_enabled
 		self.twist_command = None # Commig from /twist_cmd
 		self.current_velocity = None # Commig from /current_velocity
 		self.current_pose = None # Commig from /current_pose
 		self.init_time = rospy.get_rostime()
-		rospy.loginfo("Variables defined")
+		rospy.loginfo("debug - Variables defined")
 
 		# Define PID controller for throttle. brake and steering
-		rospy.loginfo("Defining PID...")
+		rospy.loginfo("debug - Defining PID...")
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
 		self.brake_pid = PID(kp=50.0, ki=0.001, kd=0.15, mn=brake_deadband, mx=1500)
 		self.steering_pid = PID(kp=1.0, ki=0.001, kd=0.5, mn=-max_steer_angle, mx=max_steer_angle)
-		rospy.loginfo("PID defined")
+		rospy.loginfo("debug - PID defined")
 
 		# Define Publishers
-		rospy.loginfo("Defining publishers...")
+		rospy.loginfo("debug - Defining publishers...")
 		self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
 		self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
 		self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
-		rospy.loginfo("Publishers defined")
+		rospy.loginfo("debug - Publishers defined")
 
 		# Instantiate a Controller object
-		rospy.loginfo("Creating controler...")
+		rospy.loginfo("debug - Creating controler...")
 		self.controller = Controller(self.throttle_pid, self.brake_pid, self.steering_pid)
-		rospy.loginfo("Controller created")
+		rospy.loginfo("debug - Controller created")
 
 		# Define Subscribers 
-		rospy.loginfo("Defining subscribers...")
+		rospy.loginfo("debug - Defining subscribers...")
 		rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_cb)
 		rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cb)
 		rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
 		rospy.Subscriber("/current_pose", PoseStamped, self.current_pose_cb, queue_size=1)
-		rospy.loginfo("Subscribers defined")
+		rospy.loginfo("debug - Subscribers defined")
 
 		# Compute and send driving command
 		self.loop()
@@ -95,35 +96,45 @@ class DBWNode(object):
 
 	def loop(self):
 
-		rospy.loginfo("Inside the loop function")
+		rospy.loginfo("debug - Inside the loop function")
 
 		rate = rospy.Rate(10) # 50Hz
 		while not rospy.is_shutdown():
 
-			rospy.loginfo("Inside the while")
+			rospy.loginfo("debug - Inside the while")
 
 			#if self.dbw_enabled and self.twist_command is not None:
-			if self.current_velocity is not None and self.dbw_enabled and self.twist_command is not None:
+			#if self.current_velocity is not None and self.dbw_enabled and self.twist_command is not None:
+			if True: 
 
-				rospy.loginfo("Inside the if")
+				rospy.loginfo("debug - Inside the if")
 
+				rospy.loginfo("debug - get_rostime")
 				crt_time = rospy.get_rostime()
 
 				# Get delta_t in sec. 
+				rospy.loginfo("debug - get dt")
 				dt = crt_time - self.init_time
 				dt = dt.secs + (1e-9 * dt.nsecs)
+				rospy.loginfo("debug - dt = (%s)", dt)
 
 				# Reset time within the loop (so that we only compute the time of one loop iteration)
 				self.init_time = crt_time
 				
 				# Get linear velocity and CTE. Velocity is the difference between current and desired speed in the future. 
 				#velocity = self.final_waypoints[1].twist.twist.linear.x - self.current_velocity.linear.x
+				rospy.loginfo("debug - get velocity")
 				current_velocity = self.current_velocity.linear.x
+				rospy.loginfo("debug - current_velocity = (%s)", current_velocity)
 				target_velocity = self.twist_command.linear.x
+				rospy.loginfo("debug - target_velocity = (%s)", target_velocity)
 				velocity = target_velocity - current_velocity
+				rospy.loginfo("debug - velocity = (%s)", velocity)
 				
 				#cte = dbw_utils.get_cte(self.final_waypoints, self.current_pose)
+				rospy.loginfo("debug - get cte")
 				cte = dbw_utils.get_cte(self.twist_command, self.current_pose)
+				rospy.loginfo("debug - cte = (%s)", cte)
 
 				# Finally, compute throttle, brake and steer angle to use
 				throttle, brake, steering = self.controller.control(velocity, cte, dt)
@@ -131,10 +142,8 @@ class DBWNode(object):
 				rospy.loginfo("Throtlle = (%s) / cte = (%s)", throttle, cte)
 
 				#self.publish(throttle, brake, steering)
-				self.publish(throttle, 0, 0)
+				#self.publish(throttle, 0, 0)
 
-			
-			#self.publish(0.5, 0, 0)
 			rate.sleep()
 
 	def publish(self, throttle, brake, steer):
@@ -148,7 +157,6 @@ class DBWNode(object):
 		rospy.loginfo(throttle)
 		self.throttle_pub.publish(tcmd)
 
-		"""
 		scmd = SteeringCmd()
 		scmd.enable = True
 		scmd.steering_wheel_angle_cmd = steer
@@ -161,7 +169,6 @@ class DBWNode(object):
 		bcmd.pedal_cmd = brake
 		rospy.loginfo(brake)
 		self.brake_pub.publish(bcmd)
-		"""
 
 	def dbw_enable_cb(self, msg): 
 		self.dbw_enabled = bool(msg.data)
@@ -172,6 +179,8 @@ class DBWNode(object):
 
 	def current_velocity_cb(self, msg):
 		self.current_velocity = msg.twist
+		rospy.loginfo("debug - current_velocity_cb = (%s)", msg.twist.linear.x)
+		rospy.loginfo("debug - current_velocity_cb_c = (%s)", self.current_velocity.linear.x)
 
 	def twist_cb(self, msg): 
 		self.twist_command = msg.twist 
