@@ -85,7 +85,10 @@ class DBWNode(object):
 		rate = rospy.Rate(10) # 50Hz
 		while not rospy.is_shutdown():
 
-			if self.dbw_enabled and self.final_waypoints is not None:
+			#if self.dbw_enabled and self.final_waypoints is not None:
+			if True: 
+
+				rospy.loginfo("Into the loop")
 
 				crt_time = rospy.get_rostime()
 
@@ -114,17 +117,20 @@ class DBWNode(object):
 		tcmd.enable = True
 		tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
 		tcmd.pedal_cmd = throttle
+		rospy.loginfo(throttle)
 		self.throttle_pub.publish(tcmd)
 
 		scmd = SteeringCmd()
 		scmd.enable = True
 		scmd.steering_wheel_angle_cmd = steer
+		rospy.loginfo(steer)
 		self.steer_pub.publish(scmd)
 
 		bcmd = BrakeCmd()
 		bcmd.enable = True
 		bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
 		bcmd.pedal_cmd = brake
+		rospy.loginfo(brake)
 		self.brake_pub.publish(bcmd)
 
 	def dbw_enable_cb(self, msg): 
