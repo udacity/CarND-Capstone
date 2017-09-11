@@ -186,6 +186,7 @@ class Bridge(object):
         self.server('steer', data={'steering_angle': str(data.steering_wheel_angle_cmd)})
 
     def callback_throttle(self, data):
+        print("Received throttle command : ",data.pedal_cmd)
         self.server('throttle', data={'throttle': str(data.pedal_cmd)})
 
     def callback_brake(self, data):
