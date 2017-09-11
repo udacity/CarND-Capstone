@@ -14,6 +14,8 @@ import copy
 
 import pdb
 
+image_capture_mode = False
+
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
@@ -181,8 +183,9 @@ class TLDetector(object):
         #x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
-        cv2.imwrite('test_img/test1.png',cv_image)
-        print('image written')
+        if image_capture_mode:
+            cv2.imwrite('test_img/test1.png',cv_image)
+            print('image written')
         #pdb.set_trace()
 
         #Get classification
@@ -236,9 +239,11 @@ class TLDetector(object):
 
         if light:
             state = self.get_light_state(light)
-            print("light output")
-            print(car_position)
-            print(light_wp, state)
+            print('')
+            print('Msg from tl_detector.py')
+            print('light detected')
+            print('car waypoint: ',car_position)
+            print('light_wapoint: ',light_wp, state)
             return light_wp, state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
