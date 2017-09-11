@@ -15,18 +15,18 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
   * [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) if you have Ubuntu 14.04.
 * [Dataspeed DBW](https://bitbucket.org/DataspeedInc/dbw_mkz_ros)
   * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
-* Download the [Udacity Simulator](https://github.com/udacity/self-driving-car-sim/releases/tag/v0.1).
+* Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases/tag/v1.2).
 
 ### Usage
 
 1. Clone the project repository
 ```bash
-git clone https://github.com/udacity/carnd_capstone.git
+git clone https://github.com/udacity/CarND-Capstone.git
 ```
 
 2. Install python dependencies
 ```bash
-cd carnd_capstone
+cd CarND-Capstone
 pip install -r requirements.txt
 ```
 3. Make and run styx
@@ -37,11 +37,20 @@ source devel/setup.sh
 roslaunch launch/styx.launch
 ```
 4. Run the simulator
-```bash
-unzip lights_no_cars.zip
-cd lights_no_cars
-chmod +x ros_test.x86_64
-./ros_test.x86_64
-```
 
+### Real world testing
+1. Download [training bag](https://drive.google.com/file/d/0B2_h37bMVw3iYkdJTlRSUlJIamM/view?usp=sharing) that was recorded on the Udacity self-driving car
+2. Unzip the file
+```bash
+unzip traffic_light_bag_files.zip
+```
+3. Play the bag file
+```bash
+rosbag play -l traffic_light_bag_files/loop_with_traffic_light.bag
+```
+4. Launch your project in site mode
+```bash
+cd CarND-Capstone/ros
+roslaunch launch/site.launch
+```
 

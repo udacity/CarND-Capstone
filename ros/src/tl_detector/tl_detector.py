@@ -10,7 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import math
-from traffic_light_config import config
+import yaml
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -27,14 +27,17 @@ class TLDetector(object):
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
-        /vehicle/traffic_lights helps you acquire an accurate ground truth data source for the traffic light
-        classifier, providing the location and current color state of all traffic lights in the
-        simulator. This state can be used to generate classified images or subbed into your solution to
-        help you work on another single component of the node. This topic won't be available when
-        testing your solution in real life so don't rely on it in the final submission.
+        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
+        helps you acquire an accurate ground truth data source for the traffic light
+        classifier by sending the current color state of all traffic lights in the
+        simulator. When testing on the vehicle, the color state will not be available. You'll need to
+        rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/camera/image_raw', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
@@ -114,11 +117,10 @@ class TLDetector(object):
 
         """
 
-        fx = config.camera_info.focal_length_x
-        fy = config.camera_info.focal_length_y
-
-        image_width = config.camera_info.image_width
-        image_height = config.camera_info.image_height
+        fx = self.config['camera_info']['focal_length_x']
+        fy = self.config['camera_info']['focal_length_y']
+        image_width = self.config['camera_info']['image_width']
+        image_height = self.config['camera_info']['image_height']
 
         # get transform between pose of camera and world frame
         trans = None
@@ -178,7 +180,7 @@ class TLDetector(object):
 
         """
         light = None
-        light_positions = config.light_positions
+        light_positions = self.config['light_positions']
         if(self.pose and self.waypoints):
             closest_waypoint_index = self.get_closest_waypoint(self.pose.pose)
             closest_waypoint_ps = self.waypoints.waypoints[closest_waypoint_index].pose
