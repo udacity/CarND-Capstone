@@ -200,14 +200,10 @@ class TLDetector(object):
 
         """
         light = None
-<<<<<<< HEAD
-        light_positions = self.config['light_positions']
-=======
         #car_position = None
         light_wp = -1
         light_positions = self.config['light_positions']
         rospy.logdebug("light_positions (%s)", light_positions)
->>>>>>> master
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose.position)
             rospy.logdebug("closest_waypoint car (%s)", car_position)
