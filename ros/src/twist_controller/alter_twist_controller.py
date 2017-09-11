@@ -8,14 +8,14 @@ import math
 class Controller(object):
 
     def __init__(self, vehicle_mass, wheel_radius, accel_limit, decel_limit):
-        # self.speed_controller = PID(5, 0.05, 1, -0.5, 0.5)
+        self.speed_controller = PID(5, 0.05, 1, -0.5, 0.5)
 
-        # use a separate speed controller, than from PID
-        self.speed_controller = SpeedController(
-                                vehicle_mass,
-                                wheel_radius,
-                                accel_limit,
-                                decel_limit)
+        ## use a separate speed controller, than from PID
+        # self.speed_controller = SpeedController(
+        #                         vehicle_mass,
+        #                         wheel_radius,
+        #                         accel_limit,
+        #                         decel_limit)
         self.steering_controller = PID(2, 0.003, 1)
 
     def control(self, target_velocity, current_velocity, dbw_enabled, dt):
@@ -34,16 +34,16 @@ class Controller(object):
         
         steering = self.steering_controller.step(angular_velocity_cte, dt)
 
-        throttle, brake = self.speed_controller.step(linear_velocity_cte, dt)
+        # throttle, brake = self.speed_controller.step(linear_velocity_cte, dt)
 
-        # linear_velocity = self.speed_controller.step(linear_velocity_cte, dt)
-        # throttle = 0
-        # brake = 0
+        linear_velocity = self.speed_controller.step(linear_velocity_cte, dt)
+        throttle = 0
+        brake = 0
 
-        # if linear_velocity > 0:
-        #     throttle = linear_velocity
-        # else:
-        #     brake = abs(linear_velocity)
+        if linear_velocity > 0:
+            throttle = linear_velocity
+        else:
+            brake = abs(linear_velocity)
 
         return throttle, brake, steering
 
