@@ -5,14 +5,16 @@ Utils class for dbw_node
 import math
 import numpy as np
 
-def get_cte(final_waypoints, current_pose): 
+def get_cte(twist_waypoints, current_pose): 
 	"""
-	Using final_waypoints, compute the expected (x,y) position of the car and compare it to the actual position. 
+	Using twist_waypoints, compute the expected (x,y) position of the car and compare it to the actual position. 
 	:return - Cross Track Error, deviation from expected trajectory
 	"""
 	# Get 20 waypoints coordinates to fit polynomial.
-	points_x = [i.pose.pose.position.x for i in final_waypoints][0:20]
-	points_y = [i.pose.pose.position.y for i in final_waypoints][0:20]
+	#points_x = [i.pose.pose.position.x for i in twist_waypoints]#[0:20]
+	#points_y = [i.pose.pose.position.y for i in twist_waypoints]#[0:20]
+	points_x = [i.linear.x for i in twist_waypoints][0:20]
+	points_y = [i.linear.y for i in twist_waypoints][0:20]
 	
 	# Lest transform our points into the vehicle coordinate system:
 	points_x_car = []
