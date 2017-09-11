@@ -2,6 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
 
 import math
@@ -26,13 +27,19 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
+
+        self.current_pose = []
+        self.tl_pose = []
+        self.tl_state = 'green'
+
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        rospy.Subscriber('/traffic_waypoint', Int32, traffic_cb)
+        #rospy.Subscriber('/obstacle_waypoint', ??? , obstacle_cb)   #BUG - there is no obstacle_waypoint
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -40,15 +47,88 @@ class WaypointUpdater(object):
 
         rospy.spin()
 
+    def loop(self):
+        rate = rospy.Rate(50) # 50Hz
+        while not rospy.is_shutdown():
+            # todo: create a message of type Lane
+            #lane_msg.header
+            #lane_msg.waypoints
+
+            # todo: get the current pose
+
+            # todo: build a new set of waypoints by using only a given number (LOOKAHEAD_WPS)
+            # todo: of base waypoints from the current pose onwards
+
+            #self.final_waypoints_pub.publish(lane_msg)
+            rate.sleep()
+
     def pose_cb(self, msg):
         # TODO: Implement
+        # self.current_pose = msg
+        # std_msgs / Header        header
+        # uint32        seq
+        # time        stamp
+        # string        frame_id
+
+        # geometry_msgs / Pose    pose
+        # geometry_msgs / Point    position
+        # float64    x
+        # float64    y
+        # float64    z
+
+        # geometry_msgs / Quaternion orientation
+        # float64 x
+        # float64 y
+        # float64 z
+        # float64 w
         pass
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
+
+        # Lane msg description:
+        #
+        #     std_msgs / Header        header
+        #     uint32        seq
+        #     time        stamp
+        #     string        frame_id
+        #
+        #     styx_msgs / Waypoint[]        waypoints
+        #     geometry_msgs / PoseStamped        pose
+        #     std_msgs / Header        header
+        #     uint32        seq
+        #     time        stamp
+        #     string        frame_id
+        #
+        #
+        #     geometry_msgs / Pose        pose
+        #     geometry_msgs / Point        position
+        #     float64        x
+        #     float64        y
+        #     float64        z
+        #     geometry_msgs / Quaternion        orientation
+        #     float64        x
+        #     float64        y
+        #     float64        z
+        #     float64        w
+        #     geometry_msgs / TwistStamped        twist
+        #     std_msgs / Header        header
+        #     uint32        seq
+        #     time        stamp
+        #     string        frame_id
+        #     geometry_msgs / Twist        twist
+        #     geometry_msgs / Vector3        linear
+        #     float64        x
+        #     float64        y
+        #     float64        z
+        #     geometry_msgs / Vector3        angular
+        #     float64        x
+        #     float64        y
+        #     float64        z
         pass
 
     def traffic_cb(self, msg):
+
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
 
