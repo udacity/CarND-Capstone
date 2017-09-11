@@ -11,9 +11,14 @@ import tf
 import cv2
 import yaml
 import copy
+import sys
 
 import pdb
 
+# Set to true to save images from camera to png files
+# Used to zoom test mapping of 3D world coordinates to 
+# image plane.
+# If true, requires keyboard input at each function call
 image_capture_mode = False
 
 STATE_COUNT_THRESHOLD = 3
@@ -183,8 +188,27 @@ class TLDetector(object):
 
         #TODO use light location to zoom in on traffic light in image
         if image_capture_mode:
-            cv2.imwrite('test_img/test1.png',cv_image)
-            print('image written')
+
+            # Require pressing enter to take a pic
+            shutter_msg = 'Press enter to take picture and continue'
+            if sys.version_info > (3,):
+                input(shutter_msg)
+            else:
+                raw_input(shutter_msg)
+
+            ## Process image
+            
+            # Write text
+            y0 = 50
+            dy = 20
+            for i,line in enumerate(str(self.pose).split('\n')):
+                y = y0 + i*dy
+                cv2.putText(cv_image,line,(50,y)
+                    ,cv2.FONT_HERSHEY_PLAIN,1,255)
+            
+            img_path = 'test_img/test1.png'
+            cv2.imwrite(img_path,cv_image)
+            print('image written to:',img_path)
         #pdb.set_trace()
 
         #Get classification
