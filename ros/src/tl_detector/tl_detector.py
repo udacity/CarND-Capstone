@@ -181,6 +181,9 @@ class TLDetector(object):
         #x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
+        cv2.imwrite('test_img/test1.png',cv_image)
+        print('image written')
+        #pdb.set_trace()
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -196,10 +199,16 @@ class TLDetector(object):
         """
         light = None
         light_positions = self.config['light_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
-        if not car_position:
+
+        # If position not known, return
+        if not self.pose:
             return -1, TrafficLight.UNKNOWN
+
+        car_position = self.get_closest_waypoint(self.pose.pose)
+
+        # If cannot find car's closest waypoint, return
+        if not car_position:
+             return -1, TrafficLight.UNKNOWN
 
         #TODO find the closest visible traffic light (if one exists)
         light_pos_wp = []
