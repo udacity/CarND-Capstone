@@ -12,6 +12,7 @@ import cv2
 import math
 import yaml
 from attrdict import AttrDict
+import numpy as np
 
 
 STATE_COUNT_THRESHOLD = 3
@@ -173,10 +174,15 @@ class TLDetector(object):
 
         self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        rospy.loginfo ("image shape (%s)", np.shape(cv_image))
+        cv2.imwrite('tl.png', cv_image)
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
+
+        #_cv2.imwrite('output_images/tlroi', cv_image) //roi image here
+
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -191,7 +197,7 @@ class TLDetector(object):
 
         """
         light = None
-        car_position = None
+        #car_position = None
         light_wp = -1
         light_positions = self.config['light_positions']
         rospy.logdebug("light_positions (%s)", light_positions)
@@ -217,8 +223,8 @@ class TLDetector(object):
                           light_wp, light.pose.pose.position.x, light.pose.pose.position.y, light.pose.pose.position.z)
         rospy.loginfo("Light's nearest Waypoint (%s) Details (%s)",  light_wp, self.waypoints[light_wp].pose.pose.position)
 
-        # Remove below line once traffic light classifier is done
-        return light_wp, TrafficLight.RED
+        # Uncomment below line to test waypoint publishing
+        #return light_wp, TrafficLight.RED
 
         if light:
             state = self.get_light_state(light)
