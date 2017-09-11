@@ -10,6 +10,11 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import copy
+
+import pdb
+
+image_capture_mode = False
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -98,10 +103,27 @@ class TLDetector(object):
 
         Returns:
             int: index of the closest waypoint in self.waypoints
-
         """
         #TODO implement
-        return 0
+
+        # Brute-force method has been applied
+        # Future: something more efficient
+
+        pos = pose.position
+        closest_dist = 10**6
+        closest_ind = 0
+        if self.waypoints is None:
+            #print('no waypoints, returning 0')
+            return None
+        else:
+            for i,waypoint in enumerate(self.waypoints.waypoints):
+                way = waypoint.pose.pose.position
+                dist = ((pos.x - way.x)**2 + (pos.y - way.y)**2)**0.50
+                if dist < closest_dist:
+                    closest_ind = i
+                    closest_dist = dist
+            #print(closest_ind)
+            return closest_ind
 
 
     def project_to_image_plane(self, point_in_world):
@@ -157,9 +179,14 @@ class TLDetector(object):
         self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        # Do we need this since we are given x,y already?
+        #x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
+        if image_capture_mode:
+            cv2.imwrite('test_img/test1.png',cv_image)
+            print('image written')
+        #pdb.set_trace()
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -175,13 +202,48 @@ class TLDetector(object):
         """
         light = None
         light_positions = self.config['light_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+
+        # If position not known, return
+        if not self.pose:
+            return -1, TrafficLight.UNKNOWN
+
+        car_position = self.get_closest_waypoint(self.pose.pose)
+
+        # If cannot find car's closest waypoint, return
+        if not car_position:
+             return -1, TrafficLight.UNKNOWN
 
         #TODO find the closest visible traffic light (if one exists)
+        light_pos_wp = []
+        light_list = []
+        for light_pos in light_positions:
+            light_x = light_pos[0]
+            light_y = light_pos[1]
+            this_light = copy.deepcopy(self.pose)
+            this_light.pose.position.x = light_x
+            this_light.pose.position.y = light_y
+            this_light_pos = self.get_closest_waypoint(this_light.pose)
+
+            this_light = copy.deepcopy(this_light)
+            light_pos_wp.append(this_light_pos)
+            light_list.append(this_light)
+
+        delta_wp = [wp-car_position for wp in light_pos_wp]
+        min_delta_wp = min(d for d in delta_wp if d>=0)
+        light_wp_ind = delta_wp.index(min_delta_wp)
+
+        visible_num_wp = 100
+        if min_delta_wp < visible_num_wp:
+            light = light_list[light_wp_ind]
+            light_wp = light_pos_wp[light_wp_ind]
 
         if light:
             state = self.get_light_state(light)
+            print('')
+            print('Msg from tl_detector.py')
+            print('light detected')
+            print('car waypoint: ',car_position)
+            print('light_wapoint: ',light_wp, state)
             return light_wp, state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
