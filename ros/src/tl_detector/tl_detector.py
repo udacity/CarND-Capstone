@@ -13,13 +13,15 @@ import yaml
 import copy
 import sys
 
+import datetime
 import pdb
+from math import sin,cos
 
 # Set to true to save images from camera to png files
 # Used to zoom test mapping of 3D world coordinates to 
 # image plane.
 # If true, requires keyboard input at each function call
-image_capture_mode = False
+image_capture_mode = True
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -143,10 +145,21 @@ class TLDetector(object):
 
         """
 
+        # Focal length in config of unknown units. Normally given in 
+        # thousands of pixels but the number is order 1
+        # temporarily, just assign it some reasonable number
         fx = self.config['camera_info']['focal_length_x']
         fy = self.config['camera_info']['focal_length_y']
+        fx = 1000
+        fy = 600
+
+        # Overwrite image size until update
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
+
+        image_width = 800
+        image_height = 600
+
 
         # get transform between pose of camera and world frame
         trans = None
@@ -161,13 +174,42 @@ class TLDetector(object):
             rospy.logerr("Failed to find camera to map transform")
 
         #TODO Use tranform and rotation to calculate 2D position of light in image
+        # Convert light position to local car coords
+        quaternion = (self.pose.pose.orientation.x
+                      ,self.pose.pose.orientation.y
+                      ,self.pose.pose.orientation.z
+                      ,self.pose.pose.orientation.w)
 
-        x = 0
-        y = 0
+        (roll,pitch,yaw) = tf.transformations.euler_from_quaternion(quaternion)
+
+        shift_x = point_in_world.x - self.pose.pose.position.x
+        shift_y = point_in_world.y - self.pose.pose.position.y
+
+        car_x = shift_x * cos(-yaw) - shift_y * sin(-yaw)
+        car_y = shift_x * sin(-yaw) + shift_y * cos(-yaw)
+        #cam_height = self.pose.pose.position.z
+        cam_height = 1.5 #experimental values
+        car_z = point_in_world.z - cam_height
+
+
+
+        # Calculate position of point in world in image
+
+        # x is the col number
+        delta_x = car_y * fx / car_x
+        x = int(image_width/2 - delta_x)
+
+
+        # v is the row number
+        delta_y = car_z * fy / car_x
+        y = int(image_height/2 - delta_y)
 
         return (x, y)
 
     def get_light_state(self, light):
+            # Use self.lights to get real position of lights
+            # originally stated this would not be available on real test
+            # but then Slack discussions say it will be
         """Determines the current color of the traffic light
 
         Args:
@@ -183,20 +225,23 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        # Do we need this since we are given x,y already?
-        #x, y = self.project_to_image_plane(light.pose.pose.position)
+        # u,v are the x,y in the image plane
+        u,v  = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
+
+        # Image capture
         if image_capture_mode:
 
-            # Require pressing enter to take a pic
+            # Uncomment below to wait until pressing "enter" to take a pic
+            # allows moving the car to a desirable position for the pic
+            '''
             shutter_msg = 'Press enter to take picture and continue'
             if sys.version_info > (3,):
                 input(shutter_msg)
             else:
                 raw_input(shutter_msg)
-
-            ## Process image
+            '''
             
             # Write text
             y0 = 50
@@ -205,11 +250,17 @@ class TLDetector(object):
                 y = y0 + i*dy
                 cv2.putText(cv_image,line,(50,y)
                     ,cv2.FONT_HERSHEY_PLAIN,1,255)
+
+            # Draw position of light
+        
+            cv2.line(cv_image,(u-100,v),(u+100,v),(0,0,255),5)
+            cv2.line(cv_image,(u,v-100),(u,v+100),(0,0,255),5)
             
-            img_path = 'test_img/test1.png'
+            # Specify filename and write image to it
+            img_path = 'test_img/%s.png'%datetime.datetime.now()
             cv2.imwrite(img_path,cv_image)
             print('image written to:',img_path)
-        #pdb.set_trace()
+
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -263,7 +314,11 @@ class TLDetector(object):
             light_wp = light_pos_wp[light_wp_ind]
 
         if light:
-            state = self.get_light_state(light)
+            #state = self.get_light_state(light)
+            # Use self.lights to get real position of lights
+            # originally stated this would not be available on real test
+            # but then Slack discussions say it will be
+            state = self.get_light_state(self.lights[light_wp_ind])
             print('')
             print('Msg from tl_detector.py')
             print('light detected')
