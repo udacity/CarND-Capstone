@@ -2,6 +2,7 @@
 Utils class for dbw_node 
 """
 
+import rospy
 import math
 import numpy as np
 
@@ -10,13 +11,18 @@ def get_cte(twist_waypoints, current_pose):
 	Using twist_waypoints, compute the expected (x,y) position of the car and compare it to the actual position. 
 	:return - Cross Track Error, deviation from expected trajectory
 	"""
+
+	rospy.loginfo("Utils class")
+	rospy.loginfo(twist_waypoints.linear.x)
+	return 2
+	"""
 	# Get 20 waypoints coordinates to fit polynomial.
 	#points_x = [i.pose.pose.position.x for i in twist_waypoints]#[0:20]
 	#points_y = [i.pose.pose.position.y for i in twist_waypoints]#[0:20]
 	points_x = [i.linear.x for i in twist_waypoints][0:20]
 	points_y = [i.linear.y for i in twist_waypoints][0:20]
 	
-	# Lest transform our points into the vehicle coordinate system:
+	# Transformation into the vehicle system:
 	points_x_car = []
 	points_y_car = []
 	
@@ -45,3 +51,4 @@ def get_cte(twist_waypoints, current_pose):
 		cte += coeff * (2.0 ** p)
 
 	return cte
+	"""

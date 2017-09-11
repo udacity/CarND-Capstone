@@ -39,6 +39,8 @@ class DBWNode(object):
 	def __init__(self):
 		rospy.init_node('dbw_node')
 
+		rospy.loginfo("dbw_node initialised")
+
 		vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
 		fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
 		brake_deadband = rospy.get_param('~brake_deadband', .1)
@@ -52,40 +54,58 @@ class DBWNode(object):
 
 		# Init parameters to control the car 
 		#self.dbw_enabled = False  # Coming from /vehicle/dbw_enabled
+		rospy.loginfo("Defining variables...")
 		self.dbw_enabled = True # Coming from /vehicle/dbw_enabled
 		self.twist_command = None # Commig from /twist_cmd
 		self.current_velocity = None # Commig from /current_velocity
 		self.current_pose = None # Commig from /current_pose
 		self.init_time = rospy.get_rostime()
+		rospy.loginfo("Variables defined")
 
 		# Define PID controller for throttle. brake and steering
+		rospy.loginfo("Defining PID...")
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
 		self.brake_pid = PID(kp=50.0, ki=0.001, kd=0.15, mn=brake_deadband, mx=1500)
 		self.steering_pid = PID(kp=1.0, ki=0.001, kd=0.5, mn=-max_steer_angle, mx=max_steer_angle)
+		rospy.loginfo("PID defined")
 
 		# Define Publishers
+		rospy.loginfo("Defining publishers...")
 		self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
 		self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
 		self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
+		rospy.loginfo("Publishers defined")
 
 		# Instantiate a Controller object
+		rospy.loginfo("Creating controler...")
 		self.controller = Controller(self.throttle_pid, self.brake_pid, self.steering_pid)
+		rospy.loginfo("Controller created")
 
 		# Define Subscribers 
+		rospy.loginfo("Defining subscribers...")
 		rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_cb)
 		rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cb)
 		rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
 		rospy.Subscriber("/current_pose", PoseStamped, self.current_pose_cb, queue_size=1)
+		rospy.loginfo("Subscribers defined")
+
+		# Compute and send driving command
+		self.loop()
 
 
 	def loop(self):
+
+		rospy.loginfo("Inside the loop function")
+
 		rate = rospy.Rate(10) # 50Hz
 		while not rospy.is_shutdown():
+
+			rospy.loginfo("Inside the while")
 
 			#if self.dbw_enabled and self.twist_command is not None:
 			if self.current_velocity is not None and self.dbw_enabled and self.twist_command is not None:
 
-				rospy.loginfo("Into the loop")
+				rospy.loginfo("Inside the if")
 
 				crt_time = rospy.get_rostime()
 
@@ -107,6 +127,8 @@ class DBWNode(object):
 
 				# Finally, compute throttle, brake and steer angle to use
 				throttle, brake, steering = self.controller.control(velocity, cte, dt)
+
+				rospy.loginfo("Throtlle = (%s) / cte = (%s)", throttle, cte)
 
 				#self.publish(throttle, brake, steering)
 				self.publish(throttle, 0, 0)
