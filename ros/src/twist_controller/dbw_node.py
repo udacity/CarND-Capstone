@@ -7,7 +7,7 @@ import numpy as np
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from styx_msgs.msg import Lane
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from twist_controller import Controller
 from yaw_controller import YawController
 
@@ -88,15 +88,18 @@ class DBWNode(object):
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            if (self.waypoints is not None) and (self.pose is not None) and (self.velocity is not None):
+                pass
+                # TODO: Get predicted throttle, brake, and steering using `twist_controller`
+                # You should only publish the control commands if dbw is enabled
+                # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
+                #                                                     <proposed angular velocity>,
+                #                                                     <current linear velocity>,
+                #                                                     <dbw status>,
+                #                                                     <any other argument you need>)
+
+                # if self.dbw_enabled is True:
+                #     self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -118,6 +121,7 @@ class DBWNode(object):
         self.brake_pub.publish(bcmd)
 
     def final_waypoints_cb(self, msg):
+        print(msg)
         self.waypoints = msg.waypoints
 
     def pose_cb(self, msg):
