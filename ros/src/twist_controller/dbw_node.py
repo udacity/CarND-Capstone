@@ -89,17 +89,20 @@ class DBWNode(object):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
             if (self.waypoints is not None) and (self.pose is not None) and (self.velocity is not None):
-                pass
-                # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-                # You should only publish the control commands if dbw is enabled
-                # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-                #                                                     <proposed angular velocity>,
-                #                                                     <current linear velocity>,
-                #                                                     <dbw status>,
-                #                                                     <any other argument you need>)
-
-                # if self.dbw_enabled is True:
-                #     self.publish(throttle, brake, steer)
+                if self.dbw_enabled is True:
+                    throttle, brake, steering = self.controller.control(
+                        pose=self.pose,
+                        waypoints=self.waypoints,
+                        velocity=self.velocity,
+                        target_velocity=15
+                    )
+                    yaw_steering = self.yaw_controller.get_steering(
+                        self.twist.linear.x, self.twist.angular.z, velocity
+                    )
+                    # TODO: Incorporate steering with yaw_steering
+                    self.publish(throttle, brake, steering)
+                else:
+                    self.controller.reset()
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -135,9 +138,6 @@ class DBWNode(object):
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = bool(msg.data)
-
-    def cte(self):
-        pass
 
 if __name__ == '__main__':
     DBWNode()
