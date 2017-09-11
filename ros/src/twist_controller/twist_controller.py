@@ -33,7 +33,7 @@ class Controller(object):
 			self.brake.reset()
 		else:
 			throttle = 0
-			self.throttle_pid.reset()
+			self.throttle.reset()
 			brake = self.brake.step(-vel_error, dt)
 			brake = self.brake_low_pass.filt(brake)
 
