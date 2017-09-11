@@ -26,14 +26,20 @@ class Controller(object):
 
     def control(self, target_linear_velocity, target_angular_velocity, 
                 current_linear_velocity, current_angular_velocity,
-                dbw_status, sample_time, **kwargs):
+                dbw_enabled, sample_time, **kwargs):
 
-        throttle_error = target_linear_velocity - current_linear_velocity
-        steering_error = target_angular_velocity - current_angular_velocity
-        
-        throttle = self.throttle_pid.step(throttle_error, sample_time)
+        throttle = target_linear_velocity
         brake = 0.
-        steering = self.steering_pid.step(steering_error, sample_time)
+        steering = target_angular_velocity
+
+        # Only update pid controller if Drive By Wire is enabled
+        if dbw_enabled:
+            throttle_error = target_linear_velocity - current_linear_velocity
+            steering_error = target_angular_velocity - current_angular_velocity
+
+            throttle = self.throttle_pid.step(throttle_error, sample_time)
+            brake = 0.
+            steering = self.steering_pid.step(steering_error, sample_time)
         
         # Return throttle, brake, steering
         return throttle, brake, steering
