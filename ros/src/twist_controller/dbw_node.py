@@ -52,7 +52,8 @@ class DBWNode(object):
 		max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
 		# Init parameters to control the car 
-		self.dbw_enabled = False  # Coming from /vehicle/dbw_enabled
+		#self.dbw_enabled = False  # Coming from /vehicle/dbw_enabled
+		self.dbw_enabled = True # Coming from /vehicle/dbw_enabled
 		self.twist_command = None # Commig from /twist_cmd
 		self.current_velocity = None # Commig from /current_velocity
 		self.final_waypoints = None # Commig from /final_waypoints
@@ -78,6 +79,7 @@ class DBWNode(object):
 		rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
 		rospy.Subscriber("/current_pose", PoseStamped, self.current_pose_cb, queue_size=1)
 		rospy.Subscriber("/final_waypoints", Lane, self.final_waypoints_cb)
+		
 
 		self.loop()
 
@@ -85,9 +87,8 @@ class DBWNode(object):
 		rate = rospy.Rate(10) # 50Hz
 		while not rospy.is_shutdown():
 
-			'''
-			#if self.dbw_enabled and self.final_waypoints is not None:
-			if True: 
+			#if self.dbw_enabled and self.twist_command is not None:
+			if self.current_velocity is not None and self.dbw_enabled and self.twist_command is not None:
 
 				rospy.loginfo("Into the loop")
 
@@ -104,16 +105,19 @@ class DBWNode(object):
 				#velocity = self.final_waypoints[1].twist.twist.linear.x - self.current_velocity.linear.x
 				current_velocity = self.current_velocity.linear.x
 				target_velocity = self.twist_command.linear.x
-				velocity = target_belocity - current_velocity
+				velocity = target_velocity - current_velocity
 				
-				cte = dbw_utils.get_cte(self.final_waypoints, self.current_pose_cb)
+				#cte = dbw_utils.get_cte(self.final_waypoints, self.current_pose)
+				cte = dbw_utils.get_cte(self.twist_command, self.current_pose)
 
 				# Finally, compute throttle, brake and steer angle to use
 				throttle, brake, steering = self.controller.control(velocity, cte, dt)
 
-				self.publish(throttle, brake, steering)
-			'''
-			self.publish(0.5, 0, 0)
+				#self.publish(throttle, brake, steering)
+				self.publish(throttle, 0, 0)
+
+			
+			#self.publish(0.5, 0, 0)
 			rate.sleep()
 
 	def publish(self, throttle, brake, steer):
@@ -127,7 +131,7 @@ class DBWNode(object):
 		rospy.loginfo(throttle)
 		self.throttle_pub.publish(tcmd)
 
-		'''
+		"""
 		scmd = SteeringCmd()
 		scmd.enable = True
 		scmd.steering_wheel_angle_cmd = steer
@@ -140,7 +144,7 @@ class DBWNode(object):
 		bcmd.pedal_cmd = brake
 		rospy.loginfo(brake)
 		self.brake_pub.publish(bcmd)
-		'''
+		"""
 
 	def dbw_enable_cb(self, msg): 
 		self.dbw_enabled = bool(msg.data)
