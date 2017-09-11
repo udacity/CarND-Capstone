@@ -84,7 +84,7 @@ class DBWNode(object):
 
 		# Define Subscribers 
 		rospy.loginfo("debug - Defining subscribers...")
-		rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_cb)
+		rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_cb, queue_size=1)
 		rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cb)
 		rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
 		rospy.Subscriber("/current_pose", PoseStamped, self.current_pose_cb, queue_size=1)
@@ -104,8 +104,8 @@ class DBWNode(object):
 			rospy.loginfo("debug - Inside the while")
 
 			#if self.dbw_enabled and self.twist_command is not None:
-			#if self.current_velocity is not None and self.dbw_enabled and self.twist_command is not None:
-			if True: 
+			#if self.current_velocity is not None and self.dbw_enabled and self.twist_command is not None:			
+			if self.current_velocity is not None: 
 
 				rospy.loginfo("debug - Inside the if")
 
@@ -113,7 +113,7 @@ class DBWNode(object):
 				crt_time = rospy.get_rostime()
 
 				# Get delta_t in sec. 
-				rospy.loginfo("debug - get dt")
+				rospy.loginfo("debug - Computing dt...")
 				dt = crt_time - self.init_time
 				dt = dt.secs + (1e-9 * dt.nsecs)
 				rospy.loginfo("debug - dt = (%s)", dt)
@@ -123,16 +123,20 @@ class DBWNode(object):
 				
 				# Get linear velocity and CTE. Velocity is the difference between current and desired speed in the future. 
 				#velocity = self.final_waypoints[1].twist.twist.linear.x - self.current_velocity.linear.x
-				rospy.loginfo("debug - get velocity")
+				rospy.loginfo("debug - Computing current_velocity...")
 				current_velocity = self.current_velocity.linear.x
 				rospy.loginfo("debug - current_velocity = (%s)", current_velocity)
+
+				rospy.loginfo("debug - Computing target_velocity...")
 				target_velocity = self.twist_command.linear.x
 				rospy.loginfo("debug - target_velocity = (%s)", target_velocity)
+
+				rospy.loginfo("debug - Computing velocity_difference...")
 				velocity = target_velocity - current_velocity
-				rospy.loginfo("debug - velocity = (%s)", velocity)
+				rospy.loginfo("debug - velocity_difference = (%s)", velocity)
 				
 				#cte = dbw_utils.get_cte(self.final_waypoints, self.current_pose)
-				rospy.loginfo("debug - get cte")
+				rospy.loginfo("debug - Computing cte...")
 				cte = dbw_utils.get_cte(self.twist_command, self.current_pose)
 				rospy.loginfo("debug - cte = (%s)", cte)
 
@@ -179,8 +183,7 @@ class DBWNode(object):
 
 	def current_velocity_cb(self, msg):
 		self.current_velocity = msg.twist
-		rospy.loginfo("debug - current_velocity_cb = (%s)", msg.twist.linear.x)
-		rospy.loginfo("debug - current_velocity_cb_c = (%s)", self.current_velocity.linear.x)
+		rospy.loginfo("debug - current_velocity_cb = (%s)", self.current_velocity.linear.x)
 
 	def twist_cb(self, msg): 
 		self.twist_command = msg.twist 
@@ -189,4 +192,7 @@ class DBWNode(object):
 		self.current_pose_cb = msg.pose
 
 if __name__ == '__main__':
-	DBWNode()
+	try: 
+		DBWNode()
+	except rospy.ROSInterruptException:
+		rospy.logerr('Could not start dbw_node.')
