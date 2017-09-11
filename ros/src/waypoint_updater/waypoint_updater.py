@@ -58,9 +58,9 @@ class WaypointUpdater(object):
 
     def publish(self):
         if self.base_waypoints is not None:
-            closest_waypoint_idx = get_closest_waypoint()
-            m = min(len(base_waypoints), closest_waypoint_idx + LOOKAHEAD_WPS)
-            final_waypoints = base_waypoints[closest_waypoint_idx:m]
+            closest_waypoint_idx = self.get_closest_waypoint()
+            m = min(len(self.base_waypoints), closest_waypoint_idx + LOOKAHEAD_WPS)
+            final_waypoints = self.base_waypoints[closest_waypoint_idx:m]
             published_lane = Lane()
             published_lane.header.stamp = rospy.Time.now()
             published_lane.waypoints = final_waypoints
@@ -79,14 +79,14 @@ class WaypointUpdater(object):
             gap = dx*dx + dy*dy
 
             if gap < closest_gap:
-                roll, pitch, yaw = tf.transformations.euler_from_quarternion(
+                roll, pitch, yaw = tf.transformations.euler_from_quaternion(
                     [pose.orientation.x, pose.orientation.y,
                      pose.orientation.z, pose.orientation.w])
                 heading_x = pose.position.x
                 heading_y = pose.position.y
                 gap_x = waypoint.pose.pose.position.x - heading_x
                 gap_y = waypoint.pose.pose.position.y - heading_y
-                x = gap_x * cos(0 - yaw) - gap_y * sin(0 - yaw)
+                x = gap_x * math.cos(0 - yaw) - gap_y * math.sin(0 - yaw)
                 if x > 0:
                     closest_gap = gap
                     closest_gap_idx = idx
