@@ -54,6 +54,7 @@ class Bridge(object):
 
         self.publishers = {e.name: rospy.Publisher(e.topic, TYPE[e.type], queue_size=1)
                            for e in conf.publishers}
+        self.prev_odometry_data = {}
 
     def register_server(self, server):
         self.server = server
@@ -128,6 +129,10 @@ class Bridge(object):
             "world")
 
     def publish_odometry(self, data):
+        if data == self.prev_odometry_data:
+            # pass
+            return
+        self.prev_odometry_data = data
         pose = self.create_pose(data['x'], data['y'], data['z'], data['yaw'])
 
         position = (data['x'], data['y'], data['z'])
@@ -183,10 +188,19 @@ class Bridge(object):
         self.publishers['image'].publish(image_message)
 
     def callback_steering(self, data):
-        self.server('steer', data={'steering_angle': str(data.steering_wheel_angle_cmd)})
+        try: 
+            self.server('steer', data={'steering_angle': str(data.steering_wheel_angle_cmd)})
+        except AttributeError:
+            rospy.logwarn("bridge.py callback_steering: no server registered")
 
     def callback_throttle(self, data):
-        self.server('throttle', data={'throttle': str(data.pedal_cmd)})
+        try:
+            self.server('throttle', data={'throttle': str(data.pedal_cmd)})
+        except AttributeError:
+            rospy.logwarn("bridge.py callback_throttle: no server registered")
 
     def callback_brake(self, data):
-        self.server('brake', data={'brake': str(data.pedal_cmd)})
+        try:
+            self.server('brake', data={'brake': str(data.pedal_cmd)})
+        except AttributeError:
+            rospy.logwarn("bridge.py callback_brake: no server registered")

@@ -1,0 +1,118 @@
+Changelog
+
+Initial changes (2017-09-11 by C S)
+
+Note: this includes a number of performance fixes from
+Alexey Makurin, which are in:
+https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c88ec1c39d50
+
+I'll just mention "Makurin" below
+
+styx/bridge.py:
+Check if pose info is identical to previous pose; don't send
+if it is.  (On my machine, two thirds of the pose locations
+sent by the simulator are duplicates of the previous pose, so
+filtering out the dups reduces the number of poses sent by
+a factor of 3!)
+Modify steering, throttle and and brake callbacks so they don't
+send error messages if server has not yet been set.
+
+styx/launch/server.launch:
+Comment out launch of Udacity simulator, since I launch that 
+separately by hand (others may want to comment it back in,
+which is fine with me).
+
+styx/server.py:
+Makurin performance fix: convert msgs from a list (which would
+build up a backlog of commands on each topic) to a map
+(which retains only the latest command on each topic).
+
+twist_controller/dbw_node.py
+Lots of new stuff here.  In some cases, I just added logging
+statements.  
+- In init, set up things that will be used later.  Of note:
+I use the provided YawController, but note that I pass it
+a steer_ratio 8 times larger than given by Udacity, and I
+set max_lat_accel 4 times larger.  The higher max_lat_accel
+is needed only if you want to drive at full throttle; if
+you use the default value, you won't be able to take sharp
+curves at high speed.
+- In twist_cmd_cb, take the twist_cmd messages
+(published by waypoint_follower), and extract the yaw information
+(this is waypoint_follower's suggestion of how the yaw should
+change in order to follow the waypoints).  Pass the yaw info
+through a low-pass filter.  
+- In dbw_enabled_cb, set a flag to correspond to the dbw_enabled
+status.  It is unclear how this status should be initialized,
+since the simulator sends dbw_enabled signals only AFTER the 
+simulator is connected, and WHEN the "Manual" button in the 
+simulator is toggled.  When the simulator is first connected,
+no dbw_enabled signal is sent to let us know whether the
+simulator is already in Manual mode or not.
+- In current_velocity_cb, calculate some diagnostic info that
+is no longer used (so this could probably all be deleted).
+- In loop, change the rate from 50 Hz to 10 Hz, per Makurin.
+Calculate the steering angle using the provided YawController.
+At the moment I use a hard-wired throttle value rather than
+controlling the speed correctly; on my machine, a throttle
+of 0.5 gives a speed of approx 40 mph.
+
+twist_controller/launch/dbw_sim.launch:
+Set output mode to "screen".  This will allow loginfo messages
+to be printed to the screen at runtime (Udacity docs claim that
+loginfo messages will also be printed to the screen in "log"
+mode, but this is not correct).
+
+waypoint_follower/src/pure_pursuit.cpp:
+Performance changes suggested by Makurin
+
+waypoint_loader/launch/waypoint_loader.launch
+Set output to "screen" mode.  Also, add a parameter,
+"yaw_is_in_degrees".  I noticed that the provided data file
+(wp_yaw_const.txt) gives yaw values in degrees (you can tell
+because they are in the range 0 to 360).  But all the code
+given by Udacity assumes that the yaws in this file are given
+in radians.  This parameter will be used to notify
+waypoint_loader.py that it needs to do a degrees-to-radians
+conversion.  Long after making this fix, I did some tests and
+discovered that it doesn't really matter if the yaws are messed
+up, in terms of how the system performs.  
+
+waypoint_loader/waypoint_loader.py:
+Check and use yaw_is_in_degrees parameter.  Remove unneeded call 
+to rospy.spin.  Make performance fix suggested by Makurin:
+change publication rate from 40 Hz to 1 Hz.  In fact, the waypoints
+only need to be published once; no need to keep sending the same
+10,000 waypoints, over and over, to waypoint_updater.  I understand
+from the Slack channel that this single change (40 Hz to 1 Hz) made a 
+huge difference in performance.
+
+waypoint_updater/launch/waypoint_updater.launch:
+Set output mode to "screen".
+
+waypoint_updater/waypoint_updater.py:
+Lots of changes.  The main task of waypoint_updater is to
+store a copy of the waypoints, and then every time the pose
+changes, publish a list of the 200 waypoints that are just
+ahead of the car.  So in principle, every time we get a new
+pose, we need to search through all 10,000 waypoints to find
+the nearest one.  But in practice, the car doesn't move too
+far between pose messages, so we really only need to search
+waypoints near the waypoint found in the previous call.
+
+How to run:
+After cloning the repository, cd to the repository directory.
+Then
+cd src
+rm CMakefile.txt (if there is one)
+catkin_init_workspace
+cd ..
+catkin_make
+If no errors, then
+source devel/setup.bash
+roslaunch launch/styx.launch
+Start your simulator, and MAKE SURE to uncheck the "Manual" box!
+The first thing you will probably want to do in the code is
+comment out the annoying "steering angle" messages; these
+are in twist_controller/dbw_node.py.
+

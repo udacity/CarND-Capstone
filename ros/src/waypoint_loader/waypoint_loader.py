@@ -23,14 +23,19 @@ class WaypointLoader(object):
         self.pub = rospy.Publisher('/base_waypoints', Lane, queue_size=1)
 
         self.velocity = rospy.get_param('~velocity')
+        self.yaw_is_in_degrees = rospy.get_param('~yaw_is_in_degrees', False)
+        rospy.loginfo("yaw_is_in_degrees: %s", self.yaw_is_in_degrees)
         self.new_waypoint_loader(rospy.get_param('~path'))
-        rospy.spin()
+        # spin() not needed; new_waypoint_loader calls publish, which goes
+        # into a loop
+        # rospy.spin()
 
     def new_waypoint_loader(self, path):
         if os.path.isfile(path):
             waypoints = self.load_waypoints(path)
-            self.publish(waypoints)
             rospy.loginfo('Waypoint Loded')
+            self.publish(waypoints)
+            rospy.loginfo('Waypoint Loader finished')
         else:
             rospy.logerr('%s is not a file', path)
 
@@ -49,7 +54,13 @@ class WaypointLoader(object):
                 p.pose.pose.position.x = float(wp['x'])
                 p.pose.pose.position.y = float(wp['y'])
                 p.pose.pose.position.z = float(wp['z'])
-                q = self.quaternion_from_yaw(float(wp['yaw']))
+                # The yaw values in the file appear to be
+                # in degrees, but quaternion_from_yaw expects
+                # radians, so this probably won't work right
+                angle = float(wp['yaw'])
+                if self.yaw_is_in_degrees:
+                    angle = math.radians(angle)
+                q = self.quaternion_from_yaw(angle)
                 p.pose.pose.orientation = Quaternion(*q)
                 p.twist.twist.linear.x = float(self.velocity*0.27778)
 
@@ -72,7 +83,8 @@ class WaypointLoader(object):
         return waypoints
 
     def publish(self, waypoints):
-        rate = rospy.Rate(40)
+        # rate = rospy.Rate(40)
+        rate = rospy.Rate(1)
         while not rospy.is_shutdown():
             lane = Lane()
             lane.header.frame_id = '/world'
