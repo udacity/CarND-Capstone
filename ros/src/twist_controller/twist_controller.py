@@ -1,6 +1,7 @@
 import numpy as np
 import rospy
 import tf
+import math
 from pid import PID
 
 GAS_DENSITY = 2.858
@@ -54,7 +55,7 @@ class Controller(object):
         self.steer_pid.reset()
 
     def get_cte(self, pose, waypoints):
-        x_coords, y_coords = []
+        x_coords, y_coords = [], []
         # Current car pose and head (used as waypoint 0)
         roll, pitch, yaw = tf.transformations.euler_from_quaternion(
             [pose.orientation.x, pose.orientation.y,
