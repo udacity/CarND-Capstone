@@ -53,6 +53,7 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        min_speed = 0.0
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -62,8 +63,9 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `TwistController` object <Arguments you wish to provide>
-        self.controller = Controller(decel_limit, accel_limit, max_steer_angle)
-        self.yaw_controller = YawController(wheel_base, steer_ratio, 0.0, max_lat_accel, max_steer_angle)
+        self.controller = Controller(decel_limit, accel_limit, max_steer_angle,
+            max_lat_accel, min_speed, wheel_base, steer_ratio)
+        # self.yaw_controller = YawController(wheel_base, steer_ratio, 0.0, max_lat_accel, max_steer_angle)
 
         self.dbw_enabled = None
         self.current_velocity = None
@@ -103,6 +105,9 @@ class DBWNode(object):
         # rospy.loginfo("pose = {}".format(pose.pose))
         self.pose = pose.pose
 
+        rospy.loginfo("pose x, y, yaw = {}, {}, {}".format(self.pose.position.x,
+            self.pose.position.y, yaw_from_orientation(self.pose.orientation)))
+
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
@@ -129,6 +134,7 @@ class DBWNode(object):
             current_linear_velocity = self.current_velocity.linear.x
             current_angular_velocity = self.current_velocity.angular.z
             current_yaw = yaw_from_orientation(self.pose.orientation)
+
             rospy.loginfo("tlv = {}, clv = {}, tav = {}, cav = {}, cyaw = {}".format(
                 target_linear_velocity,
                 current_linear_velocity,
@@ -148,13 +154,13 @@ class DBWNode(object):
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
 
-            steering1 = self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity)
+            # steering1 = self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity)
 
             rospy.loginfo("throttle, brake, steering = {}, {}, {}".format(throttle, brake, steering))
-            rospy.loginfo("steering1 = {}".format(steering1))
+            # rospy.loginfo("steering1 = {}".format(steering1))
 
             if self.dbw_enabled:
-              self.publish(throttle, brake, steering1)
+              self.publish(throttle, brake, steering)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):

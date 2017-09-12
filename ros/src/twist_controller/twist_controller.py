@@ -2,6 +2,7 @@ import pid
 import lowpass
 import rospy
 import tf
+from yaw_controller import YawController
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -9,7 +10,8 @@ ONE_MPH = 0.44704
 
 
 class Controller(object):
-    def __init__(self, decel_limit, accel_limit, max_steer_angle):
+    def __init__(self, decel_limit, accel_limit, max_steer_angle,
+          max_lat_accel, min_speed, wheel_base, steer_ratio):
         self.decel_limit = decel_limit
         self.accel_limit = accel_limit
         self.max_steer_angle = max_steer_angle
@@ -19,6 +21,8 @@ class Controller(object):
 
         self.steer_pid = pid.PID(kp = 3.0, ki = 0.0, kd = 0.0, mn=-max_steer_angle, mx=max_steer_angle)
         self.steer_filter = lowpass.LowPassFilter(tau = 0.0, ts = 1.0)
+
+        self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
         self.clk = rospy.get_time()
 
@@ -31,6 +35,7 @@ class Controller(object):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
 
+        # Get sample time
         t = rospy.get_time()
         dt = t - self.clk
         self.clk = t
@@ -63,10 +68,13 @@ class Controller(object):
         throttle = self.throttle_filter.filt(throttle)
         rospy.loginfo('ctrl: throttle_filtered = {}'.format(throttle))
 
+        # Yaw Controller
+        steering = self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity)
+        rospy.loginfo('ctrl: steer_yaw_control = {}'.format(steering))
 
 
         # steer = 0.0
 
 
         # Return throttle, brake, steer
-        return throttle, 0., steer
+        return throttle, 0., steering
