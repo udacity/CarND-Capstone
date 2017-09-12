@@ -43,6 +43,6 @@ class Controller(object):
 	if linear_vel > 0:
 	    throttle = linear_vel
 	else:
-	    brake = abs(linear_vel)
+	    brake = abs(linear_vel)*20000
 
         return throttle, brake, steer

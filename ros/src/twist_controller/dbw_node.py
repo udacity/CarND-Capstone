@@ -78,7 +78,7 @@ class DBWNode(object):
         self.curr_vel = msg
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(10) # 50Hz Original
 
         while not rospy.is_shutdown():
 	    self.delta_t = rospy.rostime.get_time() - self.prev_timestamp
