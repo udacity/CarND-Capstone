@@ -48,6 +48,8 @@ class TLDetector(object):
         self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        self.dbg_img = rospy.Publisher('/dbg_img', Image, queue_size=1)
+        # To view: rosrun image_view image_view image:=/dbg_img
 
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
@@ -212,9 +214,9 @@ class TLDetector(object):
         image_height = self.config['camera_info']['image_height']
 
         w_img = int(0.15*image_width)
-        h_img = int(image_height/8)
+        h_img = int(image_height/3)
 
-        top    = int(image_height*0.05)
+        top    = int(image_height*0.15)
         bottom = int(y + h_img)
         left   = int(x - w_img)
         right  = int(x + w_img)
@@ -225,11 +227,27 @@ class TLDetector(object):
             #self.deb_img.publish(self.bridge.cv2_to_imgmsg(crop, "bgr8"))
             tlState = self.light_classifier.get_classification(cv_image)
 
+            # Publish the cropped image on a ROS topic for debug purposes
+            if DEBUG:
+                self.publish_roi_image(roi)
+
+            #tlState = self.light_classifier.get_classification(roi)
+
         #Get classification
         if DEBUG:
             rospy.loginfo('tlState: {}'.format(tlState))
 
         return tlState
+
+    def publish_roi_image(self, img):
+
+        try:
+            # Transform from OpenCV image to ROS Image
+            self.dbg_img.publish(self.bridge.cv2_to_imgmsg(img, "bgr8"))
+
+        except CvBridgeError as e:
+
+            print(e)
 
 
     def process_traffic_lights(self):

@@ -25,7 +25,7 @@ class TLClassifier(object):
                        TrafficLight.GREEN,
                        TrafficLight.UNKNOWN]
 
-        self.num_pixels =  900
+        self.num_pixels =  950
         
         # Define red pixels in hsv color space
         self.lower_red_1 = np.array([0,  70, 50],   dtype = "uint8")
