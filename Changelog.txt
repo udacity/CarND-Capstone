@@ -116,3 +116,6 @@ The first thing you will probably want to do in the code is
 comment out the annoying "steering angle" messages; these
 are in twist_controller/dbw_node.py.
 
+More changes (2017-09-11 by C S)
+
+Modified dbw_node.py to remove the "steering angle" message.

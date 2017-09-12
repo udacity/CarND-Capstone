@@ -159,7 +159,9 @@ class DBWNode(object):
             twist = self.twist_yaw_filter.get()
             # twist *= 8.
             steer = self.yaw_controller.get_steering(self.velocity_filter.get(), twist, self.velocity_filter.get())
-            rospy.loginfo("steering angle %f", steer)
+            # rospy.loginfo("steering angle %f", steer)
+            # throttle is 0.5, which runs the car at about 40 mph.
+            # throttle of 0.98 will run the car at about 90 mph.
             self.publish(0.5,0.,steer)
             rate.sleep()
 
