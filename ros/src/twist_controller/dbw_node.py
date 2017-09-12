@@ -70,8 +70,9 @@ class DBWNode(object):
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            if not rospy.is_shutdown():
+                self.publish(1.0, 0.0, 0.0)
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
