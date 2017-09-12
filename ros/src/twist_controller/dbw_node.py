@@ -10,6 +10,7 @@ from styx_msgs.msg import Lane
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from twist_controller import Controller
 from yaw_controller import YawController
+import lowpass import LowPassFilter
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -75,6 +76,7 @@ class DBWNode(object):
             max_lat_accel=max_lat_accel,
             max_steer_angle=max_steer_angle
         )
+        self.steer_filter = LowPassFilter(tau=0.00, ts=1.00)
 
         # Subscribe to all the topics you need to
         rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb)
@@ -93,8 +95,9 @@ class DBWNode(object):
                     yaw_steering = self.yaw_controller.get_steering(
                         self.twist.linear.x, self.twist.angular.z, self.velocity.linear.x
                     )
+                    steer = self.steer_filter.filt(yaw_steering)
                     # print(yaw_steering)
-                    self.publish(0.5, 0, yaw_steering)
+                    self.publish(0.5, 0, steer)
 
                     # throttle, brake, steering = self.controller.control(
                     #     pose=self.pose,
