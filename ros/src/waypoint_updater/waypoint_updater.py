@@ -9,6 +9,7 @@ import tf
 import math
 import std_msgs.msg
 from std_msgs.msg import Bool, Float64, Int32
+from scipy.interpolate import interp1d
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -54,8 +55,16 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if (self.cur_pose is not None) and (self.base_waypoints is not None):
                 next_wp_i = self.next_waypoint(self.cur_pose.pose, self.base_waypoints.waypoints)
-                if self.is_signal_red == True:
-                     self.set_waypoint_velocity(self.base_waypoints.waypoints,next_wp_i,0)
+                if self.is_signal_red == True and \
+                   self.red_wp_i and self.red_wp_i > next_wp_i:
+                     sp_wp = [next_wp_i, self.red_wp_i]
+                     next_wp_velocity = self.get_waypoint_velocity(self.base_waypoints.waypoints[next_wp_i])
+        	     sp_v = [next_wp_velocity, 0.0]
+                     f_sp = interp1d(sp_wp, sp_v)
+	             for  p in range(next_wp_i, self.red_wp_i):
+                    	self.set_waypoint_velocity(self.base_waypoints.waypoints,
+                                                    next_wp_i,f_sp(p))
+		     self.set_waypoint_velocity(self.base_waypoints.waypoints,self.red_wp_i,0)
                      if DEBUG:
                          rospy.loginfo("set velocity to 0")
                 elif self.move_car == True:
@@ -81,11 +90,11 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         if DEBUG:
             rospy.logerr('Got TL')
-            rospy.loginfo("message = %s", msg)
+            rospy.logerr("message = %s", msg)
 
         if msg.data  >=  0: 
             self.is_signal_red = True
-
+	    self.red_wp_i = msg.data
             if DEBUG:
                 rospy.loginfo("data %s signal  = true", msg.data)
         else:
@@ -94,6 +103,7 @@ class WaypointUpdater(object):
             else:
                 if (self.prev_pose.pose.position.x == self.cur_pose.pose.position.x) and (self.prev_pose.pose.position.y == self.cur_pose.pose.position.y):
                     self.is_signal_red = False
+                    self.red_wp_i = None
                     self.move_car = True
                     self.prev_pose = self.cur_pose
                     if DEBUG:

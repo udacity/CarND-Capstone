@@ -110,6 +110,7 @@ class TLDetector(object):
 
         """
         #TODO implement
+
         closest_len = 100000
         closest_wp_i = 0
 
@@ -222,7 +223,7 @@ class TLDetector(object):
         if self.check_inside_image(left,top) and self.check_inside_image(bottom, right):
             roi = cv_image[top:bottom, left:right]
             #self.deb_img.publish(self.bridge.cv2_to_imgmsg(crop, "bgr8"))
-            tlState = self.light_classifier.get_classification(roi)
+            tlState = self.light_classifier.get_classification(cv_image)
 
         #Get classification
         if DEBUG:

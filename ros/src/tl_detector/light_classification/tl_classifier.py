@@ -25,7 +25,7 @@ class TLClassifier(object):
                        TrafficLight.GREEN,
                        TrafficLight.UNKNOWN]
 
-        self.num_pixels = 25
+        self.num_pixels =  900
         
         # Define red pixels in hsv color space
         self.lower_red_1 = np.array([0,  70, 50],   dtype = "uint8")
@@ -74,8 +74,28 @@ class TLClassifier(object):
 	return TrafficLight.UNKNOWN
  
 
-
     def get_classification(self, image):
+        color = TrafficLight.UNKNOWN
+        # Convert to hsv space
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        # Mask red pixels
+        mask_1 = cv2.inRange(hsv, self.lower_red_1, self.upper_red_1)
+        mask_2 = cv2.inRange(hsv, self.lower_red_2, self.upper_red_2)
+
+        mask   = cv2.bitwise_or(mask_1, mask_2)
+
+        # Count red pixels
+        num_red_pixels = cv2.countNonZero(mask)
+
+        #rospy.loginfo('num_red_pixels: {}'.format(num_red_pixels))
+
+        if num_red_pixels > self.num_pixels:
+            color = TrafficLight.RED
+
+        return color
+	
+
+    def get_classification_v1(self, image):
         """Determines the color of the traffic light in the image
 
         Args:
