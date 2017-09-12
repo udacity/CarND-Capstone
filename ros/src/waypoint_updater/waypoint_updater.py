@@ -34,18 +34,56 @@ class WaypointUpdater(object):
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        self.currpose = None
+        self.curr_waypoints = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
+        self.currpose = msg.pose.position
         pass
 
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
+    def waypoints_cb(self, lanemsg):
+        if self.currpose == None:
+           return
+
+        self.curr_waypoints = lanemsg.waypoints
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        mindist = 1000000
+        start_idx = 0
+
+        for i in range(len(self.curr_waypoints)):
+            a = self.curr_waypoints[i].pose.pose.position
+            b = self.currpose
+            dist = math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+            if dist < mindist and (a.x > b.x):
+                start_idx = i
+                mindist = dist
+            if start_idx == (len(self.curr_waypoints) - 1):
+                start_idx = 0
+        
+        idx = 0
+        reset = 0
+        # Collecting the waypoints ahead of the car. 
+        # Wrap around when we reach the end.
+        for i in range(LOOKAHEAD_WPS):
+            if (i + start_idx > (len(self.curr_waypoints) - 1)) and (not reset):
+                start_idx = 0
+                idx = 0
+                reset = 1
+            elif reset:
+                idx += 1
+            else:
+                idx = i + start_idx
+            lane.waypoints.append(self.curr_waypoints[idx])
+         
+        #rospy.logerr('Start idx: %s', start_idx)
+        #rospy.logerr('Length lane: %s', len(lane.waypoints))
+        self.final_waypoints_pub.publish(lane)
         pass
 
     def traffic_cb(self, msg):
