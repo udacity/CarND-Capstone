@@ -9,8 +9,8 @@ https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c8
 I'll just mention "Makurin" below
 
 styx/bridge.py:
-Check if pose info is identical to previous pose; don't send
-if it is.  (On my machine, two thirds of the pose locations
+Check if pose info is identical to previous pose; if it is,
+don't send it.  (On my machine, two thirds of the pose locations
 sent by the simulator are duplicates of the previous pose, so
 filtering out the dups reduces the number of poses sent by
 a factor of 3!)
@@ -23,12 +23,12 @@ separately by hand (others may want to comment it back in,
 which is fine with me).
 
 styx/server.py:
-Makurin performance fix: convert msgs from a list (which would
+Makurin performance fix: convert "msgs" from a list (which would
 build up a backlog of commands on each topic) to a map
 (which retains only the latest command on each topic).
 
 twist_controller/dbw_node.py
-Lots of new stuff here.  In some cases, I just added logging
+Lots of new stuff here.  In some place, I just added logging
 statements.  
 - In init, set up things that will be used later.  Of note:
 I use the provided YawController, but note that I pass it
@@ -37,18 +37,18 @@ set max_lat_accel 4 times larger.  The higher max_lat_accel
 is needed only if you want to drive at full throttle; if
 you use the default value, you won't be able to take sharp
 curves at high speed.
-- In twist_cmd_cb, take the twist_cmd messages
-(published by waypoint_follower), and extract the yaw information
-(this is waypoint_follower's suggestion of how the yaw should
+- In twist_cmd_cb, take the twist_cmd messages (published by 
+waypoint_follower), and extract the yaw information (this 
+is waypoint_follower's suggestion of how the yaw should
 change in order to follow the waypoints).  Pass the yaw info
 through a low-pass filter.  
 - In dbw_enabled_cb, set a flag to correspond to the dbw_enabled
 status.  It is unclear how this status should be initialized,
 since the simulator sends dbw_enabled signals only AFTER the 
-simulator is connected, and WHEN the "Manual" button in the 
+simulator is connected, and ONLY WHEN the "Manual" button in the 
 simulator is toggled.  When the simulator is first connected,
-no dbw_enabled signal is sent to let us know whether the
-simulator is already in Manual mode or not.
+NO dbw_enabled signal is sent to let us know whether the
+simulator is currently in Manual mode or not.
 - In current_velocity_cb, calculate some diagnostic info that
 is no longer used (so this could probably all be deleted).
 - In loop, change the rate from 50 Hz to 10 Hz, per Makurin.
@@ -68,15 +68,15 @@ Performance changes suggested by Makurin
 
 waypoint_loader/launch/waypoint_loader.launch
 Set output to "screen" mode.  Also, add a parameter,
-"yaw_is_in_degrees".  I noticed that the provided data file
+"yaw_is_in_degrees".  I notice that the provided data file
 (wp_yaw_const.txt) gives yaw values in degrees (you can tell
 because they are in the range 0 to 360).  But all the code
-given by Udacity assumes that the yaws in this file are given
-in radians.  This parameter will be used to notify
+provided by Udacity assumes that the yaws in this file are 
+given in radians.  This parameter will be used to notify
 waypoint_loader.py that it needs to do a degrees-to-radians
 conversion.  Long after making this fix, I did some tests and
-discovered that it doesn't really matter if the yaws are messed
-up, in terms of how the system performs.  
+discovered that it doesn't really matter if the yaws are incorrect,
+in terms of how the system performs.  
 
 waypoint_loader/waypoint_loader.py:
 Check and use yaw_is_in_degrees parameter.  Remove unneeded call 
@@ -101,20 +101,36 @@ far between pose messages, so we really only need to search
 waypoints near the waypoint found in the previous call.
 
 How to run:
-After cloning the repository, cd to the repository directory.
-Then
+
+(These instructions are similar to, but slightly different from,
+the generic Udacity instructions in CarND-Capstone/README.md)
+
+Clone the repository 
+cd to the repository directory (CarND-Capstone)
+
+If you haven't already done so, pip install -r requirements.txt
+
 cd ros/src
+
 rm CMakefile.txt (if there is one)
 catkin_init_workspace
+
+(the previous two steps are not in the generic Udacity README.md
+file, but you need them for my version of the repository)
+
 cd ..
+
+(you should now be in the CarND-Capstone/ros directory)
+
 catkin_make
+
 If no errors, then
+
 source devel/setup.bash
 roslaunch launch/styx.launch
-Start your simulator, and MAKE SURE to uncheck the "Manual" box!
-The first thing you will probably want to do in the code is
-comment out the annoying "steering angle" messages; these
-are in twist_controller/dbw_node.py.
+
+Start your simulator (it will NOT start automatically), 
+and MAKE SURE to uncheck the "Manual" box!
 
 More changes (2017-09-11 by C S)
 
