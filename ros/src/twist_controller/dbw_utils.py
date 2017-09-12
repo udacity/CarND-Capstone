@@ -12,10 +12,6 @@ def get_cte(twist_waypoints, current_pose):
 	:return - Cross Track Error, deviation from expected trajectory
 	"""
 
-	rospy.loginfo("Utils class")
-	rospy.loginfo(twist_waypoints.linear.x)
-	return 2
-	"""
 	# Get 20 waypoints coordinates to fit polynomial.
 	#points_x = [i.pose.pose.position.x for i in twist_waypoints]#[0:20]
 	#points_y = [i.pose.pose.position.y for i in twist_waypoints]#[0:20]
@@ -51,4 +47,3 @@ def get_cte(twist_waypoints, current_pose):
 		cte += coeff * (2.0 ** p)
 
 	return cte
-	"""
