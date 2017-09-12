@@ -124,7 +124,6 @@ class DBWNode(object):
         self.brake_pub.publish(bcmd)
 
     def final_waypoints_cb(self, msg):
-        print(msg)
         self.waypoints = msg.waypoints
 
     def pose_cb(self, msg):
