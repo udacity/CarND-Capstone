@@ -103,7 +103,7 @@ waypoints near the waypoint found in the previous call.
 How to run:
 After cloning the repository, cd to the repository directory.
 Then
-cd src
+cd ros/src
 rm CMakefile.txt (if there is one)
 catkin_init_workspace
 cd ..
