@@ -65,17 +65,16 @@ class WaypointUpdater(object):
         pass
 
     def publish(self):
-        if self.base_waypoints is not None:
+        if self.base_waypoints is not None and self.pose is not None:
             closest_waypoint_idx = self.get_closest_waypoint()
 
             final_waypoints = []
             if closest_waypoint_idx + LOOKAHEAD_WPS <= len(self.base_waypoints):
                 m = closest_waypoint_idx + LOOKAHEAD_WPS
                 final_waypoints = self.base_waypoints[closest_waypoint_idx:m]
-            else
+            else:
                 m = closest_waypoint_idx + LOOKAHEAD_WPS - len(self.base_waypoints)
-                final_waypoints = self.base_waypoints[closest_waypoint_idx:] +
-                    self.base_waypoints[:m]
+                final_waypoints = self.base_waypoints[closest_waypoint_idx:] + self.base_waypoints[:m]
 
             published_lane = Lane()
             published_lane.header.stamp = rospy.Time.now()
