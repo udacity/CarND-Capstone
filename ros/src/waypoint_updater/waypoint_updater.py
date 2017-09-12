@@ -37,8 +37,8 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -96,6 +96,8 @@ class WaypointUpdater(object):
             rospy.loginfo('None waypoints')
             return
 
+
+
         # dists = [self.dist_pose_waypoint(pose, wp) for wp in self.waypoints]
         # closest_waypoint = dists.index(min(dists))
 
@@ -112,16 +114,21 @@ class WaypointUpdater(object):
             wp_i += 1
 
 
-        log_out = (self.cnt % 100 == 0)
+        log_out = (self.cnt % 20 == 0)
 
         # rospy.loginfo("one point = {}".format(self.waypoints[0]))
 
         # orientation = self.waypoints[closest_waypoint].pose.pose.orientation
 
         if log_out:
-            rospy.loginfo('final_waypoints[0] = {}'.format(final_waypoints[0]))
-            rospy.loginfo('wp_next1 = {}'.format(wp_next))
-            rospy.loginfo('len wp = {}'.format(len(final_waypoints)))
+            # rospy.loginfo('final_waypoints[0] = {}'.format(final_waypoints[0]))
+            rospy.loginfo("pose x, y, yaw = {}, {}, {}".format(pose.pose.position.x,
+                pose.pose.position.y, yaw_from_orientation(pose.pose.orientation)))
+            rospy.loginfo("next wp x, y   = {}, {}".format(final_waypoints[0].pose.pose.position.x,
+                final_waypoints[0].pose.pose.position.y))
+            rospy.loginfo("next wp linear.x   = {}".format(final_waypoints[0].twist.twist.linear.x))
+            rospy.loginfo('wp_next = {}'.format(wp_next))
+            # rospy.loginfo('len wp = {}'.format(len(final_waypoints)))
 
             # rospy.loginfo("dist min = [{}] = {}".format(closest_waypoint, dists[closest_waypoint]))
             # rospy.loginfo("yaw = {}".format(yaw_from_orientation(orientation)))
