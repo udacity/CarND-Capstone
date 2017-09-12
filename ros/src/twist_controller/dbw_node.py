@@ -107,7 +107,7 @@ class DBWNode(object):
         self.waypoints = waypoints
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(10) # 50Hz
         while not rospy.is_shutdown():
 
             if (self.my_twist_command is not None):
@@ -125,6 +125,7 @@ class DBWNode(object):
                 throttle, brake, steering = self.controller.control( cte, dt, set_linear_velocity, set_angular_velocity, set_curr_velocity)
                 # throttle, brake, steering = self.controller.control(self.my_current_velocity)
                 if (self.my_dbwEnabled==True):
+                    #steering = set_angular_velocity * 180/math.pi
                     print cte, throttle, brake, steering
                     self.publish(throttle, brake, steering)
 
@@ -178,9 +179,9 @@ class DBWNode(object):
             angle3 = math.atan2(self.pose.pose.position.y-interp_y[0],self.pose.pose.position.x-interp_x[0])
             # simplified case for now (ignore sharp turns, and discard middle point):
             if (angle3<angle2):
-                cte = cte
-            else:
                 cte = -cte
+            else:
+                cte = cte
 
         return cte
 

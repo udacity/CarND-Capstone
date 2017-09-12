@@ -32,6 +32,11 @@
 
 constexpr int LOOP_RATE = 30; //processing frequency
 
+//
+// JLM: Changed queue sizes from 10 to 1 to drop out-of-date messages. Based on
+// https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c88ec1c39d50
+//
+const int PUB_SUB_QUEUE_SIZE = 1;
 
 int main(int argc, char **argv)
 {
@@ -51,16 +56,16 @@ int main(int argc, char **argv)
 
   ROS_INFO("set publisher...");
   // publish topic
-  ros::Publisher cmd_velocity_publisher = nh.advertise<geometry_msgs::TwistStamped>("twist_cmd", 10);
+  ros::Publisher cmd_velocity_publisher = nh.advertise<geometry_msgs::TwistStamped>("twist_cmd", PUB_SUB_QUEUE_SIZE);
 
   ROS_INFO("set subscriber...");
   // subscribe topic
   ros::Subscriber waypoint_subscriber =
-      nh.subscribe("final_waypoints", 10, &waypoint_follower::PurePursuit::callbackFromWayPoints, &pp);
+      nh.subscribe("final_waypoints", PUB_SUB_QUEUE_SIZE, &waypoint_follower::PurePursuit::callbackFromWayPoints, &pp);
   ros::Subscriber ndt_subscriber =
-      nh.subscribe("current_pose", 10, &waypoint_follower::PurePursuit::callbackFromCurrentPose, &pp);
+      nh.subscribe("current_pose", PUB_SUB_QUEUE_SIZE, &waypoint_follower::PurePursuit::callbackFromCurrentPose, &pp);
   ros::Subscriber est_twist_subscriber =
-      nh.subscribe("current_velocity", 10, &waypoint_follower::PurePursuit::callbackFromCurrentVelocity, &pp);
+      nh.subscribe("current_velocity", PUB_SUB_QUEUE_SIZE, &waypoint_follower::PurePursuit::callbackFromCurrentVelocity, &pp);
 
   ROS_INFO("pure pursuit start");
   ros::Rate loop_rate(LOOP_RATE);
