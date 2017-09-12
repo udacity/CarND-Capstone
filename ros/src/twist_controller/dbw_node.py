@@ -86,7 +86,7 @@ class DBWNode(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(10) # 10Hz
         while not rospy.is_shutdown():
             if (self.waypoints is not None) and (self.pose is not None) and (self.velocity is not None):
                 if self.dbw_enabled is True:
