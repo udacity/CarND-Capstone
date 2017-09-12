@@ -10,7 +10,7 @@ from styx_msgs.msg import Lane
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from twist_controller import Controller
 from yaw_controller import YawController
-import lowpass import LowPassFilter
+from lowpass import LowPassFilter
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
