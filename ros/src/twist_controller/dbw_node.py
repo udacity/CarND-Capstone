@@ -126,7 +126,7 @@ class DBWNode(object):
                 # throttle, brake, steering = self.controller.control(self.my_current_velocity)
                 if (self.my_dbwEnabled==True):
                     #steering = set_angular_velocity * 180/math.pi
-                    print cte, throttle, brake, steering
+                    print 'cte', cte, 'throttle', throttle, 'brake', brake, 'steer', steering, 'currspeed', set_curr_velocity, 'setspeed', set_linear_velocity
                     self.publish(throttle, brake, steering)
 
             rate.sleep()
