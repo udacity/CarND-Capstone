@@ -107,7 +107,7 @@ def get_examples(filename):
 def split_train_val(filename):
     examples = get_examples(filename)
     examples = np.random.permutation(examples)
-    val_split = len(examples) / 10
+    val_split = len(examples) / 5
     train_examples = sorted(examples[val_split:], key=lambda ex : ex.filename)
     val_examples = sorted(examples[:val_split], key=lambda ex : ex.filename)
     print('val', len(val_examples), 'train', len(train_examples))
@@ -140,8 +140,8 @@ def setup_imagedata(train, val, image_dir):
 
 if __name__ == '__main__':
     # generate_training_images()
-    # record_classes('/home/eljefec/data/traffic_light_bag_files')
+    # record_classes('/home/eljefec/data/traffic_light_sim')
     # sort_classes('classes.txt')
     # get_examples('sorted_classes.txt')
     (train, val) = split_train_val('sorted_classes.txt')
-    setup_imagedata(train, val, '/home/eljefec/data/traffic_light_bag_files/bgr')
+    setup_imagedata(train, val, '/home/eljefec/data/traffic_light_sim/rgb')

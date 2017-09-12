@@ -17,7 +17,8 @@ class TLClassifier(object):
         with self.graph.as_default():
             # Load model from https://github.com/mynameisguy/TrafficLightChallenge-DeepLearning-Nexar
             self.model = SqueezeNet(3, (IMAGE_HEIGHT, IMAGE_WIDTH, 3))
-            self.model.load_weights("light_classification/checkpoints/squeezeNet_224_224.00-0.09-0.99.hdf5")
+            # self.model.load_weights("light_classification/trained_model/squeezeNet_real.hdf5")
+            self.model.load_weights("light_classification/trained_model/squeezeNet_sim.hdf5")
             self.ready = True
 
         self.pred_dict = {0: TrafficLight.UNKNOWN,
