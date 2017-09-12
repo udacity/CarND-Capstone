@@ -6,7 +6,7 @@ import rospy
 import math
 import numpy as np
 
-def get_cte(twist_waypoints, current_pose): 
+def get_steerig_cte(twist_waypoints, current_pose): 
 	"""
 	Using twist_waypoints, compute the expected (x,y) position of the car and compare it to the actual position. 
 	:return - Cross Track Error, deviation from expected trajectory
@@ -47,3 +47,7 @@ def get_cte(twist_waypoints, current_pose):
 		cte += coeff * (2.0 ** p)
 
 	return cte
+
+
+def get_throttle_cte(twist_waypoints, current_pose): 
+	return 2

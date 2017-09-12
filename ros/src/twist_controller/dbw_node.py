@@ -137,13 +137,13 @@ class DBWNode(object):
 				
 				#cte = dbw_utils.get_cte(self.final_waypoints, self.current_pose)
 				rospy.loginfo("debug - Computing cte...")
-				cte = dbw_utils.get_cte(self.twist_command, self.current_pose)
+				#cte = dbw_utils.get_throttle_cte(self.twist_command, self.current_pose)
 				rospy.loginfo("debug - cte = (%s)", cte)
 
 				# Finally, compute throttle, brake and steer angle to use
-				throttle, brake, steering = self.controller.control(velocity, cte, dt)
+				throttle, brake, steering = self.controller.control(velocity, dt)
 
-				rospy.loginfo("Throtlle = (%s) / cte = (%s)", throttle, cte)
+				rospy.loginfo("Throtlle = (%s) / cte = (%s)", throttle, velocity)
 
 				#self.publish(throttle, brake, steering)
 				#self.publish(throttle, 0, 0)

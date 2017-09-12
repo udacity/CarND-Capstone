@@ -23,10 +23,11 @@ class Controller(object):
 		self.brake_low_pass = LowPassFilter(.5)
 		self.steering_low_pass = LowPassFilter(.5)
 
-	def control(self, vel_error, cte, dt):
+	def control(self, cte, dt):
 		brake = 0
-		throttle = self.throtlle_low_pass.filt(self.throttle.step(vel_error, dt))
-		steering = self.steering.step(cte, dt)
+		throttle = self.throtlle_low_pass.filt(self.throttle.step(cte, dt))
+
+		steering = 0
 
 		if throttle > 0:
 			self.brake_low_pass.filt(0)
@@ -34,7 +35,7 @@ class Controller(object):
 		else:
 			throttle = 0
 			self.throttle.reset()
-			brake = self.brake.step(-vel_error, dt)
+			brake = self.brake.step(-cte, dt)
 			brake = self.brake_low_pass.filt(brake)
 
 		return throttle, brake, steering
