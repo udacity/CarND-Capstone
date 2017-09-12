@@ -171,4 +171,4 @@ if __name__ == '__main__':
                                 nb_val_samples=VALIDATE_IMAGES_PER_EPOCH,
                                 callbacks=[modelCheckpoints, tensorBoard, earlyStopping])
 
-    model.save_weights("tl_finetune.model")
+    model.save_weights("tl_sim.model")
