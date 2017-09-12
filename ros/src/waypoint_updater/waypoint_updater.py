@@ -39,11 +39,19 @@ class WaypointUpdater(object):
         self.base_waypoints = None
         self.pose = None
 
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        """
+        So final_waypoint publish rate is independent of simulator rate
+        """
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            self.publish()
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg.pose
-        self.publish()
 
     def waypoints_cb(self, msg):
         self.base_waypoints = msg.waypoints
