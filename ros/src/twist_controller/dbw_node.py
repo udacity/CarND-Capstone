@@ -6,7 +6,7 @@ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
 
-from twist_controller import Controller
+from twist_controller import TwistController
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -48,6 +48,8 @@ class DBWNode(object):
 
         self.rate = 50
         self.dbw_enabled = True
+        self.latest_current_velocity = None
+        self.latest_proposed_velocity = None
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
@@ -55,14 +57,25 @@ class DBWNode(object):
 
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
+        self.controller = TwistController()
 
         # TODO: Subscribe to all the topics you need to
+
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=1)
 
         self.loop()
 
+    def current_velocity_cb(self, msg):
+        self.latest_current_velocity = msg.twist.linear.x
+
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
+
+    def twist_cmd_cb(self, msg):
+        self.latest_proposed_velocity = msg.twist.linear.x
+
 
     def loop(self):
         rate = rospy.Rate(self.rate)  # 50Hz
@@ -78,6 +91,18 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
 
             if self.dbw_enabled:
+
+                if (self.latest_current_velocity is not None)\
+                        & (self.latest_proposed_velocity is not None):
+
+                    print("velocity current:{}".format(self.latest_current_velocity))
+                    print("velocity proposed:{}".format(self.latest_proposed_velocity))
+
+                    throttle, brake, steering = self.controller.control(self.latest_proposed_velocity,
+                                                                        self.latest_current_velocity)
+
+
+
                 self.publish(throttle, brake, steer)
 
             rate.sleep()

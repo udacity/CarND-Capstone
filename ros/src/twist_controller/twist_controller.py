@@ -1,14 +1,30 @@
+from datetime import datetime
+
+from pid import PID
+
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
 
-class Controller(object):
+class TwistController(object):
     def __init__(self, *args, **kwargs):
         # TODO: Implement
-        pass
 
-    def control(self, *args, **kwargs):
-        # TODO: Change the arg, kwarg list to suit your needs
+        self.pid = PID(1., 0, 0, 0, 1)
+        self.prev_timestamp = datetime.now()
+
+
+    def control(self, proposed_linear_velocity, current_linear_velocity):
+
+        timestamp = datetime.now()
+
+        elapsed_time = timestamp - self.prev_timestamp
+
+        error = proposed_linear_velocity - current_linear_velocity
+
+        throttle = self.pid.step(error, elapsed_time.total_seconds())
+        print("throttle:{}".format(throttle))
+
         # Return throttle, brake, steer
-        return 1., 0., 0.
+        return throttle, 0., 0.

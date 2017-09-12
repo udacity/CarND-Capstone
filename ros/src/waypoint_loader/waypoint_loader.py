@@ -69,6 +69,7 @@ class WaypointLoader(object):
             if vel < 1.:
                 vel = 0.
             wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+            wp.twist.twist.linear.x = 3.123 # debugging pid controller
         return waypoints
 
     def publish(self, waypoints):
