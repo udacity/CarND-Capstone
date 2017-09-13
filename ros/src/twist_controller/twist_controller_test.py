@@ -14,5 +14,11 @@ class TestControllerMethods(unittest.TestCase):
         self.assertIsNotNone(brake, 'Brake not returned')
         self.assertIsNotNone(steer, 'Steering not returned')
         
+    def test_controller_default_values(self):
+        c = Controller()
+        self.assertEqual(c.gainp, 1, 'GainP not initialized')
+        self.assertEqual(c.gaini, 0, 'Gaini not initialized')
+        self.assertEqual(c.gaind, 0, 'Gaind not initialized')
+        
 if __name__=='__main__':
     unittest.main()

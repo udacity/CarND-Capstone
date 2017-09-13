@@ -55,12 +55,11 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # SUBSCRIBERS:
-        rospy.Subscriber('/actual/steering_cmd', SteeringCmd, self.actual_steer_cb)
-        rospy.Subscriber('/actual/throttle_cmd', ThrottleCmd, self.actual_throttle_cb)
-        rospy.Subscriber('/actual/brake_cmd', BrakeCmd, self.actual_brake_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
         
+        
         self.controller = Controller()
+        
         self.loop()
 
     def loop(self):

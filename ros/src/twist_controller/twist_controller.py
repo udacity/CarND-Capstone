@@ -5,6 +5,11 @@ ONE_MPH = 0.44704
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
+        self.gainp=1
+        self.gaini=0
+        self.gaind=0
+        
+        
         pass
 
     def control(self, *args, **kwargs):
