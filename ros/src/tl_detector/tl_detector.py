@@ -179,7 +179,7 @@ class TLDetector(object):
                     waypoint_ps.pose.position.x,
                     waypoint_ps.pose.position.y)
                 if (distance < min_distance):
-                    distance = min_distance
+                    min_distance = distance
                     closest_index = wp_index
 
         return closest_index
@@ -260,7 +260,7 @@ class TLDetector(object):
             closest_waypoint_index = self.get_closest_waypoint(self.pose.pose)
             closest_waypoint_ps = self.waypoints.waypoints[closest_waypoint_index].pose
 
-            #TODO find the closest visible traffic light (if one exists)
+            # find the closest visible traffic light (if one exists)
             closest_light_position = None
             closest_light_distance = float("inf")
             for light_position in self.config['light_positions']:
@@ -271,7 +271,6 @@ class TLDetector(object):
                     light_pose.position.x = light_position[0]
                     light_pose.position.y = light_position[1]
                     closest_waypoint_to_light = self.get_closest_waypoint(light_pose)
-
 
         state = self.get_light_state()
         print(closest_waypoint_to_light, state)
