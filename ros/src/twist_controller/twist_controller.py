@@ -1,4 +1,7 @@
+# Credits: Wonderful SDC Slack Community
+
 from pid import PID
+from yaw_controller import YawController
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -10,6 +13,13 @@ class Controller(object):
         self.speed_controller = PID(0.5, 0.02, 0.2)
 	self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
 	
+	self.wheel_base = args[0]
+	self.steer_ratio = args[1]
+	self.min_speed = 0
+	self.max_lat_accel = args[2]
+	self.max_steer_angle = args[3]
+	
+	self.yaw_controller = YawController(self.wheel_base, self.steer_ratio, self.min_speed, self.max_lat_accel, self.max_steer_angle)
 
     def control(self, *args, **kwargs):
         # TODO: Change the arg, kwarg list to suit your needs
@@ -34,8 +44,12 @@ class Controller(object):
 	    self.steering_controller.reset()
 
 	linear_vel = self.speed_controller.step(linear_vel_cte, dt)
-	steer = self.steering_controller.step(angular_vel_cte, dt)
 	
+	corrective_steer = self.steering_controller.step(angular_vel_cte, dt)
+	predictive_steer = self.yaw_controller.get_steering(target_linear_vel, target_angular_vel, current_linear_vel)
+	# predictive steering helps at higher speeds.
+
+	steer = corrective_steer + predictive_steer
 	
 	throttle = 0
 	brake = 0
