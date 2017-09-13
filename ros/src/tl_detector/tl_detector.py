@@ -172,10 +172,10 @@ class TLDetector(object):
         min_distance = float("inf")
         closest_index = 0
         if (self.waypoints):
-            for wp_index in range(len(self.waypoints))
+            for wp_index in range(len(self.waypoints.waypoints)):
                 waypoint_ps = self.waypoints.waypoints[wp_index].pose
-                distance = euclidean_distance(pose.pose.position.x,
-                    pose.pose.postion.y,
+                distance = euclidean_distance(pose.position.x,
+                    pose.position.y,
                     waypoint_ps.pose.position.x,
                     waypoint_ps.pose.position.y)
                 if (distance < min_distance):
@@ -221,7 +221,7 @@ class TLDetector(object):
 
         return (x, y)
 
-    def get_light_state(self, light):
+    def get_light_state(self):
         """Determines the current color of the traffic light
 
         Args:
@@ -238,11 +238,6 @@ class TLDetector(object):
         self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        if light:
-            x, y = self.project_to_image_plane(light.pose.pose.position)
-
-        #TODO use light location to zoom in on traffic light in image
-
         #Get classification
         pred, preds = self.light_classifier.get_classification(cv_image)
         return pred
@@ -256,8 +251,11 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
+        light_index = None
         light_positions = self.config['light_positions']
+        light_pose = Pose()
+        closest_waypoint_to_light = None
+
         if(self.pose and self.waypoints):
             closest_waypoint_index = self.get_closest_waypoint(self.pose.pose)
             closest_waypoint_ps = self.waypoints.waypoints[closest_waypoint_index].pose
@@ -269,10 +267,15 @@ class TLDetector(object):
                 distance = euclidean_distance(light_position[0], light_position[1], closest_waypoint_ps.pose.position.x, closest_waypoint_ps.pose.position.y)
                 if distance < closest_light_distance:
                     closest_light_distance = distance
-                    closest_light_position = light_position
+                    light_index = closest_waypoint_index
+                    light_pose.position.x = light_position[0]
+                    light_pose.position.y = light_position[1]
+                    closest_waypoint_to_light = self.get_closest_waypoint(light_pose)
 
-        state = self.get_light_state(light)
-        return -1, state
+
+        state = self.get_light_state()
+        print(closest_waypoint_to_light, state)
+        return closest_waypoint_to_light, state
 
 if __name__ == '__main__':
     try:
