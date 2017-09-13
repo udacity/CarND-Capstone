@@ -30,20 +30,22 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        
+        #The /base_waypoints topic repeatedly publishes a list of all waypoints for the track, 
+        # so this list includes waypoints both before and after the vehicle. 
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-		# Implement later
-		rospy.Subscriber('/obstacle_waypoint', PoseStamped, self.obstacle_cb)
-		rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+	rospy.Subscriber('/obstacle_waypoint', PoseStamped, self.obstacle_cb)
+	rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below 
-		self.current_pose = None
+	self.current_pose = None
         self.current_waypoints = None #base_points which we get
-		self.traffic_waypoint = None
-		rospy.loginfo('Starting of waypoint updater')
+	self.traffic_waypoint = None
+	rospy.loginfo('Starting of waypoint updater')
 
         self.loop()
 
@@ -53,7 +55,7 @@ class WaypointUpdater(object):
             if ((self.current_pose is not None) and (self.current_waypoints is not None)):
                 next_waypoint_index = self.get_next_waypoint()
                 rospy.loginfo ("started")
-				lane = Lane()
+		lane = Lane()
                 lane.header.frame_id = '/world'
                 lane.header.stamp = rospy.Time(0)
                 lane.waypoints = self.current_waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
@@ -102,7 +104,7 @@ class WaypointUpdater(object):
         car_y = self.current_pose.pose.position.y
 
         direction = math.atan2((map_y-car_y), (map_x-car_x)) #get direction
-		rospy.loginfo ("direction:", direction)
+	rospy.loginfo ("direction:", direction)
         yaw = self.get_current_yaw()
         angle = abs(yaw - direction);
 
@@ -127,15 +129,25 @@ class WaypointUpdater(object):
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message.
         pass
-
+    # gets the linear velocity (x-direction) for a single waypoint.    
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
+    # Sets the linear velocity (x-direction) for a single waypoint in a list of waypoints. 
+    # Here, waypoints is a list of waypoints, waypoint is a waypoint index in the list, and velocity is the desired velocity.    
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
     def get_euclidean_distance(self, pos1, pos2):
         return math.sqrt((pos1.x-pos2.x)**2 + (pos1.y-pos2.y)**2  + (pos1.z-pos2.z)**2)
+
+    '''
+    Computes the distance between two waypoints in a 
+    list along the piecewise linear arc connecting all waypoints between the two. 
+    Here, waypoints is a list of waypoints, and wp1 and wp2 are the indices of two waypoints in the list. 
+    This method may be helpful in determining the velocities for a sequence of waypoints leading up to a red light 
+    (the velocities should gradually decrease to zero starting some distance from the light).
+	'''
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
@@ -145,7 +157,6 @@ class WaypointUpdater(object):
             dist += self.get_euclidean_distance(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
-
 
 if __name__ == '__main__':
     try:
