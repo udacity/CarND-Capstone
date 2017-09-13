@@ -22,8 +22,10 @@ class Controller(object):
         self.max_lat_accel = args[8]
         self.max_steer_angle = args[9]
 
-        self.pid_velocity = PID(0.15, 0.0, 0.03)
-        self.pid_steering = PID(6.0, 0.0, 1.5)
+        self.pid_velocity = PID(0.05, 0.0, 0.01)
+        self.pid_steering = PID(4.0, 0.0, 0.7)
+        self.lowpass_velocity = LowPassFilter(13)
+        self.lowpass_steering = LowPassFilter(4)
 
 
     def control(self, *args, **kwargs):
@@ -43,9 +45,13 @@ class Controller(object):
 
         vel_error = target_vel - cur_vel
         velocity = self.pid_velocity.step(vel_error, time_elapsed)
+        if (velocity < 0.002):
+            velocity = 0.0
+        velocity = self.lowpass_velocity.filt(velocity)
 
         steer_error = target_steer
         steer = self.pid_steering.step(steer_error, time_elapsed)
+        steer = self.lowpass_steering.filt(steer)
 
         if DEBUG:
         	rospy.logerr('ctrl velocity: {}'.format(velocity))
