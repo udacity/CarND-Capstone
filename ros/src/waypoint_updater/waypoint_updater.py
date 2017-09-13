@@ -34,7 +34,7 @@ def to_rad(angle):
 class WaypointUpdater(object):
     def __init__(self):
         self.search_range = 50 # maximum search range to look for waypoints
-        self.max_angle_diff = to_rad(10) # max angle difference between consecutive waypoints
+        self.max_angle_diff = to_rad(30) # max angle difference between consecutive waypoints
         self.previous_wp_pose = []
         self.previous_wp_yaw = []
         self.waypoints = []
@@ -112,11 +112,13 @@ class WaypointUpdater(object):
                 dist_from_previous_wp_to_this_wp = self.linear_distance(self.previous_wp_pose,self.current_pose)
                 if (angle_diff < self.max_angle_diff) and (dist_from_previous_wp_to_this_wp >= dist_from_previous_wp_to_current_pose):
                     next_wp_index = index
+                    next_wp_yaw = wp_yaw
                     break
 
             if next_wp_index != -1:
                 rospy.loginfo("Publish closest_waypoint with index = %s", next_wp_index)
-
+                self.previous_wp_pose = self.waypoints[next_wp_index].pose.pose
+                self.previous_wp_yaw = next_wp_yaw)
                 # todo: build a new set of waypoints by using only a given number (LOOKAHEAD_WPS)
                 # todo: of base waypoints from the current pose onwards
 
