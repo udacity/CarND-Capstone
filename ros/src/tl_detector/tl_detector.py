@@ -82,7 +82,7 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(sim = True)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -232,7 +232,7 @@ class TLDetector(object):
         #TODO use light location to zoom in on traffic light in image
 
         #Get classification
-        pred, preds = self.light_classifier.get_classification(cv_image)
+        pred = self.light_classifier.get_classification(cv_image)
         return pred
 
     def process_traffic_lights(self):

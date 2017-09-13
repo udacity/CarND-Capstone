@@ -9,7 +9,7 @@ from train import SqueezeNet
 from consts import IMAGE_WIDTH, IMAGE_HEIGHT
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self, sim):
         K.set_image_dim_ordering('tf')
 
         self.ready = False
@@ -17,17 +17,23 @@ class TLClassifier(object):
         with self.graph.as_default():
             # Load model from https://github.com/mynameisguy/TrafficLightChallenge-DeepLearning-Nexar
             self.model = SqueezeNet(3, (IMAGE_HEIGHT, IMAGE_WIDTH, 3))
-            # self.model.load_weights("light_classification/trained_model/squeezeNet_real.hdf5")
-            self.model.load_weights("light_classification/trained_model/squeezeNet_sim.hdf5")
+            if sim:
+                self.model.load_weights("light_classification/trained_model/squeezeNet_sim.hdf5")
+            else:
+                self.model.load_weights("light_classification/trained_model/squeezeNet_real.hdf5")
             self.ready = True
 
         self.pred_dict = {0: TrafficLight.UNKNOWN,
                           1: TrafficLight.RED,
                           2: TrafficLight.GREEN}
 
-        self.debug_print = True
+        self.debug_print = False
 
     def get_classification(self, image):
+        pred, preds = self.get_classification_detailed(image)
+        return pred
+
+    def get_classification_detailed(self, image):
         """Determines the color of the traffic light in the image
 
         Args:
