@@ -54,28 +54,45 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        self.controllerEnabled = False
+
         # SUBSCRIBERS:
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
         
         #TODO:add and implement rospy.Subscriber('/current_velocity', Float32, self.current_velocity_cb)
         
         self.controller = Controller()
+        
+        #The yaw controller is configured here to keep rospy out of the controller file
+        #The car features change between sim and real, so this will get the rospy params in to the controller
         self.controller.configure_yaw_controller(wheel_base, steer_ratio, 0, max_lat_accel, max_steer_angle)
         
+        self.control_params = {'target_speed_mps':0, 'current_speed_mps':0}
+        
         self.loop()
+
+    def dbw_enabled_cb(self, isEnabled):
+        if isEnabled:
+            self.controllerEnabled = True  
+        else: 
+            self.controllerEnabled = False
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
+            
+            #    throttle, brake, steering = self.controller.control(<proposed linear velocity>,
             #                                                     <proposed angular velocity>,
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            throttle, brake, steer = self.controller.control(**self.control_params)
+            if self.controllerEnabled:
+                
+                self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
