@@ -23,19 +23,20 @@ class Controller(object):
 		self.brake_low_pass = LowPassFilter(.5)
 		self.steering_low_pass = LowPassFilter(.5)
 
-	def control(self, cte, dt):
-		brake = 0
-		throttle = self.throtlle_low_pass.filt(self.throttle.step(cte, dt))
+	def control(current_velocity, taget_velocity, throttle_pid, brake_pid, steering_pid):
+		
+		# Break down velocities into linear and angular components
+		current_velocity_linear = current_velocity.linear.x
+		current_velocity_angular = current_velocity.angular.z
+		target_velocity_linear = target_velocity.linear.x
+		target_velocity_angular = target_velocity.angular.z
 
-		steering = 0
+		# Calculate difference between target and current velocity. This will be our CTE for throttle PID. 
+		velocity_error = target_velocity_linear - current_velocity_linear
 
-		if throttle > 0:
-			self.brake_low_pass.filt(0)
-			self.brake.reset()
-		else:
-			throttle = 0
-			self.throttle.reset()
-			brake = self.brake.step(-cte, dt)
-			brake = self.brake_low_pass.filt(brake)
+		# Get time using t = 1/F. F Being the frequency in Hz (hardcoded, have to be passed)
+		dt = 1 / 10; 
+
+
 
 		return throttle, brake, steering
