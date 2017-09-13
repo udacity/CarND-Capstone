@@ -5,6 +5,7 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import PoseStamped
+import waypoint_lib.helper as helper
 import math
 import tf
 
@@ -34,10 +35,12 @@ that we have created in the `__init__` function.
 
 '''
 
+'''
 def yaw_from_orientation(o):
     # https://answers.ros.org/question/69754/quaternion-transformations-in-python/
     q = (o.x, o.y, o.z, o.w)
     return tf.transformations.euler_from_quaternion(q)[2]
+'''
 
 class DBWNode(object):
     def __init__(self):
@@ -106,7 +109,7 @@ class DBWNode(object):
         self.pose = pose.pose
 
         rospy.loginfo("pose x, y, yaw = {}, {}, {}".format(self.pose.position.x,
-            self.pose.position.y, yaw_from_orientation(self.pose.orientation)))
+            self.pose.position.y, helper.yaw_from_orientation(self.pose.orientation)))
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
@@ -134,7 +137,7 @@ class DBWNode(object):
             target_angular_velocity = self.twist_cmd.angular.z
             current_linear_velocity = self.current_velocity.linear.x
             current_angular_velocity = self.current_velocity.angular.z
-            current_yaw = yaw_from_orientation(self.pose.orientation)
+            current_yaw = helper.yaw_from_orientation(self.pose.orientation)
 
             rospy.loginfo("tlv = {}, clv = {}, tav = {}, cav = {}, cyaw = {}".format(
                 target_linear_velocity,

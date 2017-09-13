@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+import waypoint_lib.helper as helper
 
 import math
 import tf
@@ -28,10 +29,12 @@ TARGET_SPEED = 10.0 * ONE_MPH
 
 dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
+'''
 def yaw_from_orientation(o):
     # https://answers.ros.org/question/69754/quaternion-transformations-in-python/
     q = (o.x, o.y, o.z, o.w)
     return tf.transformations.euler_from_quaternion(q)[2]
+'''
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -66,7 +69,7 @@ class WaypointUpdater(object):
         pose_orientation = pose.pose.orientation
 
         # wp_yaw = yaw_from_orientation(wp_orientation)
-        pose_yaw = yaw_from_orientation(pose_orientation)
+        pose_yaw = helper.yaw_from_orientation(pose_orientation)
 
         angle = math.atan2(wp.pose.pose.position.y-pose.pose.position.y, wp.pose.pose.position.x-pose.pose.position.x)
         # rospy.loginfo('angle1 = {}'.format(angle))
@@ -123,7 +126,7 @@ class WaypointUpdater(object):
         if log_out:
             # rospy.loginfo('final_waypoints[0] = {}'.format(final_waypoints[0]))
             rospy.loginfo("pose x, y, yaw = {}, {}, {}".format(pose.pose.position.x,
-                pose.pose.position.y, yaw_from_orientation(pose.pose.orientation)))
+                pose.pose.position.y, helper.yaw_from_orientation(pose.pose.orientation)))
             rospy.loginfo("next wp x, y   = {}, {}".format(final_waypoints[0].pose.pose.position.x,
                 final_waypoints[0].pose.pose.position.y))
             rospy.loginfo("next wp linear.x   = {}".format(final_waypoints[0].twist.twist.linear.x))

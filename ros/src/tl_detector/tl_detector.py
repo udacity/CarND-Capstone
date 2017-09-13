@@ -70,7 +70,10 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
+
         light_wp, state = self.process_traffic_lights()
+
+        # Select the closest waypoint from lights array.
 
         '''
         Publish upcoming red lights at camera frequency.
