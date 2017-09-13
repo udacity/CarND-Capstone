@@ -107,7 +107,7 @@ class WaypointUpdater(object):
             for i in range(len(distance_values)):
                 index = distance_values[i][1]
                 wp_yaw = self.get_yaw(self.waypoints[index].pose.pose.orientation)
-                angle_diff = abs(((wp_yaw - self.previous_wp_yaw) + 180) % 360 - 180)
+                angle_diff = abs(((wp_yaw - self.previous_wp_yaw) + math.pi) % (2*math.pi) - math.pi)
                 dist_from_previous_wp_to_current_pose = self.linear_distance(self.previous_wp_pose,self.waypoints[index].pose.pose)
                 dist_from_previous_wp_to_this_wp = self.linear_distance(self.previous_wp_pose,self.current_pose)
                 if (angle_diff < self.max_angle_diff) and (dist_from_previous_wp_to_this_wp >= dist_from_previous_wp_to_current_pose):
@@ -118,7 +118,7 @@ class WaypointUpdater(object):
             if next_wp_index != -1:
                 rospy.loginfo("Publish closest_waypoint with index = %s", next_wp_index)
                 self.previous_wp_pose = self.waypoints[next_wp_index].pose.pose
-                self.previous_wp_yaw = next_wp_yaw)
+                self.previous_wp_yaw = next_wp_yaw
                 # todo: build a new set of waypoints by using only a given number (LOOKAHEAD_WPS)
                 # todo: of base waypoints from the current pose onwards
 
