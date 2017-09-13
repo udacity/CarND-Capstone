@@ -9,6 +9,7 @@ from geometry_msgs.msg import PoseStamped
 import std_msgs.msg
 
 from twist_controller import Controller
+from yaw_controller import YawController
 from pid import PID
 import dbw_utils
 
@@ -63,12 +64,14 @@ class DBWNode(object):
 		self.init_time = rospy.get_rostime()
 		rospy.loginfo("debug - Variables defined")
 
-		# Define PID controller for throttle. brake and steering
+		# Define PID controller for throttle and brake
 		rospy.loginfo("debug - Defining PID...")
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
 		self.brake_pid = PID(kp=50.0, ki=0.001, kd=0.15, mn=brake_deadband, mx=1500)
-		self.steering_pid = PID(kp=1.0, ki=0.001, kd=0.5, mn=-max_steer_angle, mx=max_steer_angle)
 		rospy.loginfo("debug - PID defined")
+
+		# Define Yaw controller for the steering
+		self.steering = YawController(wheel_base, steer_ratio * 8, 0.2, max_lat_accel, max_steer_angle)
 
 		# Define Publishers
 		rospy.loginfo("debug - Defining publishers...")
@@ -79,7 +82,7 @@ class DBWNode(object):
 
 		# Instantiate a Controller object
 		rospy.loginfo("debug - Creating controler...")
-		self.controller = Controller(self.throttle_pid, self.brake_pid, self.steering_pid)
+		#self.controller = Controller(self.throttle_pid, self.brake_pid, self.steering_pid)
 		rospy.loginfo("debug - Controller created")
 
 		# Define Subscribers 
@@ -97,8 +100,16 @@ class DBWNode(object):
 
 		rospy.loginfo("debug - Inside the loop function")
 
-		rate = rospy.Rate(10) # 50Hz
+		rate = rospy.Rate(10) # 10Hz
 		while not rospy.is_shutdown():
+
+			rospy.loginfo("debug - Inside the while")
+
+			if self.target_velocity is not None and self.current_velocity is not None: 
+				rospy.loginfo("debug - Calculate steering ...")
+				steering = self.steering.get_steering(self.target_velocity.linear.x, self.target_velocity.angular.z, self.current_velocity.linear.x)
+				rospy.loginfo("debug - Steering = (%s)", steering)
+				self.publish(0.2, 0, steering)
 
 			rate.sleep()
 
@@ -129,7 +140,6 @@ class DBWNode(object):
 	def dbw_enable_cb(self, msg): 
 		self.dbw_enabled = bool(msg.data)
 		if(self.dbw_enabled): 
-			self.steering_pid.reset()
 			self.throttle_pid.reset()
 			self.brake_pid.reset()
 
