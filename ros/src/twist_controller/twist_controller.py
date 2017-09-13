@@ -36,7 +36,7 @@ class Controller(object):
 	linear_vel = self.speed_controller.step(linear_vel_cte, dt)
 	steer = self.steering_controller.step(angular_vel_cte, dt)
 	
-	print("Steering: ", steer)
+	
 	throttle = 0
 	brake = 0
 	
