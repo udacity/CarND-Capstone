@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
+import tf
 
 import math
 
@@ -24,11 +25,22 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
+def to_deg(angle):
+    return angle*180.0/math.pi
+
+def to_rad(angle):
+    return angle*math.pi/180.0
 
 class WaypointUpdater(object):
     def __init__(self):
+        self.search_range = 50 # maximum search range to look for waypoints
+        self.max_angle_diff = to_rad(10) # max angle difference between consecutive waypoints
+        self.previous_wp_pose = []
+        self.previous_wp_yaw = []
+        self.waypoints = []
 
         self.current_pose = []
+
         self.tl_pose = []
         self.tl_state = 'green'
 
@@ -38,94 +50,104 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        rospy.Subscriber('/traffic_waypoint', Int32, traffic_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         #rospy.Subscriber('/obstacle_waypoint', ??? , obstacle_cb)   #BUG - there is no obstacle_waypoint
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
 
+        self.loop()
         rospy.spin()
 
+    def get_yaw(self,msg_quat):
+        quaternion = [msg_quat.x, msg_quat.y, msg_quat.z, msg_quat.w]
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+        #roll = euler[0]
+        #pitch = euler[1]
+        #yaw = euler[2]
+        return euler[2]
+
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rospy.loginfo("Waypoint updater loop started")
+        while not (self.current_pose):
+            pass
+        while not (self.waypoints):
+            pass
+        updateRate = 5 # update frequency in Hz  Should be 50Hz TBD
+        rate = rospy.Rate(updateRate)
+        rospy.loginfo("Running with update freq = %s", updateRate)
         while not rospy.is_shutdown():
+
+            # todo: create a safety mechanism
+            # if no pose update received stop the car
+
+
             # todo: create a message of type Lane
-            #lane_msg.header
-            #lane_msg.waypoints
+            # lane_msg.header
+            # lane_msg.waypoints
 
-            # todo: get the current pose
+            # find the closest waypoint to the current pose
+            # use the previous wp yaw to find the next wp with more precision
+            ref_distance = self.linear_distance(self.waypoints[0].pose.pose, self.current_pose)
+            # rospy.loginfo("ref_distance = %s",ref_distance)
+            distance_values = []
+            #get near neighbours and corresponding indexes
+            for index in range(len(self.waypoints)):
+                distance = self.linear_distance(self.waypoints[index].pose.pose, self.current_pose)
+                if distance <= self.search_range:
+                    distance_values.append([distance, index])
+                    #rospy.loginfo("candidate %s, %s", distance, index)
 
-            # todo: build a new set of waypoints by using only a given number (LOOKAHEAD_WPS)
-            # todo: of base waypoints from the current pose onwards
+            rospy.loginfo("Testing %s candidates", len(distance_values))
+            #rospy.loginfo("candidates", distance_values)
+            next_wp_index = -1
+            distance_values.sort()
 
-            #self.final_waypoints_pub.publish(lane_msg)
+            for i in range(len(distance_values)):
+                index = distance_values[i][1]
+                wp_yaw = self.get_yaw(self.waypoints[index].pose.pose.orientation)
+                angle_diff = abs(((wp_yaw - self.previous_wp_yaw) + 180) % 360 - 180)
+                dist_from_previous_wp_to_current_pose = self.linear_distance(self.previous_wp_pose,self.waypoints[index].pose.pose)
+                dist_from_previous_wp_to_this_wp = self.linear_distance(self.previous_wp_pose,self.current_pose)
+                if (angle_diff < self.max_angle_diff) and (dist_from_previous_wp_to_this_wp >= dist_from_previous_wp_to_current_pose):
+                    next_wp_index = index
+                    break
+
+            if next_wp_index != -1:
+                rospy.loginfo("Publish closest_waypoint with index = %s", next_wp_index)
+
+                # todo: build a new set of waypoints by using only a given number (LOOKAHEAD_WPS)
+                # todo: of base waypoints from the current pose onwards
+
+                # todo: we may need to wrap around
+                # msg_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
+
+                # todo: publish the message
+                #self.final_waypoints_pub.publish(lane_msg)
+            else:
+                rospy.logwarn("Failed to find next closest_waypoint")#. Current pose = %s", self.current_pose)
+
             rate.sleep()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        # self.current_pose = msg
-        # std_msgs / Header        header
-        # uint32        seq
-        # time        stamp
-        # string        frame_id
+        if not self.current_pose:
+            self.previous_wp_pose = msg.pose
+            self.previous_wp_yaw = self.get_yaw(msg.pose.orientation) # initialize previous wp here
+            rospy.loginfo("init yaw = %s", self.previous_wp_yaw)
+        self.current_pose = msg.pose
+        #rospy.loginfo("cur_position = (%s,%s)", self.current_pose.position.x, self.current_pose.position.y)
+        return
 
-        # geometry_msgs / Pose    pose
-        # geometry_msgs / Point    position
-        # float64    x
-        # float64    y
-        # float64    z
+    # computes the euclidean distance between 2 poses
+    def linear_distance(self, pose1, pose2):
+        delta_x = pose1.position.x - pose2.position.x
+        delta_y = pose1.position.y - pose2.position.x
+        return math.sqrt(delta_x*delta_x + delta_y*delta_y)
 
-        # geometry_msgs / Quaternion orientation
-        # float64 x
-        # float64 y
-        # float64 z
-        # float64 w
-        pass
-
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
-
-        # Lane msg description:
-        #
-        #     std_msgs / Header        header
-        #     uint32        seq
-        #     time        stamp
-        #     string        frame_id
-        #
-        #     styx_msgs / Waypoint[]        waypoints
-        #     geometry_msgs / PoseStamped        pose
-        #     std_msgs / Header        header
-        #     uint32        seq
-        #     time        stamp
-        #     string        frame_id
-        #
-        #
-        #     geometry_msgs / Pose        pose
-        #     geometry_msgs / Point        position
-        #     float64        x
-        #     float64        y
-        #     float64        z
-        #     geometry_msgs / Quaternion        orientation
-        #     float64        x
-        #     float64        y
-        #     float64        z
-        #     float64        w
-        #     geometry_msgs / TwistStamped        twist
-        #     std_msgs / Header        header
-        #     uint32        seq
-        #     time        stamp
-        #     string        frame_id
-        #     geometry_msgs / Twist        twist
-        #     geometry_msgs / Vector3        linear
-        #     float64        x
-        #     float64        y
-        #     float64        z
-        #     geometry_msgs / Vector3        angular
-        #     float64        x
-        #     float64        y
-        #     float64        z
-        pass
+    def waypoints_cb(self, msg):
+        self.waypoints = msg.waypoints #save all the waypoints to internal variable
+        return
 
     def traffic_cb(self, msg):
 
