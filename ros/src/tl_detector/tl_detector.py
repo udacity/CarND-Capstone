@@ -9,15 +9,10 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
-<<<<<<< HEAD
-import yaml
-=======
 import math
 import yaml
 from attrdict import AttrDict
 import numpy as np
-
->>>>>>> master
 
 STATE_COUNT_THRESHOLD = 3
 
