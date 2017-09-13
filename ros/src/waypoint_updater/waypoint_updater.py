@@ -79,7 +79,7 @@ class WaypointUpdater(object):
             wps_to_light += waypoints_num
 
         # Deceleration length in wp (before red light)
-        decel_len = 100
+        decel_len = 50
 
 
 

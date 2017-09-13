@@ -78,6 +78,10 @@ class Controller(object):
         throttle_f = throttle if throttle > 0.0 else 0.0
         brake = -throttle if throttle <= 0.0 else 0.0
 
+        if target_linear_velocity < 0.1:
+            throttle_f = 0.0
+            brake = 20000
+
 
         # Return throttle, brake, steer
         return throttle_f, brake, steering
