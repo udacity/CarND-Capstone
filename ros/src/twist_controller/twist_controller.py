@@ -43,7 +43,7 @@ class Controller(object):
         if not dbw_enabled:
             self.throttle_pid.reset()
             self.throttle_filter.ready = False
-            self.steer_pid.reset()
+            # self.steer_pid.reset()
             self.steer_filter.ready = False
             return 0.0, 0.0, 0.0
 

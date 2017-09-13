@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import waypoint_lib.helper as helper
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -73,7 +74,31 @@ class TLDetector(object):
 
         light_wp, state = self.process_traffic_lights()
 
+        rospy.loginfo('some my processing')
+
         # Select the closest waypoint from lights array.
+        if (self.lights and self.waypoints):
+
+            car_wp = helper.next_waypoint_idx(self.pose, self.waypoints.waypoints)
+
+            lights_wp = [helper.closest_waypoint_idx(l.pose, self.waypoints.waypoints) for l in self.lights]
+            lights_dists = [helper.wp_distance(car_wp, lwp, self.waypoints.waypoints) for lwp in lights_wp]
+            closest_light = lights_dists.index(min(lights_dists))
+
+            rospy.loginfo('car_wp = {}'.format(car_wp))
+            rospy.loginfo('closest_light[{}] = {}, {}'.format(closest_light, self.lights[closest_light].state, lights_dists[closest_light]))
+            rospy.loginfo('closest_light_wp = {}, state = {}'.format(lights_wp[closest_light], self.lights[closest_light].state))
+
+            light_wp = lights_wp[closest_light]
+            state = self.lights[closest_light].state
+
+            '''
+            for i, l in enumerate(self.lights):
+                # l = self.lights[i]
+                rospy.loginfo('[{}] = {}: {}, {}'.format(i, l.state, l.pose.pose.position.x, l.pose.pose.position.y))
+                if l.state > TrafficLight.RED:
+                    rospy.loginfo("NOT REEEEEEEEEEEEEEEEEED")
+            '''
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -186,7 +211,7 @@ class TLDetector(object):
         if light:
             state = self.get_light_state(light)
             return light_wp, state
-        self.waypoints = None
+        # self.waypoints = None # don't know why this line is here [Pavlo]
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
