@@ -57,8 +57,10 @@ class DBWNode(object):
         # SUBSCRIBERS:
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
         
+        #TODO:add and implement rospy.Subscriber('/current_velocity', Float32, self.current_velocity_cb)
         
         self.controller = Controller()
+        self.controller.configure_yaw_controller(wheel_base, steer_ratio, 0, max_lat_accel, max_steer_angle)
         
         self.loop()
 
