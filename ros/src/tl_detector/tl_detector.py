@@ -43,7 +43,7 @@ class TLDetector(object):
         self.config = yaml.load(config_string)
 
         
-
+        # implemented as having the same frequency as `/image_color`
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
@@ -57,6 +57,8 @@ class TLDetector(object):
 
         rospy.spin()
 
+    ############################### subscriber callbacks #################################
+
     def pose_cb(self, msg):
         self.car_pose = msg.pose
 
@@ -65,6 +67,55 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+
+        ## FIX of a potential bug https://github.com/udacity/CarND-Capstone/issues/28
+        ## TODO: remove this when bug resolved
+        light_locations = [
+                [1148.56, 1184.65],
+                [1559.2, 1158.43],
+                [2122.14, 1526.79],
+                [2175.237, 1795.71],
+                [1493.29, 2947.67],
+                [821.96, 2905.8],
+                [161.76, 2303.82],
+                [351.84, 1574.65]
+        ]
+        for i, light in enumerate(self.lights):
+            light.pose.pose.position.x = light_locations[i][0]
+            light.pose.pose.position.y = light_locations[i][1]
+
+    def image_cb(self, msg):
+        """Identifies red lights in the incoming camera image and publishes the index
+            of the waypoint closest to the red light to /traffic_waypoint
+
+        Args:
+            msg (Image): image from car-mounted camera
+
+        """
+        self.has_image = True
+        self.camera_image = msg
+        light_wp, state = self.process_traffic_lights()
+
+        '''
+        Publish upcoming red lights at camera frequency.
+        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+        of times till we start using it. Otherwise the previous stable state is
+        used.
+        '''
+        if self.state != state:
+            self.state_count = 0
+            self.state = state
+        elif self.state_count >= STATE_COUNT_THRESHOLD:
+            self.last_state = self.state
+            light_wp = light_wp if state == TrafficLight.RED else -1
+            self.last_wp = light_wp
+            self.upcoming_red_light_pub.publish(Int32(light_wp))
+        else:
+            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+        self.state_count += 1
+
+
+    ################################## utilisty functions #################################
 
     def ahead_of(self, waypoint, car_pose):
         """If a waypoint is ahead of the car based on its current pose.
@@ -102,60 +153,50 @@ class TLDetector(object):
         wp_z = waypoint.pose.pose.position.z
         return (wp_x, wp_y, wp_z)
 
-    def distance(self, waypoint, car_pose):
-        wp_x, wp_y, wp_z = self.get_waypoint_coordinates(waypoint)
-        car_x, car_y, car_z = self.get_car_coordinates(car_pose)
+    def get_light_coordinates(self, light):
+        x = light.pose.pose.position.x
+        y = light.pose.pose.position.y
+        z = light.pose.pose.position.z
+        return (x, y, z)
 
-        dx = wp_x - car_x
-        dy = wp_y - car_y
-        dz = wp_z - car_z
+    # def distance(self, waypoint, car_pose):
+    #     wp_x, wp_y, wp_z = self.get_waypoint_coordinates(waypoint)
+    #     car_x, car_y, car_z = self.get_car_coordinates(car_pose)
+
+    #     dx = wp_x - car_x
+    #     dy = wp_y - car_y
+    #     dz = wp_z - car_z
+    #     return math.sqrt(dx*dx + dy*dy + dz*dz)
+
+    def distance(self, xyz1, xyz2):
+        x1, y1, z1 = xyz1
+        x2, y2, z2 = xyz2
+        dx, dy, dz = x1-x2, y1-y2, z1-z2
         return math.sqrt(dx*dx + dy*dy + dz*dz)
 
     def inner_product(self, vec1, vec2):
         return sum([v1*v2 for v1, v2 in zip(vec1, vec2)])
 
-    def image_cb(self, msg):
-        """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light to /traffic_waypoint
-
-        Args:
-            msg (Image): image from car-mounted camera
-
-        """
-        self.has_image = True
-        self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
-
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        self.state_count += 1
-
-    def get_closest_waypoint(self, pose):
+    def get_closest_waypoint_index(self, light):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
-            pose (Pose): position to match a waypoint to
+            light: light position to match a waypoint to
 
         Returns:
             int: index of the closest waypoint in self.waypoints
+        Assumes self.waypoints is already available
 
         """
-        #TODO implement
-        return 0
+        distances = [self.distance(self.get_light_coordinates(light),
+                                   self.get_waypoint_coordinates(wp)) 
+                    for wp in self.waypoints]
+        return distances.index(min(distances))
+
+        # light_xyz = self.get_light_coordinates(light)
+        # for wp in self.waypoints:
+        #     wp_xyz = self.get_waypoint_coordinates(wp)
+        # return 0
 
 
     def project_to_image_plane(self, point_in_world):
@@ -194,6 +235,8 @@ class TLDetector(object):
 
         return (x, y)
 
+    #######################  light state detection #######################################
+
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
@@ -204,6 +247,13 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        ## take the shortcut if the groud-truth is already provided
+        ## mainly for mock up test
+        ## TODO: remove this shortcut to do image classification
+        if light.state != TrafficLight.UNKNOWN:
+            return light.state
+
+        ## else do the hard work to classify it
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -242,20 +292,22 @@ class TLDetector(object):
         # return -1, TrafficLight.UNKNOWN
 
 
-        traffic_light_indices = [290, 758, 2015, 2542, 6366, 7065, 8647, 9845]
+        # traffic_light_indices = [290, 758, 2015, 2542, 6366, 7065, 8647, 9845]
 
         ahead_light = None
         ahead_light_dist = float('inf')
         if self.car_pose:
             for i, light in enumerate(self.lights):
-                light_pose = light.pose.pose
-                light_state = light.state
+                
+                light_state = self.get_light_state(light)
                 if light_state != TrafficLight.RED: continue # ignore non-red lights
-                light_wp = self.waypoints[traffic_light_indices[i]]
+                light_wp_index = self.get_closest_waypoint_index(light)
+                light_wp = self.waypoints[light_wp_index]
                 if self.ahead_of(light_wp, self.car_pose):
-                    d = self.distance(light_wp, self.car_pose)
+                    d = self.distance(self.get_waypoint_coordinates(light_wp),
+                                      self.get_car_coordinates(self.car_pose))
                     if d < ahead_light_dist:
-                        ahead_light = traffic_light_indices[i]
+                        ahead_light = light_wp_index
                         ahead_light_dist = d
 
         if ahead_light is not None:

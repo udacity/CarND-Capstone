@@ -16,7 +16,8 @@ class Controller(object):
                                 wheel_radius,
                                 accel_limit,
                                 decel_limit)
-        self.steering_controller = PID(2, 0.003, 1)
+        # self.steering_controller = PID(2, 0.003, 1)
+        self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
 
     def control(self, target_velocity, current_velocity, dbw_enabled, dt):
         target_linear_velocity, target_angular_velocity = target_velocity
@@ -58,7 +59,7 @@ class SpeedController(object):
     https://github.com/kung-fu-panda-automotive/carla-driver/blob/master/ros/src/twist_controller/speed_controller.py
     """
 
-    MAX_THROTTLE_TORQUE = 2000.0
+    MAX_THROTTLE_TORQUE = 100.0
     MAX_BREAK_TORQUE = 20000.0
 
     def __init__(self, vehicle_mass, wheel_radius, accel_limit, decel_limit):
@@ -83,9 +84,9 @@ class SpeedController(object):
         torque = self.vehicle_mass * acceleration * self.wheel_radius
         throttle, brake = 0, 0
         if torque > 0:
-            # throttle is the percent of max torque applied
-            # throttle, brake = min(1.0, torque / SpeedController.MAX_THROTTLE_TORQUE), 0.0
-            throttle, brake = min(1.0, torque), 0.0
+            # As documented, throttle is the percent of max torque applied
+            throttle, brake = max(0.5, min(1.0, torque / SpeedController.MAX_THROTTLE_TORQUE)), 0.0
+            # throttle, brake = min(1.0, torque), 0.0
         else:
             # brake is the torque we need to apply
             throttle, brake = 0.0, min(abs(torque), SpeedController.MAX_BREAK_TORQUE)
