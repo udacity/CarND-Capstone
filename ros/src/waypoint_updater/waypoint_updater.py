@@ -57,14 +57,16 @@ class WaypointUpdater(object):
                 next_wp_i = self.next_waypoint(self.cur_pose.pose, self.base_waypoints.waypoints)
                 if self.is_signal_red == True and \
                    self.red_wp_i and self.red_wp_i > next_wp_i:
-                     sp_wp = [next_wp_i, self.red_wp_i]
+                     red_wp_i = self.red_wp_i
+                     sp_wp = [next_wp_i, red_wp_i]
                      next_wp_velocity = self.get_waypoint_velocity(self.base_waypoints.waypoints[next_wp_i])
-        	     sp_v = [next_wp_velocity-1, 0.0]
+        	     sp_v = [next_wp_velocity, 0.0]
                      f_sp = interp1d(sp_wp, sp_v)
-	             for  p in range(next_wp_i, self.red_wp_i):
+	             for  p in range(next_wp_i, red_wp_i):
                     	self.set_waypoint_velocity(self.base_waypoints.waypoints,
                                                     next_wp_i,f_sp(p))
-		     self.set_waypoint_velocity(self.base_waypoints.waypoints,self.red_wp_i,0)
+                     if self.red_wp_i:
+		         self.set_waypoint_velocity(self.base_waypoints.waypoints, red_wp_i,0)
                      if DEBUG:
                          rospy.loginfo("set velocity to 0")
                 elif self.move_car == True:
