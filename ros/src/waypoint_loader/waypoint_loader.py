@@ -3,6 +3,7 @@
 import os
 import csv
 import math
+# import pickle
 
 from geometry_msgs.msg import Quaternion
 
@@ -42,6 +43,19 @@ class WaypointLoader(object):
 
     def load_waypoints(self, fname):
         waypoints = []
+        # # Marcus temp code: waypoints from udacity track
+        # with open('/home/merbar/git/Self-Driven/capstone_data/uda_sim_waypoints.pickle', 'rb') as fp:
+        #     uda_sim_waypoints = pickle.load(fp)
+        # for wp in uda_sim_waypoints:
+        #     p = Waypoint()
+        #     p.pose.pose.position.x = float(wp[0])
+        #     p.pose.pose.position.y = float(wp[1])-5
+        #     p.pose.pose.position.z = float(0.0)
+        #     q = self.quaternion_from_yaw(0.0)
+        #     p.pose.pose.orientation = Quaternion(*q)
+        #     p.twist.twist.linear.x = float(6)
+
+        #     waypoints.append(p)
         with open(fname) as wfile:
             reader = csv.DictReader(wfile, CSV_HEADER)
             for wp in reader:
@@ -72,7 +86,9 @@ class WaypointLoader(object):
         return waypoints
 
     def publish(self, waypoints):
-        rate = rospy.Rate(40)
+        # Rate reduced from 40 to 0.1 for large performance increase
+        # Don't really see the need to continously send the same base waypoints at all?!
+        rate = rospy.Rate(0.1)
         while not rospy.is_shutdown():
             lane = Lane()
             lane.header.frame_id = '/world'
