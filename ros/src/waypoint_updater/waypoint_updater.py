@@ -45,6 +45,7 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.is_signal_red_pub = rospy.Publisher('is_signal_red', Bool, queue_size=1)
 
         self.publish()
 
@@ -80,6 +81,8 @@ class WaypointUpdater(object):
                 final_waypoints_msg.header.stamp = rospy.Time(0)
                 final_waypoints_msg.waypoints = next_waypoints
                 self.final_waypoints_pub.publish(final_waypoints_msg)
+
+                self.is_signal_red_pub.publish(self.is_signal_red)
 
             rate.sleep()
 

@@ -45,7 +45,7 @@ class Controller(object):
 
         vel_error = target_vel - cur_vel
         velocity = self.pid_velocity.step(vel_error, time_elapsed)
-        if (velocity < 0.002):
+        if (velocity < 0.005) and (velocity > -0.005):
             velocity = 0.0
         velocity = self.lowpass_velocity.filt(velocity)
 
