@@ -11,10 +11,12 @@ ONE_MPH = 0.44704
 
 class Controller(object):
     def __init__(self, decel_limit, accel_limit, max_steer_angle,
-          max_lat_accel, min_speed, wheel_base, steer_ratio):
+          max_lat_accel, min_speed, wheel_base, steer_ratio, vehicle_mass, wheel_radius):
         self.decel_limit = decel_limit
         self.accel_limit = accel_limit
         self.max_steer_angle = max_steer_angle
+        self.vehicle_mass = vehicle_mass
+        self.wheel_radius = wheel_radius
 
         self.throttle_pid = pid.PID(kp = 0.7, ki = 0.005, kd = 0.3, mn=decel_limit, mx=accel_limit)
         self.throttle_filter = lowpass.LowPassFilter(tau = 0.0, ts = 1.0)
@@ -47,13 +49,13 @@ class Controller(object):
             self.steer_filter.ready = False
             return 0.0, 0.0, 0.0
 
-        rospy.loginfo("DBW_ENABLED!!!!")
+        # rospy.loginfo("DBW_ENABLED!!!!")
 
         velocity_cte = target_linear_velocity - current_linear_velocity
         # steer_cte = target_angular_velocity - current_angular_velocity
 
         # rospy.loginfo('ctrl: steer_cte = {}, dt = {}'.format(steer_cte, dt))
-        rospy.loginfo('ctrl: velocity_cte = {}, dt = {}'.format(velocity_cte, dt))
+        # rospy.loginfo('ctrl: velocity_cte = {}, dt = {}'.format(velocity_cte, dt))
 
 
         # Steer PID
@@ -64,24 +66,28 @@ class Controller(object):
 
         # Throtle PID
         throttle = self.throttle_pid.step(velocity_cte, dt)
-        rospy.loginfo('ctrl: throttle = {}'.format(throttle))
+        # rospy.loginfo('ctrl: throttle = {}'.format(throttle))
         throttle = self.throttle_filter.filt(throttle)
-        rospy.loginfo('ctrl: throttle_filtered = {}'.format(throttle))
+        # rospy.loginfo('ctrl: throttle_filtered = {}'.format(throttle))
 
         # Yaw Controller
         steering = self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity)
-        rospy.loginfo('ctrl: steer_yaw_control = {}'.format(steering))
+        # rospy.loginfo('ctrl: steer_yaw_control = {}'.format(steering))
         steering = self.steer_filter.filt(steering)
 
         # steer = 0.0
 
-        throttle_f = throttle if throttle > 0.0 else 0.0
-        brake = -throttle if throttle <= 0.0 else 0.0
+        if throttle >= 0:
+            brake = 0.0
+        else:
+            # Calc brake torque as torque = Vmass * dec * wheel_radius
+            brake = self.vehicle_mass * self.wheel_radius * (-1.0 * throttle)
+            throttle = 0.0
 
+        # Stop still on red light :) - prevents slow movement near zero speed
         if target_linear_velocity < 0.1:
-            throttle_f = 0.0
-            brake = 20000
-
+            throttle = 0.0
+            brake = self.vehicle_mass * self.wheel_radius * (-1.0 * self.decel_limit)
 
         # Return throttle, brake, steer
-        return throttle_f, brake, steering
+        return throttle, brake, steering

@@ -67,7 +67,7 @@ class DBWNode(object):
 
         # TODO: Create `TwistController` object <Arguments you wish to provide>
         self.controller = Controller(decel_limit, accel_limit, max_steer_angle,
-            max_lat_accel, min_speed, wheel_base, steer_ratio)
+            max_lat_accel, min_speed, wheel_base, steer_ratio, vehicle_mass, wheel_radius)
         # self.yaw_controller = YawController(wheel_base, steer_ratio, 0.0, max_lat_accel, max_steer_angle)
 
         self.dbw_enabled = None
@@ -108,8 +108,8 @@ class DBWNode(object):
         # rospy.loginfo("pose = {}".format(pose.pose))
         self.pose = pose.pose
 
-        rospy.loginfo("pose x, y, yaw = {}, {}, {}".format(self.pose.position.x,
-            self.pose.position.y, helper.yaw_from_orientation(self.pose.orientation)))
+        # rospy.loginfo("pose x, y, yaw = {}, {}, {}".format(self.pose.position.x,
+        #     self.pose.position.y, helper.yaw_from_orientation(self.pose.orientation)))
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
