@@ -12,7 +12,6 @@ import cv2
 import math
 import yaml
 from traffic_light_config import config
-from train_queue import TrainQueue, TrainItem
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -61,7 +60,6 @@ class TLDetector(object):
         self.light_distance = None
         self.behind = None
         self.closest = None
-        self.train_queue = TrainQueue()
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -138,8 +136,6 @@ class TLDetector(object):
 
         self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-        self.train_queue.enqueue(TrainItem(self.closest.state, self.behind, self.light_distance, cv_image))
 
         '''
         Publish upcoming red lights at camera frequency.
