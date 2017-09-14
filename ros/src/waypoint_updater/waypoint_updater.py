@@ -153,7 +153,7 @@ class WaypointUpdater(object):
     # computes the euclidean distance between 2 poses
     def linear_distance(self, pose1, pose2):
         delta_x = pose1.position.x - pose2.position.x
-        delta_y = pose1.position.y - pose2.position.x
+        delta_y = pose1.position.y - pose2.position.y
         return math.sqrt(delta_x*delta_x + delta_y*delta_y)
 
     def waypoints_cb(self, msg):
