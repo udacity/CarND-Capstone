@@ -26,7 +26,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 ONE_MPH = 0.44704 # mph to mps
-TARGET_SPEED = 10.0 * ONE_MPH
+TARGET_SPEED = 40.0 * ONE_MPH
 
 dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 

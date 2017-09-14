@@ -21,8 +21,8 @@ class Controller(object):
         self.throttle_pid = pid.PID(kp = 0.7, ki = 0.005, kd = 0.3, mn=decel_limit, mx=accel_limit)
         self.throttle_filter = lowpass.LowPassFilter(tau = 0.0, ts = 1.0)
 
-        # self.steer_pid = pid.PID(kp = 3.0, ki = 0.0, kd = 0.0, mn=-max_steer_angle, mx=max_steer_angle)
-        self.steer_filter = lowpass.LowPassFilter(tau = 1.0, ts = 1.0)
+        self.steer_pid = pid.PID(kp = 0.7, ki = 0.004, kd = 0.3, mn=-max_steer_angle, mx=max_steer_angle)
+        self.steer_filter = lowpass.LowPassFilter(tau = 0.0, ts = 1.0)
 
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
@@ -33,6 +33,7 @@ class Controller(object):
         current_linear_velocity,
         target_angular_velocity,
         current_angular_velocity,
+        steer_cte,
         dbw_enabled):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
@@ -45,7 +46,7 @@ class Controller(object):
         if not dbw_enabled:
             self.throttle_pid.reset()
             self.throttle_filter.ready = False
-            # self.steer_pid.reset()
+            self.steer_pid.reset()
             self.steer_filter.ready = False
             return 0.0, 0.0, 0.0
 
@@ -57,23 +58,25 @@ class Controller(object):
         # rospy.loginfo('ctrl: steer_cte = {}, dt = {}'.format(steer_cte, dt))
         # rospy.loginfo('ctrl: velocity_cte = {}, dt = {}'.format(velocity_cte, dt))
 
-
-        # Steer PID
-        # steer = self.steer_pid.step(steer_cte, dt)
-        # rospy.loginfo('ctrl: steer = {}'.format(steer))
-        # steer = self.steer_filter.filt(steer)
-        # rospy.loginfo('ctrl: steer_filtered = {}'.format(steer))
-
         # Throtle PID
         throttle = self.throttle_pid.step(velocity_cte, dt)
         # rospy.loginfo('ctrl: throttle = {}'.format(throttle))
         throttle = self.throttle_filter.filt(throttle)
         # rospy.loginfo('ctrl: throttle_filtered = {}'.format(throttle))
 
+
+        # Steer PID
+        steer = self.steer_pid.step(steer_cte, dt)
+        # rospy.loginfo('ctrl: steer = {}'.format(steer))
+        # steer = self.steer_filter.filt(steer)
+        # rospy.loginfo('ctrl: steer_filtered = {}'.format(steer))
+
         # Yaw Controller
         steering = self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity)
         # rospy.loginfo('ctrl: steer_yaw_control = {}'.format(steering))
-        steering = self.steer_filter.filt(steering)
+        # steering = self.steer_filter.filt(steering)
+
+        steer = self.steer_filter.filt(steer + steering)
 
         # steer = 0.0
 

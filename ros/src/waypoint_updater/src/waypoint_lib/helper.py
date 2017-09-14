@@ -1,6 +1,7 @@
 import tf
 import math
 import rospy
+import numpy as np
 
 dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
@@ -53,6 +54,30 @@ def next_waypoint_idx(pose, waypoints):
     return closest_waypoint
 
 
+def calc_steer_cte(pose, waypoints, fit_length = 10):
+
+    if not fit_length:
+        fit_length = len(waypoints)
+
+    if fit_length > len(waypoints):
+        return 0.0
+
+    # Get X,Y coords
+    x_coords = []
+    y_coords = []
+    for i in range(fit_length):
+        x_coords.append(waypoints[i].pose.pose.position.x)
+        y_coords.append(waypoints[i].pose.pose.position.y)
+
+    # Transform to car coordinates
+    x_coords_car, y_coords_car = tranform_to_pose_coord_xy(pose, x_coords, y_coords)
+
+    coeffs = np.polyfit(x_coords_car, y_coords_car, 3)
+    dist = np.polyval(coeffs, 0.0)
+
+    return dist
+
+
 def tranform_to_pose_coord_xy(pose, x_coords, y_coords):
     x_coords_pose = []
     y_coords_pose = []
@@ -64,8 +89,8 @@ def tranform_to_pose_coord_xy(pose, x_coords, y_coords):
         rx = x - pose_x
         ry = y - pose_y
         # Rotation
-        rxf = rx * cos(pose_yaw) + ry * sin(pose_yaw)
-        ryf = rx * (-sin(pose_yaw)) + ry * cos(pose_yaw)
+        rxf = rx * math.cos(pose_yaw) + ry * math.sin(pose_yaw)
+        ryf = rx * (-1.0*math.sin(pose_yaw)) + ry * math.cos(pose_yaw)
         x_coords_pose.append(rxf)
         y_coords_pose.append(ryf)
     return x_coords_pose, y_coords_pose

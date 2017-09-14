@@ -5,6 +5,7 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import PoseStamped
+from styx_msgs.msg import Lane
 import waypoint_lib.helper as helper
 import math
 import tf
@@ -33,13 +34,6 @@ You are free to use them or build your own.
 Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
 that we have created in the `__init__` function.
 
-'''
-
-'''
-def yaw_from_orientation(o):
-    # https://answers.ros.org/question/69754/quaternion-transformations-in-python/
-    q = (o.x, o.y, o.z, o.w)
-    return tf.transformations.euler_from_quaternion(q)[2]
 '''
 
 class DBWNode(object):
@@ -74,6 +68,7 @@ class DBWNode(object):
         self.current_velocity = None
         self.twist_cmd = None
         self.pose = None
+        self.final_waypoints = None
 
 
         self.prev_clk = rospy.get_rostime().nsecs
@@ -84,12 +79,13 @@ class DBWNode(object):
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=1)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
 
 
         self.loop()
 
     def required_all(self):
-      required = [self.dbw_enabled, self.current_velocity, self.twist_cmd, self.pose]
+      required = [self.dbw_enabled, self.current_velocity, self.twist_cmd, self.pose, self.final_waypoints]
       return all([p is not None for p in required])
 
     def curr_vel_cb(self, curr_vel_msg):
@@ -104,9 +100,12 @@ class DBWNode(object):
     #   rospy.loginfo("dbw_enabled = {}".format(dbw_enabled.data))
       self.dbw_enabled = dbw_enabled.data
 
+    def final_waypoints_cb(self, final_waypoints):
+        self.final_waypoints = final_waypoints.waypoints
+
     def pose_cb(self, pose):
         # rospy.loginfo("pose = {}".format(pose.pose))
-        self.pose = pose.pose
+        self.pose = pose
 
         # rospy.loginfo("pose x, y, yaw = {}, {}, {}".format(self.pose.position.x,
         #     self.pose.position.y, helper.yaw_from_orientation(self.pose.orientation)))
@@ -137,7 +136,7 @@ class DBWNode(object):
             target_angular_velocity = self.twist_cmd.angular.z
             current_linear_velocity = self.current_velocity.linear.x
             current_angular_velocity = self.current_velocity.angular.z
-            current_yaw = helper.yaw_from_orientation(self.pose.orientation)
+            current_yaw = helper.yaw_from_orientation(self.pose.pose.orientation)
 
             rospy.loginfo("tlv = {}, clv = {}, tav = {}, cav = {}, cyaw = {}".format(
                 target_linear_velocity,
@@ -147,11 +146,16 @@ class DBWNode(object):
                 current_yaw))
             # rospy.loginfo('current_yaw = {}'.format(current_yaw))
 
+            steer_cte = helper.calc_steer_cte(self.pose, self.final_waypoints)
+
+            rospy.loginfo('STEER_CTE = {}'.format(steer_cte))
+
             throttle, brake, steering = self.controller.control(
                 target_linear_velocity,
                 current_linear_velocity,
                 target_angular_velocity,
                 current_angular_velocity,
+                steer_cte,
                 self.dbw_enabled) # <proposed linear velocity>,
             #                                                     <proposed angular velocity>,
             #                                                     <current linear velocity>,
