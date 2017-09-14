@@ -107,7 +107,7 @@ class DBWNode(object):
 			if self.target_velocity is not None and self.current_velocity is not None: 
 				rospy.loginfo("debug - Calculate steering ...")
 				steering = self.steering.get_steering(self.target_velocity.linear.x, self.target_velocity.angular.z, self.current_velocity.linear.x)
-				steering = math.cos(math.degrees(steering)) # Converting radians to degree
+				steering = (math.degrees(steering)) # Converting radians to degree
 				rospy.loginfo("debug - Steering = (%s)", steering)
 				self.publish(0.2, 0, steering)
 
