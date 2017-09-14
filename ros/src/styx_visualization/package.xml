@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>styx_visualization</name>
+  <version>0.0.0</version>
+  <description>
+    Nodes to help visualize messages from the Udacity styx simulator.
+  </description>
+  <maintainer email="evenator@gmail.com">Ed Venator</maintainer>
+  <license>BSD</license>
+  <url>https://github.com/evenator/CarND-Capstone</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>styx_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+</package>
