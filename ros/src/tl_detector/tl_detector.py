@@ -57,7 +57,7 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
         self.light_distance = None
-        self.behind = None
+        self.light_is_behind = None
         self.closest = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -91,28 +91,21 @@ class TLDetector(object):
 
     def pose_cb(self, msg):
         self.pose = msg
-        # print('ego', self.pose.pose.orientation.x, self.pose.pose.orientation.y, self.pose.pose.orientation.z, self.pose.pose.orientation.w)
 
     def waypoints_cb(self, waypoints): # type: Lane
         self.waypoints = waypoints
 
     def traffic_cb(self, msg):
-        # if self.lights:
-            # print('equal_lights', equal_lights(self.lights, msg.lights))
         self.lights = msg.lights
-        # print('len', len(self.lights))
         closest, distance = find_closest_light(self.lights, self.pose.pose)
 
         if self.light_distance:
             if distance > self.light_distance:
-                self.behind = True
+                self.light_is_behind = True
             elif distance < self.light_distance:
-                self.behind = False
+                self.light_is_behind = False
 
-        # print('closest', 's', closest.state, 'behind', self.behind, 'distance', distance, 'pos', closest.pose.pose.position.x, closest.pose.pose.position.y, closest.pose.pose.position.z, 'pose.pose.orient', closest.pose.pose.orientation.x, closest.pose.pose.orientation.y, closest.pose.pose.orientation.z, closest.pose.pose.orientation.w)
-        # for light in self.lights:
         self.light_distance = distance
-        self.closest = closest
 
     def friendly_name(self, state):
         state_name_dict = {TrafficLight.UNKNOWN: "Unknown",
