@@ -10,6 +10,7 @@ import std_msgs.msg
 
 from twist_controller import Controller
 from yaw_controller import YawController
+from lowpass import LowPassFilter
 from pid import PID
 
 '''
@@ -71,6 +72,7 @@ class DBWNode(object):
 
 		# Define Yaw controller for the steering
 		self.steering = YawController(wheel_base, steer_ratio * 8, 0.2, max_lat_accel, max_steer_angle)
+		self.lpf_steering = LowPassFilter(window_weight=.5)
 
 		# Define Publishers
 		rospy.loginfo("debug - Defining publishers...")
@@ -106,7 +108,9 @@ class DBWNode(object):
 
 			if self.target_velocity is not None and self.current_velocity is not None: 
 				rospy.loginfo("debug - Calculate steering ...")
-				steering = self.steering.get_steering(self.target_velocity.linear.x, self.target_velocity.angular.z, self.current_velocity.linear.x)
+				# Smoothing out the steering received
+				target_velocity_angular = self.lpf_steering.filt(self.target_velocity.angular.z)
+				steering = self.steering.get_steering(self.target_velocity.linear.x, target_velocity_angular, self.current_velocity.linear.x)
 				steering = (math.degrees(steering)) # Converting radians to degree
 				rospy.loginfo("debug - Steering = (%s)", steering)
 				self.publish(0.2, 0, steering)
