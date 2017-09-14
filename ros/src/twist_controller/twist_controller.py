@@ -32,6 +32,9 @@ class Controller(object):
         else:
             self.throttle = effort
             self.brake = 0
+        if 'turn_z' in kwargs.keys(): 
+            self.steer = kwargs['turn_z']
+                    
         return self.throttle, self.brake, self.steer
 
     def configure_yaw_controller(self, wheel_base,steer_ratio, min_speed, max_lat_accel, max_steer_angle):
