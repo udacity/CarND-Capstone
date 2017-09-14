@@ -11,7 +11,6 @@ import std_msgs.msg
 from twist_controller import Controller
 from yaw_controller import YawController
 from pid import PID
-import dbw_utils
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
