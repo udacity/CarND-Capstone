@@ -6,6 +6,7 @@ import rosbag
 from consts import IMAGE_WIDTH, IMAGE_HEIGHT
 from os import listdir
 from os.path import isdir, isfile, join
+from styx_msgs.msg import TrafficLight
 
 class ImageMsg:
     def __init__(self, msg):
@@ -87,11 +88,18 @@ def sort_classes(filename):
         for line in lines:
             f.write(line)
 
+def get_class(cls_string):
+    cls_dict = { '0-unknown' : TrafficLight.UNKNOWN,
+                 '1-red' : TrafficLight.RED,
+                 '2-green' : TrafficLight.GREEN }
+    return cls_dict[cls_string]
+
 class TrafficLightExample:
     def __init__(self, line):
         tokens = line.split(',', 1)
         self.filename = tokens[0]
         self.cls = tokens[1]
+        self.state = get_class(self.cls)
 
     def __repr__(self):
         return self.filename + ',' + self.cls

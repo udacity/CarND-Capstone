@@ -90,7 +90,7 @@ def classify_bag(classifier, bag_file, run_name):
 
     video_maker = video.VideoMaker('./out')
     for img in imgs:
-        (pred, preds) = classifier.get_classification(img.bgr)
+        (pred, preds) = classifier.get_classification_detailed(img.bgr)
         # print('pred: ', pred, friendly_name(pred))
         labeled = img.bgr
         labeled = cv2.putText(labeled, friendly_name(pred), (10, 100), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,255), 5)
@@ -102,9 +102,9 @@ def classify_bag(classifier, bag_file, run_name):
 if __name__ == '__main__':
     # try_resize('/home/eljefec/data/traffic_light_bag_files/just_traffic_light.bag')
 
-    classifier = TLClassifier()
+    classifier = TLClassifier(sim = False)
 
-    run_name = '.finetune'
+    run_name = '.refactor'
 
     classify_bag(classifier, '/home/eljefec/data/traffic_light_bag_files/just_traffic_light.bag', run_name)
 

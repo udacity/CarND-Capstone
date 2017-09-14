@@ -15,24 +15,6 @@ import yaml
 
 STATE_COUNT_THRESHOLD = 3
 
-def equal_light(a, b):
-    if not a.pose.pose.position == b.pose.pose.position:
-        return False
-    if not a.pose.pose.orientation == b.pose.pose.orientation:
-        return False
-    return True
-
-def equal_lights(lights, other_lights):
-    for light in lights:
-        found = False
-        for other in other_lights:
-            if equal_light(light, other):
-                found = True
-                break
-        if not found:
-            return False
-    return True
-
 def euclidean_distance(p1x, p1y, p2x, p2y):
     x_dist = p1x - p2x
     y_dist = p1y - p2y
@@ -58,9 +40,8 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
         self.light_distance = None
-        self.behind = None
+        self.light_is_behind = None
         self.closest = None
-        self.train_queue = TrainQueue()
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -81,7 +62,9 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+
+        use_simulator_classifier = rospy.get_param("/traffic_light_classifier_sim")
+        self.light_classifier = TLClassifier(sim = use_simulator_classifier)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -102,26 +85,15 @@ class TLDetector(object):
         # if self.lights:
             # print('equal_lights', equal_lights(self.lights, msg.lights))
         self.lights = msg.lights
-        # print('len', len(self.lights))
         closest, distance = find_closest_light(self.lights, self.pose.pose)
 
         if self.light_distance:
             if distance > self.light_distance:
-                self.behind = True
+                self.light_is_behind = True
             elif distance < self.light_distance:
-                self.behind = False
+                self.light_is_behind = False
 
-        # print('closest', 's', closest.state, 'behind', self.behind, 'distance', distance, 'pos', closest.pose.pose.position.x, closest.pose.pose.position.y, closest.pose.pose.position.z, 'pose.pose.orient', closest.pose.pose.orientation.x, closest.pose.pose.orientation.y, closest.pose.pose.orientation.z, closest.pose.pose.orientation.w)
-        # for light in self.lights:
         self.light_distance = distance
-        self.closest = closest
-
-    def friendly_name(self, state):
-        state_name_dict = {TrafficLight.UNKNOWN: "Unknown",
-                           TrafficLight.RED: "Red",
-                           TrafficLight.YELLOW: "Red",
-                           TrafficLight.GREEN : "Green"}
-        return state_name_dict[state]
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -137,8 +109,6 @@ class TLDetector(object):
 
         self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-        self.train_queue.enqueue(TrainItem(self.closest.state, self.behind, self.light_distance, cv_image))
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -239,7 +209,7 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         #Get classification
-        pred, preds = self.light_classifier.get_classification(cv_image)
+        pred = self.light_classifier.get_classification(cv_image)
         return pred
 
     def process_traffic_lights(self):
