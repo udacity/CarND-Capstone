@@ -11,7 +11,6 @@ import tf
 import cv2
 import math
 import yaml
-from traffic_light_config import config
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -249,7 +248,7 @@ class TLDetector(object):
             #TODO find the closest visible traffic light (if one exists)
             closest_light_position = None
             closest_light_distance = float("inf")
-            for light_position in config.light_positions:
+            for light_position in light_positions:
                 distance = euclidean_distance(light_position[0], light_position[1], closest_waypoint_ps.pose.position.x, closest_waypoint_ps.pose.position.y)
                 if distance < closest_light_distance:
                     closest_light_distance = distance
