@@ -5,7 +5,7 @@ from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
 import tf
-
+import numpy
 import math
 
 '''
@@ -72,13 +72,22 @@ class WaypointUpdater(object):
         rospy.loginfo("Waypoint updater loop started")
         while not (self.current_pose):
             pass
+
         while not (self.waypoints):
             pass
+
+        # debug base_waypoints
+        thefile = open('/home/ninopereira/car_test.txt', 'w')
+        for wp in self.waypoints:
+            thefile.write(str(wp.pose.pose.position.x) + ',' + str(wp.pose.pose.position.y) + '\n')
+
+
         updateRate = 5 # update frequency in Hz  Should be 50Hz TBD
         rate = rospy.Rate(updateRate)
         rospy.loginfo("Running with update freq = %s", updateRate)
         while not rospy.is_shutdown():
 
+            rospy.loginfo("Current_pose = %s,%s",self.current_pose.position.x,self.current_pose.position.y)
             # todo: create a safety mechanism
             # if no pose update received stop the car
 
@@ -149,6 +158,7 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, msg):
         self.waypoints = msg.waypoints #save all the waypoints to internal variable
+
         return
 
     def traffic_cb(self, msg):
