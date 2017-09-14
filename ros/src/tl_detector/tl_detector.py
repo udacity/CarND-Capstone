@@ -14,24 +14,6 @@ import yaml
 
 STATE_COUNT_THRESHOLD = 3
 
-def equal_light(a, b):
-    if not a.pose.pose.position == b.pose.pose.position:
-        return False
-    if not a.pose.pose.orientation == b.pose.pose.orientation:
-        return False
-    return True
-
-def equal_lights(lights, other_lights):
-    for light in lights:
-        found = False
-        for other in other_lights:
-            if equal_light(light, other):
-                found = True
-                break
-        if not found:
-            return False
-    return True
-
 def euclidean_distance(p1x, p1y, p2x, p2y):
     x_dist = p1x - p2x
     y_dist = p1y - p2y
@@ -106,13 +88,6 @@ class TLDetector(object):
                 self.light_is_behind = False
 
         self.light_distance = distance
-
-    def friendly_name(self, state):
-        state_name_dict = {TrafficLight.UNKNOWN: "Unknown",
-                           TrafficLight.RED: "Red",
-                           TrafficLight.YELLOW: "Red",
-                           TrafficLight.GREEN : "Green"}
-        return state_name_dict[state]
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
