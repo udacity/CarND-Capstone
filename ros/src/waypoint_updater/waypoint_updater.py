@@ -33,12 +33,7 @@ def to_rad(angle):
 
 class WaypointUpdater(object):
     def __init__(self):
-        self.search_range = 100 # maximum search range to look for waypoints
-        self.min_search_range = 20
-        self.max_search_range = 500
-        self.max_angle_diff = to_rad(30) # max angle difference between consecutive waypoints
         self.previous_wp_pose = []
-        self.previous_wp_yaw = []
         self.waypoints = []
 
         self.current_pose = []
@@ -70,7 +65,7 @@ class WaypointUpdater(object):
         #yaw = euler[2]
         return euler[2]
 
-    def get_next_waypoint(self, initialise = False):
+    def get_next_waypoint(self):
         # find the closest waypoint to the current pose
         # use the previous wp yaw to find the next wp with more precision
         ref_distance = self.linear_distance(self.waypoints[0].pose.pose, self.current_pose)
@@ -80,43 +75,25 @@ class WaypointUpdater(object):
         # todo: speed up search by only look at the next few waypoints since the last one after initialisation
 
         # get near neighbours and corresponding indexes
+        min_distance = 99999
+        closest_wp_index = -1
         for index in range(len(self.waypoints)):
             distance = self.linear_distance(self.waypoints[index].pose.pose, self.current_pose)
-            if distance <= self.search_range or initialise == True:
-                distance_values.append([distance, index])
-                # rospy.loginfo("candidate %s, %s", distance, index)
+            if distance <= min_distance:
+                closest_wp_index = index
+                min_distance = distance
 
-        rospy.loginfo("Testing %s candidates", len(distance_values))
-        # rospy.loginfo("candidates", distance_values)
-        next_wp_index = -1
-        next_wp_yaw = 0
-        distance_values.sort()
-        angle_diff = 0
-        for i in range(len(distance_values)):
-            index = distance_values[i][1]
-            wp_yaw = self.get_yaw(self.waypoints[index].pose.pose.orientation)
+        prev_index = (closest_wp_index - 1) % len(self.waypoints)
+        next_index = (closest_wp_index + 1) % len(self.waypoints)
+        dist_from_prev_wp_to_current_pose = self.linear_distance(self.waypoints[prev_index].pose.pose, self.current_pose)
+        dist_from_next_wp_to_current_pose = self.linear_distance(self.waypoints[next_index].pose.pose, self.current_pose)
 
-            #angle_diff = abs(((wp_yaw - self.previous_wp_yaw) + math.pi) % (2 * math.pi) - math.pi)
+        if (dist_from_prev_wp_to_current_pose > dist_from_next_wp_to_current_pose):
+            next_wp_index = next_index
+        else:
+            next_wp_index = closest_wp_index
 
-            if (initialise == True) or (angle_diff < self.max_angle_diff):
-                # assuming equally spaced waypoints
-                # determine if the car is behind or ahead the closest wp
-                # if behind the next wp is the closest one
-                # if ahead the next wp is the next one
-                prev_index = (index - 1) % len(self.waypoints)
-                next_index = (index + 1) % len(self.waypoints)
-                dist_from_prev_wp_to_current_pose = self.linear_distance(self.waypoints[prev_index].pose.pose, self.current_pose)
-                dist_from_next_wp_to_current_pose = self.linear_distance(self.waypoints[next_index].pose.pose, self.current_pose)
-
-                if (dist_from_prev_wp_to_current_pose > dist_from_next_wp_to_current_pose):
-                    next_wp_index = next_index
-                    next_wp_yaw = self.get_yaw(self.waypoints[next_index].pose.pose.orientation)
-                else:
-                    next_wp_index = index
-                    next_wp_yaw = wp_yaw
-                break
-
-        return next_wp_index, next_wp_yaw
+        return next_wp_index
 
     def loop(self):
         rospy.loginfo("Waypoint updater loop started")
@@ -147,12 +124,11 @@ class WaypointUpdater(object):
             # lane_msg.header
             # lane_msg.waypoints
 
-            next_wp_index, next_wp_yaw = self.get_next_waypoint(initialise = init)
+            next_wp_index = self.get_next_waypoint()
 
             if next_wp_index != -1:
 
                 self.previous_wp_pose = self.waypoints[next_wp_index].pose.pose
-                self.previous_wp_yaw = next_wp_yaw
                 # todo: build a new set of waypoints by using only a given number (LOOKAHEAD_WPS)
                 # todo: of base waypoints from the current pose onwards
                 # todo: we may need to wrap around
@@ -162,30 +138,25 @@ class WaypointUpdater(object):
                     # wrap around
                     list_wp_to_pub = self.waypoints[next_wp_index:]
                     list_wp_to_pub = list_wp_to_pub + (self.waypoints[0:excess])
-                    rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s (%s+%s) || Search Radius = %s",
-                                  len(list_wp_to_pub), next_wp_index, len(self.waypoints)-next_wp_index,excess, int(self.search_range))
+                    rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s (%s+%s)",
+                                  len(list_wp_to_pub), next_wp_index, len(self.waypoints)-next_wp_index,excess)
                 else:
                     list_wp_to_pub = self.waypoints[next_wp_index:next_wp_index+LOOKAHEAD_WPS]
-                    rospy.loginfo("Publishing %s wp from index %s || Search Radius = %s", len(list_wp_to_pub),next_wp_index, int(self.search_range))
+                    rospy.loginfo("Publishing %s wp from index %s ", len(list_wp_to_pub),next_wp_index)
 
                 # msg_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
 
                 # todo: publish the message
                 #self.final_waypoints_pub.publish(lane_msg)
-                if self.search_range > self.min_search_range:
-                    self.search_range = self.search_range * 0.8
+
             else:
-                rospy.logwarn("Failed to find closest_waypoint. Search Radius to %s",int(self.search_range))#. Current pose = %s", self.current_pose)
-                if self.search_range < self.max_search_range:
-                    self.search_range = self.search_range * 1.2
-            init = False
+                rospy.logwarn("Failed to find closest_waypoint.")
+
             rate.sleep()
 
     def pose_cb(self, msg):
         if not self.current_pose:
             self.previous_wp_pose = msg.pose
-            self.previous_wp_yaw = self.get_yaw(msg.pose.orientation) # initialize previous wp here
-            rospy.loginfo("init yaw = %s", self.previous_wp_yaw)
         self.current_pose = msg.pose
         #rospy.loginfo("cur_position = (%s,%s)", self.current_pose.position.x, self.current_pose.position.y)
         return
