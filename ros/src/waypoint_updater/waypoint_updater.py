@@ -71,18 +71,61 @@ class WaypointUpdater(object):
         wp_next = helper.next_waypoint_idx(pose, self.waypoints)
 
         final_waypoints = []
-        wp_i = wp_next
+
         target_speed = TARGET_SPEED
 
-        wps_to_light = self.red_light_wp - wp_next
-        if wps_to_light < 0:
-            wps_to_light += waypoints_num
+        # Distance in waypoints to red light
+        wps_to_light = (self.red_light_wp - wp_next + waypoints_num) % waypoints_num
+        # if wps_to_light < 0:
+        #     wps_to_light += waypoints_num
+
+        # Final waypoint of our path
+        la_wp = (wp_next + LOOKAHEAD_WPS) % waypoints_num
+
+        # Distance to red_light where to stop
+        rl_stop_line = 20
 
         # Deceleration length in wp (before red light)
-        decel_len = 50
+        decel_len = 70
 
+        '''
+        uniform_speed = True
+        if self.red_light_wp < 0:
+            uniform_speed = True
+            target_speed = TARGET_SPEED
+        elif wps_to_light > LOOKAHEAD_WPS:
+            uniform_speed = True
+            target_speed = TARGET_SPEED
+        elif wps_to_light < rl_stop_line:
+            uniform_speed = True
+            target_speed = 0.0
+        elif:
+            uniform_speed = False
 
+        if uniform_speed:
+            wp_i = wp_next
+            while wp_i != la_wp:
+                waypoint = self.waypoints[wp_i]
+                waypoint.twist.twist.linear.x = target_speed
+                final_waypoints.append(waypoint)
+                wp_i = (wp_i + 1) % waypoints_num
+        else:
+            wp_i = wp_next
+            while wp_i != la_wp:
+                waypoint = self.waypoints[wp_i]
+                # v = sqrt(2 * dist * max_decel)
 
+            # Set zeros
+            wp_i = (self.red_light_wp - rl_stop_line + waypoints_num) % waypoints_num
+            while wp_i != la_wp:
+                waypoint = self.waypoints[wp_i]
+                waypoint.twist.twist.linear.x = 0.0
+                final_waypoints.append(waypoint)
+                wp_i = (wp_i + 1) % waypoints_num
+            # Set deceleration
+        '''
+
+        wp_i = wp_next
         for i in range(LOOKAHEAD_WPS):
 
             waypoint = self.waypoints[wp_i]
