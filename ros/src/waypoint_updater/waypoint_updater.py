@@ -172,7 +172,7 @@ class WaypointUpdater(object):
         while len(waypoints_ahead) < count:
             waypoints_ahead.extend(waypoints[:count - len(waypoints_ahead)])
 
-        rospy.logout('waypoint_i: %d, proposed_yaw %f, len(waypoints): %d', waypoint_i, proposed_yaw, len(waypoints_ahead))
+        # rospy.logout('waypoint_i: %d, proposed_yaw %f, len(waypoints): %d', waypoint_i, proposed_yaw, len(waypoints_ahead))
 
         return waypoints_ahead
 

@@ -3,6 +3,8 @@ import rospy
 import tf
 import math
 from pid import PID
+from yaw_controller import YawController
+from lowpass import LowPassFilter
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -15,9 +17,15 @@ class Controller(object):
         self.accel_limit = kwargs.get('accel_limit')
         self.max_steer_angle = kwargs.get('max_steer_angle')
 
-        # Pid
-        self.throttle_pid = PID(kp=0.0, ki=0.0, kd=0.0, mn=self.decel_limit, mx=self.accel_limit)
-        self.steer_pid = PID(kp=0.0, ki=0.0, kd=0.0, mn=-self.max_steer_angle, mx=self.max_steer_angle)
+        # Controllers
+        self.throttle_pid = PID(kp=1, ki=0.005, kd=0.5, mn=self.decel_limit, mx=self.accel_limit)
+        self.yaw_controller = YawController(
+            wheel_base=kwargs.get('wheel_base'),
+            steer_ratio=kwargs.get('steer_ratio')*8,
+            min_speed=0.0,
+            max_lat_accel=kwargs.get('max_lat_accel'),
+            max_steer_angle=kwargs.get('max_steer_angle')
+        )
 
         self.cte = None
         self.diff_velocity = 0
@@ -25,25 +33,39 @@ class Controller(object):
         self.timestamp = None
 
     def control(self, *args, **kwargs):
-        pose = kwargs.get('pose')
-        waypoints = kwargs.get('waypoints')
-        velocity = kwargs.get('velocity')
-        target_velocity = kwargs.get('target_velocity')
+        current_velocity = kwargs.get('current_velocity')
+        linear_velocity = kwargs.get('linear_velocity')
+        angular_velocity = kwargs.get('angular_velocity')
 
+        current_time = rospy.get_time()
         if self.timestamp is None:
             self.timestamp = rospy.get_time()
+        time_elapsed = current_time - self.timestamp
+        linear_error = linear_velocity - current_velocity
+        throttle = self.throttle_pid.step(linear_error, time_elapsed)
+        timestamp = current_time
 
-        current_timestamp = rospy.get_time()
-        self.timestamp = current_timestamp
-        sample_time = current_timestamp - self.timestamp
+        steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
 
-        cte = self.get_cte(pose, waypoints)
-        steer = self.steer_pid.step(cte, sample_time)
-        # TODO: Implement filters
-        throttle = self.throttle_pid.step(target_velocity-velocity, sample_time)
-        brake = 0
+        # pose = kwargs.get('pose')
+        # waypoints = kwargs.get('waypoints')
+        # velocity = kwargs.get('velocity')
+        # target_velocity = kwargs.get('target_velocity')
+        #
+        # if self.timestamp is None:
+        #     self.timestamp = rospy.get_time()
+        #
+        # current_timestamp = rospy.get_time()
+        # self.timestamp = current_timestamp
+        # sample_time = current_timestamp - self.timestamp
+        #
+        # cte = self.get_cte(pose, waypoints)
+        # steer = self.steer_pid.step(cte, sample_time)
+        # # TODO: Implement filters
+        # throttle = self.throttle_pid.step(target_velocity-velocity, sample_time)
+        # brake = 0
 
-        return throttle, brake, steer
+        return throttle, 0.0, steer
 
     def reset(self):
         """Reset the PIDs
@@ -52,7 +74,7 @@ class Controller(object):
         """
         self.timestamp = None
         self.throttle_pid.reset()
-        self.steer_pid.reset()
+        # self.steer_pid.reset()
 
     def get_cte(self, pose, waypoints):
         x_coords, y_coords = [], []
