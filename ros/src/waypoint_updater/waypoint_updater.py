@@ -119,11 +119,6 @@ class WaypointUpdater(object):
             # todo: create a safety mechanism
             # if no pose update received stop the car
 
-
-            # todo: create a message of type Lane
-            # lane_msg.header
-            # lane_msg.waypoints
-
             next_wp_index = self.get_next_waypoint()
 
             if next_wp_index != -1:
@@ -146,8 +141,13 @@ class WaypointUpdater(object):
 
                 # msg_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
 
-                # todo: publish the message
-                #self.final_waypoints_pub.publish(lane_msg)
+                # create a message of type Lane
+                # publish the message
+                lane_msg = Lane()
+                lane_msg.header.frame_id = '/world'
+                lane_msg.header.stamp = rospy.Time(0)
+                lane_msg.waypoints = list_wp_to_pub
+                self.final_waypoints_pub.publish(lane_msg)
 
             else:
                 rospy.logwarn("Failed to find closest_waypoint.")
