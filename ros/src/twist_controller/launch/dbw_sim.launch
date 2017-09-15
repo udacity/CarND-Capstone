@@ -3,7 +3,7 @@
     <node pkg="twist_controller" type="dbw_node.py" name="dbw_node" output="screen">
         <param name="vehicle_mass" value="1080." />
         <param name="fuel_capacity" value="0." />
-        <param name="brake_deadband" value=".2" />
+        <param name="brake_deadband" value="100." />
         <param name="decel_limit" value="-5." />
         <param name="accel_limit" value="1." />
         <param name="wheel_radius" value="0.335" />
@@ -12,9 +12,9 @@
         <param name="max_lat_accel" value="3." />
         <param name="max_steer_angle" value="8." />
         <!-- new params -->
-        <param name="kp_vel" value ="1.0"/>
-        <param name="kp_throttle" value ="0.3"/>
-        <param name="ki_throttle" value ="0.1"/>
+        <param name="kp_vel" value ="2."/>
+        <param name="kp_throttle" value ="0.5"/>
+        <param name="ki_throttle" value ="0.0000"/>
         <param name="min_speed" value ="1."/>
 
     </node>
