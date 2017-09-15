@@ -8,3 +8,4 @@ scipy
 keras
 tensorflow
 h5py
+monotonic
