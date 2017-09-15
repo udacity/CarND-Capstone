@@ -1,6 +1,7 @@
 from yaw_controller import YawController
 from lowpass import LowPassFilter
 from math import atan
+from pid import PID
 
 
 GAS_DENSITY = 2.858
@@ -33,16 +34,24 @@ class Controller(object):
         									min_speed,
         									max_lat_accel,
         									max_steer_angle)
+        self.steer_pid = PID(0.5, 0.001, 0.0)
+        self.throttle_pid = PID(kp_throttle, ki_throttle, 0.0)
 
 
         pass
 
-    def control(self, cmd_lin_vel, cmd_ang_vel, cur_lin_vel, dbw_enabled):
+    def control(self, cmd_lin_vel, cmd_ang_vel, cur_lin_vel, cur_ang_vel, delta_t, dbw_enabled):
     	brake = 0.
     	throttle = 0.
 
-        steering = self.yaw_controller.get_steering(cmd_lin_vel, cmd_ang_vel, cur_lin_vel)
-        # steering = atan(self.wheel_base * cmd_ang_vel / (cmd_lin_vel+0.01) ) * self.steer_ratio
+        # steering = self.yaw_controller.get_steering(cmd_lin_vel, cmd_ang_vel, cur_lin_vel)
+        print("cmd_ang_vel: ", cmd_ang_vel)
+        print("cmd_lin_vel: ", cmd_lin_vel)
+
+        steer_error = cmd_ang_vel - cur_ang_vel
+
+        # steering = self.steer_pid.step(steer_error, delta_t)
+        steering = 10*atan(self.wheel_base * cmd_ang_vel / (cmd_lin_vel+0.01) ) * self.steer_ratio
         # print("steering: ", steering)
         cmd_acc = self.kp_vel * (cmd_lin_vel - cur_lin_vel)
 
@@ -57,28 +66,25 @@ class Controller(object):
         print("cur_acc: ", self.cur_acc)
 
         # self.last_cur_lin_vel = cur_lin_vel
-        self.last_acc = self.cur_acc 
+        # self.last_acc = self.cur_acc 
 
         if(dbw_enabled==False):
-            self.last_cur_lin_vel = 0
-            self.last_acc = 0
-            self.i_error = 0
+            self.steer_pid.reset()
+            self.throttle_pid.reset()
 
-            
-        p_error = cmd_acc
-        self.i_error += self.ki_throttle*p_error
+        throttle_error = cmd_acc
 
-        print("p_error: ", p_error)
-        print("i_error: ", self.i_error)
+        brake = -throttle_error*self.vehicle_mass*self.wheel_radius
+        # throttle = p_error*self.kp_throttle + self.i_error
+        throttle = self.throttle_pid.step(throttle_error, delta_t)
 
         if(cmd_acc < 0):
-        	brake = -p_error*self.vehicle_mass*self.wheel_radius
         	if(brake < self.brake_deadband):
         		brake = 0.
         	throttle = 0.
         else:
         	brake = 0.
-	        throttle = p_error*self.kp_throttle + self.i_error
+
 
         print("throttle: ", throttle)
 

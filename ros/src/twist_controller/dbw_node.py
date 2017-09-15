@@ -42,6 +42,7 @@ class DBWNode(object):
 
     def cur_vel_cb(self, cur_vel):
         self.cur_lin_vel = cur_vel.twist.linear.x
+        self.cur_ang_vel = cur_vel.twist.angular.z
 
     def dbw_enabled_cb(self, dbw_enabled):
         self.dbw_enabled = dbw_enabled
@@ -91,6 +92,7 @@ class DBWNode(object):
         self.cmd_lin_vel = 0
         self.cur_lin_vel = 0
         self.cmd_ang_vel = 0
+        self.cur_ang_vel = 0
         self.dbw_enabled = True
 
         self.loop()
@@ -107,15 +109,20 @@ class DBWNode(object):
 
     def loop(self):
         rate = rospy.Rate(self.rate) # 50Hz
+        last_time = rospy.get_time()
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
             # print(self.cmd_lin_vel, self.cmd_ang_vel, self.cur_lin_vel, self.dbw_enabled)
+            curr_time = rospy.get_time()
             throttle, brake, steering = self.controller.control(self.cmd_lin_vel,
                                                                 self.cmd_ang_vel,
                                                                 self.cur_lin_vel,
+                                                                self.cur_ang_vel,
+                                                                curr_time-last_time,
                                                                 self.dbw_enabled,
                                                                 )
+            last_time = curr_time
             # print(throttle, brake, steering)
             if self.dbw_enabled:
                 self.publish(throttle, brake, steering)
