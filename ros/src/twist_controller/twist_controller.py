@@ -84,6 +84,7 @@ class Controller(object):
             brake = 0.0
         else:
             # Calc brake torque as torque = Vmass * dec * wheel_radius
+            # ref http://sciencing.com/calculate-brake-torque-6076252.html
             brake = self.vehicle_mass * self.wheel_radius * (-1.0 * throttle)
             throttle = 0.0
 
