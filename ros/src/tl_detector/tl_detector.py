@@ -97,12 +97,20 @@ class TLDetector(object):
             pose (Pose): position to match a waypoint to
 
         Returns:
-            int: index of the closest waypoint in self.waypoints
+            int: index of the closest waypoint in self.base_waypoints
 
         """
-        #TODO implement
-        return 0
+        # IMPLEMENTED: Return closest waypoint given pose.
 
+        closest_gap = float('inf')
+        closest_idx = 0
+        for idx, awp in enumerate(self.base_waypoints):
+            agap = (awp.pose.pose.position.x - pose.position.x)**2 + \
+                   (awp.pose.pose.position.y - pose.position.y)**2
+            if agap < closest_gap:
+                closest_gap = agap
+                closest_idx = idx
+        return closest_idx
 
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
