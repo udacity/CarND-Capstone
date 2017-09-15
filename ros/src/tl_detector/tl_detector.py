@@ -54,6 +54,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.counter = 0
 
         rospy.spin()
 
@@ -234,11 +235,7 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        ## take the shortcut if the groud-truth is already provided
-        ## mainly for mock up test
-        ## TODO: remove this shortcut to do image classification
-        if light.state != TrafficLight.UNKNOWN:
-            return light.state
+        
 
         ## else do the hard work to classify it
         if(not self.has_image):
@@ -250,6 +247,20 @@ class TLDetector(object):
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
+
+        ## save images
+        state = ("green" if light.state == TrafficLight.GREEN else
+                "red" if light.state == TrafficLight.RED else
+                "yellow" if light.state == TrafficLight.YELLOW else
+                "unknown")
+        cv2.imwrite("/home/student/sdc-final/sim_imgs/%s/img%i.png" % (state,self.counter), cv_image)
+        self.counter += 1
+
+        ## take the shortcut if the groud-truth is already provided
+        ## mainly for mock up test
+        ## TODO: remove this shortcut to do image classification
+        if light.state != TrafficLight.UNKNOWN:
+            return light.state
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -268,14 +279,20 @@ class TLDetector(object):
         ahead_light_dist = float('inf')
         if self.car_pose:
             for i, light in enumerate(self.lights):
-                
+                if self.distance(self.get_light_coordinates(light), 
+                                 self.get_car_coordinates(self.car_pose)) >= 30:
+                        continue
+
                 light_state = self.get_light_state(light)
                 if light_state != TrafficLight.RED: continue # ignore non-red lights
+                
                 light_wp_index = self.get_closest_waypoint_index(light)
                 light_wp = self.waypoints[light_wp_index]
                 if self.ahead_of(light_wp, self.car_pose):
+
                     d = self.distance(self.get_waypoint_coordinates(light_wp),
                                       self.get_car_coordinates(self.car_pose))
+                    
                     if d < ahead_light_dist:
                         ahead_light = light_wp_index
                         ahead_light_dist = d

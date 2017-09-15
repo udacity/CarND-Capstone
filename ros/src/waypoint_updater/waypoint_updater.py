@@ -29,7 +29,7 @@ LOOKAHEAD_WPS = 200
 # Car speed in simulator (or real env) is MPH, whereas ROS uses MPS
 MPH_TO_MPS = 0.44704
 # max car speed
-MAX_SPEED = 30 * MPH_TO_MPS # m/s 
+MAX_SPEED = 20 * MPH_TO_MPS # m/s 
 
 
 class WaypointUpdater(object):
@@ -116,6 +116,11 @@ class WaypointUpdater(object):
             waypoints = self.base_waypoints_msg.waypoints[lane_start:lane_start+LOOKAHEAD_WPS]
             for waypoint in waypoints:
                 self.set_waypoint_velocity(waypoint, target_speed)
+
+            # stop at the end of road
+            if lane_start + LOOKAHEAD_WPS >= len(self.base_waypoints_msg.waypoints):
+                for waypoint in waypoints[-10:]:
+                    self.waypoint.set_waypoint_velocity(waypoint, 0.)
             lane = self.make_lane_msg(frame_id, waypoints)
 
             ## publish final_waypoints
@@ -196,18 +201,19 @@ class WaypointUpdater(object):
         # return dx < 0
 
     def red_light_ahead(self):
-        base_waypoints = self.base_waypoints_msg.waypoints
+        
         if self.redlight_wp_index is None or self.base_waypoints_msg is None:
             return False
-        elif self.redlight_wp_index >= len(base_waypoints): 
+        elif self.redlight_wp_index >= len(self.base_waypoints_msg.waypoints): 
         # traffic light prediction error, stop immediately
             return True
         else:
+            base_waypoints = self.base_waypoints_msg.waypoints
             light_wp = base_waypoints[self.redlight_wp_index]
             distance = self.distance(light_wp, self.car_pose)
             # TODO: make the condition more reliable
             # stops in x seconds with maximum speed
-            if self.ahead_of(light_wp, self.car_pose) and distance <= 30:#MAX_SPEED * 3: 
+            if self.ahead_of(light_wp, self.car_pose) and distance <= 60:#MAX_SPEED * 3: 
                 return True
             else:
                 return False

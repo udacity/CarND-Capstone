@@ -96,7 +96,8 @@ class DBWNode(object):
         self.car_twist = None # control car's twist based on its velocity
         self.car_velocity = None
         self.last_timestamp = rospy.rostime.get_time()
-        self.last_throttle = None
+        # self.last_throttle = None
+        # self.flag = None
 
         self.loop()
 
@@ -131,11 +132,11 @@ class DBWNode(object):
                     dt
                 )
 
-                if throttle != self.last_throttle:
-                    self.last_throttle = throttle
-                    self.Flag = True
-                else:
-                    self.Flag = False
+                # if throttle != self.last_throttle:
+                #     self.last_throttle = throttle
+                #     self.flag = True
+                # else:
+                #     self.flag = False
 
             # you should only publish control if dbw is enabled
             if self.dbw_enabled:
@@ -143,7 +144,26 @@ class DBWNode(object):
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
-        if self.Flag:
+
+        # tcmd = ThrottleCmd()
+        # tcmd.enable = True
+        # tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
+        # tcmd.pedal_cmd = throttle
+        # self.throttle_pub.publish(tcmd)
+
+        # scmd = SteeringCmd()
+        # scmd.enable = True
+        # scmd.steering_wheel_angle_cmd = steer
+        # self.steer_pub.publish(scmd)
+
+        # bcmd = BrakeCmd()
+        # bcmd.enable = True
+        # bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        # bcmd.pedal_cmd = brake
+        # self.brake_pub.publish(bcmd)
+
+
+        if brake <= 0:        
             tcmd = ThrottleCmd()
             tcmd.enable = True
             tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
@@ -154,12 +174,13 @@ class DBWNode(object):
             scmd.enable = True
             scmd.steering_wheel_angle_cmd = steer
             self.steer_pub.publish(scmd)
+
         else:
             bcmd = BrakeCmd()
             bcmd.enable = True
             bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
             bcmd.pedal_cmd = brake
-            self.brake_pub.publish(bcmd)
+            self.brake_pub.publish(bcmd)    
 
 
 if __name__ == '__main__':
