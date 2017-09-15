@@ -47,6 +47,11 @@ class DBWNode(object):
         params['max_lat_accel'] = rospy.get_param('~max_lat_accel', 3.)
         params['max_steer_angle'] = rospy.get_param('~max_steer_angle', 8.)
 
+        self.curr_linear_velocity =0
+        self.dbw_enabled = False
+        self.target_linear_velocity = 0
+        self.target_angular_velocity = 0
+
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                 SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
@@ -71,7 +76,7 @@ class DBWNode(object):
             # You should only publish the control commands if dbw is enabled
              throttle, brake, steering = self.controller.control(self.target_linear_velocity,
                      self.target_angular_velocity,
-                     self.current_linear_velocity,
+                     self.curr_linear_velocity,
                      self.dbw_enabled)
 
              if self.dbw_enabled is True:
