@@ -56,7 +56,9 @@ class Bridge(object):
                            for e in conf.publishers}
 
     def register_server(self, server):
+        print '++ assigning server'
         self.server = server
+        print '++ server assigned'
 
     def create_light(self, x, y, z, yaw, state):
         light = TrafficLight()
