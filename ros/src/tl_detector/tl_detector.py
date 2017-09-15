@@ -7,7 +7,7 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
-import tf
+import tf, math
 import cv2
 import yaml
 
@@ -18,7 +18,7 @@ class TLDetector(object):
         rospy.init_node('tl_detector')
 
         self.pose = None
-        self.waypoints = None
+        self.base_waypoints = None
         self.camera_image = None
         self.lights = []
 
@@ -26,7 +26,7 @@ class TLDetector(object):
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
-        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
+        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
         helps you acquire an accurate ground truth data source for the traffic light
         classifier by sending the current color state of all traffic lights in the
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
@@ -52,10 +52,10 @@ class TLDetector(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        self.pose = msg
+        self.pose = msg.pose
 
-    def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+    def waypoints_cb(self, lane):
+        self.base_waypoints = lane.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
