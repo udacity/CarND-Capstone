@@ -27,7 +27,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 ONE_MPH = 0.44704 # mph to mps
 TARGET_SPEED = 40.0 * ONE_MPH
-MAX_DECEL = 3.0 # m/s/s
+MAX_DECEL = 5.0 # m/s/s
 
 dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
@@ -84,13 +84,13 @@ class WaypointUpdater(object):
         la_wp = (wp_next + LOOKAHEAD_WPS) % waypoints_num
 
         # Distance to red_light where to stop (in waypoints)
-        rl_stop_line = 20
+        rl_stop_line = 90
 
         # Stop line waypoint (where speed = 0.0)
         rl_stop_line_wp = (self.red_light_wp - rl_stop_line + waypoints_num) % waypoints_num
 
         # Deceleration length in wp (before red light)
-        decel_len = 70
+        # decel_len = 130
 
 
         uniform_speed = True
@@ -107,7 +107,7 @@ class WaypointUpdater(object):
             # Red light is already too close, stop our car quickly
             uniform_speed = True
             target_speed = 0.0
-        elif:
+        else:
             # Red light is ahead, need to change speed gradually
             uniform_speed = False
 
@@ -135,8 +135,11 @@ class WaypointUpdater(object):
 
                 if not rl_stop_reached:
                   # v = sqrt(2 * dist * max_decel)
-                  speed = math.sqrt(2 * dist_rl_stop * MAX_DECEL)
+
+                  #   speed = math.sqrt(2 * dist_rl_stop * MAX_DECEL)
+                  speed = TARGET_SPEED
                   waypoint.twist.twist.linear.x = min(TARGET_SPEED, speed)
+
                   dist_rl_stop -= helper.wp_distance(wp_i, wp_i_next, self.waypoints)
                 else:
                   waypoint.twist.twist.linear.x = 0.0
@@ -177,13 +180,15 @@ class WaypointUpdater(object):
             #     final_waypoints[0].pose.pose.position.y))
             # rospy.loginfo("next wp linear.x   = {}".format(final_waypoints[0].twist.twist.linear.x))
             rospy.loginfo('wp_next = {}'.format(wp_next))
+            rospy.loginfo('red_light_wp = {}'.format(self.red_light_wp))
             # rospy.loginfo('dist to zero = {}'.format(wps_to_light - decel_len))
             # rospy.loginfo('len wp = {}'.format(len(final_waypoints)))
 
             # rospy.loginfo("dist min = [{}] = {}".format(closest_waypoint, dists[closest_waypoint]))
             # rospy.loginfo("yaw = {}".format(helper.yaw_from_orientation(orientation)))
-            speed_list = [w.twist.twist.linear.x for w in final_waypoints]
-            rospy.loginfo("final_waypoints[{}] = [{}]".format(len(final_waypoints), ",".join(speed_list)))
+
+            # speed_list = [str(w.twist.twist.linear.x) for w in final_waypoints]
+            # rospy.loginfo("final_waypoints[{}] = [{}]".format(len(final_waypoints), ",".join(speed_list)))
 
         self.cnt += 1
 

@@ -18,10 +18,10 @@ class Controller(object):
         self.vehicle_mass = vehicle_mass
         self.wheel_radius = wheel_radius
 
-        self.throttle_pid = pid.PID(kp = 0.7, ki = 0.005, kd = 0.3, mn=decel_limit, mx=accel_limit)
+        self.throttle_pid = pid.PID(kp = 0.6, ki = 0.004, kd = 0.2, mn=decel_limit, mx=accel_limit)
         self.throttle_filter = lowpass.LowPassFilter(tau = 0.0, ts = 1.0)
 
-        self.steer_pid = pid.PID(kp = 0.7, ki = 0.004, kd = 0.3, mn=-max_steer_angle, mx=max_steer_angle)
+        self.steer_pid = pid.PID(kp = 0.5, ki = 0.05, kd = 0.3, mn=-max_steer_angle, mx=max_steer_angle)
         self.steer_filter = lowpass.LowPassFilter(tau = 0.0, ts = 1.0)
 
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
@@ -48,6 +48,7 @@ class Controller(object):
             self.throttle_filter.ready = False
             self.steer_pid.reset()
             self.steer_filter.ready = False
+            rospy.loginfo("RESET!!!!")
             return 0.0, 0.0, 0.0
 
         # rospy.loginfo("DBW_ENABLED!!!!")
@@ -73,7 +74,7 @@ class Controller(object):
 
         # Yaw Controller
         steering = self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity)
-        # rospy.loginfo('ctrl: steer_yaw_control = {}'.format(steering))
+        # rospy.loginfo('ctrl: steering = {}'.format(steering))
         # steering = self.steer_filter.filt(steering)
 
         steer = self.steer_filter.filt(steer + steering)
@@ -85,7 +86,7 @@ class Controller(object):
         else:
             # Calc brake torque as torque = Vmass * dec * wheel_radius
             # ref http://sciencing.com/calculate-brake-torque-6076252.html
-            brake = self.vehicle_mass * self.wheel_radius * (-1.0 * throttle)
+            brake = self.vehicle_mass * self.wheel_radius * (-1.0 * throttle) #  * self.decel_limit
             throttle = 0.0
 
         # Stop still on red light :) - prevents slow movement near zero speed
@@ -94,4 +95,4 @@ class Controller(object):
             brake = self.vehicle_mass * self.wheel_radius * (-1.0 * self.decel_limit)
 
         # Return throttle, brake, steer
-        return throttle, brake, steering
+        return throttle, brake, steer

@@ -132,7 +132,7 @@ class DBWNode(object):
             # rospy.loginfo('delta_t = {}'.format(delta_t))
             self.prev_clk = clk.nsecs
 
-            target_linear_velocity = self.twist_cmd.linear.x
+            target_linear_velocity = abs(self.twist_cmd.linear.x) # abs - fixing strange bug in twist_cmd ...
             target_angular_velocity = self.twist_cmd.angular.z
             current_linear_velocity = self.current_velocity.linear.x
             current_angular_velocity = self.current_velocity.angular.z
