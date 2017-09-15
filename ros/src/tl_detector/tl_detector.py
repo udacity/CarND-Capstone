@@ -68,8 +68,8 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
-        ## FIX of a potential bug https://github.com/udacity/CarND-Capstone/issues/28
-        ## TODO: remove this when bug resolved
+        # FIX of a potential bug https://github.com/udacity/CarND-Capstone/issues/28
+        # TODO: remove this when bug resolved
         light_locations = [
                 [1148.56, 1184.65],
                 [1559.2, 1158.43],
@@ -159,15 +159,6 @@ class TLDetector(object):
         z = light.pose.pose.position.z
         return (x, y, z)
 
-    # def distance(self, waypoint, car_pose):
-    #     wp_x, wp_y, wp_z = self.get_waypoint_coordinates(waypoint)
-    #     car_x, car_y, car_z = self.get_car_coordinates(car_pose)
-
-    #     dx = wp_x - car_x
-    #     dy = wp_y - car_y
-    #     dz = wp_z - car_z
-    #     return math.sqrt(dx*dx + dy*dy + dz*dz)
-
     def distance(self, xyz1, xyz2):
         x1, y1, z1 = xyz1
         x2, y2, z2 = xyz2
@@ -193,10 +184,6 @@ class TLDetector(object):
                     for wp in self.waypoints]
         return distances.index(min(distances))
 
-        # light_xyz = self.get_light_coordinates(light)
-        # for wp in self.waypoints:
-        #     wp_xyz = self.get_waypoint_coordinates(wp)
-        # return 0
 
 
     def project_to_image_plane(self, point_in_world):
@@ -276,23 +263,6 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-
-
-        # light = None
-        # light_positions = self.config['light_positions']
-        # if(self.pose):
-        #     car_position = self.get_closest_waypoint(self.pose.pose)
-
-        # #TODO find the closest visible traffic light (if one exists)
-
-        # if light:
-        #     state = self.get_light_state(light)
-        #     return light_wp, state
-        # self.waypoints = None
-        # return -1, TrafficLight.UNKNOWN
-
-
-        # traffic_light_indices = [290, 758, 2015, 2542, 6366, 7065, 8647, 9845]
 
         ahead_light = None
         ahead_light_dist = float('inf')

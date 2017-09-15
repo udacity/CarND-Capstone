@@ -75,7 +75,12 @@ class DBWNode(object):
                                 vehicle_mass,
                                 wheel_radius,
                                 accel_limit,
-                                decel_limit)
+                                decel_limit,
+                                wheel_base,
+                                steer_ratio,
+                                min_speed,
+                                max_lat_accel,
+                                max_steer_angle)
 
         # Subscribers
         # whether manual (dbw_enabled=false) or self driving
@@ -91,6 +96,7 @@ class DBWNode(object):
         self.car_twist = None # control car's twist based on its velocity
         self.car_velocity = None
         self.last_timestamp = rospy.rostime.get_time()
+        self.last_throttle = None
 
         self.loop()
 
@@ -124,29 +130,36 @@ class DBWNode(object):
                     self.dbw_enabled,
                     dt
                 )
-                # your should only publish control if dbw is enabled
-                if self.dbw_enabled:
-                    self.publish(throttle, brake, steering)
+
+                if throttle != self.last_throttle:
+                    self.last_throttle = throttle
+                    self.Flag = True
+                else:
+                    self.Flag = False
+
+            # you should only publish control if dbw is enabled
+            if self.dbw_enabled:
+                self.publish(throttle, brake, steering)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
-        # Cannot publish throttle and brake simultaneously ?
-        tcmd = ThrottleCmd()
-        tcmd.enable = True
-        tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
-        tcmd.pedal_cmd = throttle
-        self.throttle_pub.publish(tcmd)
+        if self.Flag:
+            tcmd = ThrottleCmd()
+            tcmd.enable = True
+            tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
+            tcmd.pedal_cmd = throttle
+            self.throttle_pub.publish(tcmd)
 
-        scmd = SteeringCmd()
-        scmd.enable = True
-        scmd.steering_wheel_angle_cmd = steer
-        self.steer_pub.publish(scmd)
-
-        bcmd = BrakeCmd()
-        bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
-        bcmd.pedal_cmd = brake
-        self.brake_pub.publish(bcmd)
+            scmd = SteeringCmd()
+            scmd.enable = True
+            scmd.steering_wheel_angle_cmd = steer
+            self.steer_pub.publish(scmd)
+        else:
+            bcmd = BrakeCmd()
+            bcmd.enable = True
+            bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+            bcmd.pedal_cmd = brake
+            self.brake_pub.publish(bcmd)
 
 
 if __name__ == '__main__':

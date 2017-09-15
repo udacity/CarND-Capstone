@@ -1,4 +1,5 @@
 from pid import PID
+from yaw_controller import YawController
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -7,24 +8,26 @@ import math
 
 class Controller(object):
 
-    def __init__(self, vehicle_mass, wheel_radius, accel_limit, decel_limit):
+    def __init__(self, vehicle_mass, wheel_radius, accel_limit, decel_limit, 
+                       wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
         # self.speed_controller = PID(5, 0.05, 1, -0.5, 0.5)
 
         # use a separate speed controller, than from PID
-        self.speed_controller = SpeedController(
-                                vehicle_mass,
-                                wheel_radius,
-                                accel_limit,
-                                decel_limit)
-        # self.steering_controller = PID(2, 0.003, 1)
+        # self.speed_controller = SpeedController(
+        #                         vehicle_mass,
+        #                         wheel_radius,
+        #                         accel_limit,
+        #                         decel_limit)
+        self.speed_controller = PID(0.5, 0.02, 0.2)
         self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
+        self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
     def control(self, target_velocity, current_velocity, dbw_enabled, dt):
         target_linear_velocity, target_angular_velocity = target_velocity
         current_linear_velocity, current_angular_velocity = current_velocity
 
         # `rostopic echo /twist_cmd` says target linear velocity is fixed to 11.
-        # but target angular velocity is changing based on vehicle's orientation.
+        # but target angular velocity is changing based on vehicle's orienta
         linear_velocity_cte = target_linear_velocity - current_linear_velocity
         angular_velocity_cte = target_angular_velocity
 
@@ -32,21 +35,24 @@ class Controller(object):
             self.speed_controller.reset()
             self.steering_controller.reset()
 
-        
-        steering = self.steering_controller.step(angular_velocity_cte, dt)
+        corrective_steer = self.steering_controller.step(angular_velocity_cte, dt)
+        predictive_steer = self.yaw_controller.get_steering(target_linear_velocity,
+                                                            target_angular_velocity,
+                                                            current_linear_velocity)
+        steer = corrective_steer + predictive_steer
 
-        throttle, brake = self.speed_controller.step(linear_velocity_cte, dt)
+        # throttle, brake = self.speed_controller.step(linear_velocity_cte, dt)
 
-        # linear_velocity = self.speed_controller.step(linear_velocity_cte, dt)
-        # throttle = 0
-        # brake = 0
+        linear_velocity = self.speed_controller.step(linear_velocity_cte, dt)
+        throttle = 0
+        brake = 0
 
-        # if linear_velocity > 0:
-        #     throttle = linear_velocity
-        # else:
-        #     brake = abs(linear_velocity)
+        if linear_velocity > 0:
+            throttle = linear_velocity
+        else:
+            brake = abs(linear_velocity) * 20000
 
-        return throttle, brake, steering
+        return throttle, brake, steer
 
 
 

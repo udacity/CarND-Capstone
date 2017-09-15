@@ -29,7 +29,7 @@ LOOKAHEAD_WPS = 200
 # Car speed in simulator (or real env) is MPH, whereas ROS uses MPS
 MPH_TO_MPS = 0.44704
 # max car speed
-MAX_SPEED = 10 * MPH_TO_MPS # m/s 
+MAX_SPEED = 30 * MPH_TO_MPS # m/s 
 
 
 class WaypointUpdater(object):
@@ -207,7 +207,7 @@ class WaypointUpdater(object):
             distance = self.distance(light_wp, self.car_pose)
             # TODO: make the condition more reliable
             # stops in x seconds with maximum speed
-            if self.ahead_of(light_wp, self.car_pose) and distance <= MAX_SPEED * 3: 
+            if self.ahead_of(light_wp, self.car_pose) and distance <= 30:#MAX_SPEED * 3: 
                 return True
             else:
                 return False
