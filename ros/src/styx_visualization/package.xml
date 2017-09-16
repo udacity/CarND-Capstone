@@ -10,7 +10,11 @@
   <url>https://github.com/evenator/CarND-Capstone</url>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>dbw_mkz_description</exec_depend>
   <exec_depend>rospy</exec_depend>
+  <exec_depend>rviz</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
   <exec_depend>styx_msgs</exec_depend>
   <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>xacro</exec_depend>
 </package>

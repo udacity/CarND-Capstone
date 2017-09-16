@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<launch>
+  <param name="robot_description"
+         command="$(find xacro)/xacro '$(find dbw_mkz_description)/urdf/mkz.urdf.xacro'" />
+
+  <node name="base_lane_visualizer"
+        pkg="styx_visualization" type="lane_to_marker">
+    <remap from="lane" to="/base_waypoints"/>
+    <param name="color" value="green"/>
+    <param name="marker_ns" value="base"/>
+  </node>
+
+  <node name="final_lane_visualizer"
+        pkg="styx_visualization" type="lane_to_marker">
+    <remap from="lane" to="/final_waypoints"/>
+    <param name="color" value="blue"/>
+    <param name="marker_ns" value="final"/>
+  </node>
+
+  <node name="traffic_lane_visualizer"
+        pkg="styx_visualization" type="lane_to_marker">
+    <remap from="lane" to="/traffic_waypoints"/>
+    <param name="color" value="red"/>
+    <param name="marker_ns" value="traffic"/>
+  </node>
+
+  <node name="$(anon rviz)" pkg="rviz" type="rviz"
+        args="-d $(find styx_visualization)/config.rviz"/>
+</launch>
