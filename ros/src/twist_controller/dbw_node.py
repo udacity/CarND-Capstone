@@ -110,7 +110,10 @@ class DBWNode(object):
         rate = rospy.Rate(10) # 50Hz
         while not rospy.is_shutdown():
 
-            if (self.my_twist_command is not None):
+            if ((self.my_twist_command is not None) and
+                (self.my_current_velocity is not None) and
+                (self.pose is not None) and
+                (self.waypoints is not None)):
                 set_linear_velocity = self.my_twist_command.twist.linear.x
                 set_angular_velocity = self.my_twist_command.twist.angular.z
                 if (self.my_current_velocity is not None):
