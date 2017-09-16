@@ -41,14 +41,20 @@ colors = {'red':   ColorRGBA(r=1.0, g=0.0, b=0.0, a=1.0),
 
 if __name__ == "__main__":
     rospy.init_node('lane_to_marker')
-    marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=2)
+    marker_pub = rospy.Publisher('visualization_marker_array',
+                                 MarkerArray,
+                                 queue_size=2,
+                                 latch=True)
     ns = rospy.get_param('~marker_ns', 'lane')
     color_string = rospy.get_param('~color', 'red')
+    once = rospy.get_param('~once', False)
     color = colors[color_string.lower()]
     
     def handle_lane_msg(lane_msg):
         marker_pub.publish(lane_to_marker_array(lane_msg, color, ns))
-    
+        if once:
+            lane_sub.unregister()
+    global lane_sub
     lane_sub = rospy.Subscriber('lane', Lane, handle_lane_msg, queue_size=2)
 
     rospy.spin()

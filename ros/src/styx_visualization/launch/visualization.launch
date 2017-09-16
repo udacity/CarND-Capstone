@@ -8,6 +8,8 @@
     <remap from="lane" to="/base_waypoints"/>
     <param name="color" value="green"/>
     <param name="marker_ns" value="base"/>
+    <!-- This message is the same every time, so unsubscribe after running once -->
+    <param name="once" value="true"/>
   </node>
 
   <node name="final_lane_visualizer"
