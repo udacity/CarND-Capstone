@@ -43,9 +43,9 @@ class WaypointUpdater(object):
         self.num_waypoints = 0
         self.closest_waypoint = 0
         self.next_red_light = None
-        self.MAX_VELOCITY = 10.0
-        self.REDUCE_SPEED_DISTANCE = 100.0
-        self.STOP_DISTANCE = 5.0
+        self.MAX_VELOCITY = rospy.get_param("~max_velocity")
+        self.REDUCE_SPEED_DISTANCE = rospy.get_param("~reduce_speed_distance")
+        self.STOP_DISTANCE = rospy.get_param("~stop_distance")
 
         rospy.spin()
 
