@@ -3,7 +3,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 ### Team Members
 
 * Jeffrey Liu
-* Mate Wolfram
+* Máté Wolfram
 * Jes Fink-Jensen
 * Justin Heaton
 
