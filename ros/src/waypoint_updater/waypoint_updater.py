@@ -28,24 +28,22 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish.
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         
-        #The /base_waypoints topic repeatedly publishes a list of all waypoints for the track, 
+        # The /base_waypoints topic repeatedly publishes a list of all waypoints for the track, 
         # so this list includes waypoints both before and after the vehicle. 
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-	rospy.Subscriber('/obstacle_waypoint', PoseStamped, self.obstacle_cb)
-	rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/obstacle_waypoint', PoseStamped, self.obstacle_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below 
-	self.current_pose = None
+        self.current_pose = None
         self.current_waypoints = None #base_points which we get
-	self.traffic_waypoint = None
-	rospy.loginfo('Starting of waypoint updater')
+        self.traffic_waypoint = None
 
         self.loop()
 
@@ -54,8 +52,7 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if ((self.current_pose is not None) and (self.current_waypoints is not None)):
                 next_waypoint_index = self.get_next_waypoint()
-                rospy.loginfo ("started")
-		lane = Lane()
+                lane = Lane()
                 lane.header.frame_id = '/world'
                 lane.header.stamp = rospy.Time(0)
                 lane.waypoints = self.current_waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
@@ -68,7 +65,6 @@ class WaypointUpdater(object):
         min_ind = 0
         ind = 0
         car_position = self.current_pose.pose.position
-        rospy.loginfo ("car - position:", car_position)
 
         # Calcuate distance between car and waypoint
         for wp in self.current_waypoints:
@@ -104,7 +100,6 @@ class WaypointUpdater(object):
         car_y = self.current_pose.pose.position.y
 
         direction = math.atan2((map_y-car_y), (map_x-car_x)) #get direction
-	rospy.loginfo ("direction:", direction)
         yaw = self.get_current_yaw()
         angle = abs(yaw - direction);
 
@@ -119,7 +114,6 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, lane):
         self.current_waypoints = lane.waypoints;
-	rospy.loginfo ("lane.waypoints:", lane.waypoints)
         pass
 
     def traffic_cb(self, msg):
