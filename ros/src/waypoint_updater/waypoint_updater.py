@@ -71,14 +71,7 @@ class WaypointUpdater(object):
         # Collecting the waypoints ahead of the car. 
         # Wrap around when we reach the end.
         for i in range(LOOKAHEAD_WPS):
-            if (i + start_idx > (len(self.curr_waypoints) - 1)) and (not reset):
-                start_idx = 0
-                idx = 0
-                reset = 1
-            elif reset:
-                idx += 1
-            else:
-                idx = i + start_idx
+            idx = (start_idx + i) % len(self.curr_waypoints)
             lane.waypoints.append(self.curr_waypoints[idx])
          
         #rospy.logerr('Start idx: %s', start_idx)
