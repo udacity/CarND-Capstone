@@ -10,7 +10,7 @@ def lane_to_marker_array(lane, color, ns='lane'):
     # Create a linestrip marker
     lines = Marker()
     lines.header = lane.header
-    lines.ns = 'lane'
+    lines.ns = ns
     lines.id = 0
     lines.type = Marker.LINE_STRIP
     lines.action = Marker.ADD
