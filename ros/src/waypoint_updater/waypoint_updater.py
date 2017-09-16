@@ -21,32 +21,46 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
     def __init__(self):
+        self.track_waypoints = None
+
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-
-        # TODO: Add other member variables you need below
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        if self.track_waypoints is None:
+            return
+
+        # todo: no need to recompute final_waypoints on every call
+
+        # compute final waypoints
+        waypoints = self.track_waypoints.waypoints
+        car_point = msg.pose.position
+        next_waypoint = WaypointUpdater.next_waypoint(waypoints, car_point)
+
+        lane = Lane()
+        for j in range(next_waypoint, next_waypoint + LOOKAHEAD_WPS):
+            waypoint = waypoints[j]
+            self.set_waypoint_velocity(waypoint, 10)
+            lane.waypoints.append(waypoint)
+
+        self.final_waypoints_pub.publish(lane)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        if self.track_waypoints is None:
+            self.track_waypoints = waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -59,17 +73,56 @@ class WaypointUpdater(object):
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+    def set_waypoint_velocity(self, waypoint, velocity):
+        waypoint.twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, wp1, wp2):
+    @staticmethod
+    def distance(a, b):
+        return math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+
+    @staticmethod
+    def total_distance(waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
         for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            dist += WaypointUpdater.distance(
+                waypoints[wp1].pose.pose.position,
+                waypoints[i].pose.pose.position)
             wp1 = i
+
         return dist
 
+    @staticmethod
+    def closest_waypoint(waypoints, car_point):
+        next_waypoint_index = 0
+        next_waypoint_dist = 99999
+
+        for i, waypoint in enumerate(waypoints):
+            dist = WaypointUpdater.distance(
+                waypoint.pose.pose.position,
+                car_point)
+
+            if dist < next_waypoint_dist:
+                next_waypoint_index = i
+                next_waypoint_dist = dist
+
+        return next_waypoint_index
+
+    @staticmethod
+    def next_waypoint(waypoints, car_point):
+        next_waypoint_index = WaypointUpdater.closest_waypoint(waypoints, car_point)
+
+        next1 = waypoints[next_waypoint_index].pose.pose.position
+        next2 = waypoints[next_waypoint_index + 1].pose.pose.position
+
+        theta = math.atan2(next2.y - next1.y, next2.x - next1.x)
+        heading = math.atan2(next1.y - car_point.y, next1.x - car_point.x)
+        angle = abs(theta - heading)
+
+        if angle > math.pi / 4.0:
+            next_waypoint_index += 1
+
+        return next_waypoint_index
 
 if __name__ == '__main__':
     try:
