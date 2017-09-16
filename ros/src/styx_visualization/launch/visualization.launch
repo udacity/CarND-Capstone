@@ -23,6 +23,11 @@
     <param name="color" value="red"/>
     <param name="marker_ns" value="traffic"/>
   </node>
+  
+  <node name="traffic_light_visualizer"
+        pkg="styx_visualization" type="traffic_light_to_marker">
+    <remap from="traffic_lights" to="/vehicle/traffic_lights"/>
+  </node>
 
   <node name="$(anon rviz)" pkg="rviz" type="rviz"
         args="-d $(find styx_visualization)/config.rviz"/>
