@@ -3,6 +3,8 @@ import rospy
 import tf
 import math
 from pid import PID
+from yaw_controller import YawController
+from lowpass import LowPassFilter
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -15,33 +17,83 @@ class Controller(object):
         self.accel_limit = kwargs.get('accel_limit')
         self.max_steer_angle = kwargs.get('max_steer_angle')
 
-        # Pid
-        self.throttle_pid = PID(kp=0.0, ki=0.0, kd=0.0, mn=self.decel_limit, mx=self.accel_limit)
-        self.steer_pid = PID(kp=0.0, ki=0.0, kd=0.0, mn=-self.max_steer_angle, mx=self.max_steer_angle)
+        # Vehicle mass, fuel mass and wheel radius are required to calculate braking torque
+        self.vehicle_mass = kwargs.get('vehicle_mass')
+        self.wheel_radius = kwargs.get('wheel_radius')
+        self.fuel_mass = kwargs.get('fuel_capacity') * GAS_DENSITY # Assuming a full tank of gas
 
-        self.cte = None
-        self.diff_velocity = 0
+        # A band of deceleration within which brakes don't apply (because it's too low)
+        self.brake_deadband = kwargs.get('brake_deadband')
+
+        # Controllers
+        self.throttle_pid = PID(kp=1, ki=0.005, kd=0.5, mn=self.decel_limit, mx=self.accel_limit)
+        self.yaw_controller = YawController(
+            wheel_base=kwargs.get('wheel_base'),
+            steer_ratio=kwargs.get('steer_ratio')*8,
+            min_speed=kwargs.get('min_speed'),
+            max_lat_accel=kwargs.get('max_lat_accel'),
+            max_steer_angle=kwargs.get('max_steer_angle')
+        )
+        self.low_pass_filter = LowPassFilter(0.2, 0.1)
 
         self.timestamp = None
 
     def control(self, *args, **kwargs):
-        pose = kwargs.get('pose')
-        waypoints = kwargs.get('waypoints')
-        velocity = kwargs.get('velocity')
-        target_velocity = kwargs.get('target_velocity')
+        # For steering, we need the vehicle velocity (angular and linear)
+        # For velocity, we need the current velocity and target velocity to calculate the error
+        current_velocity = kwargs.get('current_velocity')
+        linear_velocity = kwargs.get('linear_velocity') # or target velocity
+        angular_velocity = kwargs.get('angular_velocity')
 
+        throttle, brake, steer = 0., 0., 0.
+
+        # If this is the first time control() is called
         if self.timestamp is None:
             self.timestamp = rospy.get_time()
+            return throttle, brake, steer
 
         current_timestamp = rospy.get_time()
-        self.timestamp = current_timestamp
-        sample_time = current_timestamp - self.timestamp
+        delta_time = current_timestamp - self.timestamp
+        timestamp = current_timestamp
 
-        cte = self.get_cte(pose, waypoints)
-        steer = self.steer_pid.step(cte, sample_time)
-        # TODO: Implement filters
-        throttle = self.throttle_pid.step(target_velocity-velocity, sample_time)
-        brake = 0
+        # current_velocity = current_velocity / ONE_MPH # Too slow
+        velocity_error = linear_velocity - current_velocity
+
+        # Make sure we have a valid delta_time. We don't want to divide by zero.
+        # Since we're publishing at 50Hz, the expected delta_time should be around 0.02
+        if delta_time > 0.01:
+            acceleration = self.throttle_pid.step(velocity_error, delta_time)
+
+            # Throttle when acceleration is positive
+            # Brake when acceleration is negative
+            if acceleration >= 0:
+                throttle = acceleration
+                brake = 0.
+            else:
+                # Brake calculations (Brake value is in Torque (N * m))
+                # (i.e. how much torque would we need to reduce our acceleration by x?)
+
+                # Braking Torque = Force * Distance from point of rotation
+                # * Distance from point of rotation = Wheel radius
+                # * Force = Mass * target deceleration
+                # * Mass = Vehicle mass + Fuel mass (assuming full tank)
+
+                # Only apply brakes if the required deceleration is significant enough
+                # (Greater than the specified brake_deadband)
+                deceleration = abs(acceleration)
+                if deceleration > self.brake_deadband:
+                    brake = (self.vehicle_mass + self.fuel_mass) * deceleration * self.wheel_radius
+                else:
+                    brake = 0.
+
+                throttle = 0.
+
+        # throttle = self.throttle_pid.step(velocity_error, delta_time)
+        steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
+
+        # Apply low pass filters to the throttle and brake values to eliminate jitter
+        throttle = self.low_pass_filter.filt(throttle)
+        brake = self.low_pass_filter.filt(0.0)
 
         return throttle, brake, steer
 
@@ -52,7 +104,7 @@ class Controller(object):
         """
         self.timestamp = None
         self.throttle_pid.reset()
-        self.steer_pid.reset()
+        # self.steer_pid.reset()
 
     def get_cte(self, pose, waypoints):
         x_coords, y_coords = [], []
