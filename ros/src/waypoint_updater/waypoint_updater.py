@@ -31,15 +31,16 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
+        # Subscribers
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         self.traffic_waypoint_sub = rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
-        # TODO: Add a subscriber for /obstacle_waypoint below
-
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        # Publishers
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=2)
 
         self.waypoints = None
+        self.latest_pose = None
         self.num_waypoints = 0
         self.closest_waypoint = 0
         self.next_red_light = None
@@ -47,20 +48,19 @@ class WaypointUpdater(object):
         self.REDUCE_SPEED_DISTANCE = rospy.get_param("~reduce_speed_distance")
         self.STOP_DISTANCE = rospy.get_param("~stop_distance")
 
-        rospy.spin()
+        r = rospy.Rate(0.5)
+        while not rospy.is_shutdown():
+            self.calculate_and_publish_next_waypoints()
+            r.sleep()
 
     def calculate_waypoint_velocity(self, waypoint_index):
         velocity = self.MAX_VELOCITY
 
-        #print("waypoint_index:", str(waypoint_index), "next_red_light:", self.next_red_light)
-
         if self.next_red_light and self.waypoints:
             distance_to_red_light = self.distance(self.waypoints, waypoint_index, self.next_red_light)
             if (distance_to_red_light < self.STOP_DISTANCE):
-                #print("STOP")
                 velocity = 0.0
             elif (distance_to_red_light < self.REDUCE_SPEED_DISTANCE):
-                #print("Reduce velocity")
                 ratio = distance_to_red_light / self.REDUCE_SPEED_DISTANCE
                 velocity = self.MAX_VELOCITY * ratio
 
@@ -69,16 +69,14 @@ class WaypointUpdater(object):
 
         return velocity
 
-    def pose_cb(self, msg):
+    def calculate_and_publish_next_waypoints(self):
         wps = []
-        if self.waypoints:
-            ix = self.next_waypoint(self.waypoints,msg.pose)
+        if (self.latest_pose and self.waypoints):
+            ix = self.next_waypoint(self.waypoints, self.latest_pose.pose)
             self.closest_waypoint = ix
             ix_end = ix+LOOKAHEAD_WPS
             if ix_end > self.num_waypoints:
                 ix_end = self.num_waypoints
-            #wps = [self.waypoints[x] for x in range(ix,ix_end)]
-            #rospy.loginfo("""Waypoints {} to {}""".format(ix,ix_end))
             for i in range(ix, ix_end):
                 self.set_waypoint_velocity(self.waypoints, i, self.calculate_waypoint_velocity(i))
                 wp = self.waypoints[i]
@@ -88,6 +86,9 @@ class WaypointUpdater(object):
         final_wps.waypoints = wps
 
         self.final_waypoints_pub.publish(final_wps)
+
+    def pose_cb(self, msg):
+        self.latest_pose = msg
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
