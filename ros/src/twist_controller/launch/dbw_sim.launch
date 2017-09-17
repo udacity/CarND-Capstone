@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="twist_controller" type="dbw_node.py" name="dbw_node">
+    <node pkg="twist_controller" type="dbw_node.py" name="dbw_node" output="screen">
         <param name="vehicle_mass" value="1080." />
         <param name="fuel_capacity" value="0." />
         <param name="brake_deadband" value=".2" />
@@ -11,5 +11,11 @@
         <param name="steer_ratio" value="2.67" />
         <param name="max_lat_accel" value="3." />
         <param name="max_steer_angle" value="8." />
+        <!-- new params -->
+        <param name="kp_vel" value ="1.0"/>
+        <param name="kp_throttle" value ="0.3"/>
+        <param name="ki_throttle" value ="0.1"/>
+        <param name="min_speed" value ="1."/>
+
     </node>
 </launch>
