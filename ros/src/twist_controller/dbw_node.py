@@ -61,7 +61,7 @@ class DBWNode(object):
 		self.target_velocity = None # Commig from /twist_cmd
 		self.current_velocity = None # Commig from /current_velocity
 		self.current_pose = None # Commig from /current_pose
-		self.init_time = rospy.get_rostime()
+		self.prev_throttle = 0
 		rospy.loginfo("debug - Variables defined")
 
 		# Define PID controller for throttle and brake
@@ -69,10 +69,6 @@ class DBWNode(object):
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
 		self.brake_pid = PID(kp=50.0, ki=0.001, kd=0.15, mn=brake_deadband, mx=1500)
 		rospy.loginfo("debug - PID defined")
-
-		# Define Yaw controller for the steering
-		self.steering = YawController(wheel_base, steer_ratio * 8, 0.2, max_lat_accel, max_steer_angle)
-		self.lpf_steering = LowPassFilter(window_weight=.5)
 
 		# Define Publishers
 		rospy.loginfo("debug - Defining publishers...")
@@ -83,7 +79,8 @@ class DBWNode(object):
 
 		# Instantiate a Controller object
 		rospy.loginfo("debug - Creating controler...")
-		#self.controller = Controller(self.throttle_pid, self.brake_pid, self.steering_pid)
+        self.controller = Controller(self.prev_throttle, wheel_base = wheel_base, steer_ratio = steer_ratio,
+									min_speed = 0.2, max_lat_accel = max_lat_accel, max_steer_angle = max_steer_angle)
 		rospy.loginfo("debug - Controller created")
 
 		# Define Subscribers 
@@ -107,13 +104,27 @@ class DBWNode(object):
 			rospy.loginfo("debug - Inside the while")
 
 			if self.target_velocity is not None and self.current_velocity is not None: 
-				rospy.loginfo("debug - Calculate steering ...")
+				rospy.loginfo("debug - Calculate steering, throttle and brake ...")
 				# Smoothing out the steering received
+
+				throttle, brake, steering = self.controller.control(
+												self.twist.linear.x, 
+												self.twist.angular.z, 
+												self.current_velocity.linear.x,
+												self.dbw_enabled)
+
+				rospy.loginfo("debug - Steering = (%s)", steering)
+				
+				self.publish(throttle, brake, steering)
+
+				"""
 				target_velocity_angular = self.lpf_steering.filt(self.target_velocity.angular.z)
 				steering = self.steering.get_steering(self.target_velocity.linear.x, target_velocity_angular, self.current_velocity.linear.x)
 				steering = (math.degrees(steering)) # Converting radians to degree
 				rospy.loginfo("debug - Steering = (%s)", steering)
 				self.publish(0.2, 0, steering)
+				"""
+
 
 			rate.sleep()
 

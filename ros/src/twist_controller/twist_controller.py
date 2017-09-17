@@ -8,35 +8,26 @@ from pid import PID
 
 
 class Controller(object):
-	def __init__(self, throttle, brake, steering):
-		"""
-		:param throttle - PID controller applied to the throttle
-		:param brake - PID controller applied to the brake
-		:param steering - PID controller applied to the steering   
-		"""
-		self.throttle = throttle
-		self.brake = brake 
-		self.steering = steering
+	def __init__(self, *args, **kwargs):
+		self.throttle = args[0]
+		self.yaw_controller = YawController(kwargs['wheel_base'], kwargs['steer_ratio'] * 8,
+											kwargs['min_speed'], kwargs['max_lat_accel'],
+											kwargs['max_steer_angle'])
+		self.lpf_steering = LowPassFilter(.96, 1)
 
-		# Apply a LowPassFilter to smooth out values
-		self.throtlle_low_pass = LowPassFilter(.5)
-		self.brake_low_pass = LowPassFilter(.5)
-		self.steering_low_pass = LowPassFilter(.5)
-
-	def control(current_velocity, taget_velocity, throttle_pid, brake_pid, steering_pid):
+	def control(self, *args, **kwargs):
+		twist_linear_x = args[0]
+		twist_angular_x = args[1]
+		current_linear_x = args[2]
+		dbw_enabled = args[3]
 		
-		# Break down velocities into linear and angular components
-		current_velocity_linear = current_velocity.linear.x
-		current_velocity_angular = current_velocity.angular.z
-		target_velocity_linear = target_velocity.linear.x
-		target_velocity_angular = target_velocity.angular.z
+		#if (current_linear_x < twist_linear_x) and self.throttle < 1.0 :
+			#self.throttle += 0.1
 
-		# Calculate difference between target and current velocity. This will be our CTE for throttle PID. 
-		velocity_error = target_velocity_linear - current_velocity_linear
+		# Smooth out value received from simulator
+		twist_angular_z = self.lpf_steering.filt(twist_angular_z)
+		
+		steering = self.yaw_controller.get_steering(twist_linear_x, twist_angular_z, current_linear_x)
+		steering = math.degrees(steering)
 
-		# Get time using t = 1/F. F Being the frequency in Hz (hardcoded, have to be passed)
-		dt = 1 / 10; 
-
-
-
-		return throttle, brake, steering
+		return 0.2, 0, steering
