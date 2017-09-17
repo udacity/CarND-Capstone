@@ -96,7 +96,7 @@ class DBWNode(object):
                         linear_velocity=abs(self.twist.linear.x),
                         angular_velocity=self.twist.angular.z
                     )
-                    self.publish(throttle, 0.0, steer)
+                    self.publish(throttle, brake, steer)
                 else:
                     self.controller.reset()
             rate.sleep()
