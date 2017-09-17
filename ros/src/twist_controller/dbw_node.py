@@ -46,6 +46,9 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        # other variables:
+        self.dbw_enabled = False
+
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
@@ -56,13 +59,32 @@ class DBWNode(object):
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
 
-        # TODO: Subscribe to all the topics you need to
+        # Subscribe to all the topics you need to
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)  #geometry_msgs/TwistStamped
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)   #geometry_msgs/TwistStamped
 
+        # spin() simply keeps python from exiting until this node is stopped
+        rospy.spin()
         self.loop()
+
+    def current_velocity_cb(self, msg):
+        # TODO: get the current velocity
+        pass
+
+    def dbw_enabled_cb(self, msg):
+        # TODO: get the dbw_enabled
+        # pass
+
+    def twist_cmd_cb(self,msg):
+        # TODO: get the twist_command
+        pass
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
+
+
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
             # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
@@ -75,7 +97,14 @@ class DBWNode(object):
             steer = 0
             #if <dbw is enabled>:
             print("accelerating")
-            self.publish(throttle, brake, steer)
+            if not self.dbw_enabled:
+
+                # TODO: RESET PID CONTROLLER
+
+                pass
+            else:
+                self.publish(throttle, brake, steer)
+                
             rate.sleep()
 
     def publish(self, throttle, brake, steer):

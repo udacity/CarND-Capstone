@@ -53,9 +53,11 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        # spin() simply keeps python from exiting until this node is stopped
+        rospy.spin()
 
         self.loop()
-        rospy.spin()
+
 
     def get_yaw(self,msg_quat):
         quaternion = [msg_quat.x, msg_quat.y, msg_quat.z, msg_quat.w]
@@ -144,7 +146,7 @@ class WaypointUpdater(object):
                 # create a message of type Lane
                 # publish the message
                 lane_msg = Lane()
-                lane_msg.header.frame_id = '/world'
+                lane_msg.lane.header.frame_id = '/world'
                 lane_msg.header.stamp = rospy.Time(0)
                 lane_msg.waypoints = list_wp_to_pub
                 self.final_waypoints_pub.publish(lane_msg)
