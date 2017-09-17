@@ -136,6 +136,8 @@ class WaypointUpdater(object):
         if bwd_yaw_diff < fwd_yaw_diff:
             waypoints = waypoints[::-1]
             waypoint_i = len(waypoints) - waypoint_i - 1
+            for wp in waypoints:
+                wp.twist.twist.linear.x *= -1
             fwd = False
 
         # Loop to start if waypoints are depleted
@@ -180,8 +182,8 @@ class WaypointUpdater(object):
         if not self.current_pose or not self.waypoints:
             return None
 
-        #waypoints_ahead = self.look_ahead_waypoints(self.current_pose, self.waypoints)
-        waypoints_ahead = self.look_ahead_waypoints2(self.current_pose, self.waypoints)
+        waypoints_ahead = self.look_ahead_waypoints(self.current_pose, self.waypoints)
+        #waypoints_ahead = self.look_ahead_waypoints2(self.current_pose, self.waypoints)
 
         next_waypoints = waypoints_ahead
 
