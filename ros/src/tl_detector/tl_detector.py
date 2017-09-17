@@ -194,8 +194,13 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
+        if (self.waypoints is None):
+            rospy.logwarn("Not processing traffic lights as waypoints are not initialized")
+            return -1, TrafficLight.UNKNOWN
+
         light = None
-        #car_position = None
+        car_position = -1
         light_wp = -1
         light_positions = self.config['light_positions']
         rospy.logdebug("light_positions (%s)", light_positions)

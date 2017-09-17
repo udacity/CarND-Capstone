@@ -5,3 +5,5 @@ devel
 
 profile.tmp
 .idea/
+
+ros/src/tl_detector/tl.png
