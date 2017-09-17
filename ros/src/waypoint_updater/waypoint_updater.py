@@ -53,11 +53,10 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-        # spin() simply keeps python from exiting until this node is stopped
-        rospy.spin()
 
         self.loop()
-
+        # spin() simply keeps python from exiting until this node is stopped
+        rospy.spin()
 
     def get_yaw(self,msg_quat):
         quaternion = [msg_quat.x, msg_quat.y, msg_quat.z, msg_quat.w]
@@ -112,7 +111,7 @@ class WaypointUpdater(object):
         #    thefile.write(str(wp.pose.pose.position.x) + ',' + str(wp.pose.pose.position.y) + '\n')
 
 
-        updateRate = 3 # update frequency in Hz  Should be 50Hz TBD
+        updateRate = 50 # update frequency in Hz  Should be 50Hz TBD
         rate = rospy.Rate(updateRate)
         rospy.loginfo("Running with update freq = %s", updateRate)
         while not rospy.is_shutdown():
@@ -135,18 +134,18 @@ class WaypointUpdater(object):
                     # wrap around
                     list_wp_to_pub = self.waypoints[next_wp_index:]
                     list_wp_to_pub = list_wp_to_pub + (self.waypoints[0:excess])
-                    rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s (%s+%s)",
-                                  len(list_wp_to_pub), next_wp_index, len(self.waypoints)-next_wp_index,excess)
+                    #rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s (%s+%s)",
+                                  #len(list_wp_to_pub), next_wp_index, len(self.waypoints)-next_wp_index,excess)
                 else:
                     list_wp_to_pub = self.waypoints[next_wp_index:next_wp_index+LOOKAHEAD_WPS]
-                    rospy.loginfo("Publishing %s wp from index %s ", len(list_wp_to_pub),next_wp_index)
+                    #rospy.loginfo("Publishing %s wp from index %s ", len(list_wp_to_pub),next_wp_index)
 
                 # msg_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
 
                 # create a message of type Lane
                 # publish the message
                 lane_msg = Lane()
-                lane_msg.lane.header.frame_id = '/world'
+                lane_msg.header.frame_id = '/world'
                 lane_msg.header.stamp = rospy.Time(0)
                 lane_msg.waypoints = list_wp_to_pub
                 self.final_waypoints_pub.publish(lane_msg)
