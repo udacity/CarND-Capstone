@@ -35,6 +35,7 @@ class TLPublisher(object):
 
         light.header = Header()
         light.header.stamp = rospy.Time.now()
+
         light.header.frame_id = '/world'
 
         light.pose = self.create_pose(x, y, z, yaw)
@@ -47,6 +48,7 @@ class TLPublisher(object):
 
         pose.header = Header()
         pose.header.stamp = rospy.Time.now()
+
         pose.header.frame_id = '/world'
 
         pose.pose.position.x = x

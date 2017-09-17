@@ -9,7 +9,10 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
+import math
 import yaml
+from attrdict import AttrDict
+import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -55,10 +58,11 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        #rospy.loginfo("GROUND TRUTH Traffic Lights (%s)", msg.lights)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -100,8 +104,21 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        #TODO_Done implement
+        def dl(a, b):
+            return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+
+        #rospy.loginfo("Waypoints LENGTH (%s)", len(self.waypoints))
+
+        closest_wp = len(self.waypoints) + 1
+        closest_dist = 100000
+        for i in range(len(self.waypoints)):
+            dist = dl(self.waypoints[i].pose.pose.position, pose)
+            if (dist < closest_dist):
+                closest_wp = i
+                closest_dist = dist
+
+        return closest_wp
 
 
     def project_to_image_plane(self, point_in_world):
@@ -155,10 +172,15 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        rospy.loginfo ("image shape (%s)", np.shape(cv_image))
+        cv2.imwrite('tl.png', cv_image)
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
+
+        #_cv2.imwrite('output_images/tlroi', cv_image) //roi image here
+
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -172,12 +194,40 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
-        light_positions = self.config['light_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
 
-        #TODO find the closest visible traffic light (if one exists)
+        if (self.waypoints is None):
+            rospy.logwarn("Not processing traffic lights as waypoints are not initialized")
+            return -1, TrafficLight.UNKNOWN
+
+        light = None
+        car_position = -1
+        light_wp = -1
+        light_positions = self.config['light_positions']
+        rospy.logdebug("light_positions (%s)", light_positions)
+        if(self.pose):
+            car_position = self.get_closest_waypoint(self.pose.pose.position)
+            rospy.logdebug("closest_waypoint car (%s)", car_position)
+
+        #TODO_Done find the closest visible traffic light (if one exists)
+        min_diff = 10000
+        for i in range(len(light_positions)) :
+            light_position = light_positions[i]
+            tmp_light_wp = self.get_closest_waypoint(AttrDict({'x': light_position[0], 'y': light_position[1]}))
+            #rospy.loginfo("closest_waypoint light (%s)", tmp_light_wp)
+            diff_position = (tmp_light_wp - car_position)
+            if diff_position >= 0 and diff_position < min_diff :
+                min_diff = diff_position
+                light_wp = tmp_light_wp
+                light = self.lights[i]
+
+        rospy.loginfo("Upcoming closest light to vehicle's position (%s, %s) is nearest to waypoint index  (%s) and is "
+                      "at location (%s, %s, %s)",
+                          self.pose.pose.position.x, self.pose.pose.position.y,
+                          light_wp, light.pose.pose.position.x, light.pose.pose.position.y, light.pose.pose.position.z)
+        rospy.loginfo("Light's nearest Waypoint (%s) Details (%s)",  light_wp, self.waypoints[light_wp].pose.pose.position)
+
+        # Uncomment below line to test waypoint publishing
+        #return light_wp, TrafficLight.RED
 
         if light:
             state = self.get_light_state(light)
