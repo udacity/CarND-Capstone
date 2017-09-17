@@ -1,0 +1,1 @@
+rosbag record -O $1 -a
