@@ -48,6 +48,10 @@ class DBWNode(object):
 
         # other variables:
         self.dbw_enabled = False
+        # init the low_pass filter
+        tau = 1.5
+        ts = 1.0
+        lp_filter = LowPassFilter(tau, ts)
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -92,7 +96,15 @@ class DBWNode(object):
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
-            throttle = 0.50
+
+            throttle = 0.50 # note throttle values should be in the range 0-1
+            # use pid and low_pass for acceleration
+
+            # after getting the acceleration from PID, filter it using low_pass
+            throttle = lp_filter.filt(throttle)
+
+            # use yaw_controller for steering
+
             brake = 0
             steer = 0
             #if <dbw is enabled>:
@@ -104,7 +116,7 @@ class DBWNode(object):
                 pass
             else:
                 self.publish(throttle, brake, steer)
-                
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
