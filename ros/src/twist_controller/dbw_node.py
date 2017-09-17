@@ -79,7 +79,7 @@ class DBWNode(object):
 
 		# Instantiate a Controller object
 		rospy.loginfo("debug - Creating controler...")
-        self.controller = Controller(self.prev_throttle, wheel_base = wheel_base, steer_ratio = steer_ratio,
+		self.controller = Controller(self.prev_throttle, wheel_base = wheel_base, steer_ratio = steer_ratio,
 									min_speed = 0.2, max_lat_accel = max_lat_accel, max_steer_angle = max_steer_angle)
 		rospy.loginfo("debug - Controller created")
 
@@ -114,7 +114,7 @@ class DBWNode(object):
 												self.dbw_enabled)
 
 				rospy.loginfo("debug - Steering = (%s)", steering)
-				
+
 				self.publish(throttle, brake, steering)
 
 				"""
