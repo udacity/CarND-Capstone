@@ -126,7 +126,7 @@ class DBWNode(object):
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
 
-            throttle = 0.50 # note throttle values should be in the range 0-1
+            throttle = 0.40 # note throttle values should be in the range 0-1
 
             # TODO: use pid for acceleration
 
