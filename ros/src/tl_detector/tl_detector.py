@@ -173,6 +173,8 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        start_time = rospy.get_time()
+
         light_index = None
         light_positions = self.config['light_positions']
         light_pose = Pose()
@@ -192,10 +194,20 @@ class TLDetector(object):
                     light_index = closest_waypoint_index
                     light_pose.position.x = light_position[0]
                     light_pose.position.y = light_position[1]
-                    closest_waypoint_to_light = self.get_closest_waypoint(light_pose)
+
+        closest_waypoint_to_light = self.get_closest_waypoint(light_pose)
+
+        end_time = rospy.get_time()
+        get_closest_waypoint_timespan = end_time - start_time
+        start_time = end_time
 
         state = self.get_light_state()
-        print(closest_waypoint_to_light, state)
+
+        end_time = rospy.get_time()
+        get_light_state_timespan = end_time - start_time
+        start_time = end_time
+
+        print(get_closest_waypoint_timespan, get_light_state_timespan)
         return closest_waypoint_to_light, state
 
 if __name__ == '__main__':
