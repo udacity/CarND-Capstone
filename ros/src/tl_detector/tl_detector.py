@@ -9,15 +9,10 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
-<<<<<<< HEAD
-import yaml
-=======
 import math
 import yaml
 from attrdict import AttrDict
 import numpy as np
-
->>>>>>> master
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -199,15 +194,16 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
+        if (self.waypoints is None):
+            rospy.logwarn("Not processing traffic lights as waypoints are not initialized")
+            return -1, TrafficLight.UNKNOWN
+
         light = None
-<<<<<<< HEAD
-        light_positions = self.config['light_positions']
-=======
-        #car_position = None
+        car_position = -1
         light_wp = -1
         light_positions = self.config['light_positions']
         rospy.logdebug("light_positions (%s)", light_positions)
->>>>>>> master
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose.position)
             rospy.logdebug("closest_waypoint car (%s)", car_position)
