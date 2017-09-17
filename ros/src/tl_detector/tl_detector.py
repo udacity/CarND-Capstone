@@ -172,8 +172,8 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        rospy.loginfo ("image shape (%s)", np.shape(cv_image))
-        cv2.imwrite('tl.png', cv_image)
+        rospy.logdebug ("image shape (%s)", np.shape(cv_image))
+        #cv2.imwrite('tl.png', cv_image)
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
@@ -220,11 +220,11 @@ class TLDetector(object):
                 light_wp = tmp_light_wp
                 light = self.lights[i]
 
-        rospy.loginfo("Upcoming closest light to vehicle's position (%s, %s) is nearest to waypoint index  (%s) and is "
+        rospy.logdebug("Upcoming closest light to vehicle's position (%s, %s) is nearest to waypoint index  (%s) and is "
                       "at location (%s, %s, %s)",
                           self.pose.pose.position.x, self.pose.pose.position.y,
                           light_wp, light.pose.pose.position.x, light.pose.pose.position.y, light.pose.pose.position.z)
-        rospy.loginfo("Light's nearest Waypoint (%s) Details (%s)",  light_wp, self.waypoints[light_wp].pose.pose.position)
+        rospy.logdebug("Light's nearest Waypoint (%s) Details (%s)",  light_wp, self.waypoints[light_wp].pose.pose.position)
 
         # Uncomment below line to test waypoint publishing
         #return light_wp, TrafficLight.RED
