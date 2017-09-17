@@ -32,7 +32,8 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.base_waypoints_sub = rospy.Subscriber('/base_waypoints',
+                                                   Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         # rospy.Subscriber('/traffic_waypoint', Lane, self.traffic_cb)
@@ -43,7 +44,10 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
         self.waypoints = None
-        
+
+        self.prev_pose = None
+        self.prev_next_wp = None
+
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -66,13 +70,22 @@ class WaypointUpdater(object):
             rospy.logwarn("Received pose_cb before initial waypoints_cb")
             return
 
-        next_wp = self.next_waypoint(self.waypoints, msg.pose)
-
-        rospy.loginfo("current pose (%s, %s) next waypoint (%s, %s)",
-                      msg.pose.position.x,
-                      msg.pose.position.y,
-                      self.waypoints[next_wp].pose.pose.position.x,
-                      self.waypoints[next_wp].pose.pose.position.y)
+        if (self.prev_pose == msg.pose):
+            next_wp = self.prev_next_wp
+            rospy.loginfo("same as previous pose (%s, %s) next waypoint (%s, %s)",
+                          msg.pose.position.x,
+                          msg.pose.position.y,
+                          self.waypoints[next_wp].pose.pose.position.x,
+                          self.waypoints[next_wp].pose.pose.position.y)
+        else:
+            next_wp = self.next_waypoint(self.waypoints, msg.pose)
+            rospy.loginfo("current pose (%s, %s) next waypoint (%s, %s)",
+                          msg.pose.position.x,
+                          msg.pose.position.y,
+                          self.waypoints[next_wp].pose.pose.position.x,
+                          self.waypoints[next_wp].pose.pose.position.y)
+            self.prev_next_wp = next_wp
+            self.prev_pose = msg.pose
 
         final_waypoints = Lane()
 
@@ -83,8 +96,11 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, msg):
         # TODO: Implement
-        self.waypoints = msg.waypoints
-        rospy.loginfo("waypoints %s", len(self.waypoints))
+        if (self.waypoints is None):
+            self.waypoints = msg.waypoints
+            rospy.loginfo("waypoints %s", len(self.waypoints))
+        else:
+            self.base_waypoints_sub.unregister()
 
     def closest_waypoint(self, waypoints, pose):
         def dl(a, b):
