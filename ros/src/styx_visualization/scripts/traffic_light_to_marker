@@ -1,0 +1,46 @@
+#! /usr/bin/env python
+
+import rospy
+from std_msgs.msg import ColorRGBA
+from styx_msgs.msg import TrafficLightArray, TrafficLight
+from visualization_msgs.msg import Marker, MarkerArray
+
+colors = {TrafficLight.UNKNOWN: ColorRGBA(r=0.5, g=0.5, b=0.5, a=1.0),
+          TrafficLight.GREEN:   ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0),
+          TrafficLight.YELLOW:  ColorRGBA(r=1.0, g=1.0, b=0.0, a=1.0),
+          TrafficLight.RED:     ColorRGBA(r=1.0, g=0.0, b=0.0, a=1.0)
+}
+
+def traffic_light_to_marker(light, id=0):
+    marker = Marker()
+    marker.header = light.header
+    marker.ns = 'traffic_lights'
+    marker.id = id
+    marker.type = Marker.CYLINDER
+    marker.action = Marker.ADD
+    marker.pose = light.pose.pose
+    marker.scale.x = 0.3
+    marker.scale.y = 0.3
+    marker.scale.z = 0.5
+    marker.color = colors[light.state]
+    return marker
+
+def traffic_light_array_to_marker_array(light_array):
+    marker_array = MarkerArray()
+    marker_array.markers = [traffic_light_to_marker(light, id)
+                                for id, light in enumerate(light_array.lights)]
+    return marker_array
+
+if __name__ == "__main__":
+    rospy.init_node('traffic_light_to_marker')
+    marker_pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=2)
+
+    def handle_traffic_light_msg(light_array):
+        marker_pub.publish(traffic_light_array_to_marker_array(light_array))
+    
+    traffic_light_sub = rospy.Subscriber('traffic_lights',
+                                         TrafficLightArray,
+                                         handle_traffic_light_msg,
+                                         queue_size=2)
+
+    rospy.spin()

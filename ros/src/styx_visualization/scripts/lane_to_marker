@@ -1,0 +1,60 @@
+#! /usr/bin/env python
+
+from copy import deepcopy
+import rospy
+from std_msgs.msg import ColorRGBA
+from styx_msgs.msg import Lane
+from visualization_msgs.msg import Marker, MarkerArray
+
+def lane_to_marker_array(lane, color, ns='lane'):
+    # Create a linestrip marker
+    lines = Marker()
+    lines.header = lane.header
+    lines.ns = ns
+    lines.id = 0
+    lines.type = Marker.LINE_STRIP
+    lines.action = Marker.ADD
+    lines.pose.orientation.w = 1.0
+    lines.scale.x = 0.1
+    lines.points = [p.pose.pose.position for p in lane.waypoints]
+    lines.color = color
+    
+    # Create a points marker for the vertices
+    points = deepcopy(lines)
+    points.id = 1
+    points.type = Marker.SPHERE_LIST
+    points.scale.x = 0.3
+    points.scale.y = 0.3
+    points.scale.z = 0.3
+    
+    # Put the markers in an array and return it
+    marker_array = MarkerArray()
+    marker_array.markers.append(lines)
+    marker_array.markers.append(points)
+    return marker_array
+    
+# Define some colors we can use
+colors = {'red':   ColorRGBA(r=1.0, g=0.0, b=0.0, a=1.0),
+          'green': ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0),
+          'blue':  ColorRGBA(r=0.0, g=0.0, b=1.0, a=1.0)
+}
+
+if __name__ == "__main__":
+    rospy.init_node('lane_to_marker')
+    marker_pub = rospy.Publisher('visualization_marker_array',
+                                 MarkerArray,
+                                 queue_size=2,
+                                 latch=True)
+    ns = rospy.get_param('~marker_ns', 'lane')
+    color_string = rospy.get_param('~color', 'red')
+    once = rospy.get_param('~once', False)
+    color = colors[color_string.lower()]
+    
+    def handle_lane_msg(lane_msg):
+        marker_pub.publish(lane_to_marker_array(lane_msg, color, ns))
+        if once:
+            lane_sub.unregister()
+    global lane_sub
+    lane_sub = rospy.Subscriber('lane', Lane, handle_lane_msg, queue_size=2)
+
+    rospy.spin()
