@@ -42,7 +42,7 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def publish(self):
-        rate = rospy.Rate(40)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             next_waypoints = self.get_next_waypoints()
             if next_waypoints:
