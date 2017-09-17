@@ -8,6 +8,8 @@ from flask import Flask, render_template
 
 from bridge import Bridge
 from conf import conf
+import sys
+sys.excepthook = lambda *args: None
 
 sio = socketio.Server()
 app = Flask(__name__)
