@@ -115,7 +115,7 @@ class DBWNode(object):
                     #     self.twist.linear.x, self.twist.angular.z, velocity
                     # )
                     # TODO: Incorporate steering with yaw_steering
-                    self.publish(0.5, 0.0, steer)
+                    self.publish(throttle, 0.0, steer)
                 else:
                     self.controller.reset()
             rate.sleep()
