@@ -114,7 +114,7 @@ class DBWNode(object):
         return
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(10) # 50Hz
         while not rospy.is_shutdown():
 
 
@@ -126,7 +126,7 @@ class DBWNode(object):
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
 
-            throttle = 0.40 # note throttle values should be in the range 0-1
+            throttle = 0.8 # note throttle values should be in the range 0-1
 
             # TODO: use pid for acceleration
 
