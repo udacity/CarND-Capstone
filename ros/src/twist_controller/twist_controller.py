@@ -15,7 +15,7 @@ class TwistController(object):
         self.prev_timestamp = datetime.now()
 
 
-    def control(self, proposed_linear_velocity, current_linear_velocity):
+    def control(self, proposed_linear_velocity, proposed_angular_velocity, current_linear_velocity):
 
         timestamp = datetime.now()
 
@@ -27,4 +27,4 @@ class TwistController(object):
         print("throttle:{}".format(throttle))
 
         # Return throttle, brake, steer
-        return throttle, 0., 0.
+        return throttle, 0., proposed_angular_velocity * 10

@@ -6,6 +6,7 @@ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
 
+from yaw_controller import YawController
 from twist_controller import TwistController
 
 '''
@@ -48,8 +49,9 @@ class DBWNode(object):
 
         self.rate = 50
         self.dbw_enabled = True
-        self.latest_current_velocity = None
-        self.latest_proposed_velocity = None
+        self.current_linear_velocity = None
+        self.proposed_linear_velocity = None
+        self.proposed_angular_velocity = None
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
@@ -58,6 +60,11 @@ class DBWNode(object):
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
         self.controller = TwistController()
+        self.yaw_controller = YawController(wheel_base=wheel_base,
+                                            steer_ratio=steer_ratio,
+                                            min_speed=0.,
+                                            max_lat_accel=max_lat_accel,
+                                            max_steer_angle=max_steer_angle)
 
         # TODO: Subscribe to all the topics you need to
 
@@ -68,19 +75,20 @@ class DBWNode(object):
         self.loop()
 
     def current_velocity_cb(self, msg):
-        self.latest_current_velocity = msg.twist.linear.x
+        self.current_linear_velocity = msg.twist.linear.x
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
 
     def twist_cmd_cb(self, msg):
-        self.latest_proposed_velocity = msg.twist.linear.x
+        self.proposed_linear_velocity = msg.twist.linear.x
+        self.proposed_angular_velocity = msg.twist.angular.z
 
 
     def loop(self):
         rate = rospy.Rate(self.rate)  # 50Hz
         while not rospy.is_shutdown():
-            throttle, brake, steer = 1, None, None
+            throttle, brake, steering = 1, None, None
 
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -92,18 +100,26 @@ class DBWNode(object):
 
             if self.dbw_enabled:
 
-                if (self.latest_current_velocity is not None)\
-                        & (self.latest_proposed_velocity is not None):
+                if (self.current_linear_velocity is not None) \
+                        & (self.proposed_linear_velocity is not None) \
+                        & (self.proposed_angular_velocity is not None):
 
-                    print("velocity current:{}".format(self.latest_current_velocity))
-                    print("velocity proposed:{}".format(self.latest_proposed_velocity))
+                    print("velocity linear current:{}".format(self.current_linear_velocity))
+                    print("velocity linear proposed:{}".format(self.proposed_linear_velocity))
+                    print("velocity angular proposed:{}".format(self.proposed_angular_velocity))
 
-                    throttle, brake, steering = self.controller.control(self.latest_proposed_velocity,
-                                                                        self.latest_current_velocity)
+                    # TODO: Use PID for steering
+                    throttle, brake, steering = self.controller.control(self.proposed_linear_velocity,
+                                                                        self.proposed_angular_velocity,
+                                                                        self.current_linear_velocity)
 
+                    steering = self.yaw_controller.get_steering(linear_velocity=self.proposed_linear_velocity,
+                                                                angular_velocity=self.proposed_angular_velocity,
+                                                                current_velocity=self.current_linear_velocity)
 
+                    print("steering proposed:{}".format(steering))
 
-                self.publish(throttle, brake, steer)
+                self.publish(throttle, brake, steering)
 
             rate.sleep()
 
