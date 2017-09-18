@@ -34,7 +34,8 @@ class Controller(object):
             max_lat_accel=kwargs.get('max_lat_accel'),
             max_steer_angle=kwargs.get('max_steer_angle')
         )
-        self.low_pass_filter = LowPassFilter(0.2, 0.1)
+        self.throttle_filter = LowPassFilter(0.2, 0.1)
+        self.brake_filter = LowPassFilter(0.2, 0.1)
         self.steer_filter = LowPassFilter(0.96, 1.0)
 
         self.timestamp = None
@@ -93,9 +94,9 @@ class Controller(object):
         steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
 
         # Apply low pass filters to the throttle and brake values to eliminate jitter
-        throttle = self.low_pass_filter.filt(throttle)
+        throttle = self.throttle_filter.filt(throttle)
         if brake != 0.0:
-            brake = self.low_pass_filter.filt(brake)
+            brake = self.brake_filter.filt(brake)
 
         steer = self.steer_filter.filt(steer)
         rospy.logout('Throttle=%f,Brake=%f,Steer=%f', throttle, brake, steer)
