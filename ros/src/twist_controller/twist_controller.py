@@ -18,7 +18,7 @@ class Controller(object):
 
 	def control(self, *args, **kwargs):
 		twist_linear_x = args[0]
-		twist_angular_x = args[1]
+		twist_angular_z = args[1]
 		current_linear_x = args[2]
 		dbw_enabled = args[3]
 		
@@ -34,4 +34,4 @@ class Controller(object):
 		steering = math.degrees(steering)
 		rospy.loginfo("debug - Steering w lp = (%s)", steering)
 
-		return 0.2, 0, steering
+		return 0.2, 0, Steering
