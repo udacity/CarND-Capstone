@@ -35,4 +35,4 @@ class Controller(object):
 		steering = math.degrees(steering)
 		rospy.loginfo("debug - Steering w lp = (%s)", steering)
 
-		return 0.2, 0, Steering
+		return 0.2, 0, steering
