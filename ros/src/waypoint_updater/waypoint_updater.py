@@ -36,7 +36,7 @@ class WaypointUpdater(object):
         self.waypoints = None
         self.current_pose = None
         self.num_waypoints = 0
-        self.closest_waypoint = 0
+        self.closest_waypoint = None
 
         self.publish()
         rospy.spin()
@@ -75,7 +75,7 @@ class WaypointUpdater(object):
         if not self.current_pose or not self.waypoints:
             return None
 
-        waypoints_ahead = Helper.look_ahead_waypoints(self.current_pose, self.waypoints)
+        waypoints_ahead, self.closest_waypoint = Helper.look_ahead_waypoints(self.current_pose, self.waypoints, self.closest_waypoint)
 
         return waypoints_ahead
 
