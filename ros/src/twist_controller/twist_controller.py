@@ -5,6 +5,7 @@ ONE_MPH = 0.44704
 from  yaw_controller import YawController
 from lowpass import LowPassFilter
 from pid import PID
+import rospy
 
 
 class Controller(object):
@@ -28,6 +29,8 @@ class Controller(object):
 		twist_angular_z = self.lpf_steering.filt(twist_angular_z)
 		
 		steering = self.yaw_controller.get_steering(twist_linear_x, twist_angular_z, current_linear_x)
+		rospy.loginfo("debug - Steering wo lp = (%s)", steering)
 		steering = math.degrees(steering)
+		rospy.loginfo("debug - Steering w lp = (%s)", steering)
 
 		return 0.2, 0, steering

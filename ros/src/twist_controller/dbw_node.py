@@ -40,7 +40,6 @@ class DBWNode(object):
 	def __init__(self):
 		rospy.init_node('dbw_node', log_level=rospy.INFO)
 
-		rospy.loginfo("debug - dbw_node initialised")
 		print("dbw_node initialised")
 
 		vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
@@ -56,57 +55,40 @@ class DBWNode(object):
 
 		# Init parameters to control the car 
 		#self.dbw_enabled = False  # Coming from /vehicle/dbw_enabled
-		rospy.loginfo("debug - Defining variables...")
 		self.dbw_enabled = True # Coming from /vehicle/dbw_enabled
 		self.target_velocity = None # Commig from /twist_cmd
 		self.current_velocity = None # Commig from /current_velocity
 		self.current_pose = None # Commig from /current_pose
 		self.prev_throttle = 0
-		rospy.loginfo("debug - Variables defined")
 
 		# Define PID controller for throttle and brake
-		rospy.loginfo("debug - Defining PID...")
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
 		self.brake_pid = PID(kp=50.0, ki=0.001, kd=0.15, mn=brake_deadband, mx=1500)
-		rospy.loginfo("debug - PID defined")
 
 		# Define Publishers
-		rospy.loginfo("debug - Defining publishers...")
 		self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
 		self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
 		self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
-		rospy.loginfo("debug - Publishers defined")
 
 		# Instantiate a Controller object
-		rospy.loginfo("debug - Creating controler...")
 		self.controller = Controller(self.prev_throttle, wheel_base = wheel_base, steer_ratio = steer_ratio,
 									min_speed = 0.2, max_lat_accel = max_lat_accel, max_steer_angle = max_steer_angle)
-		rospy.loginfo("debug - Controller created")
 
 		# Define Subscribers 
-		rospy.loginfo("debug - Defining subscribers...")
 		rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_cb, queue_size=1)
 		rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cb)
 		rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enable_cb)
-		rospy.loginfo("debug - Subscribers defined")
 
 		# Compute and send driving command
 		self.loop()
 
 
 	def loop(self):
-
-		rospy.loginfo("debug - Inside the loop function")
-
 		rate = rospy.Rate(10) # 10Hz
 		while not rospy.is_shutdown():
 
-			rospy.loginfo("debug - Inside the while")
-
-			if self.target_velocity is not None and self.current_velocity is not None: 
-				rospy.loginfo("debug - Calculate steering, throttle and brake ...")
-				# Smoothing out the steering received
-
+			if self.twist is not None and self.current_velocity is not None:
+			
 				throttle, brake, steering = self.controller.control(
 												self.twist.linear.x, 
 												self.twist.angular.z, 
