@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <launch>
   <node pkg="rosbag" type="play" name="rosbag" args="
   $(find styx)/../../../data/dbw_test.rosbag.bag /vehicle/throttle_cmd:=/actual/throttle_cmd /vehicle/steering_cmd:=/actual/steering_cmd /vehicle/brake_cmd:=/actual/brake_cmd" required="true"/>

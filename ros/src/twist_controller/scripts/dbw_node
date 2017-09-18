@@ -9,13 +9,12 @@ We have provided two launch files with this node. Vehicle specific values (like 
 wheel_base) etc should not be altered in these files.
 """
 
-from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
+from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd
 from geometry_msgs.msg import TwistStamped
 import math
 import rospy
 from std_msgs.msg import Bool
-from styx_msgs.msg import Lane, Waypoint
-from twist_controller import Controller
+from twist_controller.twist_controller import Controller
 
 
 class DBWNode(object):
