@@ -12,15 +12,30 @@ class TLClassifier(object):
         K.set_image_dim_ordering('tf')
 
         self.ready = False
+
+        if sim:
+            model_name = 'squeezeNet_sim'
+        else:
+            model_name = 'squeezeNet_real'
+
+        with tf.gfile.GFile('light_classification/{}.optimized.pb'.format(model_name), 'rb') as f:
+            graph_def = tf.GraphDef()
+            graph_def.ParseFromString(f.read())
+
         self.graph = tf.Graph()
-        with self.graph.as_default():
-            # Load model from https://github.com/mynameisguy/TrafficLightChallenge-DeepLearning-Nexar
-            self.model = SqueezeNet(3, (IMAGE_HEIGHT, IMAGE_WIDTH, 3))
-            if sim:
-                self.model.load_weights("light_classification/trained_model/squeezeNet_sim.hdf5")
-            else:
-                self.model.load_weights("light_classification/trained_model/squeezeNet_real.hdf5")
-            self.ready = True
+        self.sess = tf.Session(graph = self.graph)
+
+        with self.graph.as_default() as graph:
+            tf.import_graph_def(graph_def)
+
+            # Restoring checkpoint weights fails with error.
+            # saver = tf.train.Saver()
+            # saver.restore(self.sess, 'light_classification/{}.ckpt'.format(model_name))
+
+        for op in self.graph.get_operations():
+            print(op.name)
+
+        self.ready = True
 
         self.pred_dict = {0: TrafficLight.UNKNOWN,
                           1: TrafficLight.RED,
@@ -50,8 +65,14 @@ class TLClassifier(object):
             image = image.astype(K.floatx())
             image /= 255.0
             image = np.expand_dims(image, axis=0)
-            with self.graph.as_default():
-                preds = self.model.predict(image)[0]
+
+            with self.graph.as_default() as graph:
+                learning_phase_tensor = self.graph.get_tensor_by_name('import/fire9_dropout/keras_learning_phase:0')
+                op_tensor = self.graph.get_tensor_by_name('import/softmax/Softmax:0')
+                input_tensor = self.graph.get_tensor_by_name('import/input_1:0')
+                feed_dict = {input_tensor: image, learning_phase_tensor: False}
+                preds = self.sess.run(op_tensor, feed_dict)
+
             pred_index = np.argmax(preds)
             pred = self.pred_dict[pred_index]
             if self.debug_print:

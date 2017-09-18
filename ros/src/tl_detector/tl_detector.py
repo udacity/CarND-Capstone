@@ -12,6 +12,7 @@ import cv2
 import math
 from train_queue import TrainQueue, TrainItem
 import yaml
+import stopwatch as sw
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -161,7 +162,10 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         #Get classification
+        stopwatch = sw.Stopwatch()
         pred = self.light_classifier.get_classification(cv_image)
+        stopwatch.stop()
+        print('classify time', stopwatch.format_duration(coarse=False))
         return pred
 
     def process_traffic_lights(self):
