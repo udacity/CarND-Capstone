@@ -15,7 +15,6 @@ class Controller(object):
 											kwargs['min_speed'] + ONE_MPH, kwargs['max_lat_accel'],
 											kwargs['max_steer_angle'])
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=kwargs['decel_limit'], mx=kwargs['accel_limit'])
-		#self.lpf_steering = LowPassFilter(.8, .9)
 		self.min_speed = kwargs['min_speed']
 		self.prev_time = None
 
@@ -44,16 +43,7 @@ class Controller(object):
 			throttle = velocity_controller
 		elif velocity_controller < 0:
 			brake = -velocity_controller
-
-		#if (current_velocity_linear_x < target_velocity_linear_x) and self.throttle < 1.0 :
-			#self.throttle += 0.1
-
-		# Smooth out value received from simulator
-		#target_velocity_angular_z = self.lpf_steering.filt(target_velocity_angular_z)
-		#target_velocity_angular_z = self.lpf_steering.get()
 		
 		steering = self.yaw_controller.get_steering(target_velocity_linear_x, target_velocity_angular_z, current_velocity_linear_x)
-		
-		#steering = math.degrees(steering)
 
 		return throttle, brake, steering
