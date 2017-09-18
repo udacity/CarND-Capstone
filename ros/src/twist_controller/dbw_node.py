@@ -60,6 +60,7 @@ class DBWNode(object):
 		self.current_velocity = None # Commig from /current_velocity
 		self.current_pose = None # Commig from /current_pose
 		self.prev_throttle = 0
+		self.target_velocity = None
 
 		# Define PID controller for throttle and brake
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
@@ -87,11 +88,11 @@ class DBWNode(object):
 		rate = rospy.Rate(10) # 10Hz
 		while not rospy.is_shutdown():
 
-			if self.twist is not None and self.current_velocity is not None:
+			if self.target_velocity is not None and self.current_velocity is not None:
 			
 				throttle, brake, steering = self.controller.control(
-												self.twist.linear.x, 
-												self.twist.angular.z, 
+												self.target_velocity.linear.x, 
+												self.target_velocity.angular.z, 
 												self.current_velocity.linear.x,
 												self.dbw_enabled)
 
@@ -143,7 +144,7 @@ class DBWNode(object):
 	def current_velocity_cb(self, msg):
 		self.current_velocity = msg.twist
 
-	def twist_cb(self, msg): 
+	def twist_cb(self, msg):  
 		self.target_velocity = msg.twist 
 
 	def current_pose_cb(self, msg): 
