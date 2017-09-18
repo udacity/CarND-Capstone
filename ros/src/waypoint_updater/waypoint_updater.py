@@ -37,17 +37,51 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        # new_wp_lane = Lane()
+        # rospy.logwarn("attributes of lane class %s", new_wp_lane.__dict__)
 
         rospy.spin()
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        # get current pose of the vehicle
+        # rospy.logwarn("current position of vehicle: %s", msg.pose.position.x)
+        self.vehicle_pos = msg.pose.position
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        rospy.logwarn("waypoints ahead:", waypoints.pose)
+
+        try: # to catch when the error when self.vehicle_pos has not been created yet
+            smallest_dist = 999999999999.0
+            nearest_wp = None
+            self.wp_num = len(waypoints.waypoints)
+            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+            for i in xrange(self.wp_num):
+                
+                wp_pos = waypoints.waypoints[i].pose.pose.position
+
+                # distance between vehichle and the nearest waypoint
+                dist = dl(self.vehicle_pos, wp_pos)
+                if dist < smallest_dist:
+                    nearest_wp = i
+                    smallest_dist = dist
+            final_wps = self.get_final_wps(waypoints, nearest_wp)
+            # rospy.logwarn("nearest waypoint: %s", nearest_wp)
+
+            # publish final waypoints
+            self.final_waypoints_pub.publish(final_wps)
+        except AttributeError, e:
+            # rospy.logwarn("Error: %s", e)
+            pass
+
         # pass
+    def get_final_wps(self, waypoints, nearest_wp):
+        new_wp_lane = Lane()
+        for i in xrange(nearest_wp,nearest_wp+LOOKAHEAD_WPS):
+            if i > self.wp_num:
+                break
+            new_wp_lane.waypoints.append(waypoints.waypoints[i])
+        return new_wp_lane
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
