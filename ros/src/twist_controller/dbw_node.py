@@ -62,10 +62,6 @@ class DBWNode(object):
 		self.prev_throttle = 0
 		self.target_velocity = None
 
-		# Define PID controller for throttle and brake
-		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=decel_limit, mx=accel_limit)
-		self.brake_pid = PID(kp=50.0, ki=0.001, kd=0.15, mn=brake_deadband, mx=1500)
-
 		# Define Publishers
 		self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
 		self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
@@ -73,7 +69,7 @@ class DBWNode(object):
 
 		# Instantiate a Controller object
 		self.controller = Controller(self.prev_throttle, wheel_base = wheel_base, steer_ratio = steer_ratio,
-									min_speed = 0.0, max_lat_accel = max_lat_accel, max_steer_angle = max_steer_angle)
+									min_speed = 0.0, max_lat_accel = max_lat_accel, max_steer_angle = max_steer_angle, decel_limit = decel_limit, accel_limit = accel_limit)
 
 		# Define Subscribers 
 		rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_cb, queue_size=1)
@@ -94,6 +90,7 @@ class DBWNode(object):
 												self.target_velocity.linear.x, 
 												self.target_velocity.angular.z, 
 												self.current_velocity.linear.x,
+												self.current_velocity.angular.z,
 												self.dbw_enabled)
 
 				rospy.loginfo("debug - Steering = (%s)", steering)
