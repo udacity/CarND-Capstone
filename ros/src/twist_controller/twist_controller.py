@@ -27,6 +27,7 @@ class Controller(object):
 
 		# Smooth out value received from simulator
 		twist_angular_z = self.lpf_steering.filt(twist_angular_z)
+		twist_angular_z = self.lpf_steering.get()
 		
 		steering = self.yaw_controller.get_steering(twist_linear_x, twist_angular_z, current_linear_x)
 		rospy.loginfo("debug - Steering wo lp = (%s)", steering)
