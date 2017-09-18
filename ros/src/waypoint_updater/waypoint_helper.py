@@ -48,67 +48,61 @@ def angles_delta(angle1, angle2, unit='radian'):
     else:
         return 180 - math.fabs(math.fabs(angle1 - angle2) - 180)
 
-def get_fwd_bwd_vectors(waypoint_i, waypoints):
-    """ Compute vectors for forward and backward direction on the waypoint """
-    get_position = lambda wp: wp.pose.pose.position
-    vector_fwd = get_vector(get_position(waypoints[waypoint_i]), get_position(waypoints[(waypoint_i + 1) % len(waypoints)]))
-    vector_bwd = get_vector(get_position(waypoints[waypoint_i]), get_position(waypoints[(waypoint_i - 1) % len(waypoints)]))
-    return vector_fwd, vector_bwd
+def min_key(array, key=None):
+    min_value = float('inf')
+    min_i = -1
+    if key is not None:
+        for i in range(len(array)):
+            value = key(array[i])
+            if value < min_value:
+                min_value = value
+                min_i = i
+    else:
+        for i in range(len(array)):
+            value = array[i]
+            if value < min_value:
+                min_value = value
+                min_i = i
+    return min_value, min_i
 
-def get_closest_waypoint(position, waypoints, start=0):
-    """ Get the waypoint closest to the pose """
+def get_closest_waypoint_from_all(position, waypoints):
+    """ Get the waypoint closest to the pose, iterating all waypoints """
     dl = lambda wp: get_distance(wp.pose.pose.position, position)
+    _, closest_waypoint = min_key(waypoints, dl)
 
-    closest_len = float('inf')
-    closest_waypoint = start
-    next_waypoint = start
+    # closest_len = float('inf')
+    # closest_waypoint = start
+    # next_waypoint = start
 
-    num_waypoints = len(waypoints)
-    dist = dl(waypoints[closest_waypoint])
+    # num_waypoints = len(waypoints)
+    # dist = dl(waypoints[closest_waypoint])
 
-    while (dist < closest_len) and (closest_waypoint < num_waypoints):
-        closest_waypoint = next_waypoint
-        closest_len = dist
-        dist = dl(waypoints[closest_waypoint+1])
-        next_waypoint += 1
+    # while (closest_waypoint < num_waypoints):
+    #     if next_waypoint >= num_waypoints - 1:
+    #         break
+    #     closest_waypoint = next_waypoint
+    #     closest_len = dist
+    #     dist = dl(waypoints[closest_waypoint+1])
+    #     next_waypoint += 1
 
     return closest_waypoint
 
-def look_ahead_waypoints(pose, waypoints, count=LOOKAHEAD_WPS):
-    """ Look ahead waypoints in the direction based on the vehicle current heading """
+def get_closest_waypoint_from_previous(position, waypoints, previous, adjacent=20):
+    """ Get the waypoint closest to the pose based on previous one """
+    dl = lambda wp: get_distance(wp.pose.pose.position, position)
+    adjacents = waypoints[previous - adjacent: previous + adjacent + 1]
+    _, min_dist_i = min_key(adjacents, key=dl)
+    closest = previous + min_dist_i - adjacents.index(waypoints[previous])
+    return closest
 
-    waypoint_i = get_closest_waypoint(pose.position, waypoints)
-    vector_fwd, vector_bwd = get_fwd_bwd_vectors(waypoint_i, waypoints)
-
-    fwd_yaw = rotations_from_vector(vector_fwd).yaw
-    bwd_yaw = rotations_from_vector(vector_bwd).yaw
-    current_yaw = rotations_from_quaternion(pose.orientation).yaw
-
-    fwd_yaw_diff = angles_delta(fwd_yaw, current_yaw)
-    bwd_yaw_diff = angles_delta(bwd_yaw, current_yaw)
-
-    fwd = True
-    if bwd_yaw_diff < fwd_yaw_diff:
-        waypoints = waypoints[::-1]
-        waypoint_i = len(waypoints) - waypoint_i - 1
-        for wp in waypoints:
-            wp.twist.twist.linear.x *= -1
-        fwd = False
-
-    # Loop to start if waypoints are depleted
-    waypoints_ahead = waypoints[waypoint_i:waypoint_i + count]
-    while len(waypoints_ahead) < count:
-        waypoints_ahead.extend(waypoints[:count - len(waypoints_ahead)])
-
-    # rospy.logout('waypoint_i: %d, yaw %f, fwd_yaw %f, bwd_yaw %f, %s, len(waypoints): %d',
-    #        waypoint_i, current_yaw, fwd_yaw, bwd_yaw, 'Forward'  if fwd else 'Backward', len(waypoints_ahead))
-
-    return waypoints_ahead
-
-def look_ahead_waypoints2(self, pose, waypoints, count=LOOKAHEAD_WPS):
+def look_ahead_waypoints(pose, waypoints, previous=None, count=LOOKAHEAD_WPS):
     """ Only look ahead waypoints in the forward direction """
 
-    waypoint_i = get_closest_waypoint(pose.position, waypoints)
+    waypoint_i = -1
+    if previous:
+        waypoint_i = get_closest_waypoint_from_previous(pose.position, waypoints, previous)
+    if waypoint_i == -1:
+        waypoint_i = get_closest_waypoint_from_all(pose.position, waypoints)
 
     current_yaw = rotations_from_quaternion(pose.orientation).yaw
 
@@ -131,4 +125,4 @@ def look_ahead_waypoints2(self, pose, waypoints, count=LOOKAHEAD_WPS):
 
     # rospy.logout('waypoint_i: %d, proposed_yaw %f, len(waypoints): %d', waypoint_i, proposed_yaw, len(waypoints_ahead))
 
-    return waypoints_ahead
+    return waypoints_ahead, waypoint_i
