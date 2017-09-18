@@ -27,6 +27,10 @@ class Controller(object):
 		throttle = 0.0
 		brake = 0.0
 
+		if not dbw_enabled: 
+			self.throttle.reset()
+			return 0, 0, 0
+
 		# Compute difference between target and current velocity as CTE for throttle. 
 		diff_velocity = target_velocity_linear_x - current_velocity_linear_x
 

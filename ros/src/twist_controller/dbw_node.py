@@ -95,17 +95,9 @@ class DBWNode(object):
 
 				rospy.loginfo("debug - Steering = (%s)", steering)
 
-				self.publish(throttle, brake, steering)
-
-				"""
-				target_velocity_angular = self.lpf_steering.filt(self.target_velocity.angular.z)
-				steering = self.steering.get_steering(self.target_velocity.linear.x, target_velocity_angular, self.current_velocity.linear.x)
-				steering = (math.degrees(steering)) # Converting radians to degree
-				rospy.loginfo("debug - Steering = (%s)", steering)
-				self.publish(0.2, 0, steering)
-				"""
-
-
+				if dbw_enabled: 
+					self.publish(throttle, brake, steering)
+					
 			rate.sleep()
 
 	def publish(self, throttle, brake, steer):
