@@ -1,19 +1,26 @@
-from yaw_controller import YawController
-from lowpass import LowPassFilter
+"""Throttle, brake, and steering control."""
 from math import atan
+from lowpass import LowPassFilter
 from pid import PID
-
-
-GAS_DENSITY = 2.858
-ONE_MPH = 0.44704
-
+from rospy import loginfo
 
 class Controller(object):
-    def __init__(self,kp_vel, kp_throttle, ki_throttle, min_speed, 
-            vehicle_mass, fuel_capacity, brake_deadband, 
-            decel_limit, accel_limit,
-            wheel_radius, wheel_base, 
-            steer_ratio, max_lat_accel, max_steer_angle, rate ):
+    """
+    Class to calculate throttle, bake, and steering control.
+
+    Uses PID controllers for steering and throttle.
+    """
+
+    def __init__(self, kp_vel, kp_throttle, ki_throttle, min_speed,
+                 vehicle_mass, fuel_capacity, brake_deadband,
+                 decel_limit, accel_limit,
+                 wheel_radius, wheel_base,
+                 steer_ratio, max_lat_accel, max_steer_angle, rate):
+        """
+        Constructor.
+
+        Set up gains and initialize internal state; initialize PID controllers.
+        """
         self.i_error = 0
         self.kp_vel = kp_vel
         self.kp_throttle = kp_throttle
@@ -29,63 +36,51 @@ class Controller(object):
         self.cur_acc = 0
         self.rate = rate
         self.accel_filter = LowPassFilter(0.2, 1./self.rate)
-        self.yaw_controller = YawController(wheel_base, 
-        									steer_ratio,
-        									min_speed,
-        									max_lat_accel,
-        									max_steer_angle)
         self.steer_pid = PID(0.5, 0.001, 0.0)
         self.throttle_pid = PID(kp_throttle, ki_throttle, 0.0)
 
-
-        pass
-
     def control(self, cmd_lin_vel, cmd_ang_vel, cur_lin_vel, cur_ang_vel, delta_t, dbw_enabled):
-    	brake = 0.
-    	throttle = 0.
+        """
+        Control update.
 
-        # steering = self.yaw_controller.get_steering(cmd_lin_vel, cmd_ang_vel, cur_lin_vel)
-        print("cmd_ang_vel: ", cmd_ang_vel)
-        print("cmd_lin_vel: ", cmd_lin_vel)
+        This function should be called at the rate given in the constructor.
+        Returns a tuple of (throttle, brake, steering)
+        """
+        brake = 0.
+        throttle = 0.
+
+        loginfo("cmd_ang_vel: %f", cmd_ang_vel)
+        loginfo("cmd_lin_vel: %f", cmd_lin_vel)
 
         steer_error = cmd_ang_vel - cur_ang_vel
 
-        # steering = self.steer_pid.step(steer_error, delta_t)
-        steering = 10*atan(self.wheel_base * cmd_ang_vel / (cmd_lin_vel+0.01) ) * self.steer_ratio
-        # print("steering: ", steering)
+        steering = 10*atan(self.wheel_base * cmd_ang_vel / (cmd_lin_vel+0.01)) * self.steer_ratio
         cmd_acc = self.kp_vel * (cmd_lin_vel - cur_lin_vel)
 
         if cmd_acc > self.accel_limit:
-        	cmd_acc = self.accel_limit
+            cmd_acc = self.accel_limit
         elif cmd_acc < self.decel_limit:
-        	cmd_acc = self.decel_limit
+            cmd_acc = self.decel_limit
 
-        # self.cur_acc = ( (cur_lin_vel - self.last_cur_lin_vel)*self.rate ) * 0.1 + self.cur_acc * 0.9
-        # self.cur_acc = self.accel_filter.filt(self.cur_acc)
-        print("cmd_acc: ", cmd_acc)
-        print("cur_acc: ", self.cur_acc)
+        loginfo("cmd_acc: %f", cmd_acc)
+        loginfo("cur_acc: %f", self.cur_acc)
 
-        # self.last_cur_lin_vel = cur_lin_vel
-        # self.last_acc = self.cur_acc 
-
-        if(dbw_enabled==False):
+        if not dbw_enabled:
             self.steer_pid.reset()
             self.throttle_pid.reset()
 
         throttle_error = cmd_acc
 
         brake = -throttle_error*self.vehicle_mass*self.wheel_radius
-        # throttle = p_error*self.kp_throttle + self.i_error
         throttle = self.throttle_pid.step(throttle_error, delta_t)
 
-        if(cmd_acc < 0):
-        	if(brake < self.brake_deadband):
-        		brake = 0.
-        	throttle = 0.
+        if cmd_acc < 0:
+            if brake < self.brake_deadband:
+                brake = 0.
+            throttle = 0.
         else:
-        	brake = 0.
+            brake = 0.
 
-
-        print("throttle: ", throttle)
+        loginfo("throttle: %f", throttle)
 
         return throttle, brake, steering
