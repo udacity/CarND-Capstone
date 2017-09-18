@@ -133,10 +133,7 @@ class DBWNode(object):
 		self.brake_pub.publish(bcmd)
 
 	def dbw_enable_cb(self, msg): 
-		self.dbw_enabled = bool(msg.data)
-		if(self.dbw_enabled): 
-			self.throttle_pid.reset()
-			self.brake_pid.reset()
+		self.dbw_enabled = bool(msg.data) 
 
 	def current_velocity_cb(self, msg):
 		self.current_velocity = msg.twist
