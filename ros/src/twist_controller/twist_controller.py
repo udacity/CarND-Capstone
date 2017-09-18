@@ -6,6 +6,7 @@ from  yaw_controller import YawController
 from lowpass import LowPassFilter
 from pid import PID
 import rospy
+import math
 
 
 class Controller(object):
