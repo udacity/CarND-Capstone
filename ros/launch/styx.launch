@@ -22,5 +22,5 @@
     <!-- <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" /> -->
 
     <!-- Visualization -->
-    <include file="$(find styx_visualization)/launch/visualization.launch"/>
+    <!-- <include file="$(find styx_visualization)/launch/visualization.launch"/> -->
 </launch>

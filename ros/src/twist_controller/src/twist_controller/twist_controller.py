@@ -38,6 +38,7 @@ class Controller(object):
         self.accel_filter = LowPassFilter(0.2, 1./self.rate)
         self.steer_pid = PID(0.5, 0.001, 0.0)
         self.throttle_pid = PID(kp_throttle, ki_throttle, 0.0)
+        self.last_cur_lin_vel = 0
 
     def control(self, cmd_lin_vel, cmd_ang_vel, cur_lin_vel, cur_ang_vel, delta_t, dbw_enabled):
         """
@@ -49,12 +50,18 @@ class Controller(object):
         brake = 0.
         throttle = 0.
 
-        loginfo("cmd_ang_vel: %f", cmd_ang_vel)
-        loginfo("cmd_lin_vel: %f", cmd_lin_vel)
+        # loginfo("cmd_ang_vel: %f", cmd_ang_vel)
+        # loginfo("cmd_lin_vel: %f", cmd_lin_vel)
+        self.cur_acc = (cur_lin_vel - self.last_cur_lin_vel)*0.1 + self.cur_acc*0.9
+        self.last_cur_lin_vel = cur_lin_vel
 
         steer_error = cmd_ang_vel - cur_ang_vel
 
-        steering = 10*atan(self.wheel_base * cmd_ang_vel / (cmd_lin_vel+0.01)) * self.steer_ratio
+        if(abs(cmd_lin_vel)<1.):
+            steering = 0
+        else:
+            steering = 10*atan(self.wheel_base * cmd_ang_vel / cmd_lin_vel) * self.steer_ratio
+
         cmd_acc = self.kp_vel * (cmd_lin_vel - cur_lin_vel)
 
         if cmd_acc > self.accel_limit:
@@ -62,14 +69,14 @@ class Controller(object):
         elif cmd_acc < self.decel_limit:
             cmd_acc = self.decel_limit
 
-        loginfo("cmd_acc: %f", cmd_acc)
-        loginfo("cur_acc: %f", self.cur_acc)
+        # loginfo("cmd_acc: %f", cmd_acc)
+        # loginfo("cur_acc: %f", self.cur_acc)
 
         if not dbw_enabled:
             self.steer_pid.reset()
             self.throttle_pid.reset()
 
-        throttle_error = cmd_acc
+        throttle_error = cmd_acc - self.cur_acc
 
         brake = -throttle_error*self.vehicle_mass*self.wheel_radius
         throttle = self.throttle_pid.step(throttle_error, delta_t)
@@ -81,6 +88,6 @@ class Controller(object):
         else:
             brake = 0.
 
-        loginfo("throttle: %f", throttle)
+        # loginfo("throttle: %f", throttle)
 
         return throttle, brake, steering
