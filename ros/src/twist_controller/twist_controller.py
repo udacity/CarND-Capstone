@@ -13,9 +13,10 @@ class Controller(object):
 	def __init__(self, *args, **kwargs):
 		self.throttle = args[0]
 		self.yaw_controller = YawController(kwargs['wheel_base'], kwargs['steer_ratio'] * 8,
-											kwargs['min_speed'], kwargs['max_lat_accel'],
+											kwargs['min_speed'] + ONE_MPH, kwargs['max_lat_accel'],
 											kwargs['max_steer_angle'])
-		self.lpf_steering = LowPassFilter(.96, 1)
+		self.lpf_steering = LowPassFilter(.8, .9)
+		self.min_speed = kwargs['min_speed']
 
 	def control(self, *args, **kwargs):
 		twist_linear_x = args[0]
@@ -28,11 +29,11 @@ class Controller(object):
 
 		# Smooth out value received from simulator
 		twist_angular_z = self.lpf_steering.filt(twist_angular_z)
-		twist_angular_z = self.lpf_steering.get()
+		#twist_angular_z = self.lpf_steering.get()
 		
 		steering = self.yaw_controller.get_steering(twist_linear_x, twist_angular_z, current_linear_x)
 		rospy.loginfo("debug - Steering wo lp = (%s)", steering)
 		steering = math.degrees(steering)
 		rospy.loginfo("debug - Steering w lp = (%s)", steering)
 
-		return 0.2, 0, steering
+		return self.min_speed + ONE_MPH * 1.2, 0, steering
