@@ -50,6 +50,7 @@ class DBWNode(object):
         self.rate = 50
         self.dbw_enabled = True
         self.current_linear_velocity = None
+        self.current_angular_velocity = None
         self.proposed_linear_velocity = None
         self.proposed_angular_velocity = None
 
@@ -58,13 +59,14 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
         # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
-        self.controller = TwistController()
-        self.yaw_controller = YawController(wheel_base=wheel_base,
+        yaw_controller = YawController(wheel_base=wheel_base,
                                             steer_ratio=steer_ratio,
                                             min_speed=0.,
                                             max_lat_accel=max_lat_accel,
                                             max_steer_angle=max_steer_angle)
+
+        self.controller = TwistController(yaw_controller, max_steer_angle)
+
 
         # TODO: Subscribe to all the topics you need to
 
@@ -76,6 +78,7 @@ class DBWNode(object):
 
     def current_velocity_cb(self, msg):
         self.current_linear_velocity = msg.twist.linear.x
+        self.current_angular_velocity = msg.twist.angular.z
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
@@ -88,7 +91,7 @@ class DBWNode(object):
     def loop(self):
         rate = rospy.Rate(self.rate)  # 50Hz
         while not rospy.is_shutdown():
-            throttle, brake, steering = 1, None, None
+            throttle, brake, steer = 1, None, None
 
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -102,24 +105,21 @@ class DBWNode(object):
 
                 if (self.current_linear_velocity is not None) \
                         & (self.proposed_linear_velocity is not None) \
+                        & (self.current_angular_velocity is not None)\
                         & (self.proposed_angular_velocity is not None):
 
                     print("velocity linear current:{}".format(self.current_linear_velocity))
                     print("velocity linear proposed:{}".format(self.proposed_linear_velocity))
+                    print("velocity angular current:{}".format(self.current_angular_velocity))
                     print("velocity angular proposed:{}".format(self.proposed_angular_velocity))
 
                     # TODO: Use PID for steering
-                    throttle, brake, steering = self.controller.control(self.proposed_linear_velocity,
+                    throttle, brake, steer = self.controller.control(self.proposed_linear_velocity,
                                                                         self.proposed_angular_velocity,
-                                                                        self.current_linear_velocity)
+                                                                        self.current_linear_velocity,
+                                                                        self.current_angular_velocity)
 
-                    steering = self.yaw_controller.get_steering(linear_velocity=self.proposed_linear_velocity,
-                                                                angular_velocity=self.proposed_angular_velocity,
-                                                                current_velocity=self.current_linear_velocity)
-
-                    print("steering proposed:{}".format(steering))
-
-                self.publish(throttle, brake, steering)
+                self.publish(throttle, brake, steer)
 
             rate.sleep()
 
