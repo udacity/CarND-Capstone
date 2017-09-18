@@ -13,12 +13,12 @@ class Controller(object):
         # self.speed_controller = PID(5, 0.05, 1, -0.5, 0.5)
 
         # use a separate speed controller, than from PID
-        # self.speed_controller = SpeedController(
-        #                         vehicle_mass,
-        #                         wheel_radius,
-        #                         accel_limit,
-        #                         decel_limit)
-        self.speed_controller = PID(0.5, 0.02, 0.2)
+        self.speed_controller = SpeedController(
+                                vehicle_mass,
+                                wheel_radius,
+                                accel_limit,
+                                decel_limit)
+        # self.speed_controller = PID(0.5, 0.02, 0.2)
         self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
@@ -41,19 +41,19 @@ class Controller(object):
                                                             current_linear_velocity)
         steer = corrective_steer + predictive_steer
 
-        # throttle, brake = self.speed_controller.step(linear_velocity_cte, dt)
+        throttle, brake = self.speed_controller.step(linear_velocity_cte, dt)
 
-        linear_velocity = self.speed_controller.step(linear_velocity_cte, dt)
-        throttle = 0
-        brake = 0
+        # linear_velocity = self.speed_controller.step(linear_velocity_cte, dt)
+        # throttle = 0
+        # brake = 0
 
-        if linear_velocity > 0:
-            throttle = linear_velocity
-        else:
-            # brake = abs(linear_velocity) * 200000.
-            acceleration = max(-5, linear_velocity_cte / dt)
-            torque = 1736.35 * acceleration * 0.2413
-            brake = min(abs(torque), 20000.)
+        # if linear_velocity > 0:
+        #     throttle = linear_velocity
+        # else:
+        #     # brake = abs(linear_velocity) * 200000.
+        #     acceleration = max(-5, linear_velocity_cte / dt)
+        #     torque = 1736.35 * acceleration * 0.2413
+        #     brake = min(abs(torque), 20000.)
         return throttle, brake, steer
 
 

@@ -213,7 +213,7 @@ class WaypointUpdater(object):
             distance = self.distance(light_wp, self.car_pose)
             # TODO: make the condition more reliable
             # stops in x seconds with maximum speed
-            if self.ahead_of(light_wp, self.car_pose) and distance <= 60:#MAX_SPEED * 3: 
+            if self.ahead_of(light_wp, self.car_pose) and distance <= 30:#MAX_SPEED * 3: 
                 return True
             else:
                 return False

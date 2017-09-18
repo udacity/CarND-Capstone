@@ -54,7 +54,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-        self.counter = 0
+        # self.counter = 0
 
         rospy.spin()
 
@@ -237,7 +237,7 @@ class TLDetector(object):
         """
         
 
-        ## else do the hard work to classify it
+        
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -248,20 +248,21 @@ class TLDetector(object):
 
         #TODO use light location to zoom in on traffic light in image
 
-        ## save images
-        state = ("green" if light.state == TrafficLight.GREEN else
-                "red" if light.state == TrafficLight.RED else
-                "yellow" if light.state == TrafficLight.YELLOW else
-                "unknown")
-        cv2.imwrite("/home/student/sdc-final/sim_imgs/%s/img%i.png" % (state,self.counter), cv_image)
-        self.counter += 1
+        # ## save images
+        # state = ("green" if light.state == TrafficLight.GREEN else
+        #         "red" if light.state == TrafficLight.RED else
+        #         "yellow" if light.state == TrafficLight.YELLOW else
+        #         "unknown")
+        # cv2.imwrite("/home/student/sdc-final/sim_imgs/%s/img%i.png" % (state,self.counter), cv_image)
+        # self.counter += 1
 
         ## take the shortcut if the groud-truth is already provided
         ## mainly for mock up test
         ## TODO: remove this shortcut to do image classification
-        if light.state != TrafficLight.UNKNOWN:
-            return light.state
-
+        # if light.state != TrafficLight.UNKNOWN:
+        #     return light.state
+            
+        ## else do the hard work to classify it
         #Get classification
         return self.light_classifier.get_classification(cv_image)
 
