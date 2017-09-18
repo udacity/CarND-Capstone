@@ -11,6 +11,7 @@ import cv2
 import tf
 import math
 import csv
+import yaml
 
 bridge = CvBridge()
 
@@ -30,19 +31,25 @@ def conv2car_coord(car_pose, g_position):
 	
 	return l_position
 	
-def get_closest_lights(car_pose, lights):
+def get_closest_lights(car_pose, lights, light_positions):
 	min_ds = 10000000.0
+	#min_x = 10000.0
+	#min_y = 10000.0
 	n = 10
 	
 	i  = 0
 	st = 4
 	for light in lights:
+		light.pose.pose.position.x = light_positions[i][0]
+		light.pose.pose.position.y = light_positions[i][1]
 		lp = conv2car_coord(car_pose, light.pose.pose.position)
 		st = light.state
 		if lp.x > 0:
 			ds = math.sqrt(lp.x*lp.x + lp.y*lp.y)
 			if ds < min_ds:
 				min_ds = ds
+				#min_x = lp.x
+				#min_y = lp.y
 				n = i
 		i = i +1
 	
@@ -54,6 +61,13 @@ def read_bag():
 	bag = rosbag.Bag('sim_drive.bag')
 	csvf = open("tldf.csv", "w")
 	
+	with open("sim_traffic_light_config.yaml", 'r') as stream:
+		config = yaml.load(stream)
+	#print config
+	
+	light_positions = config['light_positions']
+	#print "light positions:", light_positions
+	
 	i = 0
 	for topic, msg, t in bag.read_messages(topics=['/current_pose', '/image_color', '/vehicle/traffic_lights']):
 		print topic
@@ -63,7 +77,7 @@ def read_bag():
 			fstr = 'images/'+ 'frame' + str(i) + '.jpeg'
 			cv2.imwrite(fstr, cv2_img)
 			#print 'car pose is:', car_pose
-			tldf = get_closest_lights(car_pose, lights)
+			tldf = get_closest_lights(car_pose, lights, light_positions)
 			print "closest light:", tldf
 			tldf_es = fstr+','+str(tldf[0])+','+str(tldf[1])+','+str(tldf[2])+'\n'
 			csvf.write(tldf_es)
