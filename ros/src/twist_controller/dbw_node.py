@@ -51,6 +51,7 @@ class DBWNode(object):
         self.dbw_enabled = False
         self.target_linear_velocity = 0
         self.target_angular_velocity = 0
+	self.rate = 50
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                 SteeringCmd, queue_size=1)
@@ -68,9 +69,6 @@ class DBWNode(object):
         self.twist_cmd_subscriber  = rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cmd_Cb)
         self.loop()
 
-    def dbw_enabled_cb(self, msg):
-        self.dbw_enabled = msg.data
-
     def loop(self):
         rate = rospy.Rate(self.rate) # 50Hz
         while not rospy.is_shutdown():
@@ -87,8 +85,10 @@ class DBWNode(object):
 
     def current_velocity_Cb(self, data):
         self.curr_linear_velocity = data.twist.linear.x
+
     def dbw_enabled_Cb(self,data):
         self.dbw_enabled = data.data
+
     def twist_cmd_Cb(self,data):
         self.target_linear_velocity = data.twist.linear.x
         self.target_angular_velocity = data.twist.angular.x
