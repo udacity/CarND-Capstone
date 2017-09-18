@@ -66,11 +66,13 @@ class DBWNode(object):
         self.curr_vel_subscriber  = rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_Cb)
         self.dbw_enable_subscriber  = rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enabled_Cb)
         self.twist_cmd_subscriber  = rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cmd_Cb)
-
         self.loop()
 
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = msg.data
+
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(self.rate) # 50Hz
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -109,7 +111,6 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
-
 
 if __name__ == '__main__':
     DBWNode()
