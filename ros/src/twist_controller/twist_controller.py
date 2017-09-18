@@ -27,4 +27,4 @@ class TwistController(object):
         print("throttle:{}".format(throttle))
 
         # Return throttle, brake, steer
-        return throttle, 0., proposed_angular_velocity * 10
+        return throttle, 0., 0.
