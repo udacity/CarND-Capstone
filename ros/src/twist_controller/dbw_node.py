@@ -9,7 +9,6 @@ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from styx_msgs.msg import Lane
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from twist_controller import Controller
-from yaw_controller import YawController
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -66,14 +65,15 @@ class DBWNode(object):
         self.controller = Controller(
             decel_limit=decel_limit,
             accel_limit=accel_limit,
-            max_steer_angle=max_steer_angle
-        )
-        self.yaw_controller = YawController(
             wheel_base=wheel_base,
             steer_ratio=steer_ratio,
             min_speed=0.0,
             max_lat_accel=max_lat_accel,
-            max_steer_angle=max_steer_angle
+            max_steer_angle=max_steer_angle,
+            vehicle_mass=vehicle_mass,
+            fuel_capacity=fuel_capacity,
+            wheel_radius=wheel_radius,
+            brake_deadband=brake_deadband
         )
 
         # Subscribe to all the topics you need to
@@ -86,21 +86,17 @@ class DBWNode(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(10) # 10Hz
         while not rospy.is_shutdown():
             if (self.waypoints is not None) and (self.pose is not None) and (self.velocity is not None):
+                # Only proceed if Drive-By-Wire is enabled
                 if self.dbw_enabled is True:
-                    throttle, brake, steering = self.controller.control(
-                        pose=self.pose,
-                        waypoints=self.waypoints,
-                        velocity=self.velocity,
-                        target_velocity=15
+                    throttle, brake, steer = self.controller.control(
+                        current_velocity=self.velocity.linear.x,
+                        linear_velocity=abs(self.twist.linear.x),
+                        angular_velocity=self.twist.angular.z
                     )
-                    yaw_steering = self.yaw_controller.get_steering(
-                        self.twist.linear.x, self.twist.angular.z, velocity
-                    )
-                    # TODO: Incorporate steering with yaw_steering
-                    self.publish(throttle, brake, steering)
+                    self.publish(throttle, brake, steer)
                 else:
                     self.controller.reset()
             rate.sleep()
