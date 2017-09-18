@@ -46,7 +46,8 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        rospy.logwarn("waypoints ahead:", waypoints.pose)
+        # pass
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
