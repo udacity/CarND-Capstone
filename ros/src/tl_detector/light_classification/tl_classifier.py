@@ -6,21 +6,30 @@ import keras.backend as K
 import tensorflow as tf
 from train import SqueezeNet
 from consts import IMAGE_WIDTH, IMAGE_HEIGHT
+from graph_utils import load_graph
 
 class TLClassifier(object):
     def __init__(self, sim):
         K.set_image_dim_ordering('tf')
 
         self.ready = False
-        self.graph = tf.Graph()
-        with self.graph.as_default():
-            # Load model from https://github.com/mynameisguy/TrafficLightChallenge-DeepLearning-Nexar
-            self.model = SqueezeNet(3, (IMAGE_HEIGHT, IMAGE_WIDTH, 3))
-            if sim:
-                self.model.load_weights("light_classification/trained_model/squeezeNet_sim.hdf5")
-            else:
-                self.model.load_weights("light_classification/trained_model/squeezeNet_real.hdf5")
-            self.ready = True
+
+        if sim:
+            model_name = 'squeezeNet_sim'
+        else:
+            model_name = 'squeezeNet_real'
+
+        self.graph, ops = load_graph('light_classification/trained_model/{}.frozen.pb'.format(model_name))
+        self.sess = tf.Session(graph = self.graph)
+
+        for op in ops:
+            print(op.name)
+
+        self.learning_phase_tensor = self.graph.get_tensor_by_name('fire9_dropout/keras_learning_phase:0')
+        self.op_tensor = self.graph.get_tensor_by_name('softmax/Softmax:0')
+        self.input_tensor = self.graph.get_tensor_by_name('input_1:0')
+
+        self.ready = True
 
         self.pred_dict = {0: TrafficLight.UNKNOWN,
                           1: TrafficLight.RED,
@@ -50,8 +59,11 @@ class TLClassifier(object):
             image = image.astype(K.floatx())
             image /= 255.0
             image = np.expand_dims(image, axis=0)
-            with self.graph.as_default():
-                preds = self.model.predict(image)[0]
+
+            with self.graph.as_default() as graph:
+                feed_dict = {self.input_tensor: image, self.learning_phase_tensor: False}
+                preds = self.sess.run(self.op_tensor, feed_dict)
+
             pred_index = np.argmax(preds)
             pred = self.pred_dict[pred_index]
             if self.debug_print:
