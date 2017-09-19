@@ -35,7 +35,8 @@ class Controller(object):
         self.wheel_base = wheel_base
         self.cur_acc = 0
         self.rate = rate
-        # self.accel_filter = LowPassFilter(0.2, 1./self.rate)
+        self.speed_pid = PID(kp_vel, 0.0, 0.0, self.decel_limit, self.accel_limit)
+        self.accel_filter = LowPassFilter(0.2, 1./self.rate)
         # self.steer_pid = PID(0.5, 0.001, 0.0)
         self.throttle_pid = PID(kp_throttle, ki_throttle, 0.0, 0, 1.)
         self.last_cur_lin_vel = 0
@@ -52,7 +53,14 @@ class Controller(object):
 
         # loginfo("cmd_ang_vel: %f", cmd_ang_vel)
         # loginfo("cmd_lin_vel: %f", cmd_lin_vel)
-        self.cur_acc = (cur_lin_vel - self.last_cur_lin_vel)*0.5 / delta_t + self.cur_acc*0.5
+        
+        
+        vel_error = cmd_lin_vel - cur_lin_vel
+
+        raw_acc = cur_lin_vel - self.last_cur_lin_vel
+        
+        # self.cur_acc = (cur_lin_vel - self.last_cur_lin_vel)*0.5 / delta_t + self.cur_acc*0.5
+        self.cur_acc = self.accel_filter.filt(raw_acc)
         self.last_cur_lin_vel = cur_lin_vel
 
         steer_error = (cmd_ang_vel - cur_ang_vel)/delta_t
@@ -62,7 +70,8 @@ class Controller(object):
         else:
             steering = 8*atan(self.wheel_base * cmd_ang_vel / cmd_lin_vel) * self.steer_ratio
 
-        cmd_acc = self.kp_vel * (cmd_lin_vel - cur_lin_vel) /delta_t
+        cmd_acc = self.speed_pid.step(vel_error, delta_t)
+        # cmd_acc = self.kp_vel * (cmd_lin_vel - cur_lin_vel) /delta_t
 
         if cmd_acc > self.accel_limit:
             cmd_acc = self.accel_limit
