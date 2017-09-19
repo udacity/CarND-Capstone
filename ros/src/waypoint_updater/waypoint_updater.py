@@ -2,7 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import Lane, Waypoint, Int32
 
 import math
 
@@ -26,10 +26,13 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater')
+        rospy.logdebug("WaypointUpdater started")
+        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -40,20 +43,74 @@ class WaypointUpdater(object):
 
         rospy.spin()
 
+    '''std_msgs/Header header
+      uint32 seq
+      time stamp
+      string frame_id
+    geometry_msgs/Pose pose
+      geometry_msgs/Point position
+        float64 x
+        float64 y
+        float64 z
+      geometry_msgs/Quaternion orientation
+        float64 x
+        float64 y
+        float64 z
+        float64 w'''
+
     def pose_cb(self, msg):
-        # TODO: Implement
+        rospy.logdebug("pose_cb fired: %s", msg.header.stamp)
+        self.current_pose = msg
         pass
 
+    '''std_msgs/Header header
+      uint32 seq
+      time stamp
+      string frame_id
+    styx_msgs/Waypoint[] waypoints
+      geometry_msgs/PoseStamped pose
+        std_msgs/Header header
+          uint32 seq
+          time stamp
+          string frame_id
+        geometry_msgs/Pose pose
+          geometry_msgs/Point position
+            float64 x
+            float64 y
+            float64 z
+          geometry_msgs/Quaternion orientation
+            float64 x
+            float64 y
+            float64 z
+            float64 w
+      geometry_msgs/TwistStamped twist
+        std_msgs/Header header
+          uint32 seq
+          time stamp
+          string frame_id
+        geometry_msgs/Twist twist
+          geometry_msgs/Vector3 linear
+            float64 x
+            float64 y
+            float64 z
+          geometry_msgs/Vector3 angular
+            float64 x
+            float64 y
+            float64 z'''
+
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
+        rospy.logdebug("waypoints_cb fired")
+        self.base_waypoints = waypoints
         pass
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
+        rospy.logdebug("traffic_cb fired")
+        self.traffic_waypoint = msg
         pass
 
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
+        rospy.logdebug("obstacle_cb fired")
+        self.obstacle_waypoint = msg
         pass
 
     def get_waypoint_velocity(self, waypoint):
