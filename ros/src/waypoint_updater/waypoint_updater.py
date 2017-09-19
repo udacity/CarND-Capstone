@@ -57,7 +57,7 @@ class WaypointUpdater(object):
         try: # to catch when the error when self.vehicle_pos has not been created yet
             smallest_dist = 999999999999.0
             nearest_wp = 0
-            rospy.logwarn("previous nearest waypoint: %s", self.prev_nrst_wp)
+            # rospy.logwarn("previous nearest waypoint: %s", self.prev_nrst_wp)
 
             self.wp_num = len(waypoints.waypoints)
             dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
@@ -73,7 +73,7 @@ class WaypointUpdater(object):
                     smallest_dist = dist
             final_wps = self.get_final_wps(waypoints, nearest_wp)
             self.prev_nrst_wp = nearest_wp
-            rospy.logwarn("nearest waypoint: %s", nearest_wp)
+            # rospy.logwarn("nearest waypoint: %s", nearest_wp)
 
         except AttributeError, e:
             # rospy.logwarn("Error: %s", e) # optional: print out error
