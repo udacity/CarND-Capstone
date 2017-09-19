@@ -50,30 +50,54 @@ class WaypointUpdater(object):
         # get current pose of the vehicle
         # rospy.logwarn("current position of vehicle: %s", msg.pose.position.x)
         self.vehicle_pos = msg.pose.position
+        self.vehicle_orientation = msg.pose.orientation
 
     def waypoints_cb(self, waypoints):
 
         # TODO: Implement
         try: # to catch when the error when self.vehicle_pos has not been created yet
-            smallest_dist = 999999999999.0
+            smallest_dist = 99999.0
             nearest_wp = 0
             # rospy.logwarn("previous nearest waypoint: %s", self.prev_nrst_wp)
 
             self.wp_num = len(waypoints.waypoints)
-            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2) # + (a.z-b.z)**2
+            hd = lambda a, b: math.atan2((b.y-a.y), (b.x-a.x)) # (map_y-y),(map_x-x)
+            q = self.vehicle_orientation
+            # quaternion conversion (see: )
+            theta = math.asin(2*(q.w*q.y + q.z*q.x))
+            # if abs(theta)>= 1:
+            #     theta = math.pi/2.0
+            # else:
+            #     theta = math.asin(theta)
+
+            # rospy.logwarn("Vehicle x: %s", self.vehicle_pos.x)
+
             for i in xrange(self.prev_nrst_wp, self.wp_num):
                 
                 wp_pos = waypoints.waypoints[i].pose.pose.position
 
                 # distance between vehichle and the nearest waypoint
                 dist = dl(self.vehicle_pos, wp_pos)
+                
+                
+
 
                 if dist < smallest_dist:
                     nearest_wp = i
                     smallest_dist = dist
+
+            # heading =  hd(self.vehicle_pos, wp_pos)
+            # angle = abs(theta - heading)
+
+            # if (angle>math.pi/4.0):
+            #     nearest_wp += 1
+
             final_wps = self.get_final_wps(waypoints, nearest_wp)
             self.prev_nrst_wp = nearest_wp
             # rospy.logwarn("nearest waypoint: %s", nearest_wp)
+            # rospy.logwarn("Waypoint y: %s", waypoints.waypoints[nearest_wp].pose.pose.position.y)
+            # rospy.logwarn("Vehicle pose y: %s", self.vehicle_pos.y)
 
         except AttributeError, e:
             # rospy.logwarn("Error: %s", e) # optional: print out error
