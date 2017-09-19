@@ -42,11 +42,11 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        rospy.loginfo("Entering pose_cd...")
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        rospy.loginfo("Entering waypoints_cb...")
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
