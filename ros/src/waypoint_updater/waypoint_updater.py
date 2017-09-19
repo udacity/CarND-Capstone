@@ -37,16 +37,36 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.all_waypoints = []
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        dl = lambda wp: math.sqrt(
+            (wp.pose.position.x-msg.pose.position.x)**2
+            + (wp.pose.position.y-msg.pose.position.y)**2
+            + (wp.pose.position.z-msg.pose.position.z)**2)
+        min_dist = float("inf")
+        for idx, waypoint in enumerate(self.all_waypoints):
+            curr_dist = dl(waypoint)
+            if curr_dist < min_dist:
+                start_idx = idx
+                min_dist = curr_dist
+        waypoints = []
+        while len(waypoints) < 200:
+            waypoints.append(self.all_waypoints[start_idx % len(self.all_waypoints)])
+            start_idx += 1
+
+        lane = Lane()
+        lane.header.frame_id = '/car'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = waypoints
+        self.final_waypoints_pub.publish(lane)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.all_waypoints.clear()
+        for waypoint in waypoints:
+            self.all_waypoints.append(waypoint)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
