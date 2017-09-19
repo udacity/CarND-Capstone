@@ -72,7 +72,7 @@ class WaypointLoader(object):
         return waypoints
 
     def publish(self, waypoints):
-        rate = rospy.Rate(1) # default: 40, changed to reduce simulator lag
+        rate = rospy.Rate(0.1) # default: 40, changed to reduce simulator lag
         while not rospy.is_shutdown():
             lane = Lane()
             lane.header.frame_id = '/world'
