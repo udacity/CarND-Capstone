@@ -20,11 +20,13 @@ class WaypointLoader(object):
     def __init__(self):
         rospy.init_node('waypoint_loader', log_level=rospy.DEBUG)
 
-        self.pub = rospy.Publisher('/base_waypoints', Lane, queue_size=1)
+        self.pub = rospy.Publisher('/base_waypoints', Lane, queue_size=1, latch = True)
 
         self.velocity = rospy.get_param('~velocity')
         self.new_waypoint_loader(rospy.get_param('~path'))
-        rospy.spin()
+        rate = rospy.Rate(10)
+        while not rospy.is_shutdown():
+            rate.sleep()
 
     def new_waypoint_loader(self, path):
         if os.path.isfile(path):
@@ -72,14 +74,12 @@ class WaypointLoader(object):
         return waypoints
 
     def publish(self, waypoints):
-        rate = rospy.Rate(0.1) # default: 40, changed to reduce simulator lag
-        while not rospy.is_shutdown():
-            lane = Lane()
-            lane.header.frame_id = '/world'
-            lane.header.stamp = rospy.Time(0)
-            lane.waypoints = waypoints
-            self.pub.publish(lane)
-            rate.sleep()
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = waypoints
+        self.pub.publish(lane)
+        rate.sleep()
 
 
 if __name__ == '__main__':
