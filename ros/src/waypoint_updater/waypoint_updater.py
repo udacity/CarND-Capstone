@@ -21,7 +21,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -66,7 +66,9 @@ class WaypointUpdater(object):
 		    self.wp_loc = i+1
 		
 	    self.final_waypoints.waypoints = waypoints.waypoints[self.wp_loc:self.wp_loc+LOOKAHEAD_WPS]
+	    
 
+            self.set_waypoint_velocity(self.final_waypoints.waypoints[100], 0)
 	#while not rospy.is_shutdown():	
 	    self.final_waypoints_pub.publish(self.final_waypoints)
 	    #rate.sleep()
@@ -84,8 +86,10 @@ class WaypointUpdater(object):
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+    #def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+    #    waypoints[waypoint].twist.twist.linear.x = velocity
+    def set_waypoint_velocity(self, waypoint, velocity):
+        waypoint.twist.twist.linear.x = velocity
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0

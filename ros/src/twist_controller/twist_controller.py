@@ -55,7 +55,7 @@ class Controller(object):
 	brake = 0
 	
 	if target_linear_vel < 0.01:
-	    brake = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * 					self.wheel_radius * self.decel_limit
+	    brake = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * 					self.wheel_radius * abs(self.decel_limit)
 	    throttle = 0
 
 	elif linear_vel > 0:
