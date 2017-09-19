@@ -48,7 +48,7 @@ class WaypointUpdater(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(10) # 40Hz
+        rate = rospy.Rate(1) # 10Hz,40Hz To improve  performance in simulator
         while not rospy.is_shutdown():
             if ((self.current_pose is not None) and (self.current_waypoints is not None)):
                 next_waypoint_index = self.get_next_waypoint()
