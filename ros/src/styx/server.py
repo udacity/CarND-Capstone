@@ -9,7 +9,11 @@ from flask import Flask, render_template
 from bridge import Bridge
 from conf import conf
 
-sio = socketio.Server()
+#Added as simulator car doesn't start even when throttle = 1.0
+eventlet.monkey_patch()
+sio = socketio.Server(async_mode='eventlet')
+
+#sio = socketio.Server()
 app = Flask(__name__)
 msgs = []
 
