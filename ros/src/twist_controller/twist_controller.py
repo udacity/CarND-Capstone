@@ -19,7 +19,7 @@ class Controller(object):
         kp = -0.2
         ki = -0.05
         kd = -3.0
-        self.max_steer_angle = 0.43
+        self.max_steer_angle = 0.61 # 35 degrees
         self.pidcontroller = PID(kp, ki, kd, -self.max_steer_angle, self.max_steer_angle)
 
         min_speed = 0.0
@@ -36,26 +36,18 @@ class Controller(object):
         angular_velocity = args[3]
         current_velocity = args[4]
 
-        throttle = 0.0
-        brake = 0.0
-
-        # Throttle - dumb controller
-        # if (current_velocity < linear_velocity):
-        #     self.pedal += 0.0
-        # else:
-        #     self.pedal -= -0.0
-        #
-        # if (self.pedal>0):
-        #     throttle = self.pedal
-        # else:
-        #     brake = -self.pedal
-
         # Throttle - PID control
         if (current_velocity==0.0):
-            throttle = 1.0
+            pedal = 1.0
         else:
-            throttle = self.spidcontroller.step(current_velocity-linear_velocity, delta_time)
-        # print current_velocity, linear_velocity
+            pedal = self.spidcontroller.step(current_velocity-linear_velocity, delta_time)
+
+        if (pedal>0):
+            throttle = pedal
+            brake = 0.0
+        else:
+            throttle = 0.0
+            brake = -pedal
 
         # Steer - PID control
         steer_pid = self.pidcontroller.step(cte, delta_time)
@@ -65,8 +57,6 @@ class Controller(object):
 
         steer = steer_pid + steer_yaw
 
-        # steer = angular_velocity*180/PI
         # print 'cte ' + str(cte) + ' -> steer ' + str(steer_pid) + ' + ' + str(steer_yaw) + ' pedal ' + str(self.pedal)
-        # + '. angular_velocity = ' + str(angular_velocity)
 
         return throttle, brake, steer
