@@ -120,7 +120,7 @@ class WaypointUpdater(object):
             # stop at the end of road
             if lane_start + LOOKAHEAD_WPS >= len(self.base_waypoints_msg.waypoints):
                 for waypoint in waypoints[-10:]:
-                    self.waypoint.set_waypoint_velocity(waypoint, 0.)
+                    self.set_waypoint_velocity(waypoint, 0.)
             lane = self.make_lane_msg(frame_id, waypoints)
 
             ## publish final_waypoints
