@@ -5,38 +5,49 @@ ONE_MPH = 0.44704
 from  yaw_controller import YawController
 from lowpass import LowPassFilter
 from pid import PID
+import rospy
+import math
 
 
 class Controller(object):
-	def __init__(self, throttle, brake, steering):
-		"""
-		:param throttle - PID controller applied to the throttle
-		:param brake - PID controller applied to the brake
-		:param steering - PID controller applied to the steering   
-		"""
-		self.throttle = throttle
-		self.brake = brake 
-		self.steering = steering
+	def __init__(self, *args, **kwargs):
+		self.yaw_controller = YawController(kwargs['wheel_base'], kwargs['steer_ratio'] * 8,
+											kwargs['min_speed'] + ONE_MPH, kwargs['max_lat_accel'],
+											kwargs['max_steer_angle'])
+		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=kwargs['decel_limit'], mx=kwargs['accel_limit'])
+		self.min_speed = kwargs['min_speed']
+		self.prev_time = None
 
-		# Apply a LowPassFilter to smooth out values
-		self.throtlle_low_pass = LowPassFilter(.5)
-		self.brake_low_pass = LowPassFilter(.5)
-		self.steering_low_pass = LowPassFilter(.5)
+	def control(self, *args, **kwargs):
+		target_velocity_linear_x = args[0]
+		target_velocity_angular_z = args[1]
+		current_velocity_linear_x = args[2]
+		current_velocity_angular_z = args[3]
+		dbw_enabled = args[4]
+		throttle = 0.0
+		brake = 0.0
 
-	def control(current_velocity, taget_velocity, throttle_pid, brake_pid, steering_pid):
+		if not dbw_enabled: 
+			self.throttle.reset()
+			return 0, 0, 0
+
+		# Compute difference between target and current velocity as CTE for throttle. 
+		diff_velocity = target_velocity_linear_x - current_velocity_linear_x
+
+		current_time = rospy.get_time()
+		dt = 0
+		if self.prev_time is not None: 
+			dt = current_time - self.prev_time
+		self.prev_time = current_time
 		
-		# Break down velocities into linear and angular components
-		current_velocity_linear = current_velocity.linear.x
-		current_velocity_angular = current_velocity.angular.z
-		target_velocity_linear = target_velocity.linear.x
-		target_velocity_angular = target_velocity.angular.z
-
-		# Calculate difference between target and current velocity. This will be our CTE for throttle PID. 
-		velocity_error = target_velocity_linear - current_velocity_linear
-
-		# Get time using t = 1/F. F Being the frequency in Hz (hardcoded, have to be passed)
-		dt = 1 / 10; 
-
-
+		velocity_controller = 0
+		if dt > 0:
+			velocity_controller = self.throttle_pid.step(diff_velocity, dt)
+		if velocity_controller > 0:
+			throttle = velocity_controller
+		elif velocity_controller < 0:
+			brake = -velocity_controller
+		
+		steering = self.yaw_controller.get_steering(target_velocity_linear_x, target_velocity_angular_z, current_velocity_linear_x)
 
 		return throttle, brake, steering
