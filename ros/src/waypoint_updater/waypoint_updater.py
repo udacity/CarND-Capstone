@@ -49,7 +49,7 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb) # 40-45 hz
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb) # 40 hz
+        self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb) # 40 hz
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb) # 10 hz
         rospy.Subscriber('/obstacle_waypoints', PoseStamped, self.obstacle_cb)
 
@@ -83,6 +83,8 @@ class WaypointUpdater(object):
         # ideally only need to do it once since the map doesn't change
         # update it anyway since seq of the msg might change
         self.base_waypoints_msg = waypoints
+        # receive once
+        self.base_waypoints_sub.unregister()
 
     def traffic_cb(self, msg):
         # index of next RED light in the base_waypionts list
@@ -213,7 +215,7 @@ class WaypointUpdater(object):
             distance = self.distance(light_wp, self.car_pose)
             # TODO: make the condition more reliable
             # stops in x seconds with maximum speed
-            if self.ahead_of(light_wp, self.car_pose) and distance <= 30:#MAX_SPEED * 3: 
+            if self.ahead_of(light_wp, self.car_pose) and distance <= 50:#MAX_SPEED * 3: 
                 return True
             else:
                 return False

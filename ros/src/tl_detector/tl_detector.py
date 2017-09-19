@@ -24,7 +24,7 @@ class TLDetector(object):
         self.lights = []
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
@@ -65,25 +65,27 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
+        # receive once
+        self.base_waypoints_sub.unregister()
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
         # FIX of a potential bug https://github.com/udacity/CarND-Capstone/issues/28
         # TODO: remove this when bug resolved
-        light_locations = [
-                [1148.56, 1184.65],
-                [1559.2, 1158.43],
-                [2122.14, 1526.79],
-                [2175.237, 1795.71],
-                [1493.29, 2947.67],
-                [821.96, 2905.8],
-                [161.76, 2303.82],
-                [351.84, 1574.65]
-        ]
-        for i, light in enumerate(self.lights):
-            light.pose.pose.position.x = light_locations[i][0]
-            light.pose.pose.position.y = light_locations[i][1]
+        # light_locations = [
+        #         [1148.56, 1184.65],
+        #         [1559.2, 1158.43],
+        #         [2122.14, 1526.79],
+        #         [2175.237, 1795.71],
+        #         [1493.29, 2947.67],
+        #         [821.96, 2905.8],
+        #         [161.76, 2303.82],
+        #         [351.84, 1574.65]
+        # ]
+        # for i, light in enumerate(self.lights):
+        #     light.pose.pose.position.x = light_locations[i][0]
+        #     light.pose.pose.position.y = light_locations[i][1]
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -281,8 +283,8 @@ class TLDetector(object):
         if self.car_pose:
             for i, light in enumerate(self.lights):
                 if self.distance(self.get_light_coordinates(light), 
-                                 self.get_car_coordinates(self.car_pose)) >= 30:
-                        continue
+                                 self.get_car_coordinates(self.car_pose)) >= 60:
+                    continue
 
                 light_state = self.get_light_state(light)
                 if light_state != TrafficLight.RED: continue # ignore non-red lights

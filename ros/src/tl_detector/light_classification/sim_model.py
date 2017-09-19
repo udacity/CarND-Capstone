@@ -28,14 +28,14 @@ class SimModel():
     else:
       prediction = TrafficLight.UNKNOWN
 
-    # print "Traffic Light: ",
-    # if prediction == TrafficLight.RED:
-    #   print("RED")
-    # elif prediction == TrafficLight.YELLOW:
-    #   print("YELLOW")
-    # elif prediction == TrafficLight.GREEN:
-    #   print("GREEN")
-    # else:
-    #   print("INVISIBLE")
+    print "Traffic Light: ",
+    if prediction == TrafficLight.RED:
+      print("RED")
+    elif prediction == TrafficLight.YELLOW:
+      print("YELLOW")
+    elif prediction == TrafficLight.GREEN:
+      print("GREEN")
+    else:
+      print("INVISIBLE")
       
     return prediction
