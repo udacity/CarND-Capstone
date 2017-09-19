@@ -60,7 +60,7 @@ def parse_rosbag():
   TRAFFIC_LIGHT_GREEN = 2
 
   print("loading rosbag")
-  bag = rosbag.Bag('/data/carnd/CarND-Capstone/rosbag/20170916_0_lei.bag')
+  bag = rosbag.Bag('/data/carnd/CarND-Capstone/rosbag/test.bag')
   print("finish loading rosbag")
 
   car_pose_msgs = []
@@ -76,15 +76,15 @@ def parse_rosbag():
     elif topic == IMAGE_TOPIC:
       # there is no timestamp in image msg
       # modify bridge.py?
-      if msg.header.stamp == rospy.Time(0):
-        msg.header.stamp = time
+    #   if msg.header.stamp == rospy.Time(0):
+    #     msg.header.stamp = time
       assert (msg.header.stamp != rospy.Time(0))
       image_msgs.append(msg)
     elif topic == TRAFFIC_LIGHT_TOPIC:
       # there is no timestamp in traffic light msg
       # modify bridge.py?
-      if msg.header.stamp == rospy.Time(0):
-        msg.header.stamp = time
+    #   if msg.header.stamp == rospy.Time(0):
+    #     msg.header.stamp = time
       assert (msg.header.stamp != rospy.Time(0))
       traffic_light_msgs.append(msg)
     else:
