@@ -6,6 +6,7 @@ import keras.backend as K
 import tensorflow as tf
 from train import SqueezeNet
 from consts import IMAGE_WIDTH, IMAGE_HEIGHT
+from graph_utils import load_graph
 
 class TLClassifier(object):
     def __init__(self, sim):
@@ -18,22 +19,15 @@ class TLClassifier(object):
         else:
             model_name = 'squeezeNet_real'
 
-        with tf.gfile.GFile('light_classification/{}.optimized.pb'.format(model_name), 'rb') as f:
-            graph_def = tf.GraphDef()
-            graph_def.ParseFromString(f.read())
-
-        self.graph = tf.Graph()
+        self.graph, ops = load_graph('light_classification/trained_model/{}.frozen.pb'.format(model_name))
         self.sess = tf.Session(graph = self.graph)
 
-        with self.graph.as_default() as graph:
-            tf.import_graph_def(graph_def)
-
-            # Restoring checkpoint weights fails with error.
-            # saver = tf.train.Saver()
-            # saver.restore(self.sess, 'light_classification/{}.ckpt'.format(model_name))
-
-        for op in self.graph.get_operations():
+        for op in ops:
             print(op.name)
+
+        self.learning_phase_tensor = self.graph.get_tensor_by_name('fire9_dropout/keras_learning_phase:0')
+        self.op_tensor = self.graph.get_tensor_by_name('softmax/Softmax:0')
+        self.input_tensor = self.graph.get_tensor_by_name('input_1:0')
 
         self.ready = True
 
@@ -67,11 +61,8 @@ class TLClassifier(object):
             image = np.expand_dims(image, axis=0)
 
             with self.graph.as_default() as graph:
-                learning_phase_tensor = self.graph.get_tensor_by_name('import/fire9_dropout/keras_learning_phase:0')
-                op_tensor = self.graph.get_tensor_by_name('import/softmax/Softmax:0')
-                input_tensor = self.graph.get_tensor_by_name('import/input_1:0')
-                feed_dict = {input_tensor: image, learning_phase_tensor: False}
-                preds = self.sess.run(op_tensor, feed_dict)
+                feed_dict = {self.input_tensor: image, self.learning_phase_tensor: False}
+                preds = self.sess.run(self.op_tensor, feed_dict)
 
             pred_index = np.argmax(preds)
             pred = self.pred_dict[pred_index]

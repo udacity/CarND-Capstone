@@ -1,23 +1,34 @@
 import tensorflow as tf
+from tensorflow.python.framework import graph_util
 from consts import *
 from train import SqueezeNet
+import keras.backend as K
 
-def save_model(sim):
-    model_name_dict = {True: "squeezeNet_sim",
-                       False: "squeezeNet_real"}
+K.set_image_dim_ordering('tf')
 
+model_name_dict = {True: "squeezeNet_sim",
+                   False: "squeezeNet_real"}
+
+def freeze_squeezenet(sim):
     model_name = model_name_dict[sim]
+    model = SqueezeNet(3, (IMAGE_HEIGHT, IMAGE_WIDTH, 3))
+    model.load_weights("trained_model/{}.hdf5".format(model_name))
 
-    with tf.Session() as sess:
-        # Load model from https://github.com/mynameisguy/TrafficLightChallenge-DeepLearning-Nexar
-        model = SqueezeNet(3, (IMAGE_HEIGHT, IMAGE_WIDTH, 3))
-        model.load_weights("trained_model/{}.hdf5".format(model_name))
-        init_op = tf.global_variables_initializer()
-        sess.run(init_op)
-        saver = tf.train.Saver().save(sess, '{}.ckpt'.format(model_name))
-        graph_def = sess.graph.as_graph_def()
-        tf.train.write_graph(graph_def, logdir='.', name='{}.pb'.format(model_name), as_text=False)
-        tf.train.write_graph(graph_def, logdir='.', name='{}.pbtxt'.format(model_name), as_text=True)
+    sess = K.get_session()
+
+    graph = sess.graph
+    input_graph_def = graph.as_graph_def()
+
+    with sess.as_default():
+        output_node_names = "softmax/Softmax"
+        output_graph_def = graph_util.convert_variables_to_constants(
+            sess, # The session is used to retrieve the weights
+            input_graph_def, # The graph_def is used to retrieve the nodes
+            output_node_names.split(",") # The output node names are used to select the usefull nodes
+        )
+        with tf.gfile.GFile('trained_model/{}.frozen.pb'.format(model_name), "wb") as f:
+            f.write(output_graph_def.SerializeToString())
+        print("%d ops in the final graph." % len(output_graph_def.node))
 
 def load_graph(graph_file, use_xla=False):
     jit_level = 0
@@ -36,20 +47,9 @@ def load_graph(graph_file, use_xla=False):
         n_ops = len(ops)
         return sess.graph, ops
 
-def look_at_ops(graph_file):
-    sess, ops = load_graph(graph_file)
-    print(graph_file, len(ops))
-
-def count_ops():
-    look_at_ops('squeezeNet_real.pb')
-    look_at_ops('squeezeNet_real.optimized.pb')
-    look_at_ops('squeezeNet_sim.pb')
-    look_at_ops('squeezeNet_sim.optimized.pb')
-
-def save_models():
-    save_model(False)
-    save_model(True)
+def freeze():
+    freeze_squeezenet(True)
+    freeze_squeezenet(False)
 
 if __name__ == '__main__':
-    save_models()
-    count_ops()
+    freeze()
