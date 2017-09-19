@@ -175,15 +175,24 @@ class DBWNode(object):
 
         if (self.waypoints is not None):
             closestWPi = self.get_closest_waypoint()
-            #print 'closestWPi', closestWPi
+
+            index_prev = closestWPi-1
+            if( index_prev < 0 ):
+                index_prev = index_prev + len(self.waypoints.waypoints)
+
+            index_next = closestWPi+1
+            if( index_next >= len(self.waypoints.waypoints) ):
+                index_next = index_next - len(self.waypoints.waypoints)
+
             waypoint_x = [
-                self.waypoints.waypoints[closestWPi-1].pose.pose.position.x,
+                self.waypoints.waypoints[index_prev].pose.pose.position.x,
                 self.waypoints.waypoints[closestWPi].pose.pose.position.x,
-                self.waypoints.waypoints[closestWPi+1].pose.pose.position.x ]
+                self.waypoints.waypoints[index_next].pose.pose.position.x ]
             waypoint_y = [
-                self.waypoints.waypoints[closestWPi-1].pose.pose.position.y,
+                self.waypoints.waypoints[index_prev].pose.pose.position.y,
                 self.waypoints.waypoints[closestWPi].pose.pose.position.y,
-                self.waypoints.waypoints[closestWPi+1].pose.pose.position.y ]
+                self.waypoints.waypoints[index_next].pose.pose.position.y ]
+
             # orient to car's coordinates
             interp_x = []
             interp_y = []
