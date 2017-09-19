@@ -79,7 +79,6 @@ class WaypointLoader(object):
         lane.header.stamp = rospy.Time(0)
         lane.waypoints = waypoints
         self.pub.publish(lane)
-        rate.sleep()
 
 
 if __name__ == '__main__':
