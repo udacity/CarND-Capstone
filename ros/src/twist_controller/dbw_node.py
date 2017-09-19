@@ -94,8 +94,10 @@ class DBWNode(object):
     def current_velocity_Cb(self, data):
         self.curr_linear_velocity = data.twist.linear.x
         self.curr_angular_velocity = data.twist.angular.z
+
     def dbw_enabled_Cb(self,data):
         self.dbw_enabled = data.data
+
     def twist_cmd_Cb(self,data):
         self.target_linear_velocity = data.twist.linear.x # 4.47 for 10mph
         self.target_angular_velocity = data.twist.angular.z
