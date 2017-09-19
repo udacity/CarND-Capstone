@@ -27,10 +27,8 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 class WaypointUpdater(object):
     def __init__(self):
         self.prev_nrst_wp = 0 # total number of waypoints are 10902
-        # self.vehicle_pos = PoseStamped()
-        # self.vehicle_pos.pose.position.
-        rospy.init_node('waypoint_updater')
 
+        rospy.init_node('waypoint_updater')
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -47,10 +45,12 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         # TODO: Implement
-        # get current pose of the vehicle
-        # rospy.logwarn("current position of vehicle: %s", msg.pose.position.x)
+        # current pose of the vehicle
         self.vehicle_pos = msg.pose.position
+
+        # vehicle orientation in quanternions
         self.vehicle_orientation = msg.pose.orientation
+        # rospy.logwarn("current position of vehicle: %s", msg.pose.position.x)
 
     def waypoints_cb(self, waypoints):
 
@@ -58,20 +58,13 @@ class WaypointUpdater(object):
         try: # to catch when the error when self.vehicle_pos has not been created yet
             smallest_dist = 99999.0
             nearest_wp = 0
+
             # rospy.logwarn("previous nearest waypoint: %s", self.prev_nrst_wp)
 
             self.wp_num = len(waypoints.waypoints)
             dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2) # + (a.z-b.z)**2
             hd = lambda a, b: math.atan2((b.y-a.y), (b.x-a.x)) # (map_y-y),(map_x-x)
-            q = self.vehicle_orientation
-            # quaternion conversion (see: )
-            theta = math.asin(2*(q.w*q.y + q.z*q.x))
-            # if abs(theta)>= 1:
-            #     theta = math.pi/2.0
-            # else:
-            #     theta = math.asin(theta)
-
-            # rospy.logwarn("Vehicle x: %s", self.vehicle_pos.x)
+            
 
             for i in xrange(self.prev_nrst_wp, self.wp_num):
                 
@@ -79,14 +72,18 @@ class WaypointUpdater(object):
 
                 # distance between vehichle and the nearest waypoint
                 dist = dl(self.vehicle_pos, wp_pos)
-                
-                
-
 
                 if dist < smallest_dist:
                     nearest_wp = i
                     smallest_dist = dist
 
+            # # quaternion conversion (see: )
+            # q = self.vehicle_orientation
+            # theta = math.asin(2*(q.w*q.y + q.z*q.x))
+            # # if abs(theta)>= 1:
+            # #     theta = math.pi/2.0
+            # # else:
+            # #     theta = math.asin(theta)
             # heading =  hd(self.vehicle_pos, wp_pos)
             # angle = abs(theta - heading)
 
@@ -95,9 +92,9 @@ class WaypointUpdater(object):
 
             final_wps = self.get_final_wps(waypoints, nearest_wp)
             self.prev_nrst_wp = nearest_wp
+            if nearest_wp > 10901:
+                self.prev_nrst_wp = 0
             # rospy.logwarn("nearest waypoint: %s", nearest_wp)
-            # rospy.logwarn("Waypoint y: %s", waypoints.waypoints[nearest_wp].pose.pose.position.y)
-            # rospy.logwarn("Vehicle pose y: %s", self.vehicle_pos.y)
 
         except AttributeError, e:
             # rospy.logwarn("Error: %s", e) # optional: print out error
@@ -113,7 +110,6 @@ class WaypointUpdater(object):
             if i > self.wp_num:
                 break
             new_wp_lane.waypoints.append(waypoints.waypoints[i])
-        # rospy.logwarn("new wp lane size: %s", len(new_wp_lane.waypoints)) # check that new final waypoints are written
         return new_wp_lane
 
     def traffic_cb(self, msg):

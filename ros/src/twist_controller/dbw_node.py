@@ -71,14 +71,11 @@ class DBWNode(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.crnt_vel_cb)
         # vehicle current twist
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
-        # vehicle position
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         # final waypoints
         rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb)
 
 
-        rospy.logwarn("Checkpoint...... enetering loop...")
-
+        # get time
         self.time_last_sample = rospy.rostime.get_time()
 
         # enter drive loop
@@ -92,27 +89,19 @@ class DBWNode(object):
 
     def crnt_vel_cb(self, msg):
         # vehicle velocities:
-        # self.vehicle_vel_lin = msg.twist.linear
-        # self.vehicle_vel_ang = msg.twist.angular
-        self.vehicle_cur_vel = self.magnitude(msg.twist.linear.x, msg.twist.linear.y)
-        self.vehicle_cur_ang = msg.twist.angular.z
+        # linear
+        self.cur_vel_lin = self.magnitude(msg.twist.linear.x, msg.twist.linear.y)
+        # angular
+        self.cur_vel_ang = msg.twist.angular.z
         
         # rospy.logwarn("current velocity: %s", msg.twist.linear.x)
 
     def twist_cmd_cb(self, msg):
         # vehicle twists:
-        self.vehicle_vel_lin = msg.twist.linear
-        self.vehicle_vel_ang = msg.twist.angular
-        # self.vehicle_lin_vel
-        # self.vehicle_ang_vel
+        self.target_vel_lin = msg.twist.linear.x
+        self.target_vel_ang = msg.twist.angular.z
         
         # rospy.logwarn("current twist: %s", msg.twist.linear.x)
-
-    def pose_cb(self, msg):
-        # TODO: Implement
-        # get current pose of the vehicle
-        # rospy.logwarn("current position of vehicle: %s", msg.pose.position.x)
-        self.vehicle_pos = msg.pose.position
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
@@ -137,31 +126,21 @@ class DBWNode(object):
 
             # try to get the vehicle position, waypoints, next/nearest waypoint
             try:
-                # pass
-                # rospy.logwarn("Waypoint y: %s", self.waypoints.waypoints[0].pose.pose.position.y)
-                # rospy.logwarn("Vehicle pose y: %s", self.vehicle_pos.y)
-                cte = (self.waypoints.waypoints[0].pose.pose.position.y - self.vehicle_pos.y)
-                # rospy.logwarn("Vehicle cte: %s", cte)
+                # check if dbw is enabled before publishing
+                if self.dbw_enabled_check:
+                    throttle, brake, steering = self.controller.control(
+                                                        self.target_vel_lin, 
+                                                        self.target_vel_ang, 
+                                                        self.cur_vel_lin, 
+                                                        self.cur_vel_ang, 
+                                                        time_elapsed)
 
-                throttle, brake, steering = self.controller.control(cte, 
-                                        self.vehicle_vel_lin.x, self.vehicle_vel_ang.z, self.vehicle_cur_vel, self.vehicle_cur_ang, time_elapsed)
-
-                rospy.logwarn("Vehicle steering: %s", steering)
-
-                # rospy.logwarn("Vehicle current velocity: %s", self.vehicle_cur_vel)
-                if not rospy.is_shutdown():
-
-                    self.publish(throttle, brake, steering)
-                    
-                    # # check if dbw is enabled before publishing
-                    # if self.dbw_enabled_check:
-                    #     self.publish(throttle, brake, steering)
+                    rospy.logwarn("Vehicle steering: %s", steering)
             except Exception as e:
                 rospy.logwarn("Error: %s", e)
                 pass
-            
-
-            
+            else:
+                self.publish(throttle, brake, steering)
 
             rate.sleep()
 
