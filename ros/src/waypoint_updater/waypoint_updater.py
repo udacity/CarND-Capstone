@@ -78,7 +78,7 @@ class WaypointUpdater(object):
 
         self.commanded_velocity = 0
 
-        self.cruise_velocity = 22.
+        self.cruise_velocity = 11.
 
         self.currpose = None
         self.curr_waypoints = None
@@ -127,7 +127,7 @@ class WaypointUpdater(object):
         self.valid_next_traffic = False
         for i in range(len(self.traffic_lights.lights)):
             index = self.closest_index(self.traffic_lights.lights[i])
-            if(index >= 20):
+            if(index >= self.nb_stopping_wp-5):
                 self.next_traffic = self.traffic_lights.lights[i]
                 self.valid_next_traffic = True
                 break
@@ -154,7 +154,7 @@ class WaypointUpdater(object):
             print("RUNNING")
             if(self.valid_next_traffic and 
                 (self.next_traffic.state is TrafficLight.RED or 
-                    self.next_traffic.state is TrafficLight.YELLOW and self.traffic_light_wp_index>self.nb_stopping_wp)):
+                    self.next_traffic.state is TrafficLight.YELLOW and self.traffic_light_wp_index>1.5*self.nb_stopping_wp)):
                 self.state = self.STOPPING
                 self.lane = self.breaking(self.lane, self.traffic_light_wp_index-self.nb_stopping_wp, self.cruise_velocity) # TRANSITION TO STOPPING
             
@@ -213,7 +213,7 @@ class WaypointUpdater(object):
         return base_lane
 
     def breaking(self, base_lane, stop_index, curr_vel):
-        stopping_distance = distance(base_lane.waypoints, 0, stop_index)
+        stopping_distance = distance(base_lane.waypoints, 0, stop_index)+0.5
         for i in range(stop_index+1):
             wp_distance = distance(base_lane.waypoints, i, stop_index)
             velocity = curr_vel*wp_distance/stopping_distance
@@ -278,6 +278,8 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         """Callback for the traffic_waypoint message."""
+        self.traffic_lights = TrafficLightArray()
+        self.traffic_lights.append(msg)
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
 
