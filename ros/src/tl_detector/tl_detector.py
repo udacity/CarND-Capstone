@@ -71,21 +71,6 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
-        # FIX of a potential bug https://github.com/udacity/CarND-Capstone/issues/28
-        # TODO: remove this when bug resolved
-        # light_locations = [
-        #         [1148.56, 1184.65],
-        #         [1559.2, 1158.43],
-        #         [2122.14, 1526.79],
-        #         [2175.237, 1795.71],
-        #         [1493.29, 2947.67],
-        #         [821.96, 2905.8],
-        #         [161.76, 2303.82],
-        #         [351.84, 1574.65]
-        # ]
-        # for i, light in enumerate(self.lights):
-        #     light.pose.pose.position.x = light_locations[i][0]
-        #     light.pose.pose.position.y = light_locations[i][1]
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -238,8 +223,6 @@ class TLDetector(object):
 
         """
         
-
-        
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -248,23 +231,6 @@ class TLDetector(object):
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
-        #TODO use light location to zoom in on traffic light in image
-
-        # ## save images
-        # state = ("green" if light.state == TrafficLight.GREEN else
-        #         "red" if light.state == TrafficLight.RED else
-        #         "yellow" if light.state == TrafficLight.YELLOW else
-        #         "unknown")
-        # cv2.imwrite("/home/student/sdc-final/sim_imgs/%s/img%i.png" % (state,self.counter), cv_image)
-        # self.counter += 1
-
-        ## take the shortcut if the groud-truth is already provided
-        ## mainly for mock up test
-        ## TODO: remove this shortcut to do image classification
-        # if light.state != TrafficLight.UNKNOWN:
-        #     return light.state
-            
-        ## else do the hard work to classify it
         #Get classification
         return self.light_classifier.get_classification(cv_image)
 
@@ -283,7 +249,7 @@ class TLDetector(object):
         if self.car_pose:
             for i, light in enumerate(self.lights):
                 if self.distance(self.get_light_coordinates(light), 
-                                 self.get_car_coordinates(self.car_pose)) >= 60:
+                                 self.get_car_coordinates(self.car_pose)) >= 90:
                     continue
 
                 light_state = self.get_light_state(light)

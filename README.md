@@ -54,4 +54,16 @@ cd CarND-Capstone/ros
 roslaunch launch/site.launch
 ```
 
+### Team
+The project is a team work. We are (as in registration form),
 
+- Priyanka Dwivedi (priya.toronto3@gmail.com)
+- Li Ma (ma.li.cn@gmail.com)
+- Raghu Ramarao (raghu.ramarao@gmail.com)
+- Tim Tobey (timtobey@gmail.com)
+- Shahid Siddiqui (shahid.case2013@gmail.com)
+
+### Result
+
+#### Running in Simulator
+[![Fish the track at 25MPH](https://img.youtube.com/vi/MRIcmdPMrag/0.jpg)](https://www.youtube.com/watch?v=MRIcmdPMrag)

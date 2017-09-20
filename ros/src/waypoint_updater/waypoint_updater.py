@@ -29,7 +29,7 @@ LOOKAHEAD_WPS = 200
 # Car speed in simulator (or real env) is MPH, whereas ROS uses MPS
 MPH_TO_MPS = 0.44704
 # max car speed
-MAX_SPEED = 20 * MPH_TO_MPS # m/s 
+MAX_SPEED = 25 * MPH_TO_MPS #m/s 
 
 
 class WaypointUpdater(object):
@@ -80,8 +80,6 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, waypoints):
         # 10902 waypoints for the simulation env
-        # ideally only need to do it once since the map doesn't change
-        # update it anyway since seq of the msg might change
         self.base_waypoints_msg = waypoints
         # receive once
         self.base_waypoints_sub.unregister()
@@ -195,12 +193,6 @@ class WaypointUpdater(object):
 
         return self.inner_product(wp_vector, yaw_vector) > 0
 
-        # deprecated simple rules for the test case
-        # dx = wp_x - car_x
-        # dy = wp_y - car_y
-        # dz = wp_z - car_z
-
-        # return dx < 0
 
     def red_light_ahead(self):
         
@@ -213,9 +205,8 @@ class WaypointUpdater(object):
             base_waypoints = self.base_waypoints_msg.waypoints
             light_wp = base_waypoints[self.redlight_wp_index]
             distance = self.distance(light_wp, self.car_pose)
-            # TODO: make the condition more reliable
-            # stops in x seconds with maximum speed
-            if self.ahead_of(light_wp, self.car_pose) and distance <= 50:#MAX_SPEED * 3: 
+            # stops in x distance 
+            if self.ahead_of(light_wp, self.car_pose) and distance <= 50: 
                 return True
             else:
                 return False
@@ -235,9 +226,6 @@ class WaypointUpdater(object):
                 if d < next_wp_dist:
                     next_wp_dist = d
                     next_wp_index = i
-                    # return here means we don't really care about the close distance
-                    # but only that the next waypoint is ahead of the car
-                    # break 
         return next_wp_index
 
 

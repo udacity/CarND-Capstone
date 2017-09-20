@@ -20,7 +20,7 @@ class Controller(object):
                                 decel_limit)
         # self.speed_controller = PID(0.5, 0.02, 0.2)
         # self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
-        self.steering_controller = PID(0.5, 0.5, 0.1, -0.4, 0.4)
+        self.steering_controller = PID(0.5, 0.05, 0.1, -0.35, 0.35)
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
     def control(self, target_velocity, current_velocity, dbw_enabled, dt):
@@ -95,7 +95,6 @@ class SpeedController(object):
         if torque > 0:
             # As documented, throttle is the percent of max torque applied
             throttle, brake = max(0.1, min(1.0, torque / SpeedController.MAX_THROTTLE_TORQUE)), 0.0
-            # throttle, brake = min(1.0, torque), 0.0
         else:
             # brake is the torque we need to apply
             throttle, brake = 0.0, min(abs(torque), SpeedController.MAX_BREAK_TORQUE)

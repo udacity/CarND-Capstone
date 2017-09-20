@@ -6,7 +6,7 @@ class SimModel():
   def __init__(self):
     self.GREEN_CHANNEL = 1
     self.RED_CHANNEL = 2
-    self.area_thr = 100
+    self.area_thr = 80
   def predict(self, image):
     """
     image: cv2.Image (BGR)
@@ -34,8 +34,8 @@ class SimModel():
     elif prediction == TrafficLight.YELLOW:
       print("YELLOW")
     elif prediction == TrafficLight.GREEN:
-      print("GREEN")
+      print("CLEAR")
     else:
-      print("INVISIBLE")
+      print("CLEAR")
       
     return prediction
