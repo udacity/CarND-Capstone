@@ -102,8 +102,12 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        distances = []
+        pos = pose.position
+        for wp in self.waypoints:
+            wp_pos = wp.pose.pose.position
+            distances.append(math.sqrt((wp_pos.x-pos.x)**2 + (wp_pos.y-pos.y)**2))
+        return distances.index(min(distances))
 
 
     def project_to_image_plane(self, point_in_world):
