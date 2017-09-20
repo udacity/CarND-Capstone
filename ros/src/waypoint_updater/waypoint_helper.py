@@ -90,9 +90,16 @@ def get_closest_waypoint_from_all(position, waypoints):
 def get_closest_waypoint_from_previous(position, waypoints, previous, adjacent=20):
     """ Get the waypoint closest to the pose based on previous one """
     dl = lambda wp: get_distance(wp.pose.pose.position, position)
-    adjacents = waypoints[previous - adjacent: previous + adjacent + 1]
+
+    # wrap around
+    start = (previous - adjacent) % len(waypoints)
+    count = adjacent * 2 + 1
+    adjacents = waypoints[start:start + count]
+    while len(adjacents) < count:
+        adjacents.extend(waypoints[:count - len(adjacents)])
+
     _, min_dist_i = min_key(adjacents, key=dl)
-    closest = previous + min_dist_i - adjacents.index(waypoints[previous])
+    closest = (previous - adjacent + min_dist_i) % len(waypoints)
     return closest
 
 def look_ahead_waypoints(pose, waypoints, previous=None, count=LOOKAHEAD_WPS):
