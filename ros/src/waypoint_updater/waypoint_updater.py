@@ -79,17 +79,21 @@ class WaypointUpdater(object):
                           self.waypoints[next_wp].pose.pose.position.y)
         else:
             next_wp = self.next_waypoint(self.waypoints, msg.pose)
-            rospy.loginfo("current pose (%s, %s) next waypoint (%s, %s)",
+            rospy.loginfo("current pose (%s, %s) next waypoint (%s, %s) %s",
                           msg.pose.position.x,
                           msg.pose.position.y,
                           self.waypoints[next_wp].pose.pose.position.x,
-                          self.waypoints[next_wp].pose.pose.position.y)
+                          self.waypoints[next_wp].pose.pose.position.y,
+                          next_wp)
             self.prev_next_wp = next_wp
             self.prev_pose = msg.pose
 
         final_waypoints = Lane()
 
-        for i in range(next_wp, next_wp+LOOKAHEAD_WPS):
+        final_wp = next_wp+LOOKAHEAD_WPS
+        if final_wp > len(self.waypoints)-1:
+            final_wp = len(self.waypoints)-1
+        for i in range(next_wp, final_wp):
             final_waypoints.waypoints.append(self.waypoints[i])
 
         self.final_waypoints_pub.publish(final_waypoints)
@@ -106,8 +110,8 @@ class WaypointUpdater(object):
         def dl(a, b):
             return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
 
-        closest_wp = len(waypoints) + 1
-        closest_dist = 100000
+        closest_wp = len(waypoints)-1
+        closest_dist = None
         # for i in range(len(waypoints)):
         #     dist = dl(waypoints[i].pose.pose.position, pose.position)
         #     if (dist < closest_dist):
@@ -122,22 +126,40 @@ class WaypointUpdater(object):
             dist_upper = dl(waypoints[wp_upper].pose.pose.position, pose.position)
             dist_mid = dl(waypoints[wp_mid].pose.pose.position, pose.position)
 
-            if dist_lower < closest_dist:
-                closest_wp = wp_lower
-                closest_dist = dist_lower
+            closest_dist = dist_lower
+            closest_wp = wp_lower
             if dist_mid < closest_dist:
-                closest_wp = wp_mid
                 closest_dist = dist_mid
+                closest_wp = wp_mid
             if dist_upper < closest_dist:
-                closest_wp = wp_upper
                 closest_dist = dist_upper
+                closest_wp = wp_upper
 
-            if dist_mid < closest_dist:
-                wp_lower = wp_mid+1
-            elif closest_dist < dist_mid:
-                wp_upper = wp_mid-1
-            else:
+            rospy.loginfo("wp low %s %s mid %s %s up %s %s closest %s %s",
+                          wp_lower, dist_lower,
+                          wp_mid, dist_mid,
+                          wp_upper, dist_upper,
+                          closest_wp, closest_dist)
+
+            # if all contiguous its converged wp_lower contains the closest_wp
+            if wp_lower == wp_mid -1 and wp_mid == wp_upper -1:
                 break
+
+            # handle track looping around to start
+            if dist_upper < dist_mid:
+                if dist_lower < dist_upper:
+                    wp_upper = wp_mid - 1
+                else:
+                    wp_lower = wp_mid + 1
+
+            elif dist_mid < closest_dist:
+                wp_lower = wp_mid-1
+            elif closest_dist < dist_mid:
+                wp_upper = wp_mid+1
+            elif dist_lower < dist_upper:
+                wp_upper = wp_mid + (wp_upper - wp_mid) // 2
+            elif dist_upper < dist_lower:
+                wp_lower = wp_mid - (wp_mid - wp_lower) // 2
 
         return closest_wp
 
