@@ -106,7 +106,7 @@ class TLDetector(object):
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light to /traffic_waypoint
+            of the waypoint closest to the red light's stop line to /traffic_waypoint
 
         Args:
             msg (Image): image from car-mounted camera
@@ -169,14 +169,14 @@ class TLDetector(object):
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming traffic light (-1 if none exists)
+            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
         start_time = rospy.get_time()
 
         light_index = None
-        light_positions = self.config['light_positions']
+        stop_line_positions = self.config['stop_line_positions']
         light_pose = Pose()
         closest_waypoint_to_light = None
 
@@ -187,7 +187,7 @@ class TLDetector(object):
             # find the closest visible traffic light (if one exists)
             closest_light_position = None
             closest_light_distance = float("inf")
-            for light_position in self.config['light_positions']:
+            for light_position in stop_line_positions:
                 distance = euclidean_distance(light_position[0], light_position[1], closest_waypoint_ps.pose.position.x, closest_waypoint_ps.pose.position.y)
                 if distance < closest_light_distance:
                     closest_light_distance = distance
