@@ -317,7 +317,7 @@ geometry_msgs::TwistStamped PurePursuit::outputZero() const
 }
 geometry_msgs::TwistStamped PurePursuit::outputTwist(geometry_msgs::Twist t) const
 {
-  double g_lateral_accel_limit = 0.8;
+  double g_lateral_accel_limit = 5.0;
   double ERROR = 1e-8;
 
   geometry_msgs::TwistStamped twist;

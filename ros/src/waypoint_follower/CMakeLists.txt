@@ -93,11 +93,11 @@ include_directories(
 
 add_library(libwaypoint_follower lib/libwaypoint_follower.cpp)
 add_dependencies(libwaypoint_follower
-stx_msgs_generate_messages_cpp)
+styx_msgs_generate_messages_cpp)
 
 add_executable(pure_pursuit src/pure_pursuit.cpp src/pure_pursuit_core.cpp)
 target_link_libraries(pure_pursuit libwaypoint_follower ${catkin_LIBRARIES})
 add_dependencies(pure_pursuit
-stx_msgs_generate_messages_cpp)
+styx_msgs_generate_messages_cpp)
 
 target_link_libraries(libwaypoint_follower ${catkin_LIBRARIES})
