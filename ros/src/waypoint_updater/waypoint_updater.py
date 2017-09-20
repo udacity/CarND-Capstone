@@ -37,16 +37,62 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.last_position = None
+        self.last_orientation = None
+        #self.car_moving = False
+        self.last_wp = 0
 
         rospy.spin()
 
+    def coord_equal(self, coord_1, coord_2):
+        # Same coord_equal function from ros tutorial
+        if coord_1 is None or coord_2 is None:
+            return False
+        tolerance = .0005
+        result = abs(coord_1.x - coord_2.x) <= abs(tolerance)
+        result = result and abs(coord_1.y - coord_2.y) <= abs(tolerance)
+        return result
+
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        self.last_position = msg.pose.position
+        self.last_orientation = msg.pose.orientation
+        #self.car_moving = True
+
+    def nearest_wp(self, last_position, waypoints):
+        # find nearest waypoint index to the current location
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        nearest_distance = 9999;
+        nearest_index = -1;
+        if last_position != None:
+            for i in range(0,len(waypoints.waypoints)):
+                dfromLoc = dl(last_position, waypoints.waypoints[i].pose.pose.position)
+                if dfromLoc < nearest_distance:
+                    nearest_distance = dfromLoc
+                    nearest_index = i;
+        else:
+            nearest_index = 0;
+        return nearest_index
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        # not sure how to use the orientation
+        current_wp = self.nearest_wp(self.last_position, waypoints)
+        # update current waypoint
+        self.last_wp = current_wp
+        #self.last_position = waypoints.waypoints[self.last_wp].pose.pose.position
+        # The lookahead waypoints are subset of waypoints
+        lookAheadWpts = []
+        for i in range(0,LOOKAHEAD_WPS):
+            trueIndex = (current_wp + i +1) % len(waypoints.waypoints)
+            lookAheadWpts.append(waypoints.waypoints[trueIndex])
+        # construct new message to be sent
+        message_to_sent = Lane()
+        message_to_sent.header = waypoints.header
+        message_to_sent.waypoints = lookAheadWpts
+        rospy.logwarn("The last position is: %s", self.last_position)
+        rospy.logwarn("The last wp_index is: %d", self.last_wp)
+        self.final_waypoints_pub.publish(message_to_sent)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
