@@ -11,7 +11,7 @@ import math
 
 class Controller(object):
 	def __init__(self, *args, **kwargs):
-		self.yaw_controller = YawController(kwargs['wheel_base'], kwargs['steer_ratio'] * 8,
+		self.yaw_controller = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
 											kwargs['min_speed'] + ONE_MPH, kwargs['max_lat_accel'],
 											kwargs['max_steer_angle'])
 		self.throttle_pid = PID(kp=0.1, ki=0.015, kd=0.15, mn=kwargs['decel_limit'], mx=kwargs['accel_limit'])

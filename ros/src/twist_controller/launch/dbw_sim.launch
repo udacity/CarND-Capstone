@@ -8,7 +8,7 @@
         <param name="accel_limit" value="1." />
         <param name="wheel_radius" value="0.335" />
         <param name="wheel_base" value="3" />
-        <param name="steer_ratio" value="2.67" />
+        <param name="steer_ratio" value="14.8" />
         <param name="max_lat_accel" value="3." />
         <param name="max_steer_angle" value="8." />
     </node>
