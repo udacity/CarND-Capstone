@@ -213,7 +213,7 @@ class TLDetector(object):
 				ds = math.sqrt(x*x + y*y)
 				if ds < min_ds:
 					min_ds = ds
-				n = i
+					n = i
 			i = i +1
 	
 		return (n, min_ds, light_positions[n][0], light_positions[n][1])
