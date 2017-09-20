@@ -207,7 +207,7 @@ class TLDetector(object):
         get_light_state_timespan = end_time - start_time
         start_time = end_time
 
-        print(get_closest_waypoint_timespan, get_light_state_timespan)
+        rospy.loginfo('(get_closest_waypoint, get_light_state): ({}, {})'.format(get_closest_waypoint_timespan, get_light_state_timespan))
         return closest_waypoint_to_light, state
 
 if __name__ == '__main__':

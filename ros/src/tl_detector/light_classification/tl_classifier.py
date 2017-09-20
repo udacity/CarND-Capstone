@@ -3,6 +3,7 @@ from keras.preprocessing.image import load_img, img_to_array
 import cv2
 import numpy as np
 import keras.backend as K
+import rospy
 import tensorflow as tf
 from train import SqueezeNet
 from consts import IMAGE_WIDTH, IMAGE_HEIGHT
@@ -22,9 +23,6 @@ class TLClassifier(object):
         self.graph, ops = load_graph('light_classification/trained_model/{}.frozen.pb'.format(model_name))
         self.sess = tf.Session(graph = self.graph)
 
-        for op in ops:
-            print(op.name)
-
         self.learning_phase_tensor = self.graph.get_tensor_by_name('fire9_dropout/keras_learning_phase:0')
         self.op_tensor = self.graph.get_tensor_by_name('softmax/Softmax:0')
         self.input_tensor = self.graph.get_tensor_by_name('input_1:0')
@@ -34,8 +32,6 @@ class TLClassifier(object):
         self.pred_dict = {0: TrafficLight.UNKNOWN,
                           1: TrafficLight.RED,
                           2: TrafficLight.GREEN}
-
-        self.debug_print = True
 
     def get_classification(self, image):
         pred, preds = self.get_classification_detailed(image)
@@ -66,8 +62,8 @@ class TLClassifier(object):
 
             pred_index = np.argmax(preds)
             pred = self.pred_dict[pred_index]
-            if self.debug_print:
-                print('TLClassifier', friendly_name(pred), preds)
+
+            rospy.loginfo('TLClassifier: {}, {}'.format(friendly_name(pred), preds))
         else:
             pred = TrafficLight.UNKNOWN
 
