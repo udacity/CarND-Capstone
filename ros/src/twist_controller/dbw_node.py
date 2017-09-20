@@ -101,11 +101,11 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
-            throttle, brake, steering = self.controller.control(self.proposed_vel, self.proposed_ang, self.current_vel, self.dbw_en)
-            # throttle = 1.0
-            # brake = 0.0
-            # steering = 0.0
-            #rospy.logwarn("dbw_en: %s",self.dbw_en)
+            # throttle, brake, steering = self.controller.control(self.proposed_vel, self.proposed_ang, self.current_vel, self.dbw_en)
+            throttle = 1.0
+            brake = 0.0
+            steering = 0.0
+            #rospy.logwarn("steering: %s",steering)
             if self.dbw_en:
                 self.publish(throttle, brake, steering)
             rate.sleep()
