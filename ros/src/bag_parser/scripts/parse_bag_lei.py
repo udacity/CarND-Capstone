@@ -2,11 +2,13 @@
 
 import csv
 import cv2
+import os
 import math
 import numpy as np
 import rospy
 import rosbag
 import tf
+import yaml
 
 from cv_bridge import CvBridge
 
@@ -41,10 +43,27 @@ def find_closest_light(car_pose, traffic_lights):
 
 
 def parse_rosbag():
+  # INPUT_ROSBAG_PATH = "/data/carnd/CarND-Capstone/rosbag/test.bag"
+  INPUT_ROSBAG_PATH = "/data/carnd/CarND-Capstone/rosbag/20170916_0_lei.bag"
+  assert(os.path.exists(INPUT_ROSBAG_PATH))
+
+  TRAFFIC_LIGHT_CONFIG_PATH = \
+    "/fig/home/lei/carnd/CarND-Capstone/CarND-Capstone/ros" \
+    + "/src/tl_detector/sim_traffic_light_config.yaml"
+  assert(os.path.exists(TRAFFIC_LIGHT_CONFIG_PATH))
+
   output_folder = "/fig/home/lei/carnd/CarND-Capstone/CarND-Capstone/tl_data/20170916_0_lei/"
+  assert(os.path.isdir(output_folder))
+
+  DISTANCE_TO_TRAFFIC_LIGHT_LOWER_BOUND = 0
+  DISTANCE_TO_TRAFFIC_LIGHT_UPPER_BOUND = 50
+  assert (DISTANCE_TO_TRAFFIC_LIGHT_LOWER_BOUND >= 0)
+  assert (DISTANCE_TO_TRAFFIC_LIGHT_UPPER_BOUND > \
+          DISTANCE_TO_TRAFFIC_LIGHT_LOWER_BOUND)
 
   image_folder_name = "images"
   image_folder = output_folder + image_folder_name + "/"
+  assert(os.path.isdir(image_folder))
 
   csv_file_name = "traffic_light_data.csv"
   csv_file_path = output_folder + csv_file_name
@@ -60,8 +79,13 @@ def parse_rosbag():
   TRAFFIC_LIGHT_GREEN = 2
 
   print("loading rosbag")
-  bag = rosbag.Bag('/data/carnd/CarND-Capstone/rosbag/test.bag')
+  bag = rosbag.Bag(INPUT_ROSBAG_PATH)
   print("finish loading rosbag")
+
+  with open(TRAFFIC_LIGHT_CONFIG_PATH, 'r') as traffic_light_conifg_file:
+    traffic_light_config = yaml.load(traffic_light_conifg_file)
+
+  traffic_light_stop_positions_2d = traffic_light_config['light_positions']
 
   car_pose_msgs = []
   image_msgs = []
@@ -70,22 +94,28 @@ def parse_rosbag():
   print("loading msg from rosbag")
   for topic, msg, time in bag.read_messages(
       topics=[CAR_POSE_TOPIC, IMAGE_TOPIC, TRAFFIC_LIGHT_TOPIC]):
+    if msg.header.stamp == rospy.Time(0):
+      msg.header.stamp = time
+      print(topic + " topic has no timestamp associated in message."
+            + " use rosbag time instead for message timestamp")
+    assert (msg.header.stamp != rospy.Time(0))
+
     if topic == CAR_POSE_TOPIC:
-      assert (msg.header.stamp != rospy.Time(0))
       car_pose_msgs.append(msg)
     elif topic == IMAGE_TOPIC:
-      # there is no timestamp in image msg
-      # modify bridge.py?
-    #   if msg.header.stamp == rospy.Time(0):
-    #     msg.header.stamp = time
-      assert (msg.header.stamp != rospy.Time(0))
       image_msgs.append(msg)
     elif topic == TRAFFIC_LIGHT_TOPIC:
-      # there is no timestamp in traffic light msg
-      # modify bridge.py?
-    #   if msg.header.stamp == rospy.Time(0):
-    #     msg.header.stamp = time
-      assert (msg.header.stamp != rospy.Time(0))
+      assert (len(traffic_light_stop_positions_2d) == len(msg.lights))
+
+      # substitute traffic light position with traffic light stop position
+      for traffic_light_index in range(len(traffic_light_stop_positions_2d)):
+        traffic_light_stop_position_2d = \
+          traffic_light_stop_positions_2d[traffic_light_index]
+        msg.lights[traffic_light_index].pose.pose.position.x = \
+          traffic_light_stop_position_2d[0]
+        msg.lights[traffic_light_index].pose.pose.position.y = \
+          traffic_light_stop_position_2d[1]
+
       traffic_light_msgs.append(msg)
     else:
       assert (0)
@@ -225,26 +255,37 @@ def parse_rosbag():
 
           if traffic_light_index0 == traffic_light_index1 and \
                   traffic_light_state0 == traffic_light_state1:
-            print("generating training data." \
-                  + " image_index:" + str(image_index) \
-                  + " car_pose_index:" + str(car_pose_msg_index) \
-                  + " traffic_light_index:" + str(traffic_light_msg_index))
+            assert (distance_to_traffic_light0 == distance_to_traffic_light1)
 
-            cv2_img = CvBridge().imgmsg_to_cv2(image_msg, "bgr8")
+            if distance_to_traffic_light0 >= DISTANCE_TO_TRAFFIC_LIGHT_LOWER_BOUND \
+                and distance_to_traffic_light0 <= DISTANCE_TO_TRAFFIC_LIGHT_UPPER_BOUND:
+              print("generating training data." \
+                    + " image_index:" + str(image_index) \
+                    + " car_pose_index:" + str(car_pose_msg_index) \
+                    + " traffic_light_index:" + str(traffic_light_msg_index))
 
-            image_name = "frame_" + str(image_timestamp.to_nsec()) \
-                         + "_" + str(traffic_light_index0) \
-                         + "_" + str(traffic_light_state0) \
-                         + "_" + str(int(distance_to_traffic_light0)) \
-                         + ".jpeg"
-            image_path = image_folder + image_name
+              cv2_img = CvBridge().imgmsg_to_cv2(image_msg, "bgr8")
 
-            csv_writer.writerow([image_name,
-                                 traffic_light_index0,
-                                 traffic_light_state0,
-                                 distance_to_traffic_light0])
+              image_name = "frame_" + str(image_timestamp.to_nsec()) \
+                           + "_" + str(traffic_light_index0) \
+                           + "_" + str(traffic_light_state0) \
+                           + "_" + str(int(distance_to_traffic_light0)) \
+                           + ".jpeg"
+              image_path = image_folder + image_name
 
-            cv2.imwrite(image_path, cv2_img)
+              csv_writer.writerow([image_name,
+                                   traffic_light_index0,
+                                   traffic_light_state0,
+                                   distance_to_traffic_light0])
+
+              success = cv2.imwrite(image_path, cv2_img)
+              assert(success)
+            else:
+              print("distance_to_traffic_light[" \
+                    + str(distance_to_traffic_light0) + "]" \
+                    + " is not in range [" \
+                    + str(DISTANCE_TO_TRAFFIC_LIGHT_LOWER_BOUND) \
+                    + "," + str(DISTANCE_TO_TRAFFIC_LIGHT_UPPER_BOUND) + "]")
           else:
             print("closest traffic light consistency check faild. "
                   + (" traffic_light0[" + str(traffic_light_index0) \
