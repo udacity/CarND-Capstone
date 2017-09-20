@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -21,6 +22,7 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.lights = []
+        self.lights_closest_wp = []
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         self.sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -59,8 +61,12 @@ class TLDetector(object):
         self.sub2.unregister()
 
     def traffic_cb(self, msg):
-        self.lights = msg.lights
-        self.sub3.unregister()
+        if self.waypoints is not None:
+            self.lights = msg.lights
+            for light in self.lights:
+                light_pose = light.pose.pose
+                self.lights_closest_wp.append(self.get_closest_waypoint(light_pose))
+            self.sub3.unregister()
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -181,7 +187,7 @@ class TLDetector(object):
         """
         light = None
         light_positions = self.config['light_positions']
-        if(self.pose):
+        if (self.pose and self.waypoints):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
