@@ -108,11 +108,36 @@ class WaypointUpdater(object):
 
         closest_wp = len(waypoints) + 1
         closest_dist = 100000
-        for i in range(len(waypoints)):
-            dist = dl(waypoints[i].pose.pose.position, pose.position)
-            if (dist < closest_dist):
-                closest_wp = i
-                closest_dist = dist
+        # for i in range(len(waypoints)):
+        #     dist = dl(waypoints[i].pose.pose.position, pose.position)
+        #     if (dist < closest_dist):
+        #         closest_wp = i
+        #         closest_dist = dist
+
+        wp_lower = 0
+        wp_upper = len(waypoints) - 1
+        while wp_lower < wp_upper:
+            wp_mid = (wp_lower + wp_upper) // 2
+            dist_lower = dl(waypoints[wp_lower].pose.pose.position, pose.position)
+            dist_upper = dl(waypoints[wp_upper].pose.pose.position, pose.position)
+            dist_mid = dl(waypoints[wp_mid].pose.pose.position, pose.position)
+
+            if dist_lower < closest_dist:
+                closest_wp = wp_lower
+                closest_dist = dist_lower
+            if dist_mid < closest_dist:
+                closest_wp = wp_mid
+                closest_dist = dist_mid
+            if dist_upper < closest_dist:
+                closest_wp = wp_upper
+                closest_dist = dist_upper
+
+            if dist_mid < closest_dist:
+                wp_lower = wp_mid+1
+            elif closest_dist < dist_mid:
+                wp_upper = wp_mid-1
+            else:
+                break
 
         return closest_wp
 
