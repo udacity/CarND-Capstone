@@ -27,19 +27,19 @@ class Controller(object):
 		throttle = 0.0
 		brake = 0.0
 
-		if not dbw_enabled: 
+		if not dbw_enabled:
 			self.throttle.reset()
 			return 0, 0, 0
 
-		# Compute difference between target and current velocity as CTE for throttle. 
+		# Compute difference between target and current velocity as CTE for throttle.
 		diff_velocity = target_velocity_linear_x - current_velocity_linear_x
 
 		current_time = rospy.get_time()
 		dt = 0
-		if self.prev_time is not None: 
+		if self.prev_time is not None:
 			dt = current_time - self.prev_time
 		self.prev_time = current_time
-		
+
 		velocity_controller = 0
 		if dt > 0:
 			velocity_controller = self.throttle_pid.step(diff_velocity, dt)
@@ -47,7 +47,7 @@ class Controller(object):
 			throttle = velocity_controller
 		elif velocity_controller < 0:
 			brake = -velocity_controller
-		
+
 		steering = self.yaw_controller.get_steering(target_velocity_linear_x, target_velocity_angular_z, current_velocity_linear_x)
 
 		return throttle, brake, steering
