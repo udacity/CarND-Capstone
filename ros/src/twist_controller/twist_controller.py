@@ -19,7 +19,8 @@ class Controller(object):
                                 accel_limit,
                                 decel_limit)
         # self.speed_controller = PID(0.5, 0.02, 0.2)
-        self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
+        # self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
+        self.steering_controller = PID(0.5, 0.5, 0.1, -0.4, 0.4)
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
     def control(self, target_velocity, current_velocity, dbw_enabled, dt):
