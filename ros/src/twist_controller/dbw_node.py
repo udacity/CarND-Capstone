@@ -54,8 +54,7 @@ class DBWNode(object):
         self.yaw_control = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
         # other variables:
-        self.dbw_enabled = True
-
+        self.dbw_enabled = False
         # desired velocity
         self.des_linear_velocity = 0.0
         self.des_angular_velocity = 0.0
@@ -102,7 +101,8 @@ class DBWNode(object):
         return
 
     def dbw_enabled_cb(self, msg):
-        # TODO: get the dbw_enabled
+        self.dbw_enabled = msg.data
+        rospy.loginfo("Update self.dbw_enabled=%s", self.dbw_enabled)
         return
 
     def twist_cmd_cb(self,msg):
@@ -114,7 +114,8 @@ class DBWNode(object):
         return
 
     def loop(self):
-        rate = rospy.Rate(10) # 50Hz
+        rate = rospy.Rate(30) # 50Hz
+        rospy.loginfo("dbw running with update freq = %s",rate)
         while not rospy.is_shutdown():
 
 
@@ -126,7 +127,7 @@ class DBWNode(object):
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
 
-            throttle = 0.8 # note throttle values should be in the range 0-1
+            throttle = 1.0 # note throttle values should be in the range 0-1
 
             # TODO: use pid for acceleration
 
@@ -141,7 +142,7 @@ class DBWNode(object):
             #if <dbw is enabled>:
 
             if not self.dbw_enabled:
-                rospy.loginfo("dbw is not enabled!")
+                # rospy.loginfo("dbw is not enabled!")
                 # TODO: RESET PID CONTROLLER
 
                 pass

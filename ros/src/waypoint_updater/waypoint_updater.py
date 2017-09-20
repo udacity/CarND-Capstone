@@ -111,9 +111,10 @@ class WaypointUpdater(object):
         #    thefile.write(str(wp.pose.pose.position.x) + ',' + str(wp.pose.pose.position.y) + '\n')
 
 
-        updateRate = 10 # update frequency in Hz  Should be 50Hz TBD
+        updateRate = 10
+        # update frequency in Hz  Should be 50Hz TBD
         rate = rospy.Rate(updateRate)
-        rospy.loginfo("Running with update freq = %s", updateRate)
+        rospy.loginfo("Waypoint updater running with update freq = %s", updateRate)
         while not rospy.is_shutdown():
 
             #rospy.loginfo("Current_pose = %s,%s",self.current_pose.position.x,self.current_pose.position.y)
