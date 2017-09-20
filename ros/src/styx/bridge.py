@@ -36,8 +36,9 @@ TYPE = {
 
 
 class Bridge(object):
-    def __init__(self, conf):
+    def __init__(self, conf, server):
         rospy.init_node('styx_server')
+        self.server = server
         self.vel = 0.
         self.yaw = None
         self.angular_vel = 0.
@@ -56,15 +57,12 @@ class Bridge(object):
                            for e in conf.publishers}
         self.prev_odometry_data = {}
 
-    def register_server(self, server):
-        self.server = server
-
     def create_light(self, x, y, z, yaw, state):
         light = TrafficLight()
 
         light.header = Header()
         light.header.stamp = rospy.Time.now()
-        light.header.frame_id = 'world'
+        light.header.frame_id = '/world'
 
         light.pose = self.create_pose(x, y, z, yaw)
         light.state = state
@@ -76,7 +74,7 @@ class Bridge(object):
 
         pose.header = Header()
         pose.header.stamp = rospy.Time.now()
-        pose.header.frame_id = 'world'
+        pose.header.frame_id = '/world'
 
         pose.pose.position.x = x
         pose.pose.position.y = y
@@ -116,7 +114,7 @@ class Bridge(object):
     def create_point_cloud_message(self, pts):
         header = Header()
         header.stamp = rospy.Time.now()
-        header.frame_id = 'world'
+        header.frame_id = '/world'
         cloud_message = pcl2.create_cloud_xyz32(header, pts)
         return cloud_message
 
@@ -157,7 +155,7 @@ class Bridge(object):
             self.publishers['obstacle'].publish(pose)
         header = Header()
         header.stamp = rospy.Time.now()
-        header.frame_id = 'world'
+        header.frame_id = '/world'
         cloud = pcl2.create_cloud_xyz32(header, data['obstacles'])
         self.publishers['obstacle_points'].publish(cloud)
 
@@ -172,7 +170,7 @@ class Bridge(object):
         lights = TrafficLightArray()
         header = Header()
         header.stamp = rospy.Time.now()
-        header.frame_id = 'world'
+        header.frame_id = '/world'
         lights.lights = [self.create_light(*e) for e in zip(x, y, z, yaw, status)]
         self.publishers['trafficlights'].publish(lights)
 
@@ -184,7 +182,7 @@ class Bridge(object):
         image = PIL_Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
 
-        image_message = self.bridge.cv2_to_imgmsg(image_array, encoding="passthrough")
+        image_message = self.bridge.cv2_to_imgmsg(image_array, encoding="rgb8")
         self.publishers['image'].publish(image_message)
 
     def callback_steering(self, data):
