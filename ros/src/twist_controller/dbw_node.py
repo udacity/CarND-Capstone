@@ -7,6 +7,7 @@ from geometry_msgs.msg import TwistStamped
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 import math
+from tf.transformations import euler_from_quaternion
 
 import numpy as np
 from scipy.interpolate import CubicSpline
@@ -87,6 +88,7 @@ class DBWNode(object):
         self.my_twist_command = None
         self.pose = None
         self.waypoints = None
+        self.yaw = 0.0
 
         # start loop
         self.loop()
@@ -102,6 +104,19 @@ class DBWNode(object):
 
     def pose_cb(self, msg):
         self.pose = msg
+        self.yaw = self.yaw_from_quaterion()
+
+    def yaw_from_quaterion(self):
+        quaternion = (
+            self.pose.pose.orientation.x,
+            self.pose.pose.orientation.y,
+            self.pose.pose.orientation.z,
+            self.pose.pose.orientation.w)
+        euler = euler_from_quaternion(quaternion)
+        roll = euler[0]
+        pitch = euler[1]
+        yaw = euler[2]
+        return yaw
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
@@ -126,10 +141,9 @@ class DBWNode(object):
                 dt = 0.02 #rospy rate
 
                 throttle, brake, steering = self.controller.control( cte, dt, set_linear_velocity, set_angular_velocity, set_curr_velocity)
-                # throttle, brake, steering = self.controller.control(self.my_current_velocity)
+
                 if (self.my_dbwEnabled==True):
-                    #steering = set_angular_velocity * 180/math.pi
-                    print 'cte', cte, 'throttle', throttle, 'brake', brake, 'steer', steering, 'currspeed', set_curr_velocity, 'setspeed', set_linear_velocity
+                    #print 'cte', cte, 'throttle', throttle, 'brake', brake, 'steer', steering, 'currspeed', set_curr_velocity, 'setspeed', set_linear_velocity
                     self.publish(throttle, brake, steering)
 
             rate.sleep()
@@ -154,37 +168,63 @@ class DBWNode(object):
 
     def calc_cte(self):
         cte = 0.0
+
+        # lock in values in case pose gets updated while calculating
+        ref_x = self.pose.pose.position.x
+        ref_y = self.pose.pose.position.y
+
         if (self.waypoints is not None):
             closestWPi = self.get_closest_waypoint()
-            interp_x = [
-                self.waypoints.waypoints[closestWPi-1].pose.pose.position.x,
+
+            index_prev = closestWPi-1
+            if( index_prev < 0 ):
+                index_prev = index_prev + len(self.waypoints.waypoints)
+
+            index_next = closestWPi+1
+            if( index_next >= len(self.waypoints.waypoints) ):
+                index_next = index_next - len(self.waypoints.waypoints)
+
+            waypoint_x = [
+                self.waypoints.waypoints[index_prev].pose.pose.position.x,
                 self.waypoints.waypoints[closestWPi].pose.pose.position.x,
-                self.waypoints.waypoints[closestWPi+1].pose.pose.position.x ]
-            interp_y = [
-                self.waypoints.waypoints[closestWPi-1].pose.pose.position.y,
+                self.waypoints.waypoints[index_next].pose.pose.position.x ]
+            waypoint_y = [
+                self.waypoints.waypoints[index_prev].pose.pose.position.y,
                 self.waypoints.waypoints[closestWPi].pose.pose.position.y,
-                self.waypoints.waypoints[closestWPi+1].pose.pose.position.y ]
+                self.waypoints.waypoints[index_next].pose.pose.position.y ]
+
+            # orient to car's coordinates
+            interp_x = []
+            interp_y = []
+            angle = self.yaw
+
+            # print 'yaw', self.yaw, 'x', self.pose.pose.position.x, 'y', self.pose.pose.position.y,'ref_x',ref_x,'ref_y',ref_y
+            for i in range(len(waypoint_x)):
+                shifted_x = waypoint_x[i]-ref_x #self.pose.pose.position.x
+                shifted_y = waypoint_y[i]-ref_y #self.pose.pose.position.y
+                transformed_x = (shifted_x*math.cos(0-angle)) - (shifted_y*math.sin(0-angle))
+                transformed_y = (shifted_x*math.sin(0-angle)) + (shifted_y*math.cos(0-angle))
+                # print waypoint_x[i], waypoint_y[i],'->',shifted_x, shifted_y,'->', transformed_x, transformed_y
+                interp_x.append(transformed_x)
+                interp_y.append(transformed_y)
+            # print '----------'
+
             cs = CubicSpline(interp_x, interp_y)
             t = np.linspace(interp_x[0], interp_x[2], 100)
             best_dist = 9999.99
+            best_index = 0
             for i in range(len(t)):
-                this_dist = math.sqrt( (self.pose.pose.position.x-t[i])**2 +
-                                        (self.pose.pose.position.y-cs(t[i]))**2 +
-                                        (self.pose.pose.position.z-0.0)**2 )
+                this_dist = math.sqrt( (t[i]**2) + (cs(t[i])**2) )
                 if (this_dist<best_dist):
                     best_dist = this_dist
+                    best_index = i
+
+            # magnitude of cte
             cte = best_dist
 
-        if (cte != 0.0):
             # sign of cte
-            angle1 = math.atan2(interp_y[1]-interp_y[0],interp_x[1]-interp_x[0])
-            angle2 = math.atan2(interp_y[2]-interp_y[0],interp_x[2]-interp_x[0])
-            angle3 = math.atan2(self.pose.pose.position.y-interp_y[0],self.pose.pose.position.x-interp_x[0])
-            # simplified case for now (ignore sharp turns, and discard middle point):
-            if (angle3<angle2):
+            if(cs(t[best_index])>0): # in car's coordinate - car heading along +x axis
                 cte = -cte
-            else:
-                cte = cte
 
         return cte
 
