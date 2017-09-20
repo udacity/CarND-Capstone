@@ -78,7 +78,7 @@ class DBWNode(object):
         self.velocity_filter = LowPassFilter(.90, 1)
         self.twist_yaw_filter = LowPassFilter(.96, 1)
         min_speed = .1
-        self.yaw_controller = YawController(wheel_base, 8*steer_ratio, min_speed, 4*max_lat_accel, max_steer_angle)
+        self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, 4*max_lat_accel, max_steer_angle)
 
         self.loop()
 
