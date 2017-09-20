@@ -26,7 +26,7 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
         self.lights_closest_wp = []
-        self.stop_lines = self.config['light_positions']
+        self.stop_lines = []
         self.stop_lines_closest_wp = []
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -65,16 +65,18 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         if self.waypoints is not None:
             self.lights = msg.lights
+            stops = self.config['light_positions']
             
             for light in self.lights:
                 light_pose = light.pose.pose
                 self.lights_closest_wp.append(self.get_closest_waypoint(light_pose))
                 
-            for stop_line in self.stop_lines:
+            for stop in stops:
                 stop_line_pose = Pose()
                 stop_line_pose.position = Point()
-                stop_line_pose.position.x = stop_line[0]
-                stop_line_pose.position.y = stop_line[1]
+                stop_line_pose.position.x = stop[0]
+                stop_line_pose.position.y = stop[1]
+                self.stop_lines.append(stop_line_pose)
                 self.stop_lines_closest_wp.append(self.get_closest_waypoint(stop_line_pose))
                 
             self.sub3.unregister()
@@ -108,7 +110,10 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-
+    
+    def get_2D_euc_dist(self, pos1, pos2):
+        return math.sqrt((pos1.x-pos2.x)**2 + (pos1.y-pos2.y)**2)
+    
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -123,7 +128,7 @@ class TLDetector(object):
         pos = pose.position
         for wp in self.waypoints:
             wp_pos = wp.pose.pose.position
-            distances.append(math.sqrt((wp_pos.x-pos.x)**2 + (wp_pos.y-pos.y)**2))
+            distances.append(self.get_2D_euc_dist(wp_pos, pos))
         return distances.index(min(distances))
 
 
@@ -196,16 +201,26 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        VISIBLE_THRESHOLD = 70
         light = None
-        light_positions = self.config['light_positions']
-        if (self.pose and self.waypoints):
-            car_position = self.get_closest_waypoint(self.pose.pose)
-
-        #TODO find the closest visible traffic light (if one exists)
-
+        idx_next_light = -1
+        
+        if self.pose and self.stop_lines:
+            car_wp = self.get_closest_waypoint(self.pose.pose)
+            bigger_wp = [wp for wp in self.stop_lines_closest_wp 
+                              if wp > car_wp]
+            if len(bigger_wp) > 0:
+                idx_next_light = self.stop_lines_closest_wp.index(min(bigger_wp))
+            else:
+                idx_next_light = 0
+            next_stop_pos = self.stop_lines[idx_next_light].position
+            dist_to_next_stop = self.get_2D_euc_dist(self.pose.pose.position, next_stop_pos)
+            if dist_to_next_stop <= VISIBLE_THRESHOLD:
+                light = self.lights[idx_next_light]
+        
         if light:
             state = self.get_light_state(light)
-            return light_wp, state
+            return self.stop_lines_closest_wp[idx_next_light], state
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
