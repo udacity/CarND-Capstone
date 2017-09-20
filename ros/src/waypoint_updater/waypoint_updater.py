@@ -26,7 +26,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 ONE_MPH = 0.44704 # mph to mps
-TARGET_SPEED = 40.0 * ONE_MPH
+TARGET_SPEED = 8.0 * ONE_MPH
 MAX_DECEL = 5.0 # m/s/s
 
 dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
@@ -47,6 +47,8 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.waypoints = None
         self.red_light_wp = -1
+
+        self.slowing_down = False
 
         # For Debugging
         self.cnt = 0
@@ -83,6 +85,9 @@ class WaypointUpdater(object):
         # Final waypoint of our path
         la_wp = (wp_next + LOOKAHEAD_WPS) % waypoints_num
 
+        # Distance to stop line
+        rl_stop_line_nearest = 20
+
         # Distance to red_light where to stop (in waypoints)
         rl_stop_line = 90
 
@@ -98,15 +103,22 @@ class WaypointUpdater(object):
             # There is no red light ahead, so just set up max speed
             uniform_speed = True
             target_speed = TARGET_SPEED
+            self.slowing_down = False
         elif wps_to_light > LOOKAHEAD_WPS:
             # Red light is farther than number of points to return,
             # so again use max speed for all waypoints
+            uniform_speed = True
+            target_speed = TARGET_SPEED
+            self.slowing_down = False
+        elif wps_to_light < rl_stop_line_nearest and not self.slowing_down:
+            # Red light is too close for us to stop, move forward
             uniform_speed = True
             target_speed = TARGET_SPEED
         elif wps_to_light < rl_stop_line:
             # Red light is already too close, stop our car quickly
             uniform_speed = True
             target_speed = 0.0
+            self.slowing_down = True
         else:
             # Red light is ahead, need to change speed gradually
             uniform_speed = False
@@ -120,6 +132,8 @@ class WaypointUpdater(object):
                 wp_i = (wp_i + 1) % waypoints_num
         else:
             # wp_next -- rl_stop_line_wp -- red_light_wp -- la_wp
+
+            self.slowing_down = True
 
             # dist wp_next -- rl_stop_line_wp
             dist_rl_stop = helper.wp_distance(wp_next, rl_stop_line_wp, self.waypoints)

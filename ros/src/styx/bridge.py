@@ -165,9 +165,9 @@ class Bridge(object):
         status = data['light_state']
 
         lights = TrafficLightArray()
-        header = Header()
-        header.stamp = rospy.Time.now()
-        header.frame_id = '/world'
+        lights.header = Header()
+        lights.header.stamp = rospy.Time.now()
+        lights.header.frame_id = '/world'
         lights.lights = [self.create_light(*e) for e in zip(x, y, z, yaw, status)]
         self.publishers['trafficlights'].publish(lights)
 
@@ -180,6 +180,9 @@ class Bridge(object):
         image_array = np.asarray(image)
 
         image_message = self.bridge.cv2_to_imgmsg(image_array, encoding="rgb8")
+        image_message.header = Header()
+        image_message.header.stamp = rospy.Time.now()
+        image_message.header.frame_id = '/world'
         self.publishers['image'].publish(image_message)
 
     def callback_steering(self, data):
