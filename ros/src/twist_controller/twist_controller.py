@@ -43,12 +43,14 @@ class Controller(object):
         dbw_en = args[3]
 
         
-        tar_vel_mag = sqrt((target_vel.x)**2 + 
-                              (target_vel.y)**2 +
-                              (target_vel.z)**2)
-        cur_vel_mag = sqrt((current_vel.x)**2 +
-                               (current_vel.y)**2 +
-                               (current_vel.z)**2)
+        # tar_vel_mag = sqrt((target_vel.x)**2 + 
+        #                       (target_vel.y)**2 +
+        #                       (target_vel.z)**2)
+        tar_vel_mag = target_vel.x
+        # cur_vel_mag = sqrt((current_vel.x)**2 +
+        #                        (current_vel.y)**2 +
+        #                        (current_vel.z)**2)
+        cur_vel_mag = current_vel.x
         
         vel_diff = tar_vel_mag - cur_vel_mag
         if vel_diff >= 0:
