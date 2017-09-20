@@ -1,71 +1,98 @@
-from pid import *
+
+import rospy
+from pid import PID
 from yaw_controller import YawController
-from math import sqrt
+from lowpass import LowPassFilter
+from std_msgs.msg   import Float32
+#from styx.srv import ChangeControlPIDCoeff
+
+
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
 
 class Controller(object):
-    def __init__(self, *args, **kwargs):
-        # TODO: Implement
-        self.kp = args[0]
-        self.ki = args[1]
-        self.kd = args[2]
-        # controller parameters
-        self.accel_limit = args[3]
-        self.decel_limit = args[4]
-        self.max_steer_angle = args[5]
-        self.sample_time = args[6]
-        self.vehicle_mass = args[7]
-        self.radius_wheel = args[8]
-        self.wheel_base = args[9]
-        self.steer_ratio = args[10]
-        self.max_lat_accel = args[11]
-        self.min_speed = 0.2 # some random min speed I made up 
-        # define two controller for throttle and brake
-        self.u_throttle = PID(self.kp, self.ki, self.kd, mn=0, mx=self.accel_limit)
-        self.u_brake = PID(self.kp, self.ki, self.kd, mn=self.decel_limit, mx=0)
-        self.yaw_controller = YawController(self.wheel_base, self.steer_ratio, 
-                                            self.min_speed, self.max_lat_accel,
-                                            self.max_steer_angle)
-        #self.u_steer = PID(self.kp, self.ki, self.kd, mn=0, mx=self.mx_turn)
-        # reset controller
-        self.u_throttle.reset()
-        self.u_brake.reset()
-        #self.u_steer.reset()
+	def __init__(self, *args, **kwargs):
+		
+		# Define the 2 PIDs: one for the throttle/brake control, the second one for the steering
+		self.pid_control = PID(3, .5, .125, mn = kwargs["decel_limit"], mx = kwargs["accel_limit"])
+		self.pid_steering = PID(2 ,.0, .0)
 
-    def control(self, *args, **kwargs):
-        # TODO: Change the arg, kwarg list to suit your needs
-        # Return throttle, brake, steer
-        target_vel = args[0]
-        target_ang = args[1]
-        current_vel = args[2]
-        dbw_en = args[3]
+		#self.pid_control  = PID(5.0, 0.1, 0.02)
+		#self.pid_steering = PID(0.6, 0.7, 0.4)
 
-        
-        # tar_vel_mag = sqrt((target_vel.x)**2 + 
-        #                       (target_vel.y)**2 +
-        #                       (target_vel.z)**2)
-        tar_vel_mag = target_vel.x
-        # cur_vel_mag = sqrt((current_vel.x)**2 +
-        #                        (current_vel.y)**2 +
-        #                        (current_vel.z)**2)
-        cur_vel_mag = current_vel.x
-        
-        vel_diff = tar_vel_mag - cur_vel_mag
-        if vel_diff >= 0:
-            throttle = self.u_throttle.step(vel_diff, self.sample_time)
-            brake = 0
-        else:
-            # brake should be calculated with desired acceleration, weight
-            # and wheel radius: F = ma, torque = F*radius_wheel
-            throttle = 0;
-            desired_a = self.u_brake.step(vel_diff, self.sample_time)
-            force = desired_a*self.vehicle_mass
-            brake = force*self.radius_wheel
+		# Define the low pass filter to be applied to steering error value
+		self.lpf_steer_error = LowPassFilter(0.2, 0.1)
 
-        # steer signal should come from the yaw_controller
-        steer = self.yaw_controller.get_steering(tar_vel_mag, target_ang.z, cur_vel_mag)
+		self.yaw_controller = YawController(kwargs["wheel_base"], kwargs["steer_ratio"], kwargs["min_speed"], kwargs["max_lat_accel"], kwargs["max_steer_angle"])
+		self.brake_deadband = kwargs["brake_deadband"]
+		self.time = None
 
+		#service = rospy.Service('~change_PID_coeff', ChangeControlPIDCoeff, self.changePIDCoeff)
 
-        return throttle, brake, steer
+		
+		pass
+	#def changePIDCoeff(self, msg):
+	#	return ChangeControlPIDCoeffResponse(True)
+
+	def control(self, *args, **kwargs):
+
+		try:
+			twist = kwargs['twist_cmd']
+			current_velocity = kwargs['current_vel']
+		
+			# get current/target velocities (linear and angular) from the received messages in the topics 		
+			target_lin_vel = twist.twist.linear.x
+
+			target_ang_vel = twist.twist.angular.z
+					
+			current_lin_vel = current_velocity.twist.linear.x
+			current_ang_vel = current_velocity.twist.angular.z
+		
+			current_time = rospy.get_time()
+			if(self.time != None):
+				delta_t = current_time - self.time
+				
+				speed_err = target_lin_vel - current_lin_vel
+
+				# Execute step function for both the pids to get throttle, steering and brake controls
+				throttle_brake = self.pid_control.step(speed_err, delta_t)
+			
+				# set throttle and brake according to the throttle_brake pid output
+				throttle = max(0.0,throttle_brake)
+				# Consider the brake deadband value
+				#brake = max(0, -throttle_brake) + self.brake_deadband
+				brake = max(0.0, -throttle_brake)
+
+				if(brake < self.brake_deadband):
+					brake = 0.0
+
+				# convert angular speed (current and target) to steering angle (current and target)
+				current_steer = self.yaw_controller.get_steering(current_lin_vel, current_ang_vel, current_lin_vel)
+				target_steer = self.yaw_controller.get_steering(target_lin_vel, target_ang_vel, target_lin_vel)
+				
+				#steer_err = self.lpf_steer_error.filt(target_steer - current_steer)
+				
+				steer_err = target_steer - current_steer
+			
+				steer = self.pid_steering.step(steer_err, delta_t)
+
+				#rospy.loginfo('Current PIDs target data:')
+				#rospy.loginfo('SpeedCurrent -> %f, SpeedTarget --> %f, SteerCurrent -> %f, SteerTarget --> %f', current_lin_vel, target_lin_vel, steer, target_steer)
+				# USED for PID calibration
+				#rospy.loginfo('%f', current_lin_vel)
+
+				self.time = current_time
+
+				return throttle, brake, steer
+			else:
+				self.time = current_time
+				return 0.0, 0.0, 0.0
+		except Exception, e:
+			print(e)
+			pass
+		#return 1., 0., 0.
+
+	def reset(self):
+		self.pid_control.reset()
+		self.pid_steering.reset()
