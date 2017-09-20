@@ -36,8 +36,9 @@ TYPE = {
 
 
 class Bridge(object):
-    def __init__(self, conf):
+    def __init__(self, conf, server):
         rospy.init_node('styx_server')
+        self.server = server
         self.vel = 0.
         self.yaw = None
         self.angular_vel = 0.
@@ -55,10 +56,12 @@ class Bridge(object):
         self.publishers = {e.name: rospy.Publisher(e.topic, TYPE[e.type], queue_size=1)
                            for e in conf.publishers}
 
-    def register_server(self, server):
-        print '++ assigning server'
-        self.server = server
-        print '++ server assigned'
+
+    #def register_server(self, server):
+    #    print '++ assigning server'
+    #    self.server = server
+    #    print '++ server assigned'
+
 
     def create_light(self, x, y, z, yaw, state):
         light = TrafficLight()
