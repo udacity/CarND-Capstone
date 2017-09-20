@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
+from geometry_msgs.msg import PoseStamped, Pose, Point
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
@@ -18,11 +18,16 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
+
         self.pose = None
         self.waypoints = None
         self.camera_image = None
         self.lights = []
         self.lights_closest_wp = []
+        self.stop_lines = self.config['light_positions']
+        self.stop_lines_closest_wp = []
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         self.sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -36,9 +41,6 @@ class TLDetector(object):
         '''
         self.sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
-
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
@@ -63,9 +65,18 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         if self.waypoints is not None:
             self.lights = msg.lights
+            
             for light in self.lights:
                 light_pose = light.pose.pose
                 self.lights_closest_wp.append(self.get_closest_waypoint(light_pose))
+                
+            for stop_line in self.stop_lines:
+                stop_line_pose = Pose()
+                stop_line_pose.position = Point()
+                stop_line_pose.position.x = stop_line[0]
+                stop_line_pose.position.y = stop_line[1]
+                self.stop_lines_closest_wp.append(self.get_closest_waypoint(stop_line_pose))
+                
             self.sub3.unregister()
 
     def image_cb(self, msg):
