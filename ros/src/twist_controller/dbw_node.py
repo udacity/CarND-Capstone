@@ -56,20 +56,13 @@ class DBWNode(object):
         self.rate = 50  # Hz
         self.sample_time = 1.0 / self.rate
 
-        # alternative: kp=1.0, ki=0.001, kd=0.5 - more jiggle, but mostly stays inside the lane
-        self.steer_pid_ctrl = PID(kp=0.7, ki=0.004, kd=0.3, mn=-8.0, mx=8.0)  # sometimes leaves lane
-        self.steer_yaw_ctrl = YawController(wheel_base, steer_ratio, 0.0, max_lat_accel, max_steer_angle)
-
         self.dbw_enabled = True
+        self.initialized = False
 
-        # self.current_linear_velocity = None
-        # self.current_angular_velocity = None
-        # self.proposed_linear_velocity = None
-        # self.proposed_angular_velocity = None
+        self.current_linear_velocity = None
+        self.target_linear_velocity = None
+        self.target_angular_velocity = None
 
-        self.current_linear_velocity = 0.0
-        self.target_linear_velocity = 0.0
-        self.target_angular_velocity = 0.0
         self.final_waypoints = None
         self.current_pose = None
         self.logger = DBWLogger(self, rate=1)
@@ -80,19 +73,14 @@ class DBWNode(object):
 
         # TODO: Create `TwistController` object
         yaw_controller = YawController(wheel_base=wheel_base,
-                                            steer_ratio=steer_ratio,
-                                            min_speed=0.,
-                                            max_lat_accel=max_lat_accel,
-                                            max_steer_angle=max_steer_angle)
+                                       steer_ratio=steer_ratio,
+                                       min_speed=0.,
+                                       max_lat_accel=max_lat_accel,
+                                       max_steer_angle=max_steer_angle)
 
-        self.controller = TwistController(yaw_controller, max_steer_angle)
-
+        self.controller = TwistController(yaw_controller, max_steer_angle, self.sample_time)
 
         # TODO: Subscribe to all the topics you need to
-
-        # rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1)
-        # rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
-        # rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=1)
 
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1)
@@ -102,16 +90,9 @@ class DBWNode(object):
 
         self.loop()
 
-    def current_velocity_cb(self, msg):
-        self.current_linear_velocity = msg.twist.linear.x
-        self.current_angular_velocity = msg.twist.angular.z
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
-
-    # def twist_cmd_cb(self, msg):
-    #     self.proposed_linear_velocity = msg.twist.linear.x
-    #     self.proposed_angular_velocity = msg.twist.angular.z
 
     @staticmethod
     def compute_absolute_velocity(velocity_vector):
@@ -138,24 +119,6 @@ class DBWNode(object):
         while not rospy.is_shutdown():
             throttle, brake, steer = 1, None, None
 
-            # todo: control throttle with PID controller
-            if self.current_linear_velocity >= self.target_linear_velocity:
-                throttle = 0.0
-
-            cte = 0.0
-            yaw_steer = 0.0
-
-            if self.final_waypoints is not None and self.current_pose is not None:
-                cte = CTE.compute_cte(self.final_waypoints, self.current_pose)
-                steer = self.steer_pid_ctrl.step(error=cte, sample_time=self.sample_time)
-
-                yaw_steer = self.steer_yaw_ctrl.get_steering(
-                    self.target_linear_velocity,
-                    self.target_angular_velocity,
-                    self.current_linear_velocity)
-
-                steer = steer + yaw_steer
-
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
             # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
@@ -164,29 +127,27 @@ class DBWNode(object):
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
 
-            self.logger.log(throttle, brake, steer, yaw_steer, cte)
+            # sending None for break, ensures we're not throttling/breaking at the same time
 
-            # # sending None for break, ensures we're not throttling/breaking at the same time
-            # if self.dbw_enabled:
-            #
-            #     if (self.current_linear_velocity is not None) \
-            #             & (self.proposed_linear_velocity is not None) \
-            #             & (self.current_angular_velocity is not None)\
-            #             & (self.proposed_angular_velocity is not None):
-            #
-            #         print("velocity linear current:{}".format(self.current_linear_velocity))
-            #         print("velocity linear proposed:{}".format(self.proposed_linear_velocity))
-            #         print("velocity angular current:{}".format(self.current_angular_velocity))
-            #         print("velocity angular proposed:{}".format(self.proposed_angular_velocity))
-            #
-            #         # TODO: Use PID for steering
-            #         throttle, brake, steer = self.controller.control(self.proposed_linear_velocity,
-            #                                                             self.proposed_angular_velocity,
-            #                                                             self.current_linear_velocity,
-            #                                                             self.current_angular_velocity)
-            #     self.publish(throttle, brake, steer)
+            if (self.final_waypoints is not None) \
+                & (self.current_pose is not None) \
+                & (self.current_linear_velocity is not None) \
+                & (self.target_linear_velocity is not None) \
+                & (self.target_angular_velocity is not None):
 
-            self.publish(throttle, brake, steer)
+                self.initialized = True
+
+                cte = CTE.compute_cte(self.final_waypoints, self.current_pose)
+
+                throttle, brake, steer = self.controller.control(self.target_linear_velocity,
+                                                                 self.target_angular_velocity,
+                                                                 self.current_linear_velocity,
+                                                                 cte)
+
+                self.logger.log(throttle, brake, steer, 0, cte)
+
+            if self.initialized and self.dbw_enabled:
+                self.publish(throttle, brake, steer)
 
             rate.sleep()
 
