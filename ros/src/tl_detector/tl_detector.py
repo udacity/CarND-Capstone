@@ -63,8 +63,8 @@ class TLDetector(object):
         self.sub2.unregister()
 
     def traffic_cb(self, msg):
-        if self.waypoints is not None:
-            self.lights = msg.lights
+        self.lights = msg.lights
+        if (self.waypoints is not None) and (len(self.stop_lines) == 0):
             stops = self.config['stop_line_positions']
             
             for light in self.lights:
@@ -78,8 +78,6 @@ class TLDetector(object):
                 stop_line_pose.position.y = stop[1]
                 self.stop_lines.append(stop_line_pose)
                 self.stop_lines_closest_wp.append(self.get_closest_waypoint(stop_line_pose))
-                
-            self.sub3.unregister()
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -219,6 +217,7 @@ class TLDetector(object):
         
         if light:
             state = self.get_light_state(light)
+            state = self.lights[idx_next_light].state  # TODO: stop cheating
             return self.stop_lines_closest_wp[idx_next_light], state
         return -1, TrafficLight.UNKNOWN
 
