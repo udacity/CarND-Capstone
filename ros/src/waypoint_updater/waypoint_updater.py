@@ -43,32 +43,46 @@ class WaypointUpdater(object):
         self.waypoints = None
         
         
-        rospy.spin()
+        #rospy.spin()
+        self.loop()
 
+    def loop(self):
+        rate = rospy.Rate(20)
+        
+        while not rospy.is_shutdown():
+            
+            if self.waypoints is not None:
+                
+            
+                self.next_wp_idx = self.get_next_waypoint_idx()
+                #rospy.loginfo("Next Waypoint Idx: %s", self.next_wp_idx)
+                next_waypoints = self.waypoints
+                next_waypoints = self.waypoints[self.next_wp_idx:(self.next_wp_idx+LOOKAHEAD_WPS)]
+                
+                lane = Lane()
+                lane.waypoints = next_waypoints
+                lane.header.frame_id = '/world'
+                lane.header.stamp = rospy.Time(0)
+                self.final_waypoints_pub.publish(lane)
+                
+                rospy.loginfo("Next Waypoint: %s \n 5th: %s\nCurrent Pose: %s", next_waypoints[0].pose.pose, next_waypoints[5].pose.pose,self.cur_pose)
+                
+            rate.sleep()
+    
     def pose_cb(self, msg):
         # TODO: Implement
         self.cur_pose = msg.pose
         #rospy.loginfo("Current Pose: %s", self.cur_pose)
-        
-        self.next_wp_idx = self.get_next_waypoint_idx()
-        #rospy.loginfo("Next Waypoint Idx: %s", self.next_wp_idx)
-        next_waypoints = self.waypoints
-        next_waypoints = self.waypoints[self.next_wp_idx:(self.next_wp_idx+LOOKAHEAD_WPS)]
-        
-        lane = Lane()
-        lane.waypoints = next_waypoints
-        lane.header.frame_id = '/world'
-        lane.header.stamp = rospy.Time(0)
-        self.final_waypoints_pub.publish(lane)
-        
-        rospy.loginfo("Next Waypoint: %s \nCurrent Pose: %s", next_waypoints[0].pose.pose, self.cur_pose)
-        
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
         #Samer: waypoints is always the same so only need to load once
         if self.waypoints is None:
-            self.waypoints = waypoints.waypoints# + waypoints.waypoints
+            self.waypoints = waypoints.waypoints + waypoints.waypoints
+            
+            #for i in range(0,len(self.waypoints)):
+                #self.set_waypoint_velocity(self.waypoints,i,40)
+                
             self.base_waypoints_sub.unregister()
 
     def traffic_cb(self, msg):
