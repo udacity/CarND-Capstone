@@ -169,36 +169,38 @@ class DBWNode(object):
     def calc_cte(self):
         cte = 0.0
 
-        # lock in values in case pose gets updated while calculating
-        ref_x = self.pose.pose.position.x
-        ref_y = self.pose.pose.position.y
-
         if (self.waypoints is not None):
             closestWPi = self.get_closest_waypoint()
 
-            index_prev = closestWPi-1
-            if( index_prev < 0 ):
-                index_prev = index_prev + len(self.waypoints.waypoints)
+            waypoint_x = []
+            waypoint_y = []
 
-            index_next = closestWPi+1
-            if( index_next >= len(self.waypoints.waypoints) ):
-                index_next = index_next - len(self.waypoints.waypoints)
+            for i in range(5,0,-1):
+                index_prev = closestWPi-i
+                if( index_prev < 0 ):
+                    index_prev = index_prev + len(self.waypoints.waypoints)
+                waypoint_x.append(self.waypoints.waypoints[index_prev].pose.pose.position.x)
+                waypoint_y.append(self.waypoints.waypoints[index_prev].pose.pose.position.y)
 
-            waypoint_x = [
-                self.waypoints.waypoints[index_prev].pose.pose.position.x,
-                self.waypoints.waypoints[closestWPi].pose.pose.position.x,
-                self.waypoints.waypoints[index_next].pose.pose.position.x ]
-            waypoint_y = [
-                self.waypoints.waypoints[index_prev].pose.pose.position.y,
-                self.waypoints.waypoints[closestWPi].pose.pose.position.y,
-                self.waypoints.waypoints[index_next].pose.pose.position.y ]
+            waypoint_x.append(self.waypoints.waypoints[closestWPi].pose.pose.position.x)
+            waypoint_y.append(self.waypoints.waypoints[closestWPi].pose.pose.position.y)
+
+            for i in range(5):
+                index_next = closestWPi+i+1
+                if( index_next >= len(self.waypoints.waypoints) ):
+                    index_next = index_next - len(self.waypoints.waypoints)
+                waypoint_x.append(self.waypoints.waypoints[index_next].pose.pose.position.x)
+                waypoint_y.append(self.waypoints.waypoints[index_next].pose.pose.position.y)
 
             # orient to car's coordinates
             interp_x = []
             interp_y = []
             angle = self.yaw
 
-            # print 'yaw', self.yaw, 'x', self.pose.pose.position.x, 'y', self.pose.pose.position.y,'ref_x',ref_x,'ref_y',ref_y
+            # lock in values in case pose gets updated while calculating
+            ref_x = self.pose.pose.position.x
+            ref_y = self.pose.pose.position.y
+
             for i in range(len(waypoint_x)):
                 shifted_x = waypoint_x[i]-ref_x #self.pose.pose.position.x
                 shifted_y = waypoint_y[i]-ref_y #self.pose.pose.position.y
@@ -207,10 +209,9 @@ class DBWNode(object):
                 # print waypoint_x[i], waypoint_y[i],'->',shifted_x, shifted_y,'->', transformed_x, transformed_y
                 interp_x.append(transformed_x)
                 interp_y.append(transformed_y)
-            # print '----------'
 
             cs = CubicSpline(interp_x, interp_y)
-            t = np.linspace(interp_x[0], interp_x[2], 100)
+            t = np.linspace(interp_x[0], interp_x[-1], 1000)
             best_dist = 9999.99
             best_index = 0
             for i in range(len(t)):
