@@ -31,7 +31,7 @@ class Controller(object):
         # vel_error = 30*ONE_MPH - cur_vel_lin
 
         throttle = self.velocity_pid.step(vel_error, time_elapsed)
-        brake = max(0.0, - throttle) + 0.2
+        brake = max(0.0, -throttle) + 0.2
         throttle = max(0.0, throttle)
 
 
@@ -48,8 +48,6 @@ class Controller(object):
 
 
         # steer = self.steer_pid.step(cte, time_elapsed)
-        # if abs(steer) > 5.0:
-        #   self.steer_pid.reset()
         # steer = self.steer_lowpass.filt(steer)
         
         # Return throttle, brake, steer

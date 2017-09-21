@@ -92,9 +92,9 @@ class WaypointUpdater(object):
 
             final_wps = self.get_final_wps(waypoints, nearest_wp)
             self.prev_nrst_wp = nearest_wp
-            if nearest_wp > 10901:
+            if nearest_wp > 10696:
                 self.prev_nrst_wp = 0
-            # rospy.logwarn("nearest waypoint: %s", nearest_wp)
+            rospy.logwarn("nearest waypoint: %s", nearest_wp)
 
         except AttributeError, e:
             # rospy.logwarn("Error: %s", e) # optional: print out error
@@ -107,7 +107,7 @@ class WaypointUpdater(object):
     def get_final_wps(self, waypoints, nearest_wp):
         new_wp_lane = Lane()
         for i in xrange(nearest_wp,nearest_wp+LOOKAHEAD_WPS):
-            if i > self.wp_num:
+            if i >= self.wp_num:
                 break
             new_wp_lane.waypoints.append(waypoints.waypoints[i])
         return new_wp_lane
