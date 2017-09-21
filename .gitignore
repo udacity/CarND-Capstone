@@ -1,5 +1,8 @@
 *.py[cod]
 
+demo_data
+windows_sys_int
+
 build
 devel
 

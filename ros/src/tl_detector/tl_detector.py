@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import math
 import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
@@ -26,7 +27,7 @@ class TLDetector(object):
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
-        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
+        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
         helps you acquire an accurate ground truth data source for the traffic light
         classifier by sending the current color state of all traffic lights in the
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
@@ -100,9 +101,32 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
+        #TODO does the waypoint need to be infront of the vehicle? 
+        if(self.waypoints and self.waypoints.waypoints ):
+            min_distance = 1e9
+            min_waypoint_ndx = 0
+            for ndx,waypoint in enumerate(self.waypoints.waypoints):
+                distance = self.pose_distance(waypoint.pose.pose,pose)
+                if(distance < min_distance):
+                    min_distance = distance
+                    min_waypoint_ndx = ndx
+
+            rospy.loginfo("Closest Waypoint: %s \n At: %s\n m", self.waypoints.waypoints[min_waypoint_ndx].pose,min_distance)
+
+            return min_waypoint_ndx
+        #else
         return 0
 
+    def pose_distance(self,pose_from, pose_to):
+        """Calculates euclidean distance between two Pose objects
+        Args:
+            pose_from (Pose): position from calculation
+            pose_to (Pose): position to calculation
+
+        Returns:
+            float: distance in m
+        """
+        return math.sqrt((pose_from.position.x-pose_to.position.x)**2 + (pose_from.position.y-pose_to.position.y)**2)
 
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
