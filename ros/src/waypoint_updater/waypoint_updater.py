@@ -23,7 +23,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 200  # Number of waypoints to publish
 
 
 def to_deg(angle):
@@ -37,7 +37,6 @@ def to_rad(angle):
 class WaypointUpdater(object):
     def __init__(self):
         # Waypoint ahead of vehicle in previous loop iteration
-        self.previous_wp_pose = []
         self.previous_wp_index = -1
 
         # All waypoints
@@ -139,7 +138,6 @@ class WaypointUpdater(object):
 
             if next_wp_index != -1:
 
-                self.previous_wp_pose = self.waypoints[next_wp_index].pose.pose
                 self.previous_wp_index = next_wp_index
 
                 if next_wp_index+LOOKAHEAD_WPS >= num_waypoints:
@@ -167,8 +165,6 @@ class WaypointUpdater(object):
             rate.sleep()
 
     def pose_cb(self, msg):
-        if not self.current_pose:
-            self.previous_wp_pose = msg.pose
         self.current_pose = msg.pose
         #rospy.loginfo("cur_position = (%s,%s)", self.current_pose.position.x, self.current_pose.position.y)
 
