@@ -6,6 +6,7 @@ from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
 import tf
 import math
+import numpy as np
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -76,7 +77,7 @@ class WaypointUpdater(object):
         # yaw = euler[2]
         return euler[2]
 
-    def get_next_waypoint(self):
+    def get_next_waypoint_index(self):
         """
             Find the closest waypoint to the current pose
             Use previous waypoint to speed up search
@@ -89,8 +90,8 @@ class WaypointUpdater(object):
             search_start = 0
             search_end = num_waypoints
         else:
-            search_start = self.previous_wp_index - 5
-            search_end = self.previous_wp_index + 50
+            search_start = self.previous_wp_index - 5   # Waypoints behind previous waypoint
+            search_end = self.previous_wp_index + 50    # Waypoints ahead of previous waypoint
 
         # Get near neighbours and corresponding indexes
         min_distance = 99999
@@ -101,47 +102,46 @@ class WaypointUpdater(object):
                 closest_wp_index = index
                 min_distance = distance
 
-        prev_index = (closest_wp_index - 1) % num_waypoints
-        next_index = (closest_wp_index + 1) % num_waypoints
-        dist_from_prev_wp_to_current_pose = self.linear_distance(self.waypoints[prev_index].pose.pose, self.current_pose)
-        dist_from_next_wp_to_current_pose = self.linear_distance(self.waypoints[next_index].pose.pose, self.current_pose)
-
-        # TODO: Improve. Assumes equidistant waypoints.
-        if dist_from_prev_wp_to_current_pose > dist_from_next_wp_to_current_pose:
-            next_wp_index = next_index
-        else:
+        # Increase index if closest waypoint is behind ego vehicle
+        if self.is_waypoint_ahead(self.waypoints[closest_wp_index].pose.pose):
             next_wp_index = closest_wp_index
+        else:
+            next_wp_index = closest_wp_index + 1
 
         return next_wp_index
 
     def loop(self):
         rospy.loginfo("Waypoint updater loop started")
 
+        # Wait for vehicle pose
         while not self.current_pose:
             pass
-
         rospy.loginfo("Initial pose = %s,%s", self.current_pose.position.x, self.current_pose.position.y)
 
+        # Wait for waypoints to load
         while not self.waypoints:
             pass
+        num_waypoints = len(self.waypoints)
+        rospy.loginfo("%s waypoints loaded", num_waypoints)
 
+        # Set update frequency in Hz. Should be 50Hz TBD
         update_rate = 10
-        # Update frequency in Hz. Should be 50Hz TBD
         rate = rospy.Rate(update_rate)
         rospy.loginfo("Waypoint updater running with update freq = %s Hz", update_rate)
+
+        # Loop waypoint publisher
         while not rospy.is_shutdown():
 
             #rospy.loginfo("Current_pose = %s,%s",self.current_pose.position.x,self.current_pose.position.y)
             # TODO: Create a safety mechanism if no pose update received stop the car
 
-            next_wp_index = self.get_next_waypoint()
+            next_wp_index = self.get_next_waypoint_index()
 
             if next_wp_index != -1:
 
                 self.previous_wp_pose = self.waypoints[next_wp_index].pose.pose
                 self.previous_wp_index = next_wp_index
 
-                num_waypoints = len(self.waypoints)
                 if next_wp_index+LOOKAHEAD_WPS >= num_waypoints:
                     excess = (next_wp_index+LOOKAHEAD_WPS) % num_waypoints
                     # Wrap around
@@ -171,6 +171,25 @@ class WaypointUpdater(object):
             self.previous_wp_pose = msg.pose
         self.current_pose = msg.pose
         #rospy.loginfo("cur_position = (%s,%s)", self.current_pose.position.x, self.current_pose.position.y)
+
+    def is_waypoint_ahead(self, wp_pose):
+        """
+            Determine whether given waypoint is ahead of ego vehicle
+        """
+        # Waypoint coordinates relative to ego vehicle
+        ego_x = self.current_pose.position.x
+        ego_y = self.current_pose.position.y
+        wp_x = wp_pose.position.x
+        wp_y = wp_pose.position.y
+        delta_y = wp_y - ego_y
+        delta_x = wp_x - ego_x
+
+        # Convert to ego coordinates
+        ego_yaw = self.get_yaw(self.current_pose.orientation)
+        wp_x_local = delta_x * np.cos(ego_yaw) + delta_y * np.sin(ego_yaw)
+        wp_y_local = delta_x * -np.sin(ego_yaw) + delta_y * np.cos(ego_yaw)
+
+        return wp_x_local > 0
 
     @staticmethod
     def linear_distance(pose1, pose2):
