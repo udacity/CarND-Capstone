@@ -31,7 +31,7 @@ class TLDetector(object):
         rospy.init_node('tl_detector')
 
         # Custom attributes
-        self.last_car_position = None
+        self.last_car_wp = None
         self.line_pos_wp = []
 
 
@@ -227,9 +227,6 @@ class TLDetector(object):
         return (x, y)
 
     def get_light_state(self, light):
-            # Use self.lights to get real position of lights
-            # originally stated this would not be available on real test
-            # but then Slack discussions say it will be
         """Determines the current color of the traffic light
 
         Args:
@@ -283,6 +280,7 @@ class TLDetector(object):
 
 
         #Get classification
+        #pdb.set_trace()
         return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
@@ -294,58 +292,58 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
 
-        # List of positions that correspond to the line to stop in front of for a given intersection
+        # If care position is known, get index of closest waypoint
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose,self.last_car_position)
-            self.last_car_position = car_position
+            car_wp = self.get_closest_waypoint(self.pose.pose,self.last_car_wp)
+            self.last_car_wp = car_wp
         else:
             print('self.pose is emtpy')
-        if not car_position:
-            print('car position is None')
+        if not car_wp:
+            print('car waypoint could not be found')
             return -1, TrafficLight.UNKNOWN
 
         #TODO find the closest visible traffic light (if one exists)
 
-
+        # Get waypoints of all traffic light lines if not already done
         if self.line_pos_wp == []:
             stop_line_positions = self.config['stop_line_positions']
-            self.light_list = []
+            self.line_list = []
             for line_pos in stop_line_positions:
                 # Make deepcopy bc I don't know how to make one
                 # from scratch
-                this_light = copy.deepcopy(self.pose)
-                this_light.pose.position.x = line_pos[0]
-                this_light.pose.position.y = line_pos[1]
-                this_line_pos = self.get_closest_waypoint(this_light.pose)
-                self.line_pos_wp.append(this_line_pos)
+                this_line = copy.deepcopy(self.pose)
+                this_line.pose.position.x = line_pos[0]
+                this_line.pose.position.y = line_pos[1]
+
+                # Get closest waypoint to this line
+                this_line_wp = self.get_closest_waypoint(this_line.pose)
+                self.line_pos_wp.append(this_line_wp)
     
                 # Make deep copy bc to add to list
-                # Otherwise this_light would be altered inside list
-                self.light_list.append(copy.deepcopy(this_light))
+                # Otherwise this_line would be altered inside list
+                self.line_list.append(copy.deepcopy(this_line))
 
-        delta_wp = [wp-car_position for wp in self.line_pos_wp]
+        # Get closest waypoint (of foward waypoints) to the position waypoint
+        delta_wp = [wp-car_wp for wp in self.line_pos_wp]
         min_delta_wp = min(d for d in delta_wp if d>=0)
-        light_wp_ind = delta_wp.index(min_delta_wp)
+        line_wp_ind = delta_wp.index(min_delta_wp)
 
+        # Assign a light waypoint only if within visible distance
+        line = None
         visible_num_wp = 150
         if min_delta_wp < visible_num_wp:
-            light = self.light_list[light_wp_ind]
-            light_wp = self.line_pos_wp[light_wp_ind]
+            line = self.line_list[line_wp_ind]
+            line_wp = self.line_pos_wp[line_wp_ind]
 
-        if light:
-            #state = self.get_light_state(light)
-            # Use self.lights to get real position of lights
-            # originally stated this would not be available on real test
-            # but then Slack discussions say it will be
-            state = self.get_light_state(self.lights[light_wp_ind])
+        if line:
+            state = self.get_light_state(self.lights[line_wp_ind])
             print('')
             print('Msg from tl_detector.py')
             print('light detected')
-            print('car waypoint: ',car_position)
-            print('light_wapoint: ',light_wp, state)
-            return light_wp, state
+            print('car waypoint: ',car_wp)
+            print('line_waypoint: ',line_wp, state)
+            return line_wp, state
         else:
             return -1, TrafficLight.UNKNOWN
 
