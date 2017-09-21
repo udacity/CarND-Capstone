@@ -21,7 +21,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -37,16 +37,53 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.last_pos = None
+        self.base_waypoints = None
+        self.last_wp = None
+        self.frame_id = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        self.last_pos = msg.pose
+        self.frame_id = msg.header.frame_id
+
+        if self.base_waypoints is not None:
+            # get index closest to current position
+            self.last_wp = self.nearest_wp(self.last_pos.position, self.base_waypoints)+1
+            # fetch next LOOKAHEAD number of waypoints
+            ahead = min(len(self.base_waypoints),self.last_wp+LOOKAHEAD_WPS)
+            lookAheadWpts = self.base_waypoints[self.last_wp:ahead]
+            # construct speed for lookAheadWpts
+            for waypoint in lookAheadWpts:
+                waypoint.twist.twist.linear.x = 4.4
+            # construct message to be sent
+            message_to_sent = Lane()
+            message_to_sent.header.stamp = rospy.Time.now()
+            message_to_sent.header.frame_id = self.frame_id
+            message_to_sent.waypoints = lookAheadWpts
+            rospy.logwarn("The last position is: %s", self.last_pos.position)
+            rospy.logwarn("The last wp_index is: %d", self.last_wp)
+            self.final_waypoints_pub.publish(message_to_sent)
+       
+    def nearest_wp(self, last_position, waypoints):
+        """find nearest waypoint index to the current location"""
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        nearest_distance = 9999;
+        nearest_index = -1;
+        for index, waypoint in enumerate(waypoints):
+            waypoint_pos = waypoint.pose.pose.position
+            distance = dl(last_position, waypoint_pos)
+            if distance < nearest_distance:
+                nearest_index = index
+                nearest_distance = distance
+        return nearest_index
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        """Store the map data"""
+        self.base_waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
