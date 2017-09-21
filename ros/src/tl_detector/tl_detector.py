@@ -30,6 +30,12 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
+        # Custom attributes
+        self.last_car_position = None
+        self.line_pos_wp = []
+
+
+        
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -69,13 +75,8 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         # Only update once since this is static
-        print('line 72 called waypoints might update')
         if waypoints:
-            print('line 74 called, waypoints updating')
             self.waypoints = waypoints
-        else:
-            print('did not update waypoints')
-            print(waypoints)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -110,7 +111,7 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_waypoint(self, pose):
+    def get_closest_waypoint(self, pose, last_ind = None):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
@@ -128,16 +129,23 @@ class TLDetector(object):
         closest_dist = 10**6
         closest_ind = 0
         if self.waypoints is None:
-            print('no waypoints, returning 0')
+            print('no waypoints, returning None')
             return None
         else:
-            for i,waypoint in enumerate(self.waypoints.waypoints):
+            if last_ind: 
+                ind_offset = 100
+                search_wp = self.waypoints.waypoints[last_ind-ind_offset:last_ind+ind_offset]
+            else:
+                last_ind = 0
+                ind_offset = 0
+                search_wp = self.waypoints.waypoints
+            
+            for i,waypoint in enumerate(search_wp):
                 way = waypoint.pose.pose.position
                 dist = ((pos.x - way.x)**2 + (pos.y - way.y)**2)**0.50
                 if dist < closest_dist:
-                    closest_ind = i
+                    closest_ind = i + last_ind-ind_offset
                     closest_dist = dist
-            #print(closest_ind)
             return closest_ind
 
 
@@ -285,36 +293,42 @@ class TLDetector(object):
         light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+            car_position = self.get_closest_waypoint(self.pose.pose,self.last_car_position)
+            self.last_car_position = car_position
+        else:
+            print('self.pose is emtpy')
         if not car_position:
-            print('line 285 no car position')
+            print('car position is None')
             return -1, TrafficLight.UNKNOWN
 
         #TODO find the closest visible traffic light (if one exists)
-        light_pos_wp = []
-        light_list = []
-        for light_pos in stop_line_positions:
-            light_x = light_pos[0]
-            light_y = light_pos[1]
-            this_light = copy.deepcopy(self.pose)
-            this_light.pose.position.x = light_x
-            this_light.pose.position.y = light_y
-            this_light_pos = self.get_closest_waypoint(this_light.pose)
 
-            this_light = copy.deepcopy(this_light)
-            light_pos_wp.append(this_light_pos)
-            light_list.append(this_light)
 
-        delta_wp = [wp-car_position for wp in light_pos_wp]
+        if self.line_pos_wp == []:
+            stop_line_positions = self.config['stop_line_positions']
+            self.light_list = []
+            for line_pos in stop_line_positions:
+                # Make deepcopy bc I don't know how to make one
+                # from scratch
+                this_light = copy.deepcopy(self.pose)
+                this_light.pose.position.x = line_pos[0]
+                this_light.pose.position.y = line_pos[1]
+                this_line_pos = self.get_closest_waypoint(this_light.pose)
+                self.line_pos_wp.append(this_line_pos)
+    
+                # Make deep copy bc to add to list
+                # Otherwise this_light would be altered inside list
+                self.light_list.append(copy.deepcopy(this_light))
+
+        delta_wp = [wp-car_position for wp in self.line_pos_wp]
         min_delta_wp = min(d for d in delta_wp if d>=0)
         light_wp_ind = delta_wp.index(min_delta_wp)
 
         visible_num_wp = 100
         if min_delta_wp < visible_num_wp:
-            light = light_list[light_wp_ind]
-            light_wp = light_pos_wp[light_wp_ind]
+            light = self.light_list[light_wp_ind]
+            light_wp = self.line_pos_wp[light_wp_ind]
 
         if light:
             #state = self.get_light_state(light)
