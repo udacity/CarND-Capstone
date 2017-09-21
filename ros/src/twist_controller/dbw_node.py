@@ -142,7 +142,7 @@ class DBWNode(object):
 
                 throttle, brake, steering = self.controller.control( cte, dt, set_linear_velocity, set_angular_velocity, set_curr_velocity)
 
-                if (self.my_dbwEnabled==True):
+                if (self.my_dbwEnabled==True) or (self.my_dbwEnabled.data==True):
                     #print 'cte', cte, 'throttle', throttle, 'brake', brake, 'steer', steering, 'currspeed', set_curr_velocity, 'setspeed', set_linear_velocity
                     self.publish(throttle, brake, steering)
 
