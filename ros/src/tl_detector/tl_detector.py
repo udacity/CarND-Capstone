@@ -236,6 +236,17 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
+        # For debugging, return the provided true value
+        # Won't be available in the real run.
+        # In future, will need to capture images and use machine vision
+        # to determine the state
+        use_true_value = True
+        if use_true_value:
+            return light.state
+
+
+
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -280,7 +291,6 @@ class TLDetector(object):
 
 
         #Get classification
-        #pdb.set_trace()
         return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
