@@ -1,0 +1,10 @@
+Flask>=0.11.1
+attrdict>=2.0.0
+eventlet>=0.19.0
+python-socketio>=1.6.1
+numpy>=1.13.1
+Pillow>=2.2.1
+scipy
+keras
+tensorflow
+h5py
