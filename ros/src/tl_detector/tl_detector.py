@@ -68,7 +68,14 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        # Only update once since this is static
+        print('line 72 called waypoints might update')
+        if waypoints:
+            print('line 74 called, waypoints updating')
+            self.waypoints = waypoints
+        else:
+            print('did not update waypoints')
+            print(waypoints)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -121,7 +128,7 @@ class TLDetector(object):
         closest_dist = 10**6
         closest_ind = 0
         if self.waypoints is None:
-            #print('no waypoints, returning 0')
+            print('no waypoints, returning 0')
             return None
         else:
             for i,waypoint in enumerate(self.waypoints.waypoints):
@@ -282,18 +289,13 @@ class TLDetector(object):
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
         if not car_position:
+            print('line 285 no car position')
             return -1, TrafficLight.UNKNOWN
-
-        car_position = self.get_closest_waypoint(self.pose.pose)
-
-        # If cannot find car's closest waypoint, return
-        if not car_position:
-             return -1, TrafficLight.UNKNOWN
 
         #TODO find the closest visible traffic light (if one exists)
         light_pos_wp = []
         light_list = []
-        for light_pos in light_positions:
+        for light_pos in stop_line_positions:
             light_x = light_pos[0]
             light_y = light_pos[1]
             this_light = copy.deepcopy(self.pose)
@@ -326,8 +328,8 @@ class TLDetector(object):
             print('car waypoint: ',car_position)
             print('light_wapoint: ',light_wp, state)
             return light_wp, state
-        self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+        else:
+            return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:

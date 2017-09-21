@@ -39,7 +39,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.pose = None
         self.waypoints = None
-        self.setspeed = (50.0)*(1.60934*1000/3600); # Mph to m/s
+        self.setspeed = (30.0)*(1.60934*1000/3600); # Mph to m/s
 
         rospy.spin()
 
