@@ -13,6 +13,8 @@ import yaml
 import waypoint_lib.helper as helper
 import os.path
 import message_filters
+import pickle
+import datetime
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -41,12 +43,18 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb, queue_size=1)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
 
+        # Subscribers for sim training data recordings
         image_sub = message_filters.Subscriber('/image_color', Image)
         pose_sub = message_filters.Subscriber('/current_pose', PoseStamped)
         lights_sub = message_filters.Subscriber('/vehicle/traffic_lights', TrafficLightArray)
 
         ts = message_filters.ApproximateTimeSynchronizer([image_sub, pose_sub, lights_sub], 10, 0.005)
         # ts.registerCallback(self.image_sync)
+
+        self.record_name = strftime("%Y%m%d%H%M%S", datetime.datetime.now())
+        self.records = []
+
+
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -78,12 +86,14 @@ class TLDetector(object):
         self.lights = msg.lights
         # rospy.loginfo('>>> got traffic_lights')
 
+    # Used for recording sim training data ONLY
     def image_sync(self, image_msg, pose_msg, lights_msg):
         rospy.loginfo('---- IMAGE SYNC ------')
 
         lights_msg = lights_msg.lights
 
         # Select the closest waypoint from lights array which was received from /vehicle/traffic_lights topic
+        # Skip if we already processed this image
         if (self.waypoints and self.record_cnt % 1 == 0 and image_msg.header.seq != self.camera_image_prev_seq):
 
             self.camera_image_prev_seq = image_msg.header.seq
@@ -109,25 +119,39 @@ class TLDetector(object):
             # self.record_camera_image(light, state)
             rospy.loginfo('--- =============== saving image ....')
 
-            # Check folder exists
-            img_folder = os.path.join('.', 'output_images')
+            # Check that folder exists
+            img_folder = os.path.join('.', 'output_images', self.record_name, 'imgs_full')
+            output_folder = os.path.join('.', 'output_images', self.record_name)
             if not os.path.exists(img_folder):
                 os.makedirs(img_folder)
             # rospy.loginfo("img_folder = {}".format(os.path.dirname(os.path.abspath(img_folder))))
 
-            car_wp = helper.next_waypoint_idx(pose_msg, self.waypoints.waypoints)
-            light_wp = helper.closest_waypoint_idx(light.pose, self.waypoints.waypoints)
+            # car_wp = helper.next_waypoint_idx(pose_msg, self.waypoints.waypoints)
+            # light_wp = helper.closest_waypoint_idx(light.pose, self.waypoints.waypoints)
 
-            # Is light wisible?
+            # Is light close enough?
             waypoints_num = len(self.waypoints.waypoints)
             light_dist = (light_wp - car_wp + waypoints_num) % waypoints_num
 
             # Save image
             if 40 < light_dist < 160:
-                img_filename = os.path.join(img_folder, '{:06d}-{}-{}.png'.format(self.record_cnt, state, light_dist))
+
+                img_filename = os.path.join(output_folder, 'imgs_full', '{:06d}-{}-{}.png'.format(self.record_cnt, state, light_dist))
+
+                img_record = {}
+                img_record['filename'] = img_filename
+                img_record['pose_msg'] = pose_msg
+                img_record['traffic_light'] = light
+                img_record['light_dist_wp'] = light_dist
+                img_record['state'] = state
+
                 rospy.loginfo("--- saving: {}, dist = {}".format(img_filename, light_dist))
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg, "bgr8")
                 cv2.imwrite(img_filename, cv_image)
+
+                self.records.append(img_record)
+
+
             else:
                 rospy.loginfo("--- light is far away: {}".format(light_dist))
 
@@ -146,9 +170,9 @@ class TLDetector(object):
         # rospy.loginfo('>>> got image')
 
 
-
         light_wp, state = self.process_traffic_lights()
 
+        # TODO: Remove this whole block
         '''
         rospy.loginfo('some my processing')
 
@@ -243,6 +267,7 @@ class TLDetector(object):
 
         return (x, y)
 
+    # TODO: Remove method
     def record_camera_image(self, light, state):
         pass
         '''
