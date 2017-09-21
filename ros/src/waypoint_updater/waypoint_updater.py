@@ -59,6 +59,7 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.gt_traffic_cb)
         self.lookahead_wps = rospy.get_param('~lookahead_wps', 200)
+        self.max_decel = abs(rospy.get_param('~max_deceleration', 1.0))
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -213,11 +214,10 @@ class WaypointUpdater(object):
         return base_lane
 
     def breaking(self, base_lane, stop_index, curr_vel):
-        stopping_distance = distance(base_lane.waypoints, 0, stop_index)+0.5
         for i in range(stop_index+1):
-            wp_distance = distance(base_lane.waypoints, i, stop_index)
-            velocity = curr_vel*wp_distance/stopping_distance
-            # print("index: ", i, "velocity: ",velocity, "x: ", base_lane.waypoints[i].pose.pose.position.x)
+            wp_distance = distance(base_lane.waypoints, i, stop_index) - 4.0 # This is a hack for stop lines
+            wp_distance = max(0, wp_distance)
+            velocity = min(curr_vel, math.sqrt(2 * wp_distance * self.max_decel))
             set_waypoint_velocity(base_lane.waypoints, i, velocity)  
 
         for i in range(stop_index+1, len(base_lane.waypoints)):
