@@ -47,6 +47,8 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        self.dbw_enabled_check = False
+
 
         # publishers
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
@@ -90,7 +92,8 @@ class DBWNode(object):
     def crnt_vel_cb(self, msg):
         # vehicle velocities:
         # linear
-        self.cur_vel_lin = self.magnitude(msg.twist.linear.x, msg.twist.linear.y)
+        # self.cur_vel_lin = self.magnitude(msg.twist.linear.x, msg.twist.linear.y)
+        self.cur_vel_lin = msg.twist.linear.x
         # angular
         self.cur_vel_ang = msg.twist.angular.z
         
@@ -113,7 +116,6 @@ class DBWNode(object):
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
-        # rospy.logwarn("Entering loop now......")
         while not rospy.is_shutdown():
             time_elapsed = rospy.rostime.get_time() - self.time_last_sample
             self.time_last_sample = rospy.rostime.get_time()
@@ -134,8 +136,10 @@ class DBWNode(object):
                                                         self.cur_vel_lin, 
                                                         self.cur_vel_ang, 
                                                         time_elapsed)
+                else: 
+                    throttle, brake, steering = 0.0, 0.0, 0.0
 
-                    rospy.logwarn("Vehicle steering: %s", steering)
+                rospy.logwarn("Vehicle steering: %s", steering)
             except Exception as e:
                 rospy.logwarn("Error: %s", e)
                 pass

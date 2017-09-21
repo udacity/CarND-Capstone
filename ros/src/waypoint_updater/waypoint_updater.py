@@ -56,14 +56,14 @@ class WaypointUpdater(object):
 
         # TODO: Implement
         try: # to catch when the error when self.vehicle_pos has not been created yet
-            smallest_dist = 99999.0
+            smallest_dist = float('inf')
             nearest_wp = 0
 
             # rospy.logwarn("previous nearest waypoint: %s", self.prev_nrst_wp)
 
             self.wp_num = len(waypoints.waypoints)
-            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2) # + (a.z-b.z)**2
-            hd = lambda a, b: math.atan2((b.y-a.y), (b.x-a.x)) # (map_y-y),(map_x-x)
+            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
+            hd = lambda a, b: math.atan2((b.y-a.y), (b.x-a.x))
             
 
             for i in xrange(self.prev_nrst_wp, self.wp_num):
@@ -77,7 +77,7 @@ class WaypointUpdater(object):
                     nearest_wp = i
                     smallest_dist = dist
 
-            # # quaternion conversion (see: )
+            # # quaternion conversion (see: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_Angles_Conversion)
             # q = self.vehicle_orientation
             # theta = math.asin(2*(q.w*q.y + q.z*q.x))
             # # if abs(theta)>= 1:
