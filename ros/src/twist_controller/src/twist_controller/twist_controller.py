@@ -99,6 +99,6 @@ class Controller(object):
             brake = 0.
 
        
-        loginfo("throttle: %f", throttle)
+        # loginfo("throttle: %f", throttle)
 
         return throttle, brake, steering

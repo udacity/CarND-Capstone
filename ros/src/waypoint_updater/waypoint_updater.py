@@ -79,7 +79,7 @@ class WaypointUpdater(object):
 
         self.commanded_velocity = 0
 
-        self.cruise_velocity = 11.
+        self.cruise_velocity = 4.47 
 
         self.currpose = None
         self.curr_waypoints = None
@@ -109,7 +109,8 @@ class WaypointUpdater(object):
             a = self.curr_waypoints[i].pose.pose.position
             b = self.currpose
             dist = math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
-            if dist < mindist and (a.x > b.x):
+            # if dist < mindist and (a.x > b.x):
+            if dist < mindist:
                 start_idx = i
                 mindist = dist
             if start_idx == (len(self.curr_waypoints) - 1):
@@ -141,8 +142,8 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(self.lane)
 
     def step(self):
-        print(self.state)
-        print("x: ", self.currpose.x)
+        # print(self.state)
+        # print("x: ", self.currpose.x)
 
         if(len(self.last_lane.waypoints)>0):
             self.lane = self.keep_last(self.lane, self.last_lane)
@@ -152,7 +153,7 @@ class WaypointUpdater(object):
             self.commanded_velocity = self.cruise_velocity
         
         if(self.state == WaypointUpdater.RUNNING):
-            print("RUNNING")
+            # print("RUNNING")
             if(self.valid_next_traffic and 
                 (self.next_traffic.state is TrafficLight.RED or 
                     self.next_traffic.state is TrafficLight.YELLOW and self.traffic_light_wp_index>1.5*self.nb_stopping_wp)):
@@ -160,7 +161,7 @@ class WaypointUpdater(object):
                 self.lane = self.breaking(self.lane, self.traffic_light_wp_index-self.nb_stopping_wp, self.cruise_velocity) # TRANSITION TO STOPPING
             
         elif(self.state == WaypointUpdater.STOPPING):
-            print("STOPPING")
+            # print("STOPPING")
             if(self.valid_next_traffic and self.next_traffic.state is TrafficLight.GREEN):
                 self.state = self.ACCELERATING
                 self.lane = self.keep_speed(self.lane, self.cruise_velocity)
@@ -168,12 +169,12 @@ class WaypointUpdater(object):
                 self.state = self.STOPPED
                 self.lane = self.keep_speed(self.lane, 0)                   # TRANSITION TO STOPPED
         elif(self.state == WaypointUpdater.STOPPED):
-            print("STOPPED")
+            # print("STOPPED")
             if(self.next_traffic.state == TrafficLight.GREEN or self.valid_next_traffic is False):
                 self.state = WaypointUpdater.ACCELERATING
                 self.lane = self.keep_speed(self.lane, self.cruise_velocity) # TRANSITION TO ACCELERATING
         elif(self.state == WaypointUpdater.ACCELERATING):
-            print("ACCELERATING")
+            # print("ACCELERATING")
             if(self.commanded_velocity>self.cruise_velocity-0.5):
                 self.state = self.RUNNING
                 self.lane = self.keep_speed(self.lane, self.cruise_velocity) # TRANSITION TO RUNNING
