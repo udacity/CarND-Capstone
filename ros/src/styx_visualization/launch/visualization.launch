@@ -17,6 +17,7 @@
     <remap from="lane" to="/final_waypoints"/>
     <param name="color" value="blue"/>
     <param name="marker_ns" value="final"/>
+    <param name="show_speed" value="true"/>
   </node>
 
   <node name="traffic_lane_visualizer"
