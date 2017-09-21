@@ -116,35 +116,39 @@ class TLDetector(object):
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
             pose (Pose): position to match a waypoint to
+            last_ind: Index of last known waypoint. If not None,
+                only search waypoints around the last_ind
 
         Returns:
             int: index of the closest waypoint in self.waypoints
         """
         #TODO implement
 
-        # Brute-force method has been applied
-        # Future: something more efficient
 
-        pos = pose.position
-        closest_dist = 10**6
-        closest_ind = 0
+        pos = pose.position # position of car
         if self.waypoints is None:
             print('no waypoints, returning None')
             return None
         else:
+            # If last index is supplied, only search for waypoints
+            # around that region
             if last_ind: 
-                ind_offset = 100
-                search_wp = self.waypoints.waypoints[last_ind-ind_offset:last_ind+ind_offset]
+                start_ind = max(last_ind - 200,0)
+                end_ind = min(last_ind + 200,len(self.waypoints.waypoints))
+                search_wp = self.waypoints.waypoints[start_ind:end_ind]
+            # Else search all waypoints (10,000 of them)
             else:
-                last_ind = 0
-                ind_offset = 0
+                start_ind = 0
                 search_wp = self.waypoints.waypoints
             
+            # Search the waypoints for the closest distance to pose
+            closest_dist = 10**6
+            closest_ind = 0
             for i,waypoint in enumerate(search_wp):
                 way = waypoint.pose.pose.position
                 dist = ((pos.x - way.x)**2 + (pos.y - way.y)**2)**0.50
                 if dist < closest_dist:
-                    closest_ind = i + last_ind-ind_offset
+                    closest_ind = i + start_ind
                     closest_dist = dist
             return closest_ind
 
@@ -325,7 +329,7 @@ class TLDetector(object):
         min_delta_wp = min(d for d in delta_wp if d>=0)
         light_wp_ind = delta_wp.index(min_delta_wp)
 
-        visible_num_wp = 100
+        visible_num_wp = 150
         if min_delta_wp < visible_num_wp:
             light = self.light_list[light_wp_ind]
             light_wp = self.line_pos_wp[light_wp_ind]
