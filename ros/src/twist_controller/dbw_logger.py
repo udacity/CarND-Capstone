@@ -26,12 +26,11 @@ class DBWLogger:
             self.dbw.target_angular_velocity
         )
 
-        line2 = 'car_xy: ({}, {}); cte: {}; steer: {} (+{})'.format(
+        line2 = 'car_xy: ({}, {}); cte: {}; steer: {}'.format(
             'None' if self.dbw.current_pose is None else self.dbw.current_pose.position.x,
             'None' if self.dbw.current_pose is None else self.dbw.current_pose.position.y,
             cte,
-            steer,
-            yaw_steer
+            steer
         )
 
         line0 = '--- dbw node '
