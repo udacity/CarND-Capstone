@@ -6,7 +6,7 @@ from std_msgs.msg import ColorRGBA
 from styx_msgs.msg import Lane
 from visualization_msgs.msg import Marker, MarkerArray
 
-def lane_to_marker_array(lane, color, ns='lane'):
+def lane_to_marker_array(lane, color, ns='lane', show_speed=False):
     # Create a linestrip marker
     lines = Marker()
     lines.header = lane.header
@@ -31,6 +31,23 @@ def lane_to_marker_array(lane, color, ns='lane'):
     marker_array = MarkerArray()
     marker_array.markers.append(lines)
     marker_array.markers.append(points)
+
+    if show_speed:
+        # Create text markers for the speeds
+        for i, p in enumerate(lane.waypoints):
+            text = Marker()
+            text.header = lane.header
+            text.ns = ns
+            text.id = i + 2
+            text.type = Marker.TEXT_VIEW_FACING
+            text.action = Marker.ADD
+            text.scale.z = 0.3
+            text.pose = deepcopy(p.pose.pose)
+            text.pose.position.z += 1.0
+            text.color = color
+            text.text = str(p.twist.twist.linear.x)
+            marker_array.markers.append(text)
+
     return marker_array
     
 # Define some colors we can use
@@ -48,10 +65,11 @@ if __name__ == "__main__":
     ns = rospy.get_param('~marker_ns', 'lane')
     color_string = rospy.get_param('~color', 'red')
     once = rospy.get_param('~once', False)
+    show_speed = rospy.get_param('~show_speed', False)
     color = colors[color_string.lower()]
     
     def handle_lane_msg(lane_msg):
-        marker_pub.publish(lane_to_marker_array(lane_msg, color, ns))
+        marker_pub.publish(lane_to_marker_array(lane_msg, color, ns, show_speed))
         if once:
             lane_sub.unregister()
     global lane_sub
