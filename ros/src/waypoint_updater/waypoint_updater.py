@@ -39,6 +39,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.pose = None
         self.waypoints = None
+        self.setspeed = (50.0)*(1.60934*1000/3600); # Mph to m/s
 
         rospy.spin()
 
@@ -56,6 +57,7 @@ class WaypointUpdater(object):
             startindex = min(closestWPi+1,num_wp)
             endindex = min(closestWPi+LOOKAHEAD_WPS,num_wp)
             for wpi in range(startindex,endindex):
+                self.waypoints.waypoints[wpi].twist.twist.linear.x = self.setspeed
                 wp2pub.append(self.waypoints.waypoints[wpi])
 
             lane = Lane()
