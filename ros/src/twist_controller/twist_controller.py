@@ -5,18 +5,15 @@ import rospy
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
+MAX_THROTTLE_TORQUE = 200.0
+MAX_BREAK_TORQUE = 20000.0
 
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
         # TODO: Implement
-        # specific for 25mph
-        #self.steer_control_pid = PID(3.0,0.001,0.04,-kwargs['max_steer_angle'],kwargs['max_steer_angle'])
-        self.speed_control_pid = PID(0.3,0.001,0.0,kwargs['decel_limit'],kwargs['accel_limit'])
-        # Kp reduced from 3.0 to 2.0 to reduce jittering of car at 10mph but behaves better at higher speed(25mph)
-        self.steer_control_pid = PID(2.0,0.001,0.04,-kwargs['max_steer_angle'],kwargs['max_steer_angle'])
-        # Best for 25mph but not good for 10mph
-        #self.steer_control_pid = PID(3.0,0.001,0.0,-kwargs['max_steer_angle'],kwargs['max_steer_angle'])
+        self.speed_control_pid = PID(0.4,0.0,0.01,kwargs['decel_limit'],kwargs['accel_limit'])
+        self.steer_control_pid = PID(0.8,0.001,0.005,-kwargs['max_steer_angle'],kwargs['max_steer_angle'])
         self.min_speed = 0.0 #TBD
         self.steer_yaw_controller = YawController(kwargs['wheel_base'],kwargs['steer_ratio'],
                                     self.min_speed,kwargs['max_lat_accel'],
@@ -50,24 +47,23 @@ class Controller(object):
            linear_vel_error = target_linear_vel - current_linear_vel
            self.vehicle_tot_mass = (self.vehicle_mass + GAS_DENSITY*self.fuel_capacity)
            speed_control = self.speed_control_pid.step(linear_vel_error, step_time)
-
+           torque = speed_control * self.vehicle_tot_mass *self.wheel_radius
+         
            if linear_vel_error > 0:
-              throttle = speed_control
+              throttle = min(1.0, torque/MAX_THROTTLE_TORQUE)
               brake = 0.0
            else:
               brake = -speed_control
               if brake < self.brake_deadband and  brake >  0.:
                  brake = 0.0
               else:
-                 brake =abs(speed_control * self.vehicle_tot_mass * self.wheel_radius)  # torque in N-m
+                 brake = min(1.0, abs(torque/MAX_BREAK_TORQUE))
               throttle = 0.0
 
            # YawController for steering calculation and PID controller for steer cmd
-           desired_steer = self.steer_yaw_controller.get_steering(target_linear_vel,
+           steer_err = self.steer_yaw_controller.get_steering(target_linear_vel,
                      target_angular_vel,current_linear_vel)
-           actual_steer = self.steer_yaw_controller.get_steering(current_linear_vel,
-                     current_angular_vel,current_linear_vel)
-           steer = self.steer_control_pid.step((desired_steer - actual_steer),step_time)
+           steer = self.steer_control_pid.step(steer_err,step_time)
            
            return throttle,brake,steer
 
