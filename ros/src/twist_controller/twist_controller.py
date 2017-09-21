@@ -44,7 +44,6 @@ class TwistController(object):
                                                     current_linear_velocity)
         print("steering:{}".format(steering))
 
-
         steer = steering + steer
 
         # Return throttle, brake, steer

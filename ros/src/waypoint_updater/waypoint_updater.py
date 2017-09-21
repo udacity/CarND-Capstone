@@ -30,12 +30,12 @@ class WaypointUpdater(object):
 
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=10)
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         rospy.spin()
 
@@ -45,13 +45,16 @@ class WaypointUpdater(object):
 
         # todo: no need to recompute final_waypoints on every call
 
+        # compute final waypoints
         waypoints = self.track_waypoints.waypoints
         car_point = msg.pose.position
         next_waypoint = WaypointUpdater.next_waypoint(waypoints, car_point)
 
         lane = Lane()
         for j in range(next_waypoint, next_waypoint + LOOKAHEAD_WPS):
-            lane.waypoints.append(waypoints[j])
+            waypoint = waypoints[j]
+            self.set_waypoint_velocity(waypoint, 10)
+            lane.waypoints.append(waypoint)
 
         self.final_waypoints_pub.publish(lane)
 
@@ -70,8 +73,8 @@ class WaypointUpdater(object):
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+    def set_waypoint_velocity(self, waypoint, velocity):
+        waypoint.twist.twist.linear.x = velocity
 
     @staticmethod
     def distance(a, b):
