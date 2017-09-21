@@ -17,37 +17,55 @@ app = Flask(__name__)
 msgs = {}
 
 dbw_enable = False
+first_dbw = True
 
 @sio.on('connect')
 def connect(sid, environ):
-    print("connect ", sid)
+    print("connect", sid)
+    pass
+
+@sio.on('disconnect')
+def disconnect(sid):
+    global first_dbw
+    global dbw_enable
+    first_dbw = True
+    dbw_enable = False
+    print("disconnect", sid)
+    pass
 
 def send(topic, data):
     # changes per a. makurin
-    # s = 1
-    # msgs.append((topic, data))
+    # rospy.loginfo("t %s d %s", topic, data)
     msgs[topic] = data
-
-    #sio.emit(topic, data=json.dumps(data), skip_sid=True)
 
 bridge = Bridge(conf, send)
 
 @sio.on('telemetry')
 def telemetry(sid, data):
     global dbw_enable
-    if data["dbw_enable"] != dbw_enable:
+    global first_dbw
+    if first_dbw or data["dbw_enable"] != dbw_enable:
         dbw_enable = data["dbw_enable"]
         bridge.publish_dbw_status(dbw_enable)
+        first_dbw = False
     bridge.publish_odometry(data)
-    for i in range(len(msgs)):
-        # change per a. makurin
-        # topic, data = msgs.pop(0)
-        topic, data = msgs.popitem()
-        sio.emit(topic, data=data, skip_sid=True)
+    global msgs
+    # send all 3 messages at once.  If throttle isn't
+    # last, simulator sometimes takes its foot off the throttle
+    if len(msgs) >= 3:
+        for key in ['steer', 'brake', 'throttle']:
+            if not key in msgs: 
+                print(key,"not defined")
+                continue
+            mdata = msgs[key]
+            sio.emit(key, data=mdata, skip_sid=True)
+        msgs = {}
+
 
 @sio.on('control')
 def control(sid, data):
     bridge.publish_controls(data)
+    # print("c", sid, data)
 
 @sio.on('obstacle')
 def obstacle(sid, data):

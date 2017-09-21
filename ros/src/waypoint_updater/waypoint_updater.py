@@ -24,9 +24,8 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-# LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-# LOOKAHEAD_WPS = 3 # for testing
-LOOKAHEAD_WPS = 200 # for testing
+LOOKAHEAD_WPS = 240 # Number of waypoints we will publish. 
+# tested at speeds up to 115 mph
 
 
 # takes geometry_msgs/Point
@@ -119,7 +118,8 @@ class WaypointUpdater(object):
     def nearest_waypoint(self, pose):
         ppt = pose_to_point(pose)
         prev_dist = point_dist_sq(ppt, self.prev_pt)
-        wp_ahead = 50
+        # tested for speeds up to 115 mph
+        wp_ahead = 100
         if prev_dist > .5*self.avg_wp_dist*wp_ahead:
             rospy.logwarn("nearest_waypoint: resetting")
             self.prev_index = -1
@@ -207,7 +207,15 @@ class WaypointUpdater(object):
             wp = self.wps[i+next_pt]
             olane.waypoints.append(wp)
         '''
-        olane.waypoints=self.wps[next_pt:next_pt+LOOKAHEAD_WPS]
+        wpsz = len(self.wps)
+        end_pt = next_pt+LOOKAHEAD_WPS
+        past_zero_pt = end_pt - wpsz
+        end_pt = min(end_pt, wpsz)
+        olane.waypoints=self.wps[next_pt:end_pt]
+        # Handle case where we are near the end of the track;
+        # add points at the beginning of the track
+        if past_zero_pt > 0:
+            olane.waypoints.extend(self.wps[:past_zero_pt])
         # if msg.header.seq % 20 == 0:
         #     rospy.loginfo("%s", olane)
 

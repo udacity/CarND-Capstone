@@ -71,14 +71,13 @@ class DBWNode(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
 
         self.dbw = False
-        # self.filtered_angular_velocity = 0.
-        # self.filtered_velocity = 0.
-        # self.filtered_twist_yaw = 0.
         self.angular_velocity_filter = LowPassFilter(.90, 1)
         self.velocity_filter = LowPassFilter(.90, 1)
         self.twist_yaw_filter = LowPassFilter(.96, 1)
         min_speed = .1
-        self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, 4*max_lat_accel, max_steer_angle)
+        # At high speeds, a multiple of 1.2 seems to work a bit
+        # better than 1.0
+        self.yaw_controller = YawController(wheel_base, 1.2*steer_ratio, min_speed, 8*max_lat_accel, max_steer_angle)
 
         self.loop()
 
@@ -157,12 +156,11 @@ class DBWNode(object):
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
             twist = self.twist_yaw_filter.get()
-            # twist *= 8.
             steer = self.yaw_controller.get_steering(self.velocity_filter.get(), twist, self.velocity_filter.get())
-            # rospy.loginfo("steering angle %f", steer)
-            # throttle is 0.5, which runs the car at about 40 mph.
-            # throttle of 0.98 will run the car at about 90 mph.
-            self.publish(0.5,0.,steer)
+            # rospy.loginfo("steering angle %f (twist %f)", steer, twist)
+            # throttle is 0.35, which runs the car at about 40 mph.
+            # throttle of 0.98 will run the car at about 115 mph.
+            self.publish(0.35,0.,steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):

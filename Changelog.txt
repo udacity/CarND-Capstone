@@ -132,6 +132,46 @@ roslaunch launch/styx.launch
 Start your simulator (it will NOT start automatically), 
 and MAKE SURE to uncheck the "Manual" box!
 
-More changes (2017-09-11 by C S)
+More changes (2017-09-11 by C S, tagged cs_v1.0)
 
 Modified dbw_node.py to remove the "steering angle" message.
+
+Changes (2017-09-20 by C S, tagged cs_v1.1)
+
+Merged in Udacity's latest changes.  Took Udacity's version
+(completely replacing my own) for waypoint_loader.py and
+waypoint_loader.launch, because Udacity fixed the problem
+in the wp_yaw_const.txt. 
+
+Modified dbw_node.py to remove the multiplier I had put on 
+steer_ratio, because Udacity has fixed dbw_sim.launch to
+have the correct value.
+
+Changes (2017-09-20 by C S, tagged cs_v1.2)
+
+Added some efficiency fixes that I've been working on.
+
+server.py: send a dbw_enabled message when the connections
+is first made, so that we know the initial status of dbw.
+Also: Experiments showed that on my machine, at least,
+the simulator's throttle was sporadically going to zero 
+(as shown by "control" messages, as well as by fluctuating 
+AccN values in the simulator).  The fix is to send the 
+simulator all 3 control messages at once, with throttle 
+as the third.
+
+styx server.launch: Send output to screen.
+
+dbw_node.py: Increase max_lat_accel into YawController so 
+that we can take curves better at high speed.  Also, 
+experiments showed that at high speed, the steering_ratio
+needs to be multiplied by 1.2.  This doesn't seem to cause
+any problems at low speed.
+
+pure_pursuit_core.cpp: Turn a warning into an error message, 
+so that it is more visible.
+
+waypoint_updater.py: At the end of the track, provide waypoints 
+from the beginning of the track to complete the loop.  Changed 
+some parameters to allow high-speed driving.
+

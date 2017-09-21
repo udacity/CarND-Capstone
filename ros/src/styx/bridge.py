@@ -130,6 +130,7 @@ class Bridge(object):
         if data == self.prev_odometry_data:
             # pass
             return
+        # rospy.logwarn("pose %f %f %f", data['x'], data['y'], data['z'])
         self.prev_odometry_data = data
         pose = self.create_pose(data['x'], data['y'], data['z'], data['yaw'])
 
@@ -145,6 +146,7 @@ class Bridge(object):
 
     def publish_controls(self, data):
         steering, throttle, brake = data['steering_angle'], data['throttle'], data['brake']
+        # rospy.loginfo("pub %f %f %f", steering, throttle, brake)
         self.publishers['steering_report'].publish(self.create_steer(steering))
         self.publishers['throttle_report'].publish(self.create_float(throttle))
         self.publishers['brake_report'].publish(self.create_float(brake))
