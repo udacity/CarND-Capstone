@@ -63,6 +63,7 @@ class DBWNode(object):
 		min_speed = 0
 		self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
+
 		# %% TODO: Subscribe to all the topics you need to
 		# vehicle drive by wire
 		rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
@@ -117,6 +118,7 @@ class DBWNode(object):
 
 	def loop(self):
 		rate = rospy.Rate(50) # 50Hz
+		# rospy.logwarn("Entering loop......") 
 		while not rospy.is_shutdown():
 			if hasattr(self, 'dbw_enabled_check'): # and hasattr(self, '')
 				time_elapsed = rospy.rostime.get_time() - self.time_last_sample
@@ -129,15 +131,21 @@ class DBWNode(object):
 				#                                                     <dbw status>,
 
 				# check if dbw is enabled before publishing
-				throttle, brake, steering = self.controller.control(
-														self.target_vel_lin, 
-														self.target_vel_ang, 
-														self.cur_vel_lin, 
-														self.cur_vel_ang, 
-														time_elapsed)
-				# rospy.logwarn("Vehicle steering: %s", steering)
-				if self.dbw_enabled_check:
-					self.publish(throttle, brake, steering)
+				try:
+					throttle, brake, steering = self.controller.control(
+															self.target_vel_lin, 
+															self.target_vel_ang, 
+															self.cur_vel_lin, 
+															self.cur_vel_ang, 
+															time_elapsed)
+					# rospy.logwarn("Vehicle throttle: %s", throttle)
+					rospy.logwarn("Vehicle steering: %s", steering)
+				except Exception as e:
+					rospy.logwarn("Error: %s", e)
+					pass
+				else:
+					if self.dbw_enabled_check:
+						self.publish(throttle, brake, steering)
 
 			rate.sleep()
 
