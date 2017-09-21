@@ -26,7 +26,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 ONE_MPH = 0.44704 # mph to mps
-TARGET_SPEED = 8.0 * ONE_MPH
+TARGET_SPEED = 40.0 * ONE_MPH
 MAX_DECEL = 5.0 # m/s/s
 
 dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
@@ -89,6 +89,9 @@ class WaypointUpdater(object):
         rl_stop_line_nearest = 20
 
         # Distance to red_light where to stop (in waypoints)
+        # TODO: Make the whole stopping in front of a stop line smooth
+        # need to adjust distances where to stop based on current velocity and
+        # find out correct params for this. [Pavlo]
         rl_stop_line = 90
 
         # Stop line waypoint (where speed = 0.0)

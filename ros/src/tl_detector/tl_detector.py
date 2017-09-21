@@ -14,7 +14,8 @@ import waypoint_lib.helper as helper
 import os.path
 import message_filters
 import pickle
-import datetime
+# import datetime
+import time
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -49,9 +50,10 @@ class TLDetector(object):
         lights_sub = message_filters.Subscriber('/vehicle/traffic_lights', TrafficLightArray)
 
         ts = message_filters.ApproximateTimeSynchronizer([image_sub, pose_sub, lights_sub], 10, 0.005)
+        # Uncomment this line to start collecting data
         # ts.registerCallback(self.image_sync)
 
-        self.record_name = strftime("%Y%m%d%H%M%S", datetime.datetime.now())
+        self.record_name = time.strftime("%Y%m%d%H%M%S") # , datetime.datetime.now()
         self.records = []
 
 
@@ -86,6 +88,7 @@ class TLDetector(object):
         self.lights = msg.lights
         # rospy.loginfo('>>> got traffic_lights')
 
+
     # Used for recording sim training data ONLY
     def image_sync(self, image_msg, pose_msg, lights_msg):
         rospy.loginfo('---- IMAGE SYNC ------')
@@ -94,7 +97,8 @@ class TLDetector(object):
 
         # Select the closest waypoint from lights array which was received from /vehicle/traffic_lights topic
         # Skip if we already processed this image
-        if (self.waypoints and self.record_cnt % 1 == 0 and image_msg.header.seq != self.camera_image_prev_seq):
+        if (self.waypoints and image_msg.header.seq != self.camera_image_prev_seq):
+
 
             self.camera_image_prev_seq = image_msg.header.seq
 
@@ -117,13 +121,15 @@ class TLDetector(object):
 
             # Collect test data
             # self.record_camera_image(light, state)
-            rospy.loginfo('--- =============== saving image ....')
+
 
             # Check that folder exists
             img_folder = os.path.join('.', 'output_images', self.record_name, 'imgs_full')
             output_folder = os.path.join('.', 'output_images', self.record_name)
             if not os.path.exists(img_folder):
                 os.makedirs(img_folder)
+            record_filename = os.path.join(output_folder, "{}.pickle".format(self.record_name))
+
             # rospy.loginfo("img_folder = {}".format(os.path.dirname(os.path.abspath(img_folder))))
 
             # car_wp = helper.next_waypoint_idx(pose_msg, self.waypoints.waypoints)
@@ -134,7 +140,11 @@ class TLDetector(object):
             light_dist = (light_wp - car_wp + waypoints_num) % waypoints_num
 
             # Save image
-            if 40 < light_dist < 160:
+            if 30 < light_dist < 200:
+
+                self.record_cnt += 1
+
+                rospy.loginfo('--- =============== saving image record_cnt = {} ....'.format(self.record_cnt))
 
                 img_filename = os.path.join(output_folder, 'imgs_full', '{:06d}-{}-{}.png'.format(self.record_cnt, state, light_dist))
 
@@ -149,13 +159,21 @@ class TLDetector(object):
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg, "bgr8")
                 cv2.imwrite(img_filename, cv_image)
 
+                rospy.loginfo('img_record = {}'.format(img_record))
+
                 self.records.append(img_record)
+
+                # Output to file every 1000 calls
+                if self.record_cnt % 100 == 0:
+                    with open(record_filename, 'wb') as rf:
+                        pickle.dump(self.records, rf)
+                        rospy.loginfo('SAVED TO FILE: {}'.format(record_filename))
 
 
             else:
                 rospy.loginfo("--- light is far away: {}".format(light_dist))
 
-        self.record_cnt += 1
+
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -172,32 +190,6 @@ class TLDetector(object):
 
         light_wp, state = self.process_traffic_lights()
 
-        # TODO: Remove this whole block
-        '''
-        rospy.loginfo('some my processing')
-
-        # Select the closest waypoint from lights array.
-        if (self.lights and self.waypoints):
-
-            car_wp = helper.next_waypoint_idx(self.pose, self.waypoints.waypoints)
-
-            lights_wp = [helper.closest_waypoint_idx(l.pose, self.waypoints.waypoints) for l in self.lights]
-            lights_dists = [helper.wp_distance(car_wp, lwp, self.waypoints.waypoints) for lwp in lights_wp]
-            closest_light = lights_dists.index(min(lights_dists))
-
-            rospy.loginfo('car_wp = {}'.format(car_wp))
-            rospy.loginfo('closest_light[{}] = {}, {}'.format(closest_light, self.lights[closest_light].state, lights_dists[closest_light]))
-            rospy.loginfo('closest_light_wp = {}, state = {}'.format(lights_wp[closest_light], self.lights[closest_light].state))
-
-            light_wp = lights_wp[closest_light]
-            state = self.lights[closest_light].state
-        '''
-
-            # for i, l in enumerate(self.lights):
-            #     # l = self.lights[i]
-            #     rospy.loginfo('[{}] = {}: {}, {}'.format(i, l.state, l.pose.pose.position.x, l.pose.pose.position.y))
-            #     if l.state > TrafficLight.RED:
-            #         rospy.loginfo("NOT REEEEEEEEEEEEEEEEEED")
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -267,43 +259,6 @@ class TLDetector(object):
 
         return (x, y)
 
-    # TODO: Remove method
-    def record_camera_image(self, light, state):
-        pass
-        '''
-        if(not self.has_image):
-            return
-
-        if self.record_cnt % 10 == 0:
-
-            rospy.loginfo('=============== saving image ....')
-
-            # Check folder exists
-            img_folder = os.path.join('.', 'output_images')
-            if not os.path.exists(img_folder):
-                os.makedirs(img_folder)
-            # rospy.loginfo("img_folder = {}".format(os.path.dirname(os.path.abspath(img_folder))))
-
-            car_wp = helper.next_waypoint_idx(self.pose, self.waypoints.waypoints)
-            light_wp = helper.closest_waypoint_idx(light.pose, self.waypoints.waypoints)
-
-            # Is light wisible?
-            waypoints_num = len(self.waypoints.waypoints)
-            light_dist = (light_wp - car_wp + waypoints_num) % waypoints_num
-
-            # Save image
-            if 20 < light_dist < 200:
-                img_filename = os.path.join(img_folder, '{:06d}-{}-{}.png'.format(self.record_cnt, state, light_dist))
-                rospy.loginfo("saving: {}, dist = {}".format(img_filename, light_dist))
-                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-                cv2.imwrite(img_filename, cv_image)
-            else:
-                rospy.loginfo("light is far away: {}".format(light_dist))
-
-
-        self.record_cnt += 1
-        '''
-
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -345,7 +300,7 @@ class TLDetector(object):
 
         #TODO find the closest visible traffic light (if one exists)\
 
-        '''
+
         # Select the closest waypoint from lights array which was received from /vehicle/traffic_lights topic
         if (self.lights and self.waypoints):
 
@@ -366,9 +321,7 @@ class TLDetector(object):
             state = self.lights[closest_light].state
             rospy.loginfo('SIM: closest_light_wp = {}, state = {}'.format(light_wp, light.state))
 
-            # Collect test data
-            # self.record_camera_image(light, state)
-        '''
+
 
 
         if light:
