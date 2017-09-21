@@ -45,7 +45,6 @@ class DBWNode(object):
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
         wheel_base = rospy.get_param('~wheel_base', 2.8498)
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
-        steer_ratio = 14.8
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
@@ -116,20 +115,20 @@ class DBWNode(object):
     def loop(self):
         rate = rospy.Rate(30) # 50Hz
         rospy.loginfo("dbw running with update freq = %s",rate)
+
+
+        # TODO: initialise a controller
+
+        self.controller = Controller(pid_kp=0.8, pid_ki=0.25, pid_kd=0.1, min_value=0.0, max_value=1.0)
+
         while not rospy.is_shutdown():
 
 
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
+            # pid for acceleration
+            throttle, brake, steering = self.controller.control(self.des_linear_velocity , self.cur_linear_velocity, self.dbw_enabled)
 
-            throttle = 1.0 # note throttle values should be in the range 0-1
-
-            # TODO: use pid for acceleration
+            # TODO: use pid for braking when throttle is zero
 
             # after getting the acceleration from PID, filter it using low_pass
             throttle = self.lp_filter.filt(throttle)
