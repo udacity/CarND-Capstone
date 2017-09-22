@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from tf.transformations import euler_from_quaternion
+from std_msgs.msg import Int32
 
 import numpy as np
 
@@ -26,6 +27,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 30 # Number of waypoints we will publish. You can change this number
 
+MAX_DECEL = 1.0
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -36,7 +38,7 @@ class WaypointUpdater(object):
                                                    Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        # rospy.Subscriber('/traffic_waypoint', Lane, self.traffic_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         # rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane,
@@ -47,6 +49,8 @@ class WaypointUpdater(object):
 
         self.prev_pose = None
         self.prev_next_wp = None
+
+        self.redlight_waypoint = None
 
         rospy.spin()
 
@@ -72,11 +76,12 @@ class WaypointUpdater(object):
 
         if (self.prev_pose == msg.pose):
             next_wp = self.prev_next_wp
-            rospy.loginfo("same as previous pose (%s, %s) next waypoint (%s, %s)",
+            rospy.loginfo("same as previous pose (%s, %s) next waypoint (%s, %s) %s",
                           msg.pose.position.x,
                           msg.pose.position.y,
                           self.waypoints[next_wp].pose.pose.position.x,
-                          self.waypoints[next_wp].pose.pose.position.y)
+                          self.waypoints[next_wp].pose.pose.position.y,
+                          next_wp)
         else:
             next_wp = self.next_waypoint(self.waypoints, msg.pose)
             rospy.loginfo("current pose (%s, %s) next waypoint (%s, %s) %s",
@@ -96,10 +101,29 @@ class WaypointUpdater(object):
         for i in range(next_wp, final_wp):
             final_waypoints.waypoints.append(self.waypoints[i])
 
+            # only add waypoints up till the traffic light
+            if self.redlight_waypoint is not None:
+                if i == self.redlight_waypoint:
+                    rospy.loginfo("stopped adding final waypoints past redlight %s", i)
+                    break
+
+        # only decellerate if this redlight is in the waypoints we have
+        if self.redlight_waypoint is not None:
+            if next_wp <= self.redlight_waypoint <= final_wp:
+                rospy.loginfo("decelerate to zero %s waypoints", len(final_waypoints.waypoints))
+                final_waypoints.waypoints = self.decelerate(final_waypoints.waypoints)
+
+        wps = [(wp.pose.pose.position.x,wp.pose.pose.position.y)
+               for wp in final_waypoints.waypoints]
+        speeds = [wp.twist.twist.linear.x for wp in final_waypoints.waypoints]
+        rl_wp = self.waypoints[self.redlight_waypoint] if self.redlight_waypoint is not None else None
+        rl_wp_coord = (rl_wp.pose.pose.position.x,rl_wp.pose.pose.position.x) if rl_wp is not None else (-1, -1)
+        rospy.loginfo("final %s %s %s", rl_wp_coord,
+                      len(wps), zip(wps, speeds))
+
         self.final_waypoints_pub.publish(final_waypoints)
 
     def waypoints_cb(self, msg):
-        # TODO: Implement
         if (self.waypoints is None):
             self.waypoints = msg.waypoints
             rospy.loginfo("waypoints %s", len(self.waypoints))
@@ -135,13 +159,13 @@ class WaypointUpdater(object):
                 closest_dist = dist_upper
                 closest_wp = wp_upper
 
-            rospy.loginfo("wp low %s %s mid %s %s up %s %s closest %s %s",
-                          wp_lower, dist_lower,
-                          wp_mid, dist_mid,
-                          wp_upper, dist_upper,
-                          closest_wp, closest_dist)
+            rospy.logdebug("wp low %s %s mid %s %s up %s %s closest %s %s",
+                           wp_lower, dist_lower,
+                           wp_mid, dist_mid,
+                           wp_upper, dist_upper,
+                           closest_wp, closest_dist)
 
-            # if all contiguous its converged wp_lower contains the closest_wp
+            # if all contiguous its converged closest_wp
             if wp_lower == wp_mid -1 and wp_mid == wp_upper -1:
                 break
 
@@ -186,12 +210,28 @@ class WaypointUpdater(object):
         return closest_wp
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        # rospy.loginfo("traffic_cb %s", msg)
+
+        self.redlight_waypoint = msg.data if msg.data != -1 else None
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
+
+    def decelerate(self, waypoints):
+        def distance(p1, p2):
+            x, y, z = p1.x - p2.x, p1.y - p2.y, p1.z - p2.z
+            return math.sqrt(x*x + y*y + z*z)
+
+        last = waypoints[-1]
+        last.twist.twist.linear.x = 0.
+        for wp in waypoints[:-1][::-1]:
+            dist = distance(wp.pose.pose.position, last.pose.pose.position)
+            vel = math.sqrt(2 * MAX_DECEL * dist) * 3.6
+            if vel < 1.:
+                vel = 0.
+            wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+        return waypoints
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
