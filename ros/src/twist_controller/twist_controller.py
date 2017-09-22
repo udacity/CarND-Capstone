@@ -22,10 +22,11 @@ class Controller(object):
         sample_time = (self.current_timestamp - self.previous_timestamp).nsecs / 1e9
         if sample_time != 0.0:
             throttle = self.pid_controller.step(error_speed, sample_time) # pass the time in seconds
-            rospy.loginfo("sample_time = %s error_speed = %s  throttle = %s ref_linear_vel = %s cur_linear_vel = %s",sample_time, error_speed, throttle, ref_linear_vel, cur_linear_vel)
+            #rospy.loginfo("sample_time = %s error_speed = %s  throttle = %s ref_linear_vel = %s cur_linear_vel = %s",sample_time, error_speed, throttle, ref_linear_vel, cur_linear_vel)
         else:
             throttle = 1.0 # BUG - this is for debug only, should be 0.0
             rospy.logwarn("ERROR: sample_time = %s throttle = %s", sample_time, throttle)
+
 
         brake = 0
         steering = 0
