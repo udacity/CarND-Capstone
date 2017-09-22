@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
+  <param name="PATH" value="/media/windowsshare/ros" />
+  <param name="generate_train" value="False" />
+  <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
 </launch>

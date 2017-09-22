@@ -2,21 +2,31 @@
 import math
 import rospy
 from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
+from geometry_msgs.msg import PoseStamped, Pose, PointStamped
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from light_classification.tl_classifier import TLClassifier
+from light_classification.tl_classifier import TLClassifierSimple
 import tf
 import cv2
 import yaml
+import os
 
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
+
+        self.create_train_data = rospy.get_param('generate_train',False)
+
+        if self.create_train_data:
+            self.train_data_dir = os.path.join(rospy.get_param('PATH'),'train')
+            self.train_data_start_number = 1
+
+            if self.create_train_data == True and not os.path.exists(self.train_data_dir):
+                os.makedirs(self.train_data_dir)
 
         self.pose = None
         self.waypoints = None
@@ -41,8 +51,12 @@ class TLDetector(object):
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
+        # Testing image queue for traffic light visualization
+        self.upcoming_traffic_light_image_pub = rospy.Publisher('/traffic_light_image', Image, queue_size=1)
+
+
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifierSimple()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -86,10 +100,51 @@ class TLDetector(object):
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
+
+            light_distance = 0
+            if(self.last_wp != -1):
+                light_distance = self.pose_distance(self.pose.pose,self.waypoints.waypoints[self.last_wp].pose.pose)
+                rospy.loginfo("Publishing to Red Light - Distance at %0.2fm\n", light_distance)
+            else:
+                rospy.loginfo("Publishing to Red Light - No Lights")
+
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
+            light_distance = 0
+            if(self.last_wp != -1):
+                light_distance = self.pose_distance(self.pose.pose,self.waypoints.waypoints[self.last_wp].pose.pose)
+            else:
+                rospy.loginfo("Publishing to Red Light - No Lights")
+
+            rospy.loginfo("Publishing to Red Light - Distance at %0.2fm\n", light_distance)
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
+
+    def get_closest_traffic_light(self, pose):
+        """Identifies the closest traffic light waypoint to the given waypoint
+        Args:
+            pose (Pose): position to match a light to
+
+        Returns:
+
+            Light: the closest light from self.lights or None
+
+        """
+        if(self.lights):
+            min_distance = 1e9
+            min_light = None
+            for ndx,light in enumerate(self.lights):
+                distance = self.pose_distance(light.pose.pose,pose)
+                if(distance < min_distance and self.is_waypoint_in_front_of_vehicle(light.pose,pose) ):
+                    min_light = light
+                    min_distance = distance
+
+
+        #    rospy.loginfo("Closest Light At: %s\n m", min_distance)
+
+            return min_light,min_distance
+        #else
+        return None
 
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
@@ -101,24 +156,59 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO does the waypoint need to be infront of the vehicle? 
         if(self.waypoints and self.waypoints.waypoints ):
             min_distance = 1e9
             min_waypoint_ndx = 0
             for ndx,waypoint in enumerate(self.waypoints.waypoints):
                 distance = self.pose_distance(waypoint.pose.pose,pose)
-                if(distance < min_distance):
+                if(distance < min_distance): #and self.is_waypoint_in_front_of_vehicle(waypoint.pose,pose)):
                     min_distance = distance
                     min_waypoint_ndx = ndx
 
-            rospy.loginfo("Closest Waypoint: %s \n At: %s\n m", self.waypoints.waypoints[min_waypoint_ndx].pose,min_distance)
+            #rospy.loginfo("Closest Waypoint: %s \n At: %s\n m", self.waypoints.waypoints[min_waypoint_ndx].pose,min_distance)
 
             return min_waypoint_ndx
         #else
         return 0
 
+    def is_waypoint_in_front_of_vehicle(self,waypoint,pose):
+        """Returns if the waypoint is infront of the pose position. Pose position
+        will need orientation values
+        Args:
+            waypoint (Pose): position to match a waypoint to
+            pose (Pose): position to match a waypoint to
+
+        Returns:
+            boolean: if the waypoint is in the direction of travel from the pose
+
+        """
+        wp_x = waypoint.pose.position.x
+        wp_y = waypoint.pose.position.y
+
+        # vehicle orientation
+        x_vec, y_vec,z_vec = self.get_vector_from_quaternion(pose.orientation)
+
+        wp_dist = self.pose_distance(pose, waypoint.pose)
+
+        vec_dist =  math.sqrt((wp_x-pose.position.x - x_vec*0.1)**2 + (wp_y-pose.position.y - y_vec*0.1)**2)
+
+        return vec_dist < wp_dist
+
+    def get_orientations_from_quaternion(self,q):
+        quaternion = [q.x, q.y, q.z, q.w]
+        roll, pitch, yaw = tf.transformations.euler_from_quaternion(quaternion)
+        return roll,pitch,yaw
+
+    def get_vector_from_quaternion(self, q):
+        roll, pitch, yaw = self.get_orientations_from_quaternion(q)
+        x = math.cos(yaw) * math.cos(pitch)
+        y = math.sin(yaw) * math.cos(pitch)
+        z = math.sin(pitch)
+        return x, y, z
+
     def pose_distance(self,pose_from, pose_to):
-        """Calculates euclidean distance between two Pose objects
+        #TODO Do we need 3D?
+        """Calculates euclidean distance between two Pose objects (2d)
         Args:
             pose_from (Pose): position from calculation
             pose_to (Pose): position to calculation
@@ -157,12 +247,26 @@ class TLDetector(object):
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
 
-        #TODO Use tranform and rotation to calculate 2D position of light in image
+        camera_point=PointStamped()
+        camera_point.header.frame_id = "/world"
+        camera_point.header.stamp =rospy.Time(0)
+        camera_point.point.x = point_in_world.x
+        camera_point.point.y = point_in_world.y
+        camera_point.point.z = point_in_world.z
+        p = self.listener.transformPoint("/base_link",camera_point)
 
-        x = 0
-        y = 0
+        #correct shift of traffic light to left / right because of car heading
+        roll, pitch, yaw = self.get_orientations_from_quaternion(self.pose.pose.orientation)
 
-        return (x, y)
+        y_offset = p.point.x*math.sin(yaw)
+
+        #https://en.wikipedia.org/wiki/Pinhole_camera_model#The_geometry_and_mathematics_of_the_pinhole_camera
+        x = -(p.point.y + y_offset)/ p.point.x * fx + image_width*0.5
+
+        y = 62 + image_height - (p.point.z / p.point.x * fy + image_height*0.5)
+
+        return (int(x), int(y))
+
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -179,8 +283,15 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        image_width = self.config['camera_info']['image_width']
+        image_height = self.config['camera_info']['image_height']
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
+
+        if self.create_train_data:
+            train_image_path = os.path.join(self.train_data_dir,'{0}.jpg'.format(self.train_data_start_number))
+            cv2.imwrite(train_image_path, cv_image)
+            self.train_data_start_number = self.train_data_start_number + 1
 
         #TODO use light location to zoom in on traffic light in image
 
@@ -199,13 +310,13 @@ class TLDetector(object):
         light = None
         light_positions = self.config['light_positions']
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
-
-        #TODO find the closest visible traffic light (if one exists)
+            light, light_distance = self.get_closest_traffic_light(self.pose.pose)
 
         if light:
+            light_wp_ndx = self.get_closest_waypoint(light.pose.pose)
             state = self.get_light_state(light)
-            return light_wp, state
+            #rospy.loginfo("Closest Light at %0.2fm is Red? %s\n", light_distance, (state==TrafficLight.RED))
+            return light_wp_ndx, state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
