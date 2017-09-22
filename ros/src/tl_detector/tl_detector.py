@@ -13,8 +13,6 @@ import math
 from train_queue import TrainQueue, TrainItem
 import yaml
 
-STATE_COUNT_THRESHOLD = 1
-
 def euclidean_distance(p1x, p1y, p2x, p2y):
     x_dist = p1x - p2x
     y_dist = p1y - p2y
@@ -62,7 +60,9 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
 
-        use_simulator_classifier = rospy.get_param("/traffic_light_classifier_sim")
+        self.STATE_COUNT_THRESHOLD = rospy.get_param("~state_count_threshold")
+
+        use_simulator_classifier = rospy.get_param("~traffic_light_classifier_sim")
         self.light_classifier = TLClassifier(sim = use_simulator_classifier)
 
         self.state = TrafficLight.UNKNOWN
@@ -71,7 +71,9 @@ class TLDetector(object):
         self.state_count = 0
         self.has_image = False
 
-        r = rospy.Rate(0.5)
+        rate = rospy.get_param("~rate")
+
+        r = rospy.Rate(rate)
         while not rospy.is_shutdown():
             self.process_image()
             r.sleep()
@@ -95,7 +97,7 @@ class TLDetector(object):
             if self.state != state:
                 self.state_count = 0
                 self.state = state
-            elif self.state_count >= STATE_COUNT_THRESHOLD:
+            elif self.state_count >= self.STATE_COUNT_THRESHOLD:
                 self.last_state = self.state
                 light_wp = light_wp if state == TrafficLight.RED else -1
                 self.last_wp = light_wp

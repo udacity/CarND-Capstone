@@ -20,7 +20,4 @@
 
     <!--Traffic Light Locations and Camera Config -->
     <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
-
-    <!--Traffic Light Classifier-->
-    <param name="traffic_light_classifier_sim" value="true" type="bool"/>
 </launch>
