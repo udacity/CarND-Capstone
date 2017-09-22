@@ -3,5 +3,5 @@ camera_info:
   focal_length_y: 1353.838257
   image_width: 800
   image_height: 600
-light_positions:
+stop_line_positions:
     - [20.991, 22.837]
