@@ -13,7 +13,10 @@ import yaml
 import copy
 import sys
 
+
+# Custom imports not part of original class design
 import datetime
+import time
 import pdb
 from math import sin,cos
 
@@ -24,6 +27,14 @@ from math import sin,cos
 image_capture_mode = False
 img_dir = 'test_img'
 
+# Set lag_test_mode = True to print stats to screen that test
+# the lag between simulator and ROS code
+lag_test_mode = False
+
+
+
+
+
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
@@ -33,6 +44,7 @@ class TLDetector(object):
         # Custom attributes
         self.last_car_wp = None
         self.line_pos_wp = []
+        self.last_pos_ts = 0
 
 
         
@@ -72,11 +84,16 @@ class TLDetector(object):
 
     def pose_cb(self, msg):
         self.pose = msg
+        if lag_test_mode:
+            ms = (time.time() - self.last_pos_ts) * 1000
+            print('milliseconds since last pose update %i'%ms)
+            self.last_pos_ts = time.time()
 
     def waypoints_cb(self, waypoints):
         # Only update once since this is static
         if waypoints:
             print('Updating with %i waypoints'%len(waypoints.waypoints))
+            print('Expect about 10,000 waypoints for simulator')
             self.waypoints = waypoints
 
     def traffic_cb(self, msg):
