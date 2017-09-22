@@ -58,7 +58,7 @@ class WaypointUpdater(object):
         if self.ever_received_traffic_waypoint and self.waypoints:
             velocity = self.MAX_VELOCITY
         else:
-            rospy.logwarn('Waiting for waypoints or red-light info, so set zero target velocity.')
+            rospy.loginfo('Waiting for waypoints or red-light info, so set zero target velocity.')
             velocity = 0
 
         if self.next_red_light and self.waypoints and (waypoint_index <= self.next_red_light):
