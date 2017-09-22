@@ -10,6 +10,8 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
+import copy
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -27,14 +29,14 @@ class TLDetector(object):
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
-        /vehicle/traffic_lights helps you acquire an accurate ground truth data source for the traffic light
-        classifier, providing the location and current color state of all traffic lights in the
-        simulator. This state can be used to generate classified images or subbed into your solution to
-        help you work on another single component of the node. This topic won't be available when
-        testing your solution in real life so don't rely on it in the final submission.
+        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
+        helps you acquire an accurate ground truth data source for the traffic light
+        classifier by sending the current color state of all traffic lights in the
+        simulator. When testing on the vehicle, the color state will not be available. You'll need to
+        rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/camera/image_raw', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
         # todo fix: get_param fails with key not found exception
         # config_string = rospy.get_param("/traffic_light_config")
@@ -50,6 +52,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        #self.dbg_flag = 0
 
         rospy.spin()
 
@@ -61,6 +64,16 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        """
+        i = 0
+        if self.waypoints != None and self.dbg_flag == 0:
+        	i = 0
+        	for light in self.lights:
+        		wid = self.get_closest_waypoint(light.pose.pose)
+        		print "light ", i, " waypoint ", wid
+        		i = i +1
+        	self.dbg_flag = 1
+        """
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -102,8 +115,37 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        ds = 10000000.0
+        wy_id = -1
+        i = 0
+        """
+        for wyp in self.waypoints.waypoints:
+        	dx = pose.position.x - wyp.pose.pose.position.x
+        	dy = pose.position.y - wyp.pose.pose.position.y
+        	t = math.sqrt(dx*dx + dy*dy)
+        	if t < ds:
+        		ds = t
+        		wy_id = i
+        	i = i +1
+        """
+        wyp_c = []
+        for wyp in self.waypoints.waypoints:
+        	dx = math.fabs(pose.position.x - wyp.pose.pose.position.x)
+        	dy = math.fabs(pose.position.y - wyp.pose.pose.position.y)
+        	if dx < 10.0 or dy < 10.0:
+        		wyp_c.append(i)
+        	i = i +1
+        	
+        for w_i in wyp_c:
+        	wy_pose = self.waypoints.waypoints[w_i].pose.pose.position
+        	dx = pose.position.x - wy_pose.x
+        	dy = pose.position.y - wy_pose.y
+        	t = math.sqrt(dx*dx + dy*dy)
+        	if t < ds:
+        		ds = t
+        		wy_id = w_i
+        
+        return wy_id
 
 
     def project_to_image_plane(self, point_in_world):
@@ -142,6 +184,42 @@ class TLDetector(object):
 
         return (x, y)
 
+    def conv2car_frame(self, w_x, w_y):
+		"""convert the world frame coordinates to local car frame coordinates (2D)
+		"""
+		pos = self.pose.pose.position
+		qor = self.pose.pose.orientation
+		quaternion = (qor.x, qor.y, qor.z, qor.w)
+		euler = tf.transformations.euler_from_quaternion(quaternion)
+		theta = euler[2]
+	
+		x = (w_x - pos.x)*math.cos(theta)+(w_y - pos.y)*math.sin(theta)
+		y = (w_x - pos.x)*(-math.sin(theta))+(w_y - pos.y)*math.cos(theta)
+	
+		return (x, y)
+	
+    def get_closest_lights(self, light_positions):
+		"""find the closest light
+		"""
+		min_ds = 10000000.0
+		n = 10
+	
+		i  = 0
+		st = 4
+		for light_position in light_positions:
+			l_wx = light_position[0]
+			l_wy = light_position[1]
+			x, y = self.conv2car_frame(l_wx, l_wy)
+
+			if x > 0:
+				ds = math.sqrt(x*x + y*y)
+				if ds < min_ds:
+					min_ds = ds
+					n = i
+			i = i +1
+	
+		return (n, min_ds, light_positions[n][0], light_positions[n][1])
+
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
@@ -156,7 +234,6 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
 
-        self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
@@ -177,15 +254,25 @@ class TLDetector(object):
         """
         light = None
         light_positions = self.config['light_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
-
+        
         #TODO find the closest visible traffic light (if one exists)
+        if self.waypoints and self.pose:
+            car_position = self.get_closest_waypoint(self.pose.pose)
+            li, ds, lx, ly = self.get_closest_lights(light_positions)
+            #print "closest way light: ", li, ds, lx, ly
+            # TODO: call get_light_state(light)
+            if ds < 50:
+            	light_pose = copy.deepcopy(self.lights[li].pose.pose)
+            	lwp = self.get_closest_waypoint(light_pose)
+            	state = self.lights[li].state
+            	#print "light waypoint is ", lwp, " state ", state
+            	return lwp, state
 
-        if light:
+        """if light:
             state = self.get_light_state(light)
             return light_wp, state
         self.waypoints = None
+        """
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
