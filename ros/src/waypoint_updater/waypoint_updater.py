@@ -44,6 +44,7 @@ class WaypointUpdater(object):
         self.num_waypoints = 0
         self.closest_waypoint = 0
         self.next_red_light = None
+        self.ever_received_traffic_waypoint = False
         self.MAX_VELOCITY = rospy.get_param("~max_velocity")
         self.REDUCE_SPEED_DISTANCE = rospy.get_param("~reduce_speed_distance")
         self.STOP_DISTANCE = rospy.get_param("~stop_distance")
@@ -54,7 +55,11 @@ class WaypointUpdater(object):
             r.sleep()
 
     def calculate_waypoint_velocity(self, waypoint_index):
-        velocity = self.MAX_VELOCITY
+        if self.ever_received_traffic_waypoint and self.waypoints:
+            velocity = self.MAX_VELOCITY
+        else:
+            rospy.logwarn('Waiting for waypoints or red-light info, so set zero target velocity.')
+            velocity = 0
 
         if self.next_red_light and self.waypoints:
             distance_to_red_light = self.distance(self.waypoints, waypoint_index, self.next_red_light)
@@ -100,6 +105,7 @@ class WaypointUpdater(object):
             self.next_red_light = msg.data
         else:
             self.next_red_light = None
+        self.ever_received_traffic_waypoint = True
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
