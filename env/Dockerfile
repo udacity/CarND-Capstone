@@ -18,8 +18,9 @@ RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial main" > /etc/apt/
 
 # Install dbw_mkz
 COPY dbw_mkz/* /tmp/
-RUN cd /tmp && ./sdk_update.bash && \
-  rm /tmp/sdk_update.bash /tmp/sdk_install.bash
+RUN cd /tmp && ./sdk_update.bash
+  #&& \
+  #rm /tmp/sdk_update.bash /tmp/sdk_install.bash
 
 # Initialize rosdep
 RUN rosdep init

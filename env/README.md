@@ -6,9 +6,9 @@
 ```
 2. Start container
 ```bash
-./run.sh
+./start.sh
 ```
-3. Start ROS
+3. Run ROS
 ```bash
 cd ros
 ./run.sh

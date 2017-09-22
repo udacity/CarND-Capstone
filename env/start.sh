@@ -3,7 +3,7 @@ set -e
 
 # Settings from environment
 UDACITY_SOURCE=${UDACITY_SOURCE:-`pwd`/..}
-UDACITY_IMAGE=${UDACITY_IMAGE:-bydavy/carnd-capstone}
+UDACITY_IMAGE=${UDACITY_IMAGE:-carnd-capstone}
 echo $UDACITY_SOURCE
 
 
