@@ -13,7 +13,7 @@ import math
 from train_queue import TrainQueue, TrainItem
 import yaml
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 1#3
 
 def euclidean_distance(p1x, p1y, p2x, p2y):
     x_dist = p1x - p2x

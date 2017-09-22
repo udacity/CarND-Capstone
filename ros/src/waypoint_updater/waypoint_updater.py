@@ -37,26 +37,31 @@ class WaypointUpdater(object):
         self.traffic_waypoint_sub = rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         # Publishers
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=2)
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         self.waypoints = None
         self.latest_pose = None
         self.num_waypoints = 0
         self.closest_waypoint = 0
         self.next_red_light = None
+        self.ever_received_traffic_waypoint = False
         self.MAX_VELOCITY = rospy.get_param("~max_velocity")
         self.REDUCE_SPEED_DISTANCE = rospy.get_param("~reduce_speed_distance")
         self.STOP_DISTANCE = rospy.get_param("~stop_distance")
 
-        r = rospy.Rate(0.5)
+        r = rospy.Rate(5.0)
         while not rospy.is_shutdown():
             self.calculate_and_publish_next_waypoints()
             r.sleep()
 
     def calculate_waypoint_velocity(self, waypoint_index):
-        velocity = self.MAX_VELOCITY
+        if self.ever_received_traffic_waypoint and self.waypoints:
+            velocity = self.MAX_VELOCITY
+        else:
+            rospy.logwarn('Waiting for waypoints or red-light info, so set zero target velocity.')
+            velocity = 0
 
-        if self.next_red_light and self.waypoints:
+        if self.next_red_light and self.waypoints and (waypoint_index <= self.next_red_light):
             distance_to_red_light = self.distance(self.waypoints, waypoint_index, self.next_red_light)
             if (distance_to_red_light < self.STOP_DISTANCE):
                 velocity = 0.0
@@ -74,13 +79,24 @@ class WaypointUpdater(object):
         if (self.latest_pose and self.waypoints):
             ix = self.next_waypoint(self.waypoints, self.latest_pose.pose)
             self.closest_waypoint = ix
-            ix_end = ix+LOOKAHEAD_WPS
+
+            red_light_wp = self.next_red_light
+            if (red_light_wp and (red_light_wp > ix)):
+                temp_wp = red_light_wp + 5
+                if (temp_wp - ix) > LOOKAHEAD_WPS:
+                    ix_end = ix+LOOKAHEAD_WPS
+                else:    
+                    ix_end = temp_wp
+            else:
+                ix_end = ix+LOOKAHEAD_WPS
+            
             if ix_end > self.num_waypoints:
                 ix_end = self.num_waypoints
             for i in range(ix, ix_end):
                 self.set_waypoint_velocity(self.waypoints, i, self.calculate_waypoint_velocity(i))
                 wp = self.waypoints[i]
                 wps.append(wp)
+            rospy.loginfo("""Waypoint ix: {} num: {}  v: {}""".format(ix, len(wps), self.get_waypoint_velocity(wps[0])))
 
         final_wps = Lane()
         final_wps.waypoints = wps
@@ -100,6 +116,7 @@ class WaypointUpdater(object):
             self.next_red_light = msg.data
         else:
             self.next_red_light = None
+        self.ever_received_traffic_waypoint = True
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
