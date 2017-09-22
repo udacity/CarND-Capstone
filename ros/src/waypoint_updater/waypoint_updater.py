@@ -120,8 +120,8 @@ class WaypointUpdater(object):
         lane.waypoints = final_waypoints
         self.final_waypoints_pub.publish(lane)
 
-        rospy.logwarn("Published final waypoints...")
-        rospy.loginfo(lane)
+        rospy.loginfo("Published final waypoints...")
+        rospy.logdebug(lane)
 
 
     def waypoints_cb(self, waypoints):
