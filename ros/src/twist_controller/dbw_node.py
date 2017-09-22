@@ -4,9 +4,6 @@ import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
-#from styx_msgs.msg import Lane, Waypoint
-#from numpy import polyfit
-
 from twist_controller import Controller
 
 '''
@@ -43,7 +40,8 @@ class DBWNode(object):
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
         wheel_base = rospy.get_param('~wheel_base', 2.8498)
-        steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+        #steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+        steer_ratio = rospy.get_param('~steer_ratio', 118.4)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
@@ -67,7 +65,6 @@ class DBWNode(object):
         self.dbw_enabled = True
         self.current_velocity = None
         self.twist_cmd = None
-        self.optimal_path_coeffs = None
 
         self.loop()
 
@@ -89,8 +86,10 @@ class DBWNode(object):
 
             if (self.dbw_enabled and self.current_velocity != None and self.twist_cmd != None):
                 throttle, brake, steer = self.controller.control(self.twist_cmd, self.current_velocity)
-                rospy.logwarn("Throttle={}, Brake={}, Steer={}".format(throttle, brake, steer))
-                self.publish(throttle, brake, steer * 10)
+                rospy.logwarn("Throttle={}, Brake={}, Steer={}, twist_angular_z={}".
+                              format(throttle, brake, steer,
+                                     self.twist_cmd.twist.angular.z))
+                self.publish(throttle, brake, steer)
 
             rate.sleep()
 
@@ -99,7 +98,7 @@ class DBWNode(object):
         self.dbw_enabled = msg
 
     def current_velocity_cb(self, msg):
-        rospy.logwarn("Entering current_velocity_cb...")
+        rospy.loginfo("Entering current_velocity_cb...")
         self.current_velocity = msg
 
     def twist_cmd_cb(self, msg):
