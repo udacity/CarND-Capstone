@@ -77,7 +77,6 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         # TODO: Implement
-        rospy.logwarn(msg.pose)
         self.pose = msg.pose
         rospy.loginfo("Received new position: x={}, y={}".format(self.pose.position.x,
                                                                  self.pose.position.y))
@@ -113,6 +112,16 @@ class WaypointUpdater(object):
             final_waypoints += self.base_waypoints.waypoints[:rest]
 
         rospy.loginfo("Length of final_waypoints is {}".format(len(final_waypoints)))
+        assert (len(final_waypoints) == LOOKAHEAD_WPS)
+
+        lane = Lane()
+        lane.header.stamp = rospy.Time.now()
+        lane.header.frame_id = "/world"
+        lane.waypoints = final_waypoints
+        self.final_waypoints_pub.publish(lane)
+
+        rospy.logwarn("Published final waypoints...")
+        rospy.loginfo(lane)
 
 
     def waypoints_cb(self, waypoints):
