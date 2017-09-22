@@ -49,7 +49,7 @@ class WaypointUpdater(object):
         self.REDUCE_SPEED_DISTANCE = rospy.get_param("~reduce_speed_distance")
         self.STOP_DISTANCE = rospy.get_param("~stop_distance")
 
-        r = rospy.Rate(0.5)
+        r = rospy.Rate(1.5)
         while not rospy.is_shutdown():
             self.calculate_and_publish_next_waypoints()
             r.sleep()
