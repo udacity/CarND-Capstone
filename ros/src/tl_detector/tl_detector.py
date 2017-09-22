@@ -76,6 +76,7 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         # Only update once since this is static
         if waypoints:
+            print('Updating with %i waypoints'%len(waypoints.waypoints))
             self.waypoints = waypoints
 
     def traffic_cb(self, msg):
@@ -307,10 +308,11 @@ class TLDetector(object):
         if(self.pose):
             car_wp = self.get_closest_waypoint(self.pose.pose,self.last_car_wp)
             self.last_car_wp = car_wp
+            if not car_wp:
+                print('car waypoint could not be found')
+                return -1, TrafficLight.UNKNOWN
         else:
             print('self.pose is emtpy')
-        if not car_wp:
-            print('car waypoint could not be found')
             return -1, TrafficLight.UNKNOWN
 
         #TODO find the closest visible traffic light (if one exists)
