@@ -117,7 +117,7 @@ class WaypointUpdater(object):
                for wp in final_waypoints.waypoints]
         speeds = [wp.twist.twist.linear.x for wp in final_waypoints.waypoints]
         rl_wp = self.waypoints[self.redlight_waypoint] if self.redlight_waypoint is not None else None
-        rl_wp_coord = (rl_wp.pose.pose.position.x,rl_wp.pose.pose.position.x) if rl_wp is not None else (-1, -1)
+        rl_wp_coord = (rl_wp.pose.pose.position.x,rl_wp.pose.pose.position.y) if rl_wp is not None else (-1, -1)
         rospy.loginfo("final %s %s %s", rl_wp_coord,
                       len(wps), zip(wps, speeds))
 
