@@ -42,7 +42,54 @@ class WaypointUpdater(object):
         self.pose = None
         self.len_waypoints = None
 
-        rospy.spin()
+        self.loop()
+        #rospy.spin()
+
+    def loop(self):
+        rate = rospy.Rate(10)  # 10Hz
+        while not rospy.is_shutdown():
+            if (self.base_waypoints != None and self.pose != None):
+                closest_dist = float("inf")
+                closest_index = 0
+
+                for i in range(0, self.len_waypoints):
+                    curr_dist = self.squared_dist(i)
+                    if (curr_dist < closest_dist):
+                        closest_dist = curr_dist
+                        closest_index = i
+
+                if (self.check_is_behind(closest_index)):
+                    closest_index += 1
+                    if (closest_index == self.len_waypoints):
+                        closest_index = 0
+
+                rospy.loginfo("Closed Waypoint index is: {}, x={}, y={}".
+                              format(closest_index,
+                                     self.base_waypoints.waypoints[closest_index].pose.pose.position.x,
+                                     self.base_waypoints.waypoints[closest_index].pose.pose.position.y))
+
+                final_waypoints = None
+                if (closest_index < self.len_waypoints - LOOKAHEAD_WPS):
+                    final_waypoints = self.base_waypoints.waypoints[closest_index:closest_index + LOOKAHEAD_WPS]
+                else:
+                    final_waypoints = self.base_waypoints.waypoints[closest_index:]
+                    rest = LOOKAHEAD_WPS - (self.len_waypoints - closest_index)
+                    final_waypoints += self.base_waypoints.waypoints[:rest]
+
+                rospy.loginfo("Length of final_waypoints is {}".format(len(final_waypoints)))
+                assert (len(final_waypoints) == LOOKAHEAD_WPS)
+
+                lane = Lane()
+                lane.header.stamp = rospy.Time.now()
+                lane.header.frame_id = "/world"
+                lane.waypoints = final_waypoints
+                self.final_waypoints_pub.publish(lane)
+
+                rospy.loginfo("Published final waypoints...")
+                rospy.logdebug(lane)
+
+            rate.sleep()
+
 
     def check_is_behind(self, index):
         dx = self.base_waypoints.waypoints[index].pose.pose.position.x - self.pose.position.x
@@ -80,49 +127,6 @@ class WaypointUpdater(object):
         self.pose = msg.pose
         rospy.loginfo("Received new position: x={}, y={}".format(self.pose.position.x,
                                                                  self.pose.position.y))
-        if (self.base_waypoints == None):
-            rospy.loginfo("Cannot process new position, because waypoints are not yet loaded.")
-            return
-
-        closest_dist = float("inf")
-        closest_index = 0
-
-        for i in range(0, self.len_waypoints):
-            curr_dist = self.squared_dist(i)
-            if (curr_dist < closest_dist):
-                closest_dist = curr_dist
-                closest_index = i
-
-        if (self.check_is_behind(closest_index)):
-            closest_index += 1
-            if (closest_index == self.len_waypoints):
-                closest_index = 0
-
-        rospy.loginfo("Closed Waypoint index is: {}, x={}, y={}".
-                      format(closest_index,
-                             self.base_waypoints.waypoints[closest_index].pose.pose.position.x,
-                             self.base_waypoints.waypoints[closest_index].pose.pose.position.y))
-
-        final_waypoints = None
-        if (closest_index < self.len_waypoints - LOOKAHEAD_WPS):
-            final_waypoints = self.base_waypoints.waypoints[closest_index:closest_index + LOOKAHEAD_WPS]
-        else:
-            final_waypoints = self.base_waypoints.waypoints[closest_index:]
-            rest = LOOKAHEAD_WPS - (self.len_waypoints - closest_index)
-            final_waypoints += self.base_waypoints.waypoints[:rest]
-
-        rospy.loginfo("Length of final_waypoints is {}".format(len(final_waypoints)))
-        assert (len(final_waypoints) == LOOKAHEAD_WPS)
-
-        lane = Lane()
-        lane.header.stamp = rospy.Time.now()
-        lane.header.frame_id = "/world"
-        lane.waypoints = final_waypoints
-        self.final_waypoints_pub.publish(lane)
-
-        rospy.loginfo("Published final waypoints...")
-        rospy.logdebug(lane)
-
 
     def waypoints_cb(self, waypoints):
         if (self.base_waypoints == None):
