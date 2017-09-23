@@ -71,7 +71,9 @@ class TLDetector(object):
         self.state_count = 0
         self.has_image = False
 
-        r = rospy.Rate(0.5)
+        rate = 5.0
+
+        r = rospy.Rate(rate)
         while not rospy.is_shutdown():
             self.process_image()
             r.sleep()
