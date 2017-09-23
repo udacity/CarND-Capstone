@@ -108,21 +108,51 @@ class TLDetector(object):
         """
         #TODO_Done implement
 
-        #rospy.loginfo("Waypoints LENGTH (%s)", len(self.waypoints))
+        def dl(a, b):
+            return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
-        '''
-        closest_wp = len(self.waypoints) + 1
-        closest_dist = 100000
-        for i in range(len(self.waypoints)):
-            dist = dl(self.waypoints[i].pose.pose.position, pose)
-            if (dist < closest_dist):
-                closest_wp = i
-                closest_dist = dist
-        '''
-        pose_vector = np.array([pose.x, pose.y])
-        closest_wp = np.array([np.linalg.norm(x+y) for (x,y) in self.position_array-pose_vector]).argmin()
+        closest_wp = len(self.waypoints)-1
+
+        wp_lower = 0
+        wp_upper = len(self.waypoints) - 1
+        while wp_lower < wp_upper:
+            wp_mid = (wp_lower + wp_upper) // 2
+            dist_lower = dl(self.waypoints[wp_lower].pose.pose.position, pose)
+            dist_upper = dl(self.waypoints[wp_upper].pose.pose.position, pose)
+            dist_mid = dl(self.waypoints[wp_mid].pose.pose.position, pose)
+
+            closest_dist = dist_lower
+            closest_wp = wp_lower
+            if dist_mid < closest_dist:
+                closest_dist = dist_mid
+                closest_wp = wp_mid
+            if dist_upper < closest_dist:
+                closest_dist = dist_upper
+                closest_wp = wp_upper
+
+
+            # if all contiguous its converged wp_lower contains the closest_wp
+            if wp_lower == wp_mid -1 and wp_mid == wp_upper -1:
+                break
+
+            # handle track looping around to start
+            if dist_upper < dist_mid:
+                if dist_lower < dist_upper:
+                    wp_upper = wp_mid - 1
+                else:
+                    wp_lower = wp_mid + 1
+
+            elif dist_mid < closest_dist:
+                wp_lower = wp_mid-1
+            elif closest_dist < dist_mid:
+                wp_upper = wp_mid+1
+            elif dist_lower < dist_upper:
+                wp_upper = wp_mid + (wp_upper - wp_mid) // 2
+            elif dist_upper < dist_lower:
+                wp_lower = wp_mid - (wp_mid - wp_lower) // 2
 
         return closest_wp
+
 
 
     def project_to_image_plane(self, point_in_world):
@@ -213,7 +243,7 @@ class TLDetector(object):
         rospy.logdebug("light_positions (%s)", light_positions)
 
         if(self.pose):
-            car_position = self.get_closest_waypoint(AttrDict({'x': self.pose.pose.position.x, 'y': self.pose.pose.position.y}))
+            #car_position = self.get_closest_waypoint(AttrDict({'x': self.pose.pose.position.x, 'y': self.pose.pose.position.y}))
             pose_vector = np.array([self.pose.pose.position.x, self.pose.pose.position.y])
             nearest_light_car_index = np.array([np.linalg.norm(x+y) for (x,y) in light_positions-pose_vector]).argmin()
             rospy.logdebug("closest light to car position (%s) is at (%s)", self.pose.pose.position, light_positions[nearest_light_car_index])
@@ -224,7 +254,7 @@ class TLDetector(object):
         tmp_light_wp = self.get_closest_waypoint(AttrDict({'x': light_position[0], 'y': light_position[1]}))
 
         # Check if waypoint nearest to traffic light is ahead of the car
-        if (tmp_light_wp >= car_position) and (tmp_light_wp-car_position) < 500 :
+        if  self.waypoints[tmp_light_wp].pose.pose.position.x >= self.pose.pose.position.x :
             light_wp = tmp_light_wp
             light = self.lights[nearest_light_car_index]
 
