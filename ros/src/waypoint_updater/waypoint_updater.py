@@ -37,16 +37,38 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.pose = None
+        self.waypoints = None
+        self.setspeed = (30.0)*(1.60934*1000/3600); # Mph to m/s
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.pose = msg
+        #print 'pos: ' + str(self.pose.pose.position.x) + ',' + str(self.pose.pose.position.y) + ',' + str(self.pose.pose.position.z)
+
+        if (self.waypoints is not None): # in case update comes before /base_waypoints
+            num_wp = len(self.waypoints.waypoints)
+            closestWPi = self.get_closest_waypoint()
+            #print 'WP1: ' + str(self.waypoints.waypoints[closestWPi+1].pose.pose.position.x) + ',' + str(self.waypoints.waypoints[closestWPi+1].pose.pose.position.y) + ',' + str(self.waypoints.waypoints[closestWPi+1].pose.pose.position.z)
+
+            wp2pub = []
+            # assume track does not loop back to start
+            startindex = min(closestWPi+1,num_wp)
+            endindex = min(closestWPi+LOOKAHEAD_WPS,num_wp)
+            for wpi in range(startindex,endindex):
+                self.waypoints.waypoints[wpi].twist.twist.linear.x = self.setspeed
+                wp2pub.append(self.waypoints.waypoints[wpi])
+
+            lane = Lane()
+            lane.header.frame_id = '/world'
+            lane.header.stamp = rospy.Time(0)
+            lane.waypoints = wp2pub
+
+            self.final_waypoints_pub.publish(lane)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.waypoints = waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -70,6 +92,23 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    def get_closest_waypoint(self):
+        """Identifies the closest path waypoint to the current pose position
+        Returns: int: index of the closest waypoint in self.waypoints
+        """
+        best_dist = 9999.99
+        best_i = -1
+        if (self.pose is not None):
+            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+            for i in range(len(self.waypoints.waypoints)):
+                this_dist = dl(self.pose.pose.position,self.waypoints.waypoints[i].pose.pose.position)
+                if (this_dist<best_dist):
+                    best_dist = this_dist
+                    best_i = i
+        else:
+            rospy.logerr('Could not find current pose.')
+
+        return best_i
 
 if __name__ == '__main__':
     try:
