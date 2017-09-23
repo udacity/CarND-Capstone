@@ -3,9 +3,10 @@
 import rospy
 from geometry_msgs.msg import PoseStamped, Pose
 from std_msgs.msg import Int32
-from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import Lane, Waypoint, TrafficLightArray
 import tf
 import math
+import copy
 import numpy as np
 
 '''
@@ -47,6 +48,7 @@ class WaypointUpdater(object):
 
         # Traffic light
         self.tl_pose = []
+        self.tf_index = -1 # if -1 then there is no traffic light ahead
         self.tl_state = 'green'
 
         # Initiate node
@@ -129,6 +131,7 @@ class WaypointUpdater(object):
         rospy.loginfo("Waypoint updater running with update freq = %s Hz", update_rate)
 
         # Loop waypoint publisher
+        #list_wp_to_pub = []
         while not rospy.is_shutdown():
 
             #rospy.loginfo("Current_pose = %s,%s",self.current_pose.position.x,self.current_pose.position.y)
@@ -143,14 +146,51 @@ class WaypointUpdater(object):
                 if next_wp_index+LOOKAHEAD_WPS >= num_waypoints:
                     excess = (next_wp_index+LOOKAHEAD_WPS) % num_waypoints
                     # Wrap around
-                    list_wp_to_pub = self.waypoints[next_wp_index:]
+                    list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:]) # create a copy to prevent overwritting the original list
                     list_wp_to_pub.extend(self.waypoints[0:excess])
                     #rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s (%s+%s)", len(list_wp_to_pub), next_wp_index, len(self.waypoints)-next_wp_index,excess)
                 else:
-                    list_wp_to_pub = self.waypoints[next_wp_index:next_wp_index+LOOKAHEAD_WPS]
+                    list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:next_wp_index+LOOKAHEAD_WPS])
                     #rospy.loginfo("Publishing %s wp from index %s ", len(list_wp_to_pub),next_wp_index)
 
                 # msg_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
+
+                if self.tf_index != -1:
+
+                    # TODO: handle the case where the tf_wp is wrapped
+
+                    # TODO: handle the case where the tf_wp is beyond the LOOKAHEAD wp list
+
+
+
+                    # simple case the tf_index is within the LOOKAHEAD distance
+                    index_in_wp_list = self.tf_index - next_wp_index
+
+                    # 1st set the velocity of tf_index waypoint and beyond to zero
+                    MARGIN = 3
+                    for i in range(index_in_wp_list-MARGIN,LOOKAHEAD_WPS): # set speed to zero a few waypoints before the traffic_lights
+                        list_wp_to_pub[i].twist.twist.linear.x = 0.0
+
+                    ref_speed = 0.0
+                    for i in range(index_in_wp_list-MARGIN-1, -1, -1): # decrease speed gradually to the tf wp
+                        if list_wp_to_pub[i].twist.twist.linear.x > ref_speed:
+                            list_wp_to_pub[i].twist.twist.linear.x = ref_speed
+                            ref_speed = ref_speed + 0.2
+                            #rospy.loginfo("iteration %s = %s", i, ref_speed)
+                        else:
+                            #rospy.loginfo("breaking for loop after %s iterations",i)
+                            break
+                else:
+                    # TODO: ensure smooth acceleration after having stopped at the traffic light
+                    # by creating increasing reference velocities
+                    # Note: this might not actually be necessary...
+                    pass
+
+                rospy.loginfo("tf_index = %s \tnext_wp_vel = %s",self.tf_index,list_wp_to_pub[0].twist.twist.linear.x)
+                #list_wp_to_pub = change_speed(list_wp_to_pub)
+
+                    # 2nd set the velocity of waypoints before the tf_wp to gradual decreasing velocities
+
 
                 # Create and publish Lane message
                 lane_msg = Lane()
@@ -201,7 +241,8 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        rospy.loginfo("traffic_cb msg = %s",msg.data)
+        # rospy.loginfo("traffic_cb msg = %s",msg.data)
+        self.tf_index = msg.data
         return
 
     def obstacle_cb(self, msg):

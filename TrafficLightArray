@@ -1,0 +1,35 @@
+Topic: /vehicle/traffic_lights
+
+rosmsg show styx_msgs/TrafficLightArray
+
+
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+styx_msgs/TrafficLight[] lights
+  uint8 UNKNOWN=4
+  uint8 GREEN=2
+  uint8 YELLOW=1
+  uint8 RED=0
+  std_msgs/Header header
+    uint32 seq
+    time stamp
+    string frame_id
+  geometry_msgs/PoseStamped pose
+    std_msgs/Header header
+      uint32 seq
+      time stamp
+      string frame_id
+    geometry_msgs/Pose pose
+      geometry_msgs/Point position
+        float64 x
+        float64 y
+        float64 z
+      geometry_msgs/Quaternion orientation
+        float64 x
+        float64 y
+        float64 z
+        float64 w
+  uint8 state
+
