@@ -19,12 +19,14 @@ class Controller(object):
 
     def control(self, twist_cmd, velocity_cmd):
         # TODO: Change the arg, kwarg list to suit your needs
-        twist_linear_x = twist_cmd.twist.linear.x
-        twist_angular_z = self.low_pass_filter.filt(twist_cmd.twist.angular.z)
-        current_velocity_x = velocity_cmd.twist.linear.x
 
+        # Calculate steering
+        twist_linear_x = twist_cmd.twist.linear.x
+        #twist_angular_z = self.low_pass_filter.filt(twist_cmd.twist.angular.z)
+        twist_angular_z = twist_cmd.twist.angular.z
+        current_velocity_x = velocity_cmd.twist.linear.x
         steer = self.yaw_controller.get_steering(twist_linear_x, twist_angular_z, current_velocity_x)
 
-        throttle = 0.5
+        throttle = 0.25
         brake = 0.0
         return throttle, brake, steer
