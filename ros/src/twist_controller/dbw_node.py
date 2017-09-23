@@ -139,8 +139,8 @@ class DBWNode(object):
 
             if self.dbw_enabled:
                 self.publish(throttle, brake, steer)
-                rospy.loginfo("ref_linear_vel = %s \tcur_linear_vel = %s \tthrottle = %s \tbrake = %s \t",
-                              self.des_linear_velocity, self.cur_linear_velocity, throttle, brake)
+                #rospy.loginfo("ref_linear_vel = %s \tcur_linear_vel = %s \tthrottle = %s \tbrake = %s \t",
+                #              self.des_linear_velocity, self.cur_linear_velocity, throttle, brake)
 
             rate.sleep()
         return
