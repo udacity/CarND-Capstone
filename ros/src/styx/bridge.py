@@ -55,7 +55,8 @@ class Bridge(object):
 
         self.publishers = {e.name: rospy.Publisher(e.topic, TYPE[e.type], queue_size=1)
                            for e in conf.publishers}
-        self.prev_odometry_data = {}
+        self.prev_odometry_data = None
+        self.prev_traffic_data = None
 
     def create_light(self, x, y, z, yaw, state):
         light = TrafficLight()
@@ -127,11 +128,14 @@ class Bridge(object):
             "world")
 
     def publish_odometry(self, data):
+        # Don't bother publishing if pose is the same as last time
+        # (in theory this should never happen if the car is moving,
+        # but in practice about two thirds of the simulator outputs
+        # are duplicates).
         if data == self.prev_odometry_data:
-            # pass
             return
-        # rospy.logwarn("pose %f %f %f", data['x'], data['y'], data['z'])
         self.prev_odometry_data = data
+        # rospy.logwarn("pose %f %f %f", data['x'], data['y'], data['z'])
         pose = self.create_pose(data['x'], data['y'], data['z'], data['yaw'])
 
         position = (data['x'], data['y'], data['z'])
@@ -165,9 +169,16 @@ class Bridge(object):
         self.publishers['lidar'].publish(self.create_point_cloud_message(zip(data['lidar_x'], data['lidar_y'], data['lidar_z'])))
 
     def publish_traffic(self, data):
+        # Don't bother publishing if traffic light status is the same 
+        # as last time (the light positions never change, but the
+        # light state changes as the lights turn green/yellow/red)
+        if data == self.prev_traffic_data:
+            return
+        self.prev_traffic_data = data
         x, y, z = data['light_pos_x'], data['light_pos_y'], data['light_pos_z'],
         yaw = [math.atan2(dy, dx) for dx, dy in zip(data['light_pos_dx'], data['light_pos_dy'])]
         status = data['light_state']
+        # print("traffic change", status)
 
         lights = TrafficLightArray()
         header = Header()

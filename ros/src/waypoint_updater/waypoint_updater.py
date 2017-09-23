@@ -85,6 +85,7 @@ class WaypointUpdater(object):
 
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.next_waypoint_pub = rospy.Publisher('next_waypoint', Int32, queue_size=1)
         self.wps = []
         # self.full_wps = []
         self.prev_pt = Point()
@@ -119,7 +120,7 @@ class WaypointUpdater(object):
         ppt = pose_to_point(pose)
         prev_dist = point_dist_sq(ppt, self.prev_pt)
         # tested for speeds up to 115 mph
-        wp_ahead = 100
+        wp_ahead = 200
         if prev_dist > .5*self.avg_wp_dist*wp_ahead:
             rospy.logwarn("nearest_waypoint: resetting")
             self.prev_index = -1
@@ -149,18 +150,19 @@ class WaypointUpdater(object):
     def next_waypoint(self, pose):
         ept = pose_to_point(pose)
         cur = self.nearest_waypoint(pose)
-        if len(self.wps) == 0 or cur < 0 or cur > len(self.wps)-1:
+        nwps = len(self.wps)
+        if nwps == 0 or cur < 0 or cur > len(self.wps)-1:
             rospy.logwarn("next_waypoint problem %d %d", len(self.wps), cur)
             return -1
         cpt = waypoint_to_point(self.wps[cur])
-        prev = max(0,cur-1)
+        prev = (cur+nwps-1)%nwps
         ppt = waypoint_to_point(self.wps[prev])
-        nxt = min(len(self.wps)-1, cur+1)
+        nxt = (cur+1)%nwps
         npt = waypoint_to_point(self.wps[nxt])
         eratio = line_ratio(ppt, ept, npt)
         cratio = line_ratio(ppt, cpt, npt)
         if eratio > cratio:
-            cur += 1
+            cur = nxt
         return cur
 
 
@@ -224,6 +226,7 @@ class WaypointUpdater(object):
         # waypoint velocity
 
         self.final_waypoints_pub.publish(olane)
+        self.next_waypoint_pub.publish(next_pt)
 
 
     '''
@@ -355,6 +358,7 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
+        # print("tcb", msg)
         pass
 
     def obstacle_cb(self, msg):
