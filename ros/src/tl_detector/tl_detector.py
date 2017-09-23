@@ -62,7 +62,9 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
 
-        use_simulator_classifier = rospy.get_param("/traffic_light_classifier_sim")
+        self.STATE_COUNT_THRESHOLD = rospy.get_param("~state_count_threshold")
+
+        use_simulator_classifier = rospy.get_param("~traffic_light_classifier_sim")
         self.light_classifier = TLClassifier(sim = use_simulator_classifier)
 
         self.state = TrafficLight.UNKNOWN
@@ -71,7 +73,7 @@ class TLDetector(object):
         self.state_count = 0
         self.has_image = False
 
-        rate = 5.0
+        rate = rospy.get_param("~rate")
 
         r = rospy.Rate(rate)
         while not rospy.is_shutdown():
