@@ -68,7 +68,7 @@ class Controller(object):
         # Make sure we have a valid delta_time. We don't want to divide by zero.
         # Since we're publishing at 50Hz, the expected delta_time should be around 0.02
         if delta_time > 0.01:
-            
+
             # Note: Somehow, a simple if/else produces smoother results than the pid controller.
             #       kp, ki, and kd probably need more tuning. For now, this does the job.
             # acceleration = self.throttle_pid.step(velocity_error, delta_time)
@@ -114,7 +114,7 @@ class Controller(object):
             brake = self.brake_filter.filt(brake)
 
         steer = self.steer_filter.filt(steer)
-        
+
         # rospy.logout('Throttle=%f,Brake=%f,Steer=%f', throttle, brake, steer)
 
         return throttle, brake, steer
