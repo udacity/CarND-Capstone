@@ -156,30 +156,31 @@ class WaypointUpdater(object):
                 # msg_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
 
                 if self.tf_index != -1:
+                    # handle the case where the tf_wp is wrapped
+                    if self.tf_index < next_wp_index:
+                        wp_to_end_list = num_waypoints-next_wp_index
+                        index_in_wp_list = wp_to_end_list + self.tf_index
+                    else:
+                        # simple case the tf_index is within the LOOKAHEAD distance
+                        index_in_wp_list = self.tf_index - next_wp_index
 
-                    # TODO: handle the case where the tf_wp is wrapped
+                    # handle the case where the tf_wp is beyond the LOOKAHEAD wp list
+                    if index_in_wp_list < LOOKAHEAD_WPS:
+                        # 1st set the velocity of tf_index waypoint and beyond to zero
+                        MARGIN = 3
+                        for i in range(index_in_wp_list-MARGIN,LOOKAHEAD_WPS): # set speed to zero a few waypoints before the traffic_lights
+                            list_wp_to_pub[i].twist.twist.linear.x = 0.0
 
-                    # TODO: handle the case where the tf_wp is beyond the LOOKAHEAD wp list
-
-
-
-                    # simple case the tf_index is within the LOOKAHEAD distance
-                    index_in_wp_list = self.tf_index - next_wp_index
-
-                    # 1st set the velocity of tf_index waypoint and beyond to zero
-                    MARGIN = 3
-                    for i in range(index_in_wp_list-MARGIN,LOOKAHEAD_WPS): # set speed to zero a few waypoints before the traffic_lights
-                        list_wp_to_pub[i].twist.twist.linear.x = 0.0
-
-                    ref_speed = 0.0
-                    for i in range(index_in_wp_list-MARGIN-1, -1, -1): # decrease speed gradually to the tf wp
-                        if list_wp_to_pub[i].twist.twist.linear.x > ref_speed:
-                            list_wp_to_pub[i].twist.twist.linear.x = ref_speed
-                            ref_speed = ref_speed + 0.2
-                            #rospy.loginfo("iteration %s = %s", i, ref_speed)
-                        else:
-                            #rospy.loginfo("breaking for loop after %s iterations",i)
-                            break
+                        # for wp before the target tf_index decrease speed gradually until the tf_index
+                        ref_speed = 0.0
+                        for i in range(index_in_wp_list-MARGIN-1, -1, -1):
+                            if list_wp_to_pub[i].twist.twist.linear.x > ref_speed:
+                                list_wp_to_pub[i].twist.twist.linear.x = ref_speed
+                                ref_speed = ref_speed + 0.2
+                                #rospy.loginfo("iteration %s = %s", i, ref_speed)
+                            else:
+                                #rospy.loginfo("breaking for loop after %s iterations",i)
+                                break
                 else:
                     # TODO: ensure smooth acceleration after having stopped at the traffic light
                     # by creating increasing reference velocities
