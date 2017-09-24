@@ -68,8 +68,9 @@ class Controller(object):
         if(abs(cmd_lin_vel)<1.):
             steering = 0
         else:
-            steering = 8*atan(self.wheel_base * cmd_ang_vel / cmd_lin_vel) * self.steer_ratio
+            steering = atan(self.wheel_base * cmd_ang_vel / cmd_lin_vel) * self.steer_ratio
 
+        # loginfo("steering: %f", steering)
         cmd_acc = self.speed_pid.step(vel_error, delta_t)
         # cmd_acc = self.kp_vel * (cmd_lin_vel - cur_lin_vel) /delta_t
 
