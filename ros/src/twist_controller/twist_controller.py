@@ -99,7 +99,7 @@ class Controller(object):
             brake = self.brake_filter.filt(brake)
 
         steer = self.steer_filter.filt(steer)
-        rospy.logout('Throttle=%f,Brake=%f,Steer=%f', throttle, brake, steer)
+        # rospy.logout('Throttle=%f,Brake=%f,Steer=%f', throttle, brake, steer)
 
         return throttle, brake, steer
 
@@ -110,7 +110,6 @@ class Controller(object):
         """
         self.timestamp = None
         self.throttle_pid.reset()
-        # self.steer_pid.reset()
 
     def get_cte(self, pose, waypoints):
         x_coords, y_coords = [], []
