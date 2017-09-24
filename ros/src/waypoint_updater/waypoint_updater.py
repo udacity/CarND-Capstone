@@ -94,6 +94,16 @@ class WaypointUpdater(object):
             search_start = self.previous_wp_index - 5   # Waypoints behind previous waypoint
             search_end = self.previous_wp_index + 50    # Waypoints ahead of previous waypoint
 
+
+        # TODO: handle the wrap around for search start and search_end
+        # trim the search_end if necessary
+        if search_end >= num_waypoints:
+            search_end = num_waypoints - 1
+
+        # trim the search_start if necessary
+        if search_start < 0:
+            search_start = 0
+
         # Get near neighbours and corresponding indexes
         min_distance = 99999
         closest_wp_index = -1
@@ -103,11 +113,29 @@ class WaypointUpdater(object):
                 closest_wp_index = index
                 min_distance = distance
 
-        # Increase index if closest waypoint is behind ego vehicle
-        if self.is_waypoint_ahead(self.waypoints[closest_wp_index].pose.pose):
-            next_wp_index = closest_wp_index
+
+        # TODO: handle the case where min_distance is too high and we need to search with higher radius
+        rospy.loginfo("min_distance = %s",min_distance)
+        # TODO: define this threshold
+        #threshold_dist = 2 #
+        if closest_wp_index != -1:
+        # TODO: uncomment the next line and comment line above
+        #if closest_wp_index != -1 && min_distance < threshold_dist:
+            # Increase index if closest waypoint is behind ego vehicle
+            if self.is_waypoint_ahead(self.waypoints[closest_wp_index].pose.pose):
+                next_wp_index = closest_wp_index
+            else:
+                next_wp_index = closest_wp_index + 1
+            self.previous_wp_index = next_wp_index
         else:
-            next_wp_index = closest_wp_index + 1
+            self.previous_wp_index = -1  # reset to search the entire base_waypoints next time
+            rospy.loginfo("Error: Could not find closest waypoint in the base_waypoints!")
+            rospy.logerr("Error: Could not find closest waypoint in the base_waypoints!")
+            rospy.logwarn("Error: Could not find closest waypoint in the base_waypoints!")
+
+        #TODO: remove following line once bug in wrap around is fixed
+        #TODO: for now this prevents wrap around issues
+        self.previous_wp_index = -1
 
         return next_wp_index
 
@@ -126,7 +154,7 @@ class WaypointUpdater(object):
         rospy.loginfo("%s waypoints loaded", num_waypoints)
 
         # Set update frequency in Hz. Should be 50Hz TBD
-        update_rate = 10
+        update_rate = 1
         rate = rospy.Rate(update_rate)
         rospy.loginfo("Waypoint updater running with update freq = %s Hz", update_rate)
 
@@ -141,19 +169,29 @@ class WaypointUpdater(object):
 
             if next_wp_index != -1:
 
-                self.previous_wp_index = next_wp_index
-
                 if next_wp_index+LOOKAHEAD_WPS >= num_waypoints:
                     excess = (next_wp_index+LOOKAHEAD_WPS) % num_waypoints
                     # Wrap around
                     list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:]) # create a copy to prevent overwritting the original list
                     list_wp_to_pub.extend(self.waypoints[0:excess])
                     #rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s (%s+%s)", len(list_wp_to_pub), next_wp_index, len(self.waypoints)-next_wp_index,excess)
+                    rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s to %s", len(list_wp_to_pub), next_wp_index, excess)
                 else:
                     list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:next_wp_index+LOOKAHEAD_WPS])
-                    #rospy.loginfo("Publishing %s wp from index %s ", len(list_wp_to_pub),next_wp_index)
+                    rospy.loginfo("Publishing %s wp from index %s to %s", len(list_wp_to_pub),next_wp_index,next_wp_index+LOOKAHEAD_WPS)
 
-                # msg_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index+LOOKAHEAD_WPS]
+
+
+
+                # TODO: REMOVE THIS SECTION
+                #force higher speed for testing only
+                for i in range(len(list_wp_to_pub)):
+                    list_wp_to_pub[i].twist.twist.linear.x = 40
+                # TODO: END OF SECTION SECTION TO REMOVE
+
+
+
+
 
                 if self.tf_index != -1:
                     # handle the case where the tf_wp is wrapped
@@ -187,7 +225,7 @@ class WaypointUpdater(object):
                     # Note: this might not actually be necessary...
                     pass
 
-                rospy.loginfo("tf_index = %s \tnext_wp_vel = %s",self.tf_index,list_wp_to_pub[0].twist.twist.linear.x)
+                #rospy.loginfo("tf_index = %s \tnext_wp_vel = %s",self.tf_index,list_wp_to_pub[0].twist.twist.linear.x)
                 #list_wp_to_pub = change_speed(list_wp_to_pub)
 
                     # 2nd set the velocity of waypoints before the tf_wp to gradual decreasing velocities

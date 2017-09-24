@@ -135,6 +135,8 @@ class DBWNode(object):
             throttle = self.lp_filter.filt(throttle)
 
             # use yaw_controller for steering
+            # TODO: verify if this is working correctly
+            # TODO: investigate why we get negative linear speeds some times from the pure pursuit
             steer = self.yaw_control.get_steering(self.des_linear_velocity, self.des_angular_velocity, self.cur_linear_velocity)
 
             if self.dbw_enabled:
