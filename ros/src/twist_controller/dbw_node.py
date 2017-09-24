@@ -9,6 +9,7 @@ import math
 from twist_controller import Controller
 from yaw_controller import YawController
 from lowpass import LowPassFilter
+import pid
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -75,6 +76,9 @@ class DBWNode(object):
         self.velocity_filter = LowPassFilter(.90, 1)
         self.twist_yaw_filter = LowPassFilter(.96, 1)
         self.twist_velocity_filter = LowPassFilter(.96, .8)
+        self.p_v = [1.187355162, 0.044831144, 0.00295747]
+        self.pidv = pid.PID(self.p_v[0], self.p_v[1], self.p_v[2])
+        self.throttle = 0.
         min_speed = .1
         # At high speeds, a multiple of 1.2 seems to work a bit
         # better than 1.0
@@ -107,7 +111,11 @@ class DBWNode(object):
         (x, y, yaw) = twist_to_xyy(msg)
         # rospy.loginfo("twist_cmd_cb %d", seq)
         self.twist_yaw_filter.filt(yaw)
-        self.twist_velocity_filter.filt(x)
+        vtwist = self.twist_velocity_filter.filt(x)
+        # calculate error between desired velocity and current velocity
+        e = vtwist - self.velocity_filter.get()
+        # feed pid controller with a dt of 0.033
+        self.throttle = self.pidv.step(e, 0.033)
         if msg.header.seq%5 == 0:
             ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs
             # rospy.loginfo("tcc %d %f %f  %f %f", seq, ts, x, yaw, self.twist_yaw_filter.get())
@@ -118,8 +126,8 @@ class DBWNode(object):
     Type: std_msgs/Bool
     '''
     def dbw_enabled_cb(self, msg):
-        rospy.loginfo("dbw_enabled_cb %s", msg)
-        self.dbw = msg
+        rospy.loginfo("dbw_enabled_cb %s", msg.data)
+        self.dbw = msg.data
 
     '''
     /current_velocity
@@ -157,12 +165,25 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
-            twist = self.twist_yaw_filter.get()
-            steer = self.yaw_controller.get_steering(self.twist_velocity_filter.get(), twist, self.velocity_filter.get())
-            # rospy.loginfo("steering angle %f (twist %f)", steer, twist)
-            # throttle is 0.35, which runs the car at about 40 mph.
-            # throttle of 0.98 will run the car at about 115 mph.
-            self.publish(0.35,0.,steer)
+            if self.dbw == True:
+                twist = self.twist_yaw_filter.get()
+                steer = self.yaw_controller.get_steering(self.twist_velocity_filter.get(), twist, self.velocity_filter.get())
+                # define throttle command based on pid controller
+                throttle = brake = 0.
+                if abs(self.throttle) > 1.:
+                    if self.throttle > 0: 
+                        throttle = 1.0
+                    else: brake = 1.0
+                elif self.throttle < 0:
+                    throttle = 0
+                    brake = self.throttle
+                else:
+                    throttle = self.throttle
+
+                # rospy.loginfo("steering angle %f (twist %f)", steer, twist)
+                # throttle is 0.35, which runs the car at about 40 mph.
+                # throttle of 0.98 will run the car at about 115 mph.
+                self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
