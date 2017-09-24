@@ -87,6 +87,8 @@ class TLClassifier(object):
         # With the cropped index perform a basic CV colour histogram to determine the maximum
         # colour of green, orange/yellow, red.
         best_score = 0.
+        best_score_index = 0
+
         for i in range(0, classes[0].size - 1):
             if classes[0][i] == 10.:
                 # print("traffic light")
