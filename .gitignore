@@ -9,3 +9,4 @@ profile.tmp
 bags/
 # extracted image files
 bagimgs/
+data/camera_training
