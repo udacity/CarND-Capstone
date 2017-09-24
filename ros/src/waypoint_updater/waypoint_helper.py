@@ -3,6 +3,9 @@ import tf
 from collections import namedtuple
 from styx_msgs.msg import Waypoint
 
+# We'll use scipy's 1D interpolation function for our speed interpolation
+from scipy.interpolate import interp1d
+
 Rotations = namedtuple('Rotations', ['roll', 'pitch', 'yaw'])
 Vector = namedtuple('Vector', ['x', 'y', 'z'])
 
@@ -172,12 +175,74 @@ def clone_waypoint(wp):
     p.twist.twist.angular.z = wp.twist.twist.angular.z
     return p
 
+# Smoothly reduce waypoint speeds till zero
+# Modified Isaac's code for interpolation
+def smooth_decel_till_stop_waypoints(base_waypoints, final_waypoints, closest_waypoint_id, stop_waypoint_id, distance_to_stop_point):
+    # If we've overshot, make sure we stop. No additional processing required
+    if (stop_waypoint_id < closest_waypoint_id) and (distance_to_stop_point == 0):
+        decelerated_waypoints = []
+        for wp_index, wp in enumerate(final_waypoints):
+            new_wp = clone_waypoint(wp)
+            new_wp.twist.twist.linear.x = 0
+            decelerated_waypoints.append(new_wp)
+        return decelerated_waypoints
+
+    # Get the current speed we want to start interpolating from
+    current_speed = final_waypoints[0].twist.twist.linear.x
+
+    # total waypoints (this should probably be calculated only once elsewhere)
+    total_waypoints = len(base_waypoints)
+
+    # Number of points between us and the stop point
+    num_waypoints_till_stop = 0
+    if (stop_waypoint_id >= closest_waypoint_id):
+        num_waypoints_till_stop = stop_waypoint_id - closest_waypoint_id
+    else:
+        num_waypoints_till_stop = stop_waypoint_id + (total_waypoints - closest_waypoint_id)
+
+    # In the case where we're too close
+    if num_waypoints_till_stop <= 10:
+        ptsx = [0, 27, 30, 35]
+        ptsy = [current_speed, 0, 0, 0]
+        interpolated_speed = interp1d(ptsx, ptsy, kind='linear', fill_value='extrapolate')
+
+        decelerated_waypoints = []
+        for wp_index, wp in enumerate(final_waypoints):
+            new_wp = clone_waypoint(wp)
+            new_wp.twist.twist.linear.x = interpolated_speed(30 - num_waypoints_till_stop + wp_index)
+            decelerated_waypoints.append(new_wp)
+        return decelerated_waypoints
+
+    # Set up our points for interpolation (linear interpolation should be enough)
+    ptsx = [0, num_waypoints_till_stop]
+    ptsy = [current_speed, 0]
+    interpolated_speed = interp1d(ptsx, ptsy, kind='linear', fill_value='extrapolate')
+
+    # Modify the speed for the final waypoints
+    decelerated_waypoints = []
+    for wp_index, wp in enumerate(final_waypoints):
+        # Safer to clone to avoid contaminating base_waypoints since python passes lists by reference
+        # and I'm not sure if the elements in final_waypoints are pointing to the original base_waypoints
+        new_wp = clone_waypoint(wp)
+
+        # Get our interpolated speed. 0 if we overshoot
+        new_speed = 0
+        if (wp_index < num_waypoints_till_stop): 
+            new_speed = max(interpolated_speed(wp_index), 0)
+            
+        new_wp.twist.twist.linear.x = new_speed
+
+        decelerated_waypoints.append(new_wp)
+
+    return decelerated_waypoints
+
 def decelerate_waypoints(base_waypoints,
                          final_waypoints,
                          closest,
                          traffic,
                          stop_distance=5.0,
                          max_decel=1.0):
+
     decelerated = final_waypoints[:]
     traffic_at = (traffic - closest) % len(base_waypoints)
 
