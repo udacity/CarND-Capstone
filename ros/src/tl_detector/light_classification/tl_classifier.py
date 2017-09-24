@@ -31,6 +31,8 @@ class TLClassifier(object):
 
         # Build network
         self.detection_graph = tf.Graph()
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True  # https://github.com/tensorflow/tensorflow/issues/6698
 
         with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
