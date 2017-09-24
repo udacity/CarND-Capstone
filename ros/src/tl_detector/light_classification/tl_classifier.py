@@ -96,9 +96,8 @@ class TLClassifier(object):
         best_score_index = 0
 
         for i in range(0, classes.size - 1):
+            # If TRAFFIC LIGHT (coco dataset label 10)
             if classes[i] == 10.:
-                #score_as_list = tuple(scores.tolist())
-                #score = score_as_list[i]
                 score = scores[i]
                 if score > best_score:
                     best_score = score
@@ -115,8 +114,8 @@ class TLClassifier(object):
 
             # If detection bounding box is too small - exit with no light
             # as the CV classification code needs a biiger image...
-            if (right-left) < 20:
-                return TrafficLight.UNKNOWN
+            #if (right-left) < 20:
+            #    return TrafficLight.UNKNOWN
 
             # Get rid of borders by shrinking image a little
             left_int = np.uint16(left) + 10
@@ -124,38 +123,36 @@ class TLClassifier(object):
             top_int = np.uint16(top) + 5
             bottom_int = np.uint16(bottom) - 5
 
-            #tf_image_cropped = image_np_expanded[top_int:bottom_int, left_int:right_int, :]
-            tf_image_cropped = image[top_int:bottom_int, left_int:right_int, :]
-            gray = cv2.cvtColor(tf_image_cropped.astype('uint8'), cv2.COLOR_BGR2GRAY)
-            gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
-            (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
+            try:
+                tf_image_cropped = image[top_int:bottom_int, left_int:right_int, :]
+                gray = cv2.cvtColor(tf_image_cropped.astype('uint8'), cv2.COLOR_BGR2GRAY)
+                gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
+                (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
 
-            # Is this a vertical or horizontal traffic light
-            gray_height, gray_width = gray.shape
-            if gray_height >= gray_width:
-                VERTICAL_LIGHT = True
-            else:
-                VERTICAL_LIGHT = False
-
-            # Classify the light based on position of brightest area
-            if VERTICAL_LIGHT == True:
-                (maxLoc_width, maxLoc_height) = maxLoc
-
-                if float(maxLoc_height) / float(gray_height) > 0.7:
-                    self.current_light = TrafficLight.GREEN
-                elif float(maxLoc_height) / float(gray_height) > 0.4:
-                    self.current_light = TrafficLight.YELLOW
+                # Is this a vertical or horizontal traffic light
+                gray_height, gray_width = gray.shape
+                if gray_height >= gray_width:
+                    VERTICAL_LIGHT = True
                 else:
-                    self.current_light = TrafficLight.RED
-            else:
+                    VERTICAL_LIGHT = False
+
+                # Classify the light based on position of brightest area
+                if VERTICAL_LIGHT == True:
+                    (maxLoc_width, maxLoc_height) = maxLoc
+
+                    if float(maxLoc_height) / float(gray_height) > 0.7:
+                        self.current_light = TrafficLight.GREEN
+                    elif float(maxLoc_height) / float(gray_height) > 0.4:
+                        self.current_light = TrafficLight.YELLOW
+                    else:
+                        self.current_light = TrafficLight.RED
+                else:
+                    self.current_light = TrafficLight.UNKNOWN
+            
+            except:
+                print("Exception occured in OpenCV routines as found bounding box is too small")
                 self.current_light = TrafficLight.UNKNOWN
 
-            # show bright spot
-            #bright_spot_image = tf_image_cropped.copy()
-            #cv2.circle(bright_spot_image, maxLoc, 10, (255, 0, 0), 2)  # 10 is circle radius
-            #plt.figure(figsize=(12, 8))
-            #plt.imshow(tf_image_cropped)
-            #plt.show()
         else:
             self.current_light = TrafficLight.UNKNOWN
 

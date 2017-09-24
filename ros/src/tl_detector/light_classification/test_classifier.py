@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 
 classifier = TLClassifier()
 import cv2
-image = cv2.imread('data/test_images_sim/left0988.jpg')
+image = cv2.imread('data/test_images_sim/left0532.jpg')
 
 #plt.figure(figsize=(12, 8))
 #plt.imshow(image)
