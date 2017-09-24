@@ -14,7 +14,7 @@ from utilities import visualization_utils as vis_util
 import cv2
 
 #Testing
-#from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 
 
 class TLClassifier(object):
@@ -105,7 +105,7 @@ class TLClassifier(object):
 
         print("Best Score:", best_score, best_score_index)
 
-        if best_score > .1:
+        if best_score > .02: #.1:
             box = boxes[best_score_index]
 
             im_height, im_width, im_depth = image.shape
@@ -123,10 +123,12 @@ class TLClassifier(object):
             top_int = np.uint16(top) + 5
             bottom_int = np.uint16(bottom) - 5
 
+            print("Bounding Box Width", right_int - left_int)
+
             try:
                 tf_image_cropped = image[top_int:bottom_int, left_int:right_int, :]
                 gray = cv2.cvtColor(tf_image_cropped.astype('uint8'), cv2.COLOR_BGR2GRAY)
-                gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
+                gray = cv2.GaussianBlur(gray, (5, 5), 0)  # 11 is the radius (must be odd no.)
                 (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
 
                 # Is this a vertical or horizontal traffic light
@@ -138,7 +140,16 @@ class TLClassifier(object):
 
                 # Classify the light based on position of brightest area
                 if VERTICAL_LIGHT == True:
+                    print("Vertical oriented light")
                     (maxLoc_width, maxLoc_height) = maxLoc
+
+                    print("ratio", maxLoc_height, gray_height)
+
+                    bright_spot_image = tf_image_cropped.copy()
+                    cv2.circle(bright_spot_image, maxLoc, 10, (255, 0, 0), 2)
+                    plt.figure(figsize=(12, 8))
+                    plt.imshow(bright_spot_image)
+                    plt.show()
 
                     if float(maxLoc_height) / float(gray_height) > 0.7:
                         self.current_light = TrafficLight.GREEN
