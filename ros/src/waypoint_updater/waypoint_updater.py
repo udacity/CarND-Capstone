@@ -77,7 +77,7 @@ class WaypointUpdater(object):
     def avoid_retention_in_follower(self, ix):
         red_light_wp = self.next_red_light
         if (red_light_wp and (red_light_wp > ix)):
-            temp_wp = red_light_wp + 10#5
+            temp_wp = red_light_wp + 15#10#5
             if (temp_wp - ix) > LOOKAHEAD_WPS:
                 ix_end = ix+LOOKAHEAD_WPS
             else:    

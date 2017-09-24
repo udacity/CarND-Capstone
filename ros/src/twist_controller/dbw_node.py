@@ -74,8 +74,10 @@ class DBWNode(object):
         # self.controller = Controller(kp=0.2, ki=0.001, kd=0.15, vc=vc) # sort of OK
         # self.controller = Controller(kp=0.8, ki=0.005, kd=0.5, vc=vc) # better
         # self.controller = Controller(kp=0.8, ki=0.005, kd=0.5, vc=vc) # fine
-        self.controller = Controller(kp=1.2, ki=0.005, kd=0.5, vc=vc) # fine
-        
+        # self.controller = Controller(kp=1.2, ki=0.005, kd=0.5, vc=vc) # fine
+        self.controller = Controller(kp=1.0, ki=0.005, kd=0.3, vc=vc) # fine ++
+        # self.controller = Controller(kp=1.0, ki=0.004, kd=0.2, vc=vc) # fine
+        # self.controller = Controller(kp=1.0, ki=0.005, kd=0.1, vc=vc) # fine
 
 
         self.dbw_enabled = False
