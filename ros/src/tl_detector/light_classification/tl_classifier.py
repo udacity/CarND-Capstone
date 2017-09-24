@@ -107,14 +107,16 @@ class TLClassifier(object):
         print("Best Score:", best_score, best_score_index)
 
         if best_score > .1:
-            #box_list = tuple(boxes[0].tolist())
-            #box = box_list[best_score_index]
             box = boxes[best_score_index]
 
-            #im_width, im_height = image.size
             im_height, im_width, im_depth = image.shape
             ymin, xmin, ymax, xmax = box
             (left, right, top, bottom) = (xmin * im_width, xmax * im_width, ymin * im_height, ymax * im_height)
+
+            # If detection bounding box is too small - exit with no light
+            # as the CV classification code needs a biiger image...
+            if (right-left) < 20:
+                return TrafficLight.UNKNOWN
 
             # Get rid of borders by shrinking image a little
             left_int = np.uint16(left) + 10
