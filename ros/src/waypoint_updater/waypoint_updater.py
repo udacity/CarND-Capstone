@@ -98,10 +98,10 @@ class WaypointUpdater(object):
             # Check if we are close enough to start decelerating
             # We want to start decelerating 30 meters before
             if distance_to_stop_point <= 30:
-                
+
                 # If yes, adjust waypoint speeds so that we stop at the traffic light
                 final_waypoints = Helper.smooth_decel_till_stop_waypoints(self.base_waypoints,
-                                                                          final_waypoints, 
+                                                                          final_waypoints,
                                                                           self.closest_waypoint,
                                                                           stop_point,
                                                                           distance_to_stop_point)

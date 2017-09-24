@@ -29,7 +29,7 @@ class Controller(object):
         self.throttle_pid = PID(kp=-0.147789, ki=0.00106112, kd=2.95378, mn=self.decel_limit, mx=self.accel_limit)
         self.yaw_controller = YawController(
             wheel_base=kwargs.get('wheel_base'),
-            steer_ratio=kwargs.get('steer_ratio')*8,
+            steer_ratio=kwargs.get('steer_ratio'),
             min_speed=kwargs.get('min_speed'),
             max_lat_accel=kwargs.get('max_lat_accel'),
             max_steer_angle=kwargs.get('max_steer_angle')
