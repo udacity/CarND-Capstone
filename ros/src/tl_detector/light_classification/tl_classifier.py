@@ -159,12 +159,14 @@ class TLClassifier(object):
             gray = cv2.cvtColor(tf_image_cropped.astype('uint8'), cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
             (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
-            #print(minVal, maxVal, minLoc, maxLoc)
+            print(minVal, maxVal, minLoc, maxLoc)
+
             plt.figure(figsize=(12, 8))
             plt.imshow(gray, cmap='gray')
             plt.show()
 
             # Is this a vertical or horizontal traffic light
+            print("GRAY SHAPE", gray.shape)
             gray_height, gray_width = gray.shape[:2]
             if gray_height >= gray_width:
                 VERTICAL_LIGHT = True
