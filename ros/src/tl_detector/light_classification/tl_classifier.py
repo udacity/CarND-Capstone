@@ -160,6 +160,9 @@ class TLClassifier(object):
             gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
             (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
             #print(minVal, maxVal, minLoc, maxLoc)
+            plt.figure(figsize=(12, 8))
+            plt.imshow(gray)
+            plt.show()
 
             # Is this a vertical or horizontal traffic light
             gray_height, gray_width = gray.shape[:2]
