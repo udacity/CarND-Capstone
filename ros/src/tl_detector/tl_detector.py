@@ -325,7 +325,7 @@ class TLDetector(object):
 
 
         if light:
-            # state = self.get_light_state(light)
+            state = self.get_light_state(light)
             return light_wp, state
         # self.waypoints = None # don't know why this line is here [Pavlo]
         return -1, TrafficLight.UNKNOWN
