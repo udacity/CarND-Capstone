@@ -6,3 +6,7 @@ devel
 profile.tmp
 
 output_images
+
+.idea/
+*.iml
+

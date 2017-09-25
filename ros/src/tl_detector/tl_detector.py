@@ -250,8 +250,15 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+
+        vehicle = pose.position
+        wayp = self.waypoints.waypoints
+        distanceList = []
+
+        for i in range(len(wayp)):
+            distanceList.append(dl(vehicle, wayp[i].pose.pose.position))
+
+        return distanceList.index(min(distanceList))
 
     def project_to_image_plane(self, point_in_world, offsetX, offsetY, pose = None):
         fx = self.config['camera_info']['focal_length_x']
