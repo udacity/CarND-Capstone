@@ -94,7 +94,7 @@ class TLClassifier(object):
             line_thickness=8)
 
         plt.figure(figsize=(12, 8))
-        plt.imshow(image_np_expanded)
+        plt.imshow(image)
         return self.current_light
 
         # Loop through the detections which are TRAFFIC LIGHTS and get the bounding box for
