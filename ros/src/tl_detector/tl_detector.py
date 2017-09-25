@@ -25,6 +25,7 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
+
         self.pose = None
 
         self.waypoints = None
@@ -36,6 +37,7 @@ class TLDetector(object):
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
+
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -76,6 +78,7 @@ class TLDetector(object):
         self.state_count = 0
 
         self.record_cnt = 0
+
 
         rospy.spin()
 
@@ -251,7 +254,7 @@ class TLDetector(object):
         rpy = tf.transformations.euler_from_quaternion(rotT)
         yaw = rpy[2]
         point_cam = (px * math.cos(yaw) - py * math.sin(yaw),
-                        px * math.sin(yaw) + py * math.cos(yaw), 
+                        px * math.sin(yaw) + py * math.cos(yaw),
                         pz)
         point_cam = [sum(x) for x in zip(point_cam, transT)]
 
@@ -263,11 +266,11 @@ class TLDetector(object):
             point_cam[2] -= 1.0
             camx = image_height/2 + 70
             camy = image_height + 50
-        lx = -point_cam[1] * fx / point_cam[0]; 
-        ly = -point_cam[2] * fy / point_cam[0]; 
+        lx = -point_cam[1] * fx / point_cam[0];
+        ly = -point_cam[2] * fy / point_cam[0];
 
         lx = int(lx + camx)
-        ly = int(ly + camy) 
+        ly = int(ly + camy)
         return (lx, ly)
 
 
@@ -296,8 +299,13 @@ class TLDetector(object):
 
         output_crop = cpy[int(y_up):int(y_down), int(x_up):int(x_down)]
 
- 
-        cv2.imwrite('crop{}.jpg'.format(self.nr), output_crop)
+
+        # save cropped image
+        crop_folder = os.path.join('.', 'output_images', self.record_name, 'crop')
+        if not os.path.exists(crop_folder):
+            os.makedirs(crop_folder)
+        crop_img_fname = os.path.join(crop_folder, 'crop{}.jpg'.format(self.nr))
+        cv2.imwrite(crop_img_fname, output_crop)
         self.nr = self.nr + 1
 
         return 0
@@ -335,7 +343,7 @@ class TLDetector(object):
             # light = lights_wp[closest_light]
             light_wp = lights_wp[closest_light]
             light = self.lights[closest_light]
-	   
+
             # This we have only in simulator for testing
             state = self.lights[closest_light].state
             rospy.loginfo('SIM: closest_light_wp = {}, state = {}'.format(light_wp, light.state))
@@ -350,6 +358,7 @@ class TLDetector(object):
             # Save image
             if 30 < light_dist < 200:
             	state = self.get_light_state(light)
+                rospy.loginfo('CLASSIFIER STATE: state = {}'.format(state))
             return light_wp, state
         # self.waypoints = None # don't know why this line is here [Pavlo]
         return -1, TrafficLight.UNKNOWN
