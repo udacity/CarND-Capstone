@@ -161,7 +161,7 @@ class TLClassifier(object):
             (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
             #print(minVal, maxVal, minLoc, maxLoc)
             plt.figure(figsize=(12, 8))
-            plt.imshow(gray)
+            plt.imshow(gray, cmap='gray')
             plt.show()
 
             # Is this a vertical or horizontal traffic light
