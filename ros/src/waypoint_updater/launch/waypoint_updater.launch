@@ -2,7 +2,7 @@
 <launch>
     <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater">
       <param name="max_velocity" value="4.4"/>
-      <param name="reduce_speed_distance" value="100.0"/>
+      <param name="reduce_speed_distance" value="40.0"/>
       <param name="stop_distance" value="5.0"/>
     </node>
 </launch>
