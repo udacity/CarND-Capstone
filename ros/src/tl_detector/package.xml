@@ -45,6 +45,7 @@
   <build_depend>rospy</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>cv_bridge</build_depend>
   <build_depend>styx_msgs</build_depend>
   <build_depend>waypoint_updater</build_depend>
   <run_depend>geometry_msgs</run_depend>
@@ -53,6 +54,8 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>styx_msgs</run_depend>
+  <run_depend>cv_bridge</run_depend>
+  <run_depend>python-tensorflow-pip</run_depend>
   <run_depend>waypoint_updater</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
