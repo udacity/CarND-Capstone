@@ -180,6 +180,8 @@ class TLClassifier(object):
             if VERTICAL_LIGHT == True:
                 (maxLoc_width, maxLoc_height) = maxLoc
                 print("max width", maxLoc_width, "max height", maxLoc_height)
+                print("gray_height", gray_height)
+                print("ratio", maxLoc_height / gray_height)
                 if maxLoc_height / gray_height > 0.7:
                     self.current_light = TrafficLight.GREEN
                 elif maxLoc_height / gray_height > 0.4:
