@@ -11,8 +11,10 @@ from io import StringIO
 from utilities import label_map_util
 from utilities import visualization_utils as vis_util
 
+import cv2
+
 #Testing
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 
 
 class TLClassifier(object):
@@ -84,24 +86,6 @@ class TLClassifier(object):
         scores = np.squeeze(scores)
         classes = np.squeeze(classes).astype(np.int32)
 
-        print("classes:")
-        print(classes)
-        print("scores:")
-        print(scores)
-        #vis_util.visualize_boxes_and_labels_on_image_array(
-        #    image,
-        #    boxes,
-        #    classes,
-        #    scores,
-        #    self.category_index,
-        #    use_normalized_coordinates=True,
-        #    line_thickness=8)
-
-        #plt.figure(figsize=(12, 8))
-        #plt.imshow(image)
-        #plt.show()
-        #return self.current_light
-
         # Loop through the detections which are TRAFFIC LIGHTS and get the bounding box for
         # the highest score. If above a THRESHOLD (0.1) then crop the image with this
         # bounding box.
@@ -119,7 +103,6 @@ class TLClassifier(object):
                 #score_as_list = tuple(scores.tolist())
                 #score = score_as_list[i]
                 score = scores[i]
-                # print("score", score)
                 if score > best_score:
                     best_score = score
                     best_score_index = i
@@ -127,15 +110,12 @@ class TLClassifier(object):
         print("Best Score:", best_score, best_score_index)
 
         if best_score > .1:
-            print("boxes")
-            print(boxes)
             #box_list = tuple(boxes[0].tolist())
             #box = box_list[best_score_index]
             box = boxes[best_score_index]
 
             #im_width, im_height = image.size
             im_height, im_width, im_depth = image.shape
-            print('image height', im_height, 'width', im_width)
             ymin, xmin, ymax, xmax = box
             (left, right, top, bottom) = (xmin * im_width, xmax * im_width, ymin * im_height, ymax * im_height)
 
@@ -147,41 +127,21 @@ class TLClassifier(object):
 
             #tf_image_cropped = image_np_expanded[top_int:bottom_int, left_int:right_int, :]
             tf_image_cropped = image[top_int:bottom_int, left_int:right_int, :]
-
-            #plt.figure(figsize=(12, 8))
-            #plt.imshow(tf_image_cropped)
-            #plt.show()
-
-            import cv2
-            print("image shape")
-            print(tf_image_cropped.shape)
-
             gray = cv2.cvtColor(tf_image_cropped.astype('uint8'), cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
             (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
-            print(minVal, maxVal, minLoc, maxLoc)
-
-            plt.figure(figsize=(12, 8))
-            plt.imshow(gray, cmap='gray')
-            plt.show()
 
             # Is this a vertical or horizontal traffic light
-            print("GRAY SHAPE", gray.shape)
-            #gray_height, gray_width = gray.shape[:2]
             gray_height, gray_width = gray.shape
             if gray_height >= gray_width:
                 VERTICAL_LIGHT = True
             else:
                 VERTICAL_LIGHT = False
 
-            print("Is vertical light?", VERTICAL_LIGHT)
-
             # Classify the light based on position of brightest area
             if VERTICAL_LIGHT == True:
                 (maxLoc_width, maxLoc_height) = maxLoc
-                print("max width", maxLoc_width, "max height", maxLoc_height)
-                print("gray_height", gray_height)
-                print("ratio", float(maxLoc_height) / (gray_height))
+
                 if float(maxLoc_height) / float(gray_height) > 0.7:
                     self.current_light = TrafficLight.GREEN
                 elif float(maxLoc_height) / float(gray_height) > 0.4:
@@ -191,14 +151,12 @@ class TLClassifier(object):
             else:
                 self.current_light = TrafficLight.UNKNOWN
 
-            print(self.current_light)
-
             # show bright spot
-            bright_spot_image = tf_image_cropped.copy()
-            cv2.circle(bright_spot_image, maxLoc, 10, (255, 0, 0), 2)  # 10 is circle radius
-            plt.figure(figsize=(12, 8))
-            plt.imshow(tf_image_cropped)
-            plt.show()
+            #bright_spot_image = tf_image_cropped.copy()
+            #cv2.circle(bright_spot_image, maxLoc, 10, (255, 0, 0), 2)  # 10 is circle radius
+            #plt.figure(figsize=(12, 8))
+            #plt.imshow(tf_image_cropped)
+            #plt.show()
         else:
             self.current_light = TrafficLight.UNKNOWN
 
