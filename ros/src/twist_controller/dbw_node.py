@@ -75,7 +75,7 @@ class DBWNode(object):
         self.current_velocity = msg.twist.linear.x 
 
     def enabled_cb(self, msg):
-        enabled = msg
+        enabled = msg.data
         if enabled != self.dbw_enabled:
             rospy.loginfo("dbw_node: drive-by-wire changed to %s", enabled) 
         self.dbw_enabled = enabled

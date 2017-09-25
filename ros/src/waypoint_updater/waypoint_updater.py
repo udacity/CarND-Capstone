@@ -37,15 +37,19 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        #rospy.Subscriber('/obtacle_waypoint', Waypoint, self.obstacle_cb) # Implement later
-        self.final_waypoints_pub = rospy.Publisher(
-            'final_waypoints', Lane, queue_size=1)
+        #rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb) # Implement later
         self.all_waypoints = []
         self.waypoints_ahead = []
 
         self.last_pose = None
         self.next_waypoint_ahead = None
         self.next_traffic_light = None
+
+        self.final_waypoints_pub = rospy.Publisher(
+            'final_waypoints', Lane, queue_size=1)
+
+        self.next_waypoint_ahead_pub = rospy.Publisher(
+            'next_waypoint_ahead', Int32, queue_size=1)
 
         rospy.spin()
 
@@ -55,7 +59,7 @@ class WaypointUpdater(object):
             next_waypoint_ahead = self.get_next_waypoint_ahead()
             if next_waypoint_ahead != self.next_waypoint_ahead:
                 waypoints_ahead = self.get_waypoints_ahead(next_waypoint_ahead)
-                self.publish(waypoints_ahead)
+                self.publish(next_waypoint_ahead, waypoints_ahead)
 
     def waypoints_cb(self, waypoints):
         # reassign all waypoints of the track 
@@ -66,7 +70,7 @@ class WaypointUpdater(object):
         # - msg is an index to all_waypoints[] indicating the position
         #   of the stop line of the next red light
         # - in case no red light is in sight, the value is -1
-        self.next_traffic_light = msg
+        self.next_traffic_light = msg.data
 
     def obstacle_cb(self, msg):
         # TODO Callback for /obstacle_waypoint message. We will implement it later
@@ -182,13 +186,15 @@ class WaypointUpdater(object):
         
         return waypoints
 
-    def publish(self, waypoints_ahead):
+    def publish(self, next_waypoint_ahead, waypoints_ahead):
         lane = Lane()
 
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
 
         lane.waypoints = waypoints_ahead
+
+        self.next_waypoint_ahead_pub.publish(next_waypoint_ahead)
 
         self.final_waypoints_pub.publish(lane)
 
