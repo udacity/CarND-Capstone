@@ -127,6 +127,8 @@ class TLClassifier(object):
         print("Best Score:", best_score, best_score_index)
 
         if best_score > .1:
+            print("boxes")
+            print(boxes)
             box_list = tuple(boxes[0].tolist())
             box = box_list[best_score_index]
 
