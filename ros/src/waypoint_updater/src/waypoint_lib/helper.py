@@ -1,4 +1,5 @@
 import tf
+from tf import transformations as t
 import math
 import rospy
 import numpy as np
@@ -112,3 +113,20 @@ def wp_distance(wp1, wp2, waypoints):
     #     wp1 = i
 
     return dist
+
+
+def get_inverse_trans_rot(pose):
+    # Car transform
+    transT_car = (pose.pose.position.x, pose.pose.position.y, pose.pose.position.z)
+    rotT_car = (pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z, pose.pose.orientation.w)
+
+    # World transform
+    transform = t.concatenate_matrices(t.translation_matrix(transT_car), t.quaternion_matrix(rotT_car))
+    inversed_transform = t.inverse_matrix(transform)
+    translation = t.translation_from_matrix(inversed_transform)
+    quaternion = t.quaternion_from_matrix(inversed_transform)
+    # rospy.loginfo('transT_world = {}'.format(translation))
+    # rospy.loginfo('rotT_world = {}'.format(quaternion))
+    # transT = translation
+    # rotT = quaternion
+    return translation, quaternion

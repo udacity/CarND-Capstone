@@ -8,6 +8,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
+from tf import transformations as t
 import cv2
 import yaml
 import waypoint_lib.helper as helper
@@ -17,7 +18,7 @@ import pickle
 # import datetime
 import time
 import math
-import numpy
+import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -163,9 +164,33 @@ class TLDetector(object):
 
                 rospy.loginfo("--- saving: {}, dist = {}".format(img_filename, light_dist))
                 cv_image = self.bridge.imgmsg_to_cv2(image_msg, "bgr8")
-                cv2.imwrite(img_filename, cv_image)
 
-                rospy.loginfo('img_record = {}'.format(img_record))
+
+                # Crop Image
+                # Crop project traffic light position and crop image
+                height, width, channels = cv_image.shape
+                pos = light.pose.pose.position
+                x_up, y_up = self.project_to_image_plane(pos, 0.7, 1, pose_msg)
+                x_down, y_down = self.project_to_image_plane(pos, -0.7, -1, pose_msg)
+                rospy.loginfo('x_up = {}, y_up = {}, x_down = {}, y_down = {} === hw = {}:{}'.format(x_up, y_up, x_down, y_down, height, width))
+
+                if x_up > width or y_down > height or x_up < 0 or y_down < 0:
+                    return TrafficLight.UNKNOWN
+
+                cpy = cv_image.copy()
+
+                if x_down is None or x_up is None or y_up is None or y_down is None:
+                    return TrafficLight.UNKNOWN
+                if np.abs(x_down - x_up) < 20 or np.abs(y_down-y_up) < 40:
+                    return TrafficLight.UNKNOWN
+
+                output_crop = cpy[int(y_up):int(y_down), int(x_up):int(x_down)]
+                # cv2.circle(cpy, ((x_up+x_down)/2, (y_up+y_down)/2), 10, (0, 255, 0), 2)
+
+
+                cv2.imwrite(img_filename, output_crop)
+
+                # rospy.loginfo('img_record = {}'.format(img_record))
 
                 self.records.append(img_record)
 
@@ -228,8 +253,7 @@ class TLDetector(object):
         #TODO implement
         return 0
 
-
-    def project_to_image_plane(self, point_in_world, offsetX, offsetY):
+    def project_to_image_plane(self, point_in_world, offsetX, offsetY, pose = None):
         fx = self.config['camera_info']['focal_length_x']
         fy = self.config['camera_info']['focal_length_y']
         image_width = self.config['camera_info']['image_width']
@@ -238,6 +262,8 @@ class TLDetector(object):
         cy = image_height/2
         transT = None
         rotT = None
+
+        # This code we need for site mode (and simulator)
         try:
             now = rospy.Time.now()
             self.listener.waitForTransform("/base_link",
@@ -248,11 +274,19 @@ class TLDetector(object):
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
             return None, None
+
+
+        # This code is used by image_sync because we want to use transform from current pose
+        if pose:
+            transT, rotT = helper.get_inverse_trans_rot(self.pose)
+
         px = point_in_world.x
         py = point_in_world.y
         pz = point_in_world.z
         rpy = tf.transformations.euler_from_quaternion(rotT)
+
         yaw = rpy[2]
+
         point_cam = (px * math.cos(yaw) - py * math.sin(yaw),
                         px * math.sin(yaw) + py * math.cos(yaw),
                         pz)
@@ -260,17 +294,22 @@ class TLDetector(object):
 
         point_cam[1] = point_cam[1] + offsetX
         point_cam[2] = point_cam[2] + offsetY
+
+        # Override for simulator
+        # based on discussion https://discussions.udacity.com/t/focal-length-wrong/358568/22
         if fx < 10:
-            fx = 2570
-            fy = 2740
+            fx = 2574
+            fy = 2744
             point_cam[2] -= 1.0
-            camx = image_height/2 + 70
-            camy = image_height + 50
+            cx = image_width/2 - 30
+            cy = image_height + 50
         lx = -point_cam[1] * fx / point_cam[0];
         ly = -point_cam[2] * fy / point_cam[0];
 
-        lx = int(lx + camx)
-        ly = int(ly + camy)
+        lx = int(lx + cx)
+        ly = int(ly + cy)
+
+
         return (lx, ly)
 
 
@@ -284,8 +323,10 @@ class TLDetector(object):
         height, width, channels = cv_image.shape
         pos = light.pose.pose.position
 
+        # Crop project traffic light position and crop image
         x_up, y_up = self.project_to_image_plane(pos, .5, 1)
         x_down, y_down = self.project_to_image_plane(pos, -.5, -1)
+        # rospy.loginfo('x_up = {}, y_up = {}, x_down = {}, y_down = {}'.format(x_up, y_up, x_down, y_down))
 
         if x_up > width or y_down > height or x_up < 0 or y_down < 0:
             return TrafficLight.UNKNOWN
@@ -308,7 +349,8 @@ class TLDetector(object):
         cv2.imwrite(crop_img_fname, output_crop)
         self.nr = self.nr + 1
 
-        return 0
+        # Get Classification
+        return self.light_classifier.get_classification(output_crop)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -326,6 +368,7 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)\
+
 
 
         # Select the closest waypoint from lights array which was received from /vehicle/traffic_lights topic
@@ -355,7 +398,7 @@ class TLDetector(object):
             waypoints_num = len(self.waypoints.waypoints)
             light_dist = (light_wp - car_wp + waypoints_num) % waypoints_num
 
-            # Save image
+            # Look at the image and classify light
             if 30 < light_dist < 200:
             	state = self.get_light_state(light)
                 rospy.loginfo('CLASSIFIER STATE: state = {}'.format(state))
