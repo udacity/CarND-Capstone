@@ -55,7 +55,8 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
 
         # TODO: Implement
-        try: # to catch when the error when self.vehicle_pos has not been created yet
+        if hasattr(self, 'vehicle_pos'):
+        # try: # to catch when the error when self.vehicle_pos has not been created yet
             smallest_dist = float('inf')
             nearest_wp = 0
 
@@ -77,29 +78,32 @@ class WaypointUpdater(object):
                     nearest_wp = i
                     smallest_dist = dist
 
-            # # quaternion conversion (see: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_Angles_Conversion)
-            # q = self.vehicle_orientation
-            # theta = math.asin(2*(q.w*q.y + q.z*q.x))
-            # # if abs(theta)>= 1:
-            # #     theta = math.pi/2.0
-            # # else:
-            # #     theta = math.asin(theta)
-            # heading =  hd(self.vehicle_pos, wp_pos)
-            # angle = abs(theta - heading)
+            # quaternion conversion (see: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_Angles_Conversion)
+            q = self.vehicle_orientation
+            theta = math.asin(2*(q.w*q.y + q.z*q.x))
+            # if abs(theta)>= 1:
+            #     theta = math.pi/2.0
+            # else:
+            #     theta = math.asin(theta)
+            heading =  hd(self.vehicle_pos, wp_pos)
+            angle = abs(theta - heading)
 
-            # if (angle>math.pi/4.0):
-            #     nearest_wp += 1
+            if (angle>math.pi/4.0):
+                nearest_wp += 1
 
             final_wps = self.get_final_wps(waypoints, nearest_wp)
-            self.prev_nrst_wp = nearest_wp
+            self.prev_nrst_wp = nearest_wp - 5
+
+            # the next condition might not work for arbitrary non-cyclic destinations
             if nearest_wp > 10696:
                 self.prev_nrst_wp = 0
+            
             rospy.logwarn("nearest waypoint: %s", nearest_wp)
 
-        except AttributeError, e:
-            # rospy.logwarn("Error: %s", e) # optional: print out error
-            pass
-        else:
+        # except AttributeError, e:
+        #     # rospy.logwarn("Error: %s", e) # optional: print out error
+        #     pass
+        # else:
             # publish final waypoints only if vehicle position has been received
             self.final_waypoints_pub.publish(final_wps)
 

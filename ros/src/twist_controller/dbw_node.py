@@ -139,7 +139,7 @@ class DBWNode(object):
 															self.cur_vel_ang, 
 															time_elapsed)
 					# rospy.logwarn("Vehicle throttle: %s", throttle)
-					rospy.logwarn("Vehicle steering: %s", steering)
+					# rospy.logwarn("Vehicle steering: %s", steering)
 				except Exception as e:
 					rospy.logwarn("Error: %s", e)
 					pass
