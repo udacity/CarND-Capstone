@@ -134,7 +134,7 @@ class TLClassifier(object):
             box = boxes[best_score_index]
 
             #im_width, im_height = image.size
-            print('image size', image.size)
+            print('image size', image.shape)
             im_height, im_width = image_np_expanded.shape[:2]
             print('image height', im_height, 'width', im_width)
             ymin, xmin, ymax, xmax = box
