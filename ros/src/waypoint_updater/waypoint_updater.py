@@ -87,12 +87,15 @@ class WaypointUpdater(object):
         num_waypoints = len(self.waypoints)
 
         # Determine subset of waypoints in which to search
-        if self.previous_wp_index == -1:
-            search_start = 0
-            search_end = num_waypoints
-        else:
+        min_distance = 2
+        previous_wp_distance = self.linear_distance(self.waypoints[self.previous_wp_index].pose.pose, self.current_pose)
+        
+        if self.previous_wp_index != -1 and previous_wp_distance < min_distance:
             search_start = self.previous_wp_index - 5   # Waypoints behind previous waypoint
             search_end = self.previous_wp_index + 50    # Waypoints ahead of previous waypoint
+        else:
+            search_start = 0
+            search_end = num_waypoints
 
         # Get near neighbours and corresponding indexes
         min_distance = 99999
