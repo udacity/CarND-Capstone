@@ -39,7 +39,7 @@ roslaunch launch/styx.launch
 4. Run the simulator
 
 ### Real world testing
-1. Download [training bag](https://drive.google.com/file/d/0B2_h37bMVw3iYkdJTlRSUlJIamM/view?usp=sharing) that was recorded on the Udacity self-driving car
+1. Download [training bag](https://drive.google.com/file/d/0B2_h37bMVw3iYkdJTlRSUlJIamM/view?usp=sharing) that was recorded on the Udacity self-driving car (a bag demonstraing the correct predictions in autonomous mode can be found [here](https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc)) 
 2. Unzip the file
 ```bash
 unzip traffic_light_bag_files.zip
@@ -53,4 +53,4 @@ rosbag play -l traffic_light_bag_files/loop_with_traffic_light.bag
 cd CarND-Capstone/ros
 roslaunch launch/site.launch
 ```
-
+5. Confirm that traffic light detection works on real life images
