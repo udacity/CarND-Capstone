@@ -16,6 +16,8 @@ import message_filters
 import pickle
 # import datetime
 import time
+import math
+import numpy
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -29,6 +31,7 @@ class TLDetector(object):
         self.camera_image = None
         self.camera_image_prev_seq = None
         self.lights = []
+        self.nr = 0
 
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
@@ -223,65 +226,81 @@ class TLDetector(object):
         return 0
 
 
-    def project_to_image_plane(self, point_in_world):
-        """Project point from 3D world coordinates to 2D camera image location
-
-        Args:
-            point_in_world (Point): 3D location of a point in the world
-
-        Returns:
-            x (int): x coordinate of target point in image
-            y (int): y coordinate of target point in image
-
-        """
-
+    def project_to_image_plane(self, point_in_world, offsetX, offsetY):
         fx = self.config['camera_info']['focal_length_x']
         fy = self.config['camera_info']['focal_length_y']
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
-
-        # get transform between pose of camera and world frame
-        trans = None
+        cx = image_width/2
+        cy = image_height/2
+        transT = None
+        rotT = None
         try:
             now = rospy.Time.now()
             self.listener.waitForTransform("/base_link",
                   "/world", now, rospy.Duration(1.0))
-            (trans, rot) = self.listener.lookupTransform("/base_link",
+            (transT, rotT) = self.listener.lookupTransform("/base_link",
                   "/world", now)
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
+            return None, None
+        px = point_in_world.x
+        py = point_in_world.y
+        pz = point_in_world.z
+        rpy = tf.transformations.euler_from_quaternion(rotT)
+        yaw = rpy[2]
+        point_cam = (px * math.cos(yaw) - py * math.sin(yaw),
+                        px * math.sin(yaw) + py * math.cos(yaw), 
+                        pz)
+        point_cam = [sum(x) for x in zip(point_cam, transT)]
 
-        #TODO Use tranform and rotation to calculate 2D position of light in image
+        point_cam[1] = point_cam[1] + offsetX
+        point_cam[2] = point_cam[2] + offsetY
+        if fx < 10:
+            fx = 2570
+            fy = 2740
+            point_cam[2] -= 1.0
+            camx = image_height/2 + 70
+            camy = image_height + 50
+        lx = -point_cam[1] * fx / point_cam[0]; 
+        ly = -point_cam[2] * fy / point_cam[0]; 
 
-        x = 0
-        y = 0
-
-        return (x, y)
+        lx = int(lx + camx)
+        ly = int(ly + camy) 
+        return (lx, ly)
 
 
     def get_light_state(self, light):
-        """Determines the current color of the traffic light
-
-        Args:
-            light (TrafficLight): light to classify
-
-        Returns:
-            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
-
-        """
         if(not self.has_image):
             self.prev_light_loc = None
             return False
 
+        self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        height, width, channels = cv_image.shape
+        pos = light.pose.pose.position
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        x_up, y_up = self.project_to_image_plane(pos, .5, 1)
+        x_down, y_down = self.project_to_image_plane(pos, -.5, -1)
 
-        #TODO use light location to zoom in on traffic light in image
+        if x_up > width or y_down > height or x_up < 0 or y_down < 0:
+            return TrafficLight.UNKNOWN
 
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        cpy = cv_image.copy()
+
+        if x_down is None or x_up is None or y_up is None or y_down is None:
+            return TrafficLight.UNKNOWN
+        if x_down - x_up < 20 or y_down-y_up < 40:
+            return TrafficLight.UNKNOWN
+
+        output_crop = cpy[int(y_up):int(y_down), int(x_up):int(x_down)]
+
+ 
+        cv2.imwrite('crop{}.jpg'.format(self.nr), output_crop)
+        self.nr = self.nr + 1
+
+        return 0
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -316,7 +335,7 @@ class TLDetector(object):
             # light = lights_wp[closest_light]
             light_wp = lights_wp[closest_light]
             light = self.lights[closest_light]
-
+	   
             # This we have only in simulator for testing
             state = self.lights[closest_light].state
             rospy.loginfo('SIM: closest_light_wp = {}, state = {}'.format(light_wp, light.state))
@@ -325,7 +344,12 @@ class TLDetector(object):
 
 
         if light:
-            # state = self.get_light_state(light)
+            waypoints_num = len(self.waypoints.waypoints)
+            light_dist = (light_wp - car_wp + waypoints_num) % waypoints_num
+
+            # Save image
+            if 30 < light_dist < 200:
+            	state = self.get_light_state(light)
             return light_wp, state
         # self.waypoints = None # don't know why this line is here [Pavlo]
         return -1, TrafficLight.UNKNOWN
