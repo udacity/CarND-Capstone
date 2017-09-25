@@ -11,5 +11,8 @@
         <param name="steer_ratio" value="14.8" />
         <param name="max_lat_accel" value="3." />
         <param name="max_steer_angle" value="8." />
+        <param name="kp" value="1.5" />
+        <param name="ki" value="0.005" />
+        <param name="kd" value="0.5" />
     </node>
 </launch>
