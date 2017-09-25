@@ -18,7 +18,7 @@ class Controller(object):
         self.linear_controller = PID(self.kp, self.ki, self.kd, mn=self.max_decel, mx=self.max_accel)
         self.angular_controller = YawController(vc.wheel_base, vc.steer_ratio, vc.min_speed, vc.max_lat_accel, vc.max_steer_angle)
 
-        self.linear_filter = LowPassFilter(tau=0.15, ts=0.6) # suggest some values here...
+        self.linear_filter = LowPassFilter(tau=0.5, ts=1.5) # suggest some values here...
 
         # TODO this is not so good
         self.last_run_time = rospy.get_time()
@@ -45,7 +45,7 @@ class Controller(object):
 
         self.last_run_time = time_now
 
-        #linear = self.linear_filter.filt(linear) ##############################################
+        linear = self.linear_filter.filt(linear) ##############################################
 
         throttle = linear if linear > 0.0 else 0.0
         brake = -linear if linear <= 0.0 else 0.0

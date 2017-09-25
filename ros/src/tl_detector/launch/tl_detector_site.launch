@@ -5,5 +5,5 @@
         <param name="rate" value="5.0"/>
         <param name="traffic_light_classifier_sim" value="false" type="bool"/>
     </node>
-    <node pkg="tl_detector" type="light_publisher.py" name="light_publisher" output="screen" cwd="node"/>
+    <node pkg="tl_detector" type="light_publisher.py" name="light_publisher" cwd="node"/>
 </launch>
