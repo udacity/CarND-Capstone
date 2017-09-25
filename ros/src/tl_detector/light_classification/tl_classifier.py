@@ -110,7 +110,7 @@ class TLClassifier(object):
         best_score = 0.
         best_score_index = 0
 
-        print("Classes size:", classes[0].size)
+        print("Classes size:", classes.size)
 
         for i in range(0, classes[0].size - 1):
             print(classes[0][i])
