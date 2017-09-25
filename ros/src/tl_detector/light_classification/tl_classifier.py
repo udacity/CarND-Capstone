@@ -178,7 +178,8 @@ class TLClassifier(object):
 
             # Classify the light based on position of brightest area
             if VERTICAL_LIGHT == True:
-                (maxLoc_height, maxLoc_width) = maxLoc
+                (maxLoc_width, maxLoc_height) = maxLoc
+                print("max width", maxLoc_width, "max height", maxLoc_height)
                 if maxLoc_height / gray_height > 0.7:
                     self.current_light = TrafficLight.GREEN
                 elif maxLoc_height / gray_height > 0.4:
