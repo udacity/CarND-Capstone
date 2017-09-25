@@ -2,7 +2,7 @@
 <launch>
     <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" cwd="node">
         <param name="state_count_threshold" value="1" type="int"/>
-        <param name="rate" value="5.0"/>
+        <param name="rate" value="3.0"/>
         <param name="traffic_light_classifier_sim" value="true" type="bool"/>
     </node>
 </launch>

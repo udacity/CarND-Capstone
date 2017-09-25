@@ -15,8 +15,6 @@ import yaml
 import util
 from LightMap import LightMap
 
-STATE_COUNT_THRESHOLD = 1#3
-
 def euclidean_distance(p1x, p1y, p2x, p2y):
     x_dist = p1x - p2x
     y_dist = p1y - p2y
@@ -105,7 +103,7 @@ class TLDetector(object):
             if self.state != state:
                 self.state_count = 0
                 self.state = state
-            elif self.state_count >= STATE_COUNT_THRESHOLD:
+            elif self.state_count >= self.STATE_COUNT_THRESHOLD:
                 self.last_state = self.state
                 light_wp = light_wp if state == TrafficLight.RED else -1
                 self.last_wp = light_wp

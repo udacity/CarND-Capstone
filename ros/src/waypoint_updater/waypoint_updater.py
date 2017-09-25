@@ -80,7 +80,7 @@ class WaypointUpdater(object):
             temp_wp = red_light_wp + 15#10#5
             if (temp_wp - ix) > LOOKAHEAD_WPS:
                 ix_end = ix+LOOKAHEAD_WPS
-            else:    
+            else:
                 ix_end = temp_wp
         else:
             ix_end = ix+LOOKAHEAD_WPS
