@@ -181,10 +181,10 @@ class TLClassifier(object):
                 (maxLoc_width, maxLoc_height) = maxLoc
                 print("max width", maxLoc_width, "max height", maxLoc_height)
                 print("gray_height", gray_height)
-                print("ratio", maxLoc_height / gray_height)
-                if maxLoc_height / gray_height > 0.7:
+                print("ratio", float(maxLoc_height) / (gray_height))
+                if float(maxLoc_height) / float(gray_height) > 0.7:
                     self.current_light = TrafficLight.GREEN
-                elif maxLoc_height / gray_height > 0.4:
+                elif float(maxLoc_height) / float(gray_height) > 0.4:
                     self.current_light = TrafficLight.YELLOW
                 else:
                     self.current_light = TrafficLight.RED
