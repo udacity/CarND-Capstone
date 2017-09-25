@@ -167,7 +167,8 @@ class TLClassifier(object):
 
             # Is this a vertical or horizontal traffic light
             print("GRAY SHAPE", gray.shape)
-            gray_height, gray_width = gray.shape[:2]
+            #gray_height, gray_width = gray.shape[:2]
+            gray_height, gray_width = gray.shape
             if gray_height >= gray_width:
                 VERTICAL_LIGHT = True
             else:
