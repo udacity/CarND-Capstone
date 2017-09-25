@@ -94,20 +94,11 @@ class WaypointUpdater(object):
             search_start = self.previous_wp_index - 5   # Waypoints behind previous waypoint
             search_end = self.previous_wp_index + 50    # Waypoints ahead of previous waypoint
 
-
-        # TODO: handle the wrap around for search start and search_end
-        # trim the search_end if necessary
-        if search_end >= num_waypoints:
-            search_end = num_waypoints - 1
-
-        # trim the search_start if necessary
-        if search_start < 0:
-            search_start = 0
-
         # Get near neighbours and corresponding indexes
         min_distance = 99999
         closest_wp_index = -1
-        for index in range(search_start, search_end):
+        for wp in range(search_start, search_end):
+            index = wp % num_waypoints  # Handle negative and too large index
             distance = self.linear_distance(self.waypoints[index].pose.pose, self.current_pose)
             if distance <= min_distance:
                 closest_wp_index = index
@@ -132,10 +123,6 @@ class WaypointUpdater(object):
             rospy.loginfo("Error: Could not find closest waypoint in the base_waypoints!")
             rospy.logerr("Error: Could not find closest waypoint in the base_waypoints!")
             rospy.logwarn("Error: Could not find closest waypoint in the base_waypoints!")
-
-        #TODO: remove following line once bug in wrap around is fixed
-        #TODO: for now this prevents wrap around issues
-        self.previous_wp_index = -1
 
         return next_wp_index
 
