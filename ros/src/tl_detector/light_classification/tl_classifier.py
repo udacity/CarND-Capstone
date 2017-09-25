@@ -129,8 +129,9 @@ class TLClassifier(object):
         if best_score > .1:
             print("boxes")
             print(boxes)
-            box_list = tuple(boxes[0].tolist())
-            box = box_list[best_score_index]
+            #box_list = tuple(boxes[0].tolist())
+            #box = box_list[best_score_index]
+            box = boxes[best_score_index]
 
             im_width, im_height = image.size
             ymin, xmin, ymax, xmax = box
