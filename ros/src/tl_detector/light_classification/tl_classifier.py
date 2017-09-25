@@ -86,8 +86,8 @@ class TLClassifier(object):
 
         print("classes:")
         print(classes)
-        print("boxes:")
-        print(boxes)
+        print("scores:")
+        print(scores)
         vis_util.visualize_boxes_and_labels_on_image_array(
             image,
             boxes,
