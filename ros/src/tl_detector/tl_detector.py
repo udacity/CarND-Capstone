@@ -169,7 +169,7 @@ class TLDetector(object):
         """
         start_time = rospy.get_time()
 
-        if self.pose:
+        if self.pose and self.light_map:
             closest_waypoint_to_light = self.light_map.get_closest_waypoint_to_upcoming_light(self.pose)
         else:
             closest_waypoint_to_light = -1
