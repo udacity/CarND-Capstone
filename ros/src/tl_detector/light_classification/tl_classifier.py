@@ -111,8 +111,9 @@ class TLClassifier(object):
         best_score_index = 0
 
         print("Classes size:", classes[0].size)
-        
+
         for i in range(0, classes[0].size - 1):
+            print(classes[0][i])
             if classes[0][i] == 10.:
                 print("traffic light")
                 score_as_list = tuple(scores[0].tolist())
