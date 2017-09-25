@@ -81,8 +81,21 @@ class TLClassifier(object):
         scores = np.squeeze(scores)
         classes = np.squeeze(classes).astype(np.int32)
 
+        vis_util.visualize_boxes_and_labels_on_image_array(
+            image_np_expanded,
+            boxes,
+            classes,
+            scores,
+            self.category_index,
+            use_normalized_coordinates=True,
+            line_thickness=8)
+
+        plt.figure(figsize=(12, 8))
+        plt.imshow(image_np_expanded)
+        return self.current_light
+
         # Loop through the detections which are TRAFFIC LIGHTS and get the bounding box for
-        # the highest score. If above a THRESHOLD (0.5) then crop the image with this
+        # the highest score. If above a THRESHOLD (0.1) then crop the image with this
         # bounding box.
         # With the cropped index perform a basic CV colour histogram to determine the maximum
         # colour of green, orange/yellow, red.
