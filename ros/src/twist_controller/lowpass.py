@@ -1,4 +1,3 @@
-
 class LowPassFilter(object):
     def __init__(self, tau, ts):
         self.a = 1. / (tau / ts + 1.)
@@ -18,3 +17,4 @@ class LowPassFilter(object):
 
         self.last_val = val
         return val
+        
