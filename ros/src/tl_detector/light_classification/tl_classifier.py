@@ -148,9 +148,9 @@ class TLClassifier(object):
             #tf_image_cropped = image_np_expanded[top_int:bottom_int, left_int:right_int, :]
             tf_image_cropped = image[top_int:bottom_int, left_int:right_int, :]
 
-            plt.figure(figsize=(12, 8))
-            plt.imshow(tf_image_cropped)
-            plt.show()
+            #plt.figure(figsize=(12, 8))
+            #plt.imshow(tf_image_cropped)
+            #plt.show()
 
             import cv2
             print("image shape")
@@ -159,7 +159,7 @@ class TLClassifier(object):
             gray = cv2.cvtColor(tf_image_cropped.astype('uint8'), cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
             (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
-            print(minVal, maxVal, minLoc, maxLoc)
+            #print(minVal, maxVal, minLoc, maxLoc)
 
             # Is this a vertical or horizontal traffic light
             gray_height, gray_width = gray.shape[:2]
@@ -167,6 +167,8 @@ class TLClassifier(object):
                 VERTICAL_LIGHT = True
             else:
                 VERTICAL_LIGHT = False
+
+            print("Is vertical light?", VERTICAL_LIGHT)
 
             # Classify the light based on position of brightest area
             if VERTICAL_LIGHT == True:
@@ -183,8 +185,11 @@ class TLClassifier(object):
             print(self.current_light)
 
             # show bright spot
-            #bright_spot_image = tf_image_cropped.copy()
-            #cv2.circle(bright_spot_image, maxLoc, 10, (255, 0, 0), 2)  # 10 is circle radius
+            bright_spot_image = tf_image_cropped.copy()
+            cv2.circle(bright_spot_image, maxLoc, 10, (255, 0, 0), 2)  # 10 is circle radius
+            plt.figure(figsize=(12, 8))
+            plt.imshow(tf_image_cropped)
+            plt.show()
         else:
             self.current_light = TrafficLight.UNKNOWN
 
