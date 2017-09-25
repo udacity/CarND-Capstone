@@ -23,7 +23,10 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 10 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
+
+distance3d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+distance2d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
 
 class WaypointUpdater(object):
@@ -35,10 +38,11 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         #rospy.Subscriber('/obtacle_waypoint', Waypoint, self.obstacle_cb) # Implement later
-
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-
+        self.final_waypoints_pub = rospy.Publisher(
+            'final_waypoints', Lane, queue_size=1)
         self.all_waypoints = []
+        self.waypoints_ahead = []
+
         self.last_pose = None
         self.next_waypoint_ahead = None
         self.next_traffic_light = None
@@ -47,22 +51,20 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         self.last_pose = msg.pose
-        if len(self.all_waypoints) > 0:
+        if len(self.all_waypoints) > 0: # base waypoints published
             next_waypoint_ahead = self.get_next_waypoint_ahead()
-            if (next_waypoint_ahead != self.next_waypoint_ahead):
-                dist = self.pose_distance(msg.pose, self.all_waypoints[next_waypoint_ahead].pose.pose)
-                rospy.loginfo("waypoint_updater: next waypoint %s, distance %s", next_waypoint_ahead, dist)
-                self.next_waypoint_ahead = next_waypoint_ahead
-                self.publish_way_ahead()
+            if next_waypoint_ahead != self.next_waypoint_ahead:
+                waypoints_ahead = self.get_waypoints_ahead(next_waypoint_ahead)
+                self.publish(waypoints_ahead)
 
     def waypoints_cb(self, waypoints):
-        # reassign all waypoints of the route
+        # reassign all waypoints of the track 
         # note: this should be a circular track
         self.all_waypoints = list(waypoints.waypoints)
 
     def traffic_cb(self, msg):
-        # - msg is an index to all_waypoints array indicating the position
-        #   of stop line of the next red light
+        # - msg is an index to all_waypoints[] indicating the position
+        #   of the stop line of the next red light
         # - in case no red light is in sight, the value is -1
         self.next_traffic_light = msg
 
@@ -76,66 +78,117 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
-    def pose_distance(self, pose1, pose2):
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        return dl(pose1.position, pose2.position)
-
     def waypoint_distance(self, waypoints, i1, i2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         for i in range(i1, i2):
-            dist += dl(waypoints[i].pose.pose.position, waypoints[i+1].pose.pose.position)
+            dist += distance3d(
+                waypoints[i].pose.pose.position,
+                waypoints[i+1].pose.pose.position)
         return dist
 
-    def get_first_waypoint_ahead(self):
-        return 274 # TODO search this
+    def pose_distance(self, pose1, pose2):
+        return distance2d(pose1.position, pose2.position)
+
+    def find_first_waypoint_ahead(self):
+        return 275 # TODO search this
 
     def yaw_from_quaternion(self, q):
         euler = tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])
         return euler[2]
  
+    def coordinate_transform(self, x, y, yaw):
+        # TODO explain to myself why negative yaw works!
+        cos_yaw = math.cos(-yaw)
+        sin_yaw = math.sin(-yaw)
+        return x*cos_yaw-y*sin_yaw, x*sin_yaw+y*cos_yaw
+        
     def car_has_passed_waypoint(self, car_pose, waypoint):
-        x0 = car_pose.position.x
-        y0 = car_pose.position.y
-        x1 = waypoint.pose.pose.position.x
-        y1 = waypoint.pose.pose.position.y
-
-        # waypoint direction in global coordinates
-        dirg = math.atan2(x1-x0, y1-y0)
-        # waypoint direction in car coordinates
-        dirc = self.yaw_from_quaternion(car_pose.orientation) - dirg
-        # if abs waypoint direction is > pi/2, car has passed the waypoint
-        return abs(dirc) > math.pi/2
-
+        # waypoint is the origo, and waypoint yaw x-axis direction
+        x, y = self.coordinate_transform(
+            car_pose.position.x - waypoint.pose.pose.position.x,
+            car_pose.position.y - waypoint.pose.pose.position.y,
+            self.yaw_from_quaternion(waypoint.pose.pose.orientation))
+        return (x > 0.0) # car is ahead of the waypoint
+       
     def add_waypoint_index(self, i, n):
         return (i + n) % len(self.all_waypoints)
 
+    def find_next_waypoint_ahead(self):
+        nwpa1 = self.add_waypoint_index(self.next_waypoint_ahead, 1)
+        nwpa2 = self.add_waypoint_index(nwpa1, 1)
+        car = self.last_pose
+        dist1 = self.pose_distance(car, self.all_waypoints[nwpa1].pose.pose)
+        dist2 = self.pose_distance(car, self.all_waypoints[nwpa2].pose.pose)
+
+        # go forward in the waypoint list in order to find local minimum distance
+        while dist2 < dist1:
+            dist1 = dist2
+            nwpa1 = nwpa2
+            nwpa2 = self.add_waypoint_index(nwpa2, 1)
+            dist2 = self.pose_distance(car, self.all_waypoints[nwpa2].pose.pose)
+
+        # take next if we have already passed the closest one
+        if self.car_has_passed_waypoint(car, self.all_waypoints[nwpa1]):
+            nwpa1 = nwpa2
+
+        return nwpa1
+
     def get_next_waypoint_ahead(self):
-        cwpa = self.next_waypoint_ahead # current next waypoint ahead
+        cwpa = self.next_waypoint_ahead # current waypoint ahead
         next_waypoint_ahead = cwpa
         if cwpa == None:
-            next_waypoint_ahead = self.get_first_waypoint_ahead()
+            next_waypoint_ahead = self.find_first_waypoint_ahead()
         elif self.car_has_passed_waypoint(self.last_pose, self.all_waypoints[cwpa]):
-            # this makes sense only if we assume that vehicle follows the track
-            # otherwise need to look for the closest waypoint
-            next_waypoint_ahead = self.add_waypoint_index(cwpa, 1)
-            # TODO check that the new waypoint makes sense
+            next_waypoint_ahead = self.find_next_waypoint_ahead()
+
+        # debugging
+        if next_waypoint_ahead != cwpa:
+            dist = self.pose_distance(
+                self.last_pose,
+                self.all_waypoints[next_waypoint_ahead].pose.pose)
+            dist2 = self.pose_distance(
+                self.last_pose,
+                self.all_waypoints[next_waypoint_ahead-1].pose.pose)
+            dist3 = self.pose_distance(
+                self.all_waypoints[next_waypoint_ahead-1].pose.pose,
+                self.all_waypoints[next_waypoint_ahead].pose.pose)
+            rospy.loginfo(
+                "waypoint_updater: next waypoint %s, car position (%s,%s,%s)",
+                next_waypoint_ahead,
+                self.last_pose.position.x,
+                self.last_pose.position.y,
+                self.yaw_from_quaternion(self.last_pose.orientation))
+
         return next_waypoint_ahead
 
-    def publish_way_ahead(self):
+    def get_waypoints_ahead(self, i):
+        waypoints = []
+
+        if self.next_waypoint_ahead == i:
+            waypoints = self.waypoints_ahead
+        else: 
+            self.next_waypoint_ahead = i
+
+            first_waypoint = self.next_waypoint_ahead
+            last_waypoint  = self.add_waypoint_index(first_waypoint, LOOKAHEAD_WPS)
+
+            if first_waypoint < last_waypoint:
+                waypoints = self.all_waypoints[first_waypoint:last_waypoint+1]
+            else:
+                waypoints = self.all_waypoints[first_waypoint:]
+                waypoints.extend(self.all_waypoints[:last_waypoint+1])
+
+            self.waypoints_ahead = waypoints
+        
+        return waypoints
+
+    def publish(self, waypoints_ahead):
         lane = Lane()
 
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
 
-        first_waypoint = self.next_waypoint_ahead
-        last_waypoint  = self.add_waypoint_index(first_waypoint, LOOKAHEAD_WPS)
-
-        if first_waypoint < last_waypoint:
-            lane.waypoints = self.all_waypoints[first_waypoint:last_waypoint+1]
-        else:
-            lane.waypoints = self.all_waypoints[first_waypoint:]
-            lane.waypoints.extend(self.all_waypoints[:last_waypoint+1])
+        lane.waypoints = waypoints_ahead
 
         self.final_waypoints_pub.publish(lane)
 

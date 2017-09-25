@@ -133,7 +133,7 @@ class Bridge(object):
         self.broadcast_transform("base_link", position, orientation)
 
         self.publishers['current_pose'].publish(pose)
-        self.vel = data['velocity']* 0.44704
+        self.vel = data['velocity'] * 0.44704
         self.angular = self.calc_angular(data['yaw'] * math.pi/180.)
         self.publishers['current_velocity'].publish(self.create_twist(self.vel, self.angular))
 
