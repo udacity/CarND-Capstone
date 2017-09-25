@@ -88,19 +88,19 @@ class TLClassifier(object):
         print(classes)
         print("scores:")
         print(scores)
-        vis_util.visualize_boxes_and_labels_on_image_array(
-            image,
-            boxes,
-            classes,
-            scores,
-            self.category_index,
-            use_normalized_coordinates=True,
-            line_thickness=8)
+        #vis_util.visualize_boxes_and_labels_on_image_array(
+        #    image,
+        #    boxes,
+        #    classes,
+        #    scores,
+        #    self.category_index,
+        #    use_normalized_coordinates=True,
+        #    line_thickness=8)
 
-        plt.figure(figsize=(12, 8))
-        plt.imshow(image)
-        plt.show()
-        return self.current_light
+        #plt.figure(figsize=(12, 8))
+        #plt.imshow(image)
+        #plt.show()
+        #return self.current_light
 
         # Loop through the detections which are TRAFFIC LIGHTS and get the bounding box for
         # the highest score. If above a THRESHOLD (0.1) then crop the image with this
@@ -110,9 +110,11 @@ class TLClassifier(object):
         best_score = 0.
         best_score_index = 0
 
+        print("Classes size:", classes[0].size)
+        
         for i in range(0, classes[0].size - 1):
             if classes[0][i] == 10.:
-                # print("traffic light")
+                print("traffic light")
                 score_as_list = tuple(scores[0].tolist())
                 score = score_as_list[i]
                 # print("score", score)
