@@ -85,7 +85,7 @@ class TLClassifier(object):
         classes = np.squeeze(classes).astype(np.int32)
 
         vis_util.visualize_boxes_and_labels_on_image_array(
-            image_np_expanded,
+            image,
             boxes,
             classes,
             scores,
