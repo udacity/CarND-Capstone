@@ -3,8 +3,10 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 
 import math
+import tf
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -31,29 +33,69 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        # Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # Add other member variables you need below
+        self.base_lane = None
+        self.traffic_wp = None
+        self.obstacle_wp = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
+        #rospy.loginfo("pose_cb timestamp %s x=%d y=%d z=%d", msg.header.stamp, msg.pose.position.x,
+        #              msg.pose.position.y, msg.pose.position.z)
+        if self.base_lane != None:
+            quaternion = (msg.pose.orientation.x, msg.pose.orientation.y,
+                          msg.pose.orientation.z, msg.pose.orientation.w)
+            roll, pitch, yaw = tf.transformations.euler_from_quaternion(quaternion)
+            #rospy.loginfo("roll %f pitch %f yaw %f", roll, pitch, yaw)
+            
+            # the course hits an inflection point at x=2339 yaw=90+ at which point x starts to decrease
+            # next inflection at x=155 yaw=270+ at which point x starts to increase
+            # in front of the car = increasing x for yaw between 270 and 90 and decreasing x from 90 to 270
+            pub_waypoints = []
+            wp_cnt = 0
+            fwd = True
+            if yaw > 90.0 and yaw <= 270.0:  # exactly 90/270 handling is a bit arbitrary
+                fwd = False
+            for wp in self.base_lane.waypoints:
+                if ((fwd and wp.pose.pose.position.x > msg.pose.position.x) or
+                (not fwd and wp.pose.pose.position.x < msg.pose.position.x)) and wp_cnt < LOOKAHEAD_WPS:
+                    wp_cnt = wp_cnt + 1
+                    #rospy.loginfo("wp %d: x=%f y=%f", wp_cnt, wp.pose.pose.position.x, wp.pose.pose.position.y)
+                    pub_waypoints.append(wp)
+
+            # Add velocity command to waypoints
+            # TESTING
+            for wp_cnt in range(10):
+                if len(pub_waypoints) > wp_cnt:
+                    self.set_waypoint_velocity(pub_waypoints, wp_cnt, 1)
+            
+            l = Lane()
+            l.header = msg.header
+            l.waypoints = pub_waypoints
+            self.final_waypoints_pub.publish(l)
         pass
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
+        rospy.loginfo("waypoints_cb got %d waypoints", len(waypoints.waypoints))
+        self.base_lane = waypoints
         pass
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
+        # Callback for /traffic_waypoint message.
+        self.traffic_wp = msg.data
         pass
 
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
+        # Callback for /obstacle_waypoint message. We will implement it later
+        self.obstacle_wp = msg.data
         pass
 
     def get_waypoint_velocity(self, waypoint):
