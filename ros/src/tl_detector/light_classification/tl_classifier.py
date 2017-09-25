@@ -84,7 +84,10 @@ class TLClassifier(object):
         scores = np.squeeze(scores)
         classes = np.squeeze(classes).astype(np.int32)
 
+        print("classes:")
         print(classes)
+        print("boxes:")
+        print(boxes)
         vis_util.visualize_boxes_and_labels_on_image_array(
             image,
             boxes,
