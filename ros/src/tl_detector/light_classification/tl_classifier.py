@@ -145,10 +145,12 @@ class TLClassifier(object):
             top_int = np.uint16(top) + 5
             bottom_int = np.uint16(bottom) - 5
 
-            tf_image_cropped = image_np_expanded[top_int:bottom_int, left_int:right_int, :]
+            #tf_image_cropped = image_np_expanded[top_int:bottom_int, left_int:right_int, :]
+            tf_image_cropped = image[top_int:bottom_int, left_int:right_int, :]
 
-            # plt.figure(figsize=IMAGE_SIZE)
-            # plt.imshow(tf_image_cropped)
+            plt.figure(figsize=IMAGE_SIZE)
+            plt.imshow(tf_image_cropped)
+            plt.show()
 
             import cv2
             print("image shape")
