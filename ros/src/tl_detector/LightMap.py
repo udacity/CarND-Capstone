@@ -81,6 +81,9 @@ class LightMap:
             self.first_update = False
             return -1
 
+        if not car_pose:
+            return -1
+
         closest_waypoint_to_car = self._get_closest_waypoint_to_car(car_pose)
 
         # find the closest visible traffic light (if one exists)
