@@ -441,6 +441,12 @@ class TLDetector(object):
                 light_wp = wp
                 break
 
+        # This happens when the car is past the last signal on the
+        # track; in this case, look past the end to the first signal:
+        if light_wp < 0:
+            light_wp = positions[0][2]
+            light = self.lights[0]
+
         if light:
 
             state = self.get_light_state(light)
