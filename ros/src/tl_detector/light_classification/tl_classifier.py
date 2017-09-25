@@ -148,7 +148,7 @@ class TLClassifier(object):
             #tf_image_cropped = image_np_expanded[top_int:bottom_int, left_int:right_int, :]
             tf_image_cropped = image[top_int:bottom_int, left_int:right_int, :]
 
-            plt.figure(figsize=IMAGE_SIZE)
+            plt.figure(figsize=(12, 8))
             plt.imshow(tf_image_cropped)
             plt.show()
 
