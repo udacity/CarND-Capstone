@@ -208,7 +208,7 @@ class TLDetector(object):
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light to /traffic_waypoint
+            of the waypoint closest to the red light's stop line to /traffic_waypoint
 
         Args:
             msg (Image): image from car-mounted camera
@@ -250,8 +250,15 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+
+        vehicle = pose.position
+        wayp = self.waypoints.waypoints
+        distanceList = []
+
+        for i in range(len(wayp)):
+            distanceList.append(dl(vehicle, wayp[i].pose.pose.position))
+
+        return distanceList.index(min(distanceList))
 
     def project_to_image_plane(self, point_in_world, offsetX, offsetY, pose = None):
         fx = self.config['camera_info']['focal_length_x']
@@ -357,7 +364,7 @@ class TLDetector(object):
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming traffic light (-1 if none exists)
+            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
