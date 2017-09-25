@@ -12,6 +12,8 @@ import cv2
 import math
 from train_queue import TrainQueue, TrainItem
 import yaml
+import util
+from LightMap import LightMap
 
 def euclidean_distance(p1x, p1y, p2x, p2y):
     x_dist = p1x - p2x
@@ -36,6 +38,7 @@ class TLDetector(object):
         self.pose = None
         self.waypoints = None
         self.camera_image = None
+        self.light_map = None
         self.light_distance = None
         self.light_is_behind = None
         self.closest = None
@@ -83,6 +86,9 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints): # type: Lane
         self.waypoints = waypoints
+        if self.light_map is None:
+            stop_line_positions = self.config['stop_line_positions']
+            self.light_map = LightMap(waypoints, stop_line_positions)
 
     def process_image(self):
         if (self.has_image):
@@ -127,21 +133,7 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-
-        min_distance = float("inf")
-        closest_index = 0
-        if (self.waypoints):
-            for wp_index in range(len(self.waypoints.waypoints)):
-                waypoint_ps = self.waypoints.waypoints[wp_index].pose
-                distance = euclidean_distance(pose.position.x,
-                    pose.position.y,
-                    waypoint_ps.pose.position.x,
-                    waypoint_ps.pose.position.y)
-                if (distance < min_distance):
-                    min_distance = distance
-                    closest_index = wp_index
-
-        return closest_index
+        return util.get_closest_waypoint(self.waypoints, pose)
 
     def project_to_image_plane(self, point_in_world):
         return (0, 0)
@@ -177,27 +169,7 @@ class TLDetector(object):
         """
         start_time = rospy.get_time()
 
-        light_index = None
-        stop_line_positions = self.config['stop_line_positions']
-        light_pose = Pose()
-        closest_waypoint_to_light = None
-
-        if(self.pose and self.waypoints):
-            closest_waypoint_index = self.get_closest_waypoint(self.pose.pose)
-            closest_waypoint_ps = self.waypoints.waypoints[closest_waypoint_index].pose
-
-            # find the closest visible traffic light (if one exists)
-            closest_light_position = None
-            closest_light_distance = float("inf")
-            for light_position in stop_line_positions:
-                distance = euclidean_distance(light_position[0], light_position[1], closest_waypoint_ps.pose.position.x, closest_waypoint_ps.pose.position.y)
-                if distance < closest_light_distance:
-                    closest_light_distance = distance
-                    light_index = closest_waypoint_index
-                    light_pose.position.x = light_position[0]
-                    light_pose.position.y = light_position[1]
-
-        closest_waypoint_to_light = self.get_closest_waypoint(light_pose)
+        closest_waypoint_to_light = self.light_map.get_closest_waypoint_to_upcoming_light(self.pose)
 
         end_time = rospy.get_time()
         get_closest_waypoint_timespan = end_time - start_time
