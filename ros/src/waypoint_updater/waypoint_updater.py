@@ -74,25 +74,13 @@ class WaypointUpdater(object):
 
         return velocity
 
-    def avoid_retention_in_follower(self, ix):
-        red_light_wp = self.next_red_light
-        if (red_light_wp and (red_light_wp > ix)):
-            temp_wp = red_light_wp + 15#10#5
-            if (temp_wp - ix) > LOOKAHEAD_WPS:
-                ix_end = ix+LOOKAHEAD_WPS
-            else:
-                ix_end = temp_wp
-        else:
-            ix_end = ix+LOOKAHEAD_WPS
-
-        return ix_end
 
     def calculate_and_publish_next_waypoints(self):
         wps = []
         if (self.latest_pose and self.waypoints):
             ix = self.next_waypoint(self.waypoints, self.latest_pose.pose)
             self.closest_waypoint = ix
-            ix_end = self.avoid_retention_in_follower(ix)
+            ix_end = ix+LOOKAHEAD_WPS
             if ix_end > self.num_waypoints:
                 ix_end = self.num_waypoints
             for i in range(ix, ix_end):
