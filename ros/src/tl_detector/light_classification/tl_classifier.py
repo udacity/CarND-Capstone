@@ -139,6 +139,7 @@ class TLClassifier(object):
             ymin, xmin, ymax, xmax = box
             (left, right, top, bottom) = (xmin * im_width, xmax * im_width, ymin * im_height, ymax * im_height)
 
+            # Get rid of borders by shrinking image a little
             left_int = np.uint16(left) + 10
             right_int = np.uint16(right) - 5
             top_int = np.uint16(top) + 5
@@ -151,7 +152,8 @@ class TLClassifier(object):
 
             import cv2
             print("image shape")
-            print(tf_image_cropped.shape)
+            print(tf_image_cropped[0].shape)
+
             gray = cv2.cvtColor(tf_image_cropped[0].astype('uint8'), cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
             (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
