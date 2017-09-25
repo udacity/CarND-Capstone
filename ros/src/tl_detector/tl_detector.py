@@ -21,6 +21,7 @@ import math
 import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
+dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
 class TLDetector(object):
     def __init__(self):
@@ -374,6 +375,7 @@ class TLDetector(object):
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
+        print(car_position)
         #TODO find the closest visible traffic light (if one exists)\
 
 
