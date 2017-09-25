@@ -112,12 +112,13 @@ class TLClassifier(object):
 
         print("Classes size:", classes.size)
 
-        for i in range(0, classes[0].size - 1):
-            print(classes[0][i])
-            if classes[0][i] == 10.:
+        for i in range(0, classes.size - 1):
+            print(classes[i])
+            if classes[i] == 10.:
                 print("traffic light")
-                score_as_list = tuple(scores[0].tolist())
-                score = score_as_list[i]
+                #score_as_list = tuple(scores.tolist())
+                #score = score_as_list[i]
+                score = scores[i]
                 # print("score", score)
                 if score > best_score:
                     best_score = score
