@@ -150,6 +150,8 @@ class TLClassifier(object):
             # plt.imshow(tf_image_cropped)
 
             import cv2
+            print("image shape")
+            print(tf_image_cropped.shape)
             gray = cv2.cvtColor(tf_image_cropped[0].astype('uint8'), cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (11, 11), 0)  # 11 is the radius (must be odd no.)
             (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(gray)  # maxLoc is (x, y)
