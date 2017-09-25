@@ -11,6 +11,9 @@ from io import StringIO
 from utilities import label_map_util
 from utilities import visualization_utils as vis_util
 
+#Testing
+from matplotlib import pyplot as plt
+
 
 class TLClassifier(object):
     def __init__(self):
