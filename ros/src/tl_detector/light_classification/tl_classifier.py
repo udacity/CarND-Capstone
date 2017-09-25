@@ -23,11 +23,12 @@ class TLClassifier(object):
         cwd = os.path.dirname(os.path.realpath(__file__))
 
         # Path to frozen detection graph. This is the actual model that is used for the object detection.
+        base_path = os.path.dirname(os.path.abspath(__file__))
         MODEL_NAME = 'ssd_mobilenet_v1_coco_11_06_2017'
-        PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
+        PATH_TO_CKPT = os.path.join(base_path, MODEL_NAME, 'frozen_inference_graph.pb')
 
         # Load label map
-        PATH_TO_LABELS = os.path.join('data', 'mscoco_label_map.pbtxt')
+        PATH_TO_LABELS = os.path.join(base_path, 'data', 'mscoco_label_map.pbtxt')
         NUM_CLASSES = 90
         label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
         categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES,

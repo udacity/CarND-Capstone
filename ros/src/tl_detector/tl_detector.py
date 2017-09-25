@@ -209,9 +209,9 @@ class TLDetector(object):
         rospy.logdebug ("image shape (%s)", np.shape(cv_image))
         #cv2.imwrite('tl.png', cv_image)
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        #x, y = self.project_to_image_plane(light.pose.pose.position)
 
-        #TODO use light location to zoom in on traffic light in image
+        #TODO_not required use light location to zoom in on traffic light in image
 
         #_cv2.imwrite('output_images/tlroi', cv_image) //roi image here
 
@@ -264,15 +264,17 @@ class TLDetector(object):
                           light_wp, light.pose.pose.position.x, light.pose.pose.position.y, light.pose.pose.position.z)
             rospy.logdebug("Light's nearest Waypoint (%s) Details (%s)",  light_wp, self.waypoints[light_wp].pose.pose.position)
 
-            rospy.loginfo("Light state near waypoint (%s) is (%s)", light_wp, light.state)
+            rospy.loginfo("GROUND TRUTH Light state near waypoint (%s) is (%s)", light_wp, light.state)
 
 
         if light:
             # Uncomment below line to test waypoint publishing
             # Comment out below before final submission
-            return light_wp, light.state
+            #return light_wp, light.state
 
             state = self.get_light_state(light)
+            rospy.loginfo("CLASSIFIER Light state near waypoint (%s) is (%s)", light_wp, state)
+
             return light_wp, state
 
         #self.waypoints = None
