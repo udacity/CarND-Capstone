@@ -109,7 +109,7 @@ class Controller(object):
         steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
 
         # Apply low pass filters to the throttle and brake values to eliminate jitter
-        throttle = self.throttle_filter.filt(throttle)
+        throttle = min(max(self.throttle_filter.filt(throttle), 0), 1)
         if brake != 0.0:
             brake = self.brake_filter.filt(brake)
 
