@@ -7,29 +7,9 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
-import tf
-import cv2
-import math
-from train_queue import TrainQueue, TrainItem
 import yaml
 import util
 from LightMap import LightMap
-
-def euclidean_distance(p1x, p1y, p2x, p2y):
-    x_dist = p1x - p2x
-    y_dist = p1y - p2y
-    return math.sqrt(x_dist*x_dist + y_dist*y_dist)
-
-def find_closest_light(lights, pose):
-    closest_light_distance = float("inf")
-    closest_light = None
-    for light in lights:
-        light_position = light.pose.pose.position
-        distance = euclidean_distance(light_position.x, light_position.y, pose.position.x, pose.position.y)
-        if distance < closest_light_distance:
-            closest_light_distance = distance
-            closest_light = light
-    return (closest_light, closest_light_distance)
 
 class TLDetector(object):
     def __init__(self):
@@ -39,9 +19,6 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.light_map = None
-        self.light_distance = None
-        self.light_is_behind = None
-        self.closest = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -135,9 +112,6 @@ class TLDetector(object):
         """
         return util.get_closest_waypoint(self.waypoints, pose)
 
-    def project_to_image_plane(self, point_in_world):
-        return (0, 0)
-
     def get_light_state(self):
         """Determines the current color of the traffic light
 
@@ -149,8 +123,7 @@ class TLDetector(object):
 
         """
         if(not self.has_image):
-            self.prev_light_loc = None
-            return False
+            return TrafficLight.UNKNOWN
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
