@@ -11,6 +11,8 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import tl_cnn
+import numpy as np
 
 # the following 4 routines are
 # cut-and-pasted from update_waypoint.py
@@ -377,6 +379,23 @@ class TLDetector(object):
 
         # TODO Note that you have to write most of project_to_image_plane
         # yourself, only a skeleton is provided.
+
+        loc = tl_cnn.run(cv_image)
+        threshold = 0.9999
+        r = np.sum(loc[0,0,:,:,1]>threshold)
+        g = np.sum(loc[0,0,:,:,2]>threshold)
+        y = np.sum(loc[0,0,:,:,3]>threshold)
+
+        if(r+g+y)>20:
+            if(r>=g and r>=y):
+                return TrafficLight.RED
+            elif(g>y and g>15):
+                return TrafficLight.GREEN
+            elif(y>10):
+                return TrafficLight.YELLOW
+        else:
+                return TrafficLight.UNKNOWN
+
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         # TODO Use light location to zoom in on traffic light in image
