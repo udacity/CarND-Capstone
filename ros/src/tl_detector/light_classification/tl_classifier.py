@@ -1,6 +1,7 @@
 import numpy as np
 import PIL, cv2
 import light_helper as Helper
+import tensorflow as tf
 from keras.models import load_model
 from keras.preprocessing.image import img_to_array
 from styx_msgs.msg import TrafficLight
@@ -8,6 +9,8 @@ from styx_msgs.msg import TrafficLight
 class TLClassifier(object):
     def __init__(self, path='light_classifier_model.h5'):
         self.model = load_model(path)
+        self.graph = tf.get_default_graph()
+        # self.processing = False
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -19,6 +22,10 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        # if self.processing:
+        #     return TrafficLight.UNKNOWN
+
+        # self.processing = True
         original = cv2.resize(image, (800, 600), interpolation=cv2.INTER_CUBIC)
         processed = Helper.preprocess(original)
 
@@ -45,12 +52,15 @@ class TLClassifier(object):
                 # Crop
                 x, y, w, h = int(max(0,x)), int(max(0,y)), int(w), int(h)
                 image = original[y:(y+h), x:(x+w)]
-                has_red = (self.predict(image) == TrafficLight.RED) or has_red
+                with self.graph.as_default():
+                    has_red = (self.predict(image) == TrafficLight.RED) or has_red
 
                 # cv2.rectangle(img,(x,y),(x+w,y+h),(255,255,255),1)
                 # cv2.putText(img, RESULT[predict(image)], (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255,255,255))
 
         prediction = TrafficLight.RED if has_red else TrafficLight.UNKNOWN
+        # self.processing = False
+        print(prediction)
         return prediction
 
     def predict(self, image):
