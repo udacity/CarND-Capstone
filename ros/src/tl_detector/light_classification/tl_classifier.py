@@ -45,7 +45,6 @@ class TLClassifier(object):
                 # Crop
                 x, y, w, h = int(max(0,x)), int(max(0,y)), int(w), int(h)
                 image = original[y:(y+h), x:(x+w)]
-                cv2.imwrite('test.jpg', image)
                 has_red = (self.predict(image) == TrafficLight.RED) or has_red
 
                 # cv2.rectangle(img,(x,y),(x+w,y+h),(255,255,255),1)
