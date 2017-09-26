@@ -96,7 +96,9 @@ class DBWNode(object):
                 current_velocity=self.current_velocity,
                 enabled=self.dbw_enabled
             )
-            rospy.logdebug("Thr: %s, Br: %s, St: %s" % (throttle, brake, steer))
+            rospy.loginfo("Requested velocity: %s" % (self.linear_velocity))
+            rospy.loginfo("Current velocity: %s" % (self.current_velocity))
+            rospy.loginfo("Thr: %s, Br: %s, St: %s" % (throttle, brake, steer))
             if self.dbw_enabled:
                self.publish(throttle, brake, steer)
 

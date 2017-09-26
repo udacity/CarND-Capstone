@@ -32,8 +32,8 @@ class Controller(object):
             1.0,
             .02,
             .2,
-            -math.fabs(params['decel_limit']),
-            math.fabs(params['accel_limit'])
+            0),
+            1)
         )
         self.steer_pid = PID(
             1.,
