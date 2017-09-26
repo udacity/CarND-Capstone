@@ -109,13 +109,13 @@ class Controller(object):
         steer = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
 
         # Apply low pass filters to the throttle and brake values to eliminate jitter
-        throttle = min(max(self.throttle_filter.filt(throttle), 0), 1)
+        throttle = min(max(self.throttle_filter.filt(throttle), self.decel_limit), self.accel_limit)
         if brake != 0.0:
             brake = self.brake_filter.filt(brake)
 
         steer = self.steer_filter.filt(steer)
         
-        # rospy.logout('Throttle=%f,Brake=%f,Steer=%f', throttle, brake, steer)
+        rospy.logout('Throttle=%f,Brake=%f,Steer=%f', throttle, brake, steer)
 
         return throttle, brake, steer
 
