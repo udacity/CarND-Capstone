@@ -2,7 +2,7 @@
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
-USE_STEER_PID = False  # Steering PID is curently worse than yaw controller approach
+USE_STEER_PID = True
 
 from yaw_controller import YawController
 from lowpass import LowPassFilter
@@ -30,17 +30,17 @@ class Controller(object):
         self.sample_rate = params['sample_rate']
         self.throttle_pid = PID(
             1.0,
-            .08,
+            .02,
             .2,
             -math.fabs(params['decel_limit']),
             math.fabs(params['accel_limit'])
         )
         self.steer_pid = PID(
-            10.0,
-            .1,
-            .4,
-            -0.4,
-            0.4
+            1.,
+            .0,
+            .6,
+            -params['max_steer_angle'],
+            params['max_steer_angle']
         )
 
         # assume tank is full when computing total mass of car
@@ -66,14 +66,14 @@ class Controller(object):
                 self.throttle_pid.reset()
 
 
+            steer = self.yaw_controller.get_steering(
+                linear_velocity,
+                angular_velocity,
+                current_velocity
+            )
             if USE_STEER_PID:
-                steer = self.steer_pid.step(angular_velocity, 1.0 / self.sample_rate)
-            else:
-                steer = self.yaw_controller.get_steering(
-                    linear_velocity,
-                    angular_velocity,
-                    current_velocity
-                )
+                steer = self.steer_pid.step(steer, 1.0 / self.sample_rate)
+
         else:
             self.throttle_pid.reset()
             self.steer_pid.reset()
