@@ -371,7 +371,7 @@ class TLDetector(object):
         """
         light = None
         light_wp = -1
-        light_positions = self.config['light_positions']
+        light_positions = self.config['stop_line_positions']
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
