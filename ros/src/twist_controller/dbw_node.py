@@ -33,6 +33,8 @@ that we have created in the `__init__` function.
 
 magnitude = lambda x,y,z : math.sqrt(x*x+y*y+z*z)
 
+SAMPLE_RATE = 10  # sample rate in hertz
+
 class DBWNode(object):
     def __init__(self):
         rospy.init_node('dbw_node')
@@ -50,6 +52,7 @@ class DBWNode(object):
         self.params['max_lat_accel'] = rospy.get_param('~max_lat_accel', 3.)
         self.params['max_steer_angle'] = rospy.get_param('~max_steer_angle', 8.)
         self.params['min_speed'] = 0.0
+        self.params['sample_rate'] = SAMPLE_RATE
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -85,7 +88,7 @@ class DBWNode(object):
         self.angular_velocity = msg.twist.angular.z
 
     def loop(self):
-        rate = rospy.Rate(50) # rate in Hz
+        rate = rospy.Rate(SAMPLE_RATE)
         while not rospy.is_shutdown():
             throttle, brake, steer = self.controller.control(
                 linear_velocity=self.linear_velocity,
