@@ -21,6 +21,10 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
+LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
+DISTANCE_STOP_AT_TRAFFIC = 28 # stop distance before traffic light
+MAX_DECEL = 1.0 # max deceleration in ms-2
+
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
@@ -33,10 +37,11 @@ class WaypointUpdater(object):
         # Publishers
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=2)
 
-        self.waypoints = None
+        self.base_waypoints = None
         self.current_pose = None
         self.num_waypoints = 0
         self.closest_waypoint = None
+        self.traffic = -1
 
         self.publish()
         rospy.spin()
@@ -44,12 +49,12 @@ class WaypointUpdater(object):
     def publish(self):
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            next_waypoints = self.get_next_waypoints()
-            if next_waypoints:
+            final_waypoints = self.get_final_waypoints()
+            if final_waypoints:
                 lane = Lane()
                 lane.header.frame_id = '/world'
                 lane.header.stamp = rospy.Time.now()
-                lane.waypoints = next_waypoints
+                lane.waypoints = final_waypoints
                 self.final_waypoints_pub.publish(lane)
             rate.sleep()
 
@@ -59,25 +64,60 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, waypoints):
         """ Callback for base waypoints """
-        self.waypoints = waypoints.waypoints
-        self.num_waypoints = len(self.waypoints)
+        self.base_waypoints = waypoints.waypoints
+        self.num_waypoints = len(self.base_waypoints)
         self.waypoints_sub.unregister()
 
     def traffic_cb(self, msg):
         """ Callback for traffic lights """
-        pass
+        self.traffic = int(msg.data)
 
     def obstacle_cb(self, msg):
         """ Callback for obstacles """
         pass
 
-    def get_next_waypoints(self):
-        if not self.current_pose or not self.waypoints:
+    def get_final_waypoints(self):
+        if not self.current_pose or not self.base_waypoints:
             return None
 
-        waypoints_ahead, self.closest_waypoint = Helper.look_ahead_waypoints(self.current_pose, self.waypoints, self.closest_waypoint)
+        final_waypoints, self.closest_waypoint = Helper.look_ahead_waypoints(self.current_pose,
+                                                                             self.base_waypoints,
+                                                                             self.closest_waypoint,
+                                                                             LOOKAHEAD_WPS)
 
-        return waypoints_ahead
+        # If we have a traffic light ahead
+        if self.traffic != -1:
+            # Work out our target stop point
+            # (Our target stop position is actually 45 waypoints BEFORE the traffic light position)
+            # Additional calculation is just to maintain cyclical indexing
+            total_waypoints = len(self.base_waypoints)
+            stop_point = (self.traffic - 40 + total_waypoints) % total_waypoints
+
+            distance_to_stop_point = Helper.distance(self.base_waypoints, self.closest_waypoint, stop_point)
+
+            # Check if we are close enough to start decelerating
+            # We want to start decelerating 30 meters before
+            if distance_to_stop_point <= 30:
+
+                # If yes, adjust waypoint speeds so that we stop at the traffic light
+                final_waypoints = Helper.smooth_decel_till_stop_waypoints(self.base_waypoints,
+                                                                          final_waypoints,
+                                                                          self.closest_waypoint,
+                                                                          stop_point,
+                                                                          distance_to_stop_point)
+
+                ## Commenting out and switching over to a modified version of this
+                # final_waypoints = Helper.decelerate_waypoints(self.base_waypoints,
+                #                                             final_waypoints,
+                #                                             self.closest_waypoint,
+                #                                             self.traffic,
+                #                                             DISTANCE_STOP_AT_TRAFFIC)
+
+        # rospy.logout("closest %d, traffic %d", self.closest_waypoint, self.traffic)
+        # info = "speed for waypoint: " + ", ".join("%05.2f" % wp.twist.twist.linear.x for wp in final_waypoints[:10])
+        # rospy.logout(info)
+
+        return final_waypoints
 
 if __name__ == '__main__':
     try:

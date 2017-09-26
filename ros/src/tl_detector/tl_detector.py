@@ -7,7 +7,7 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
-import tf, math
+import tf
 import cv2
 import yaml
 
@@ -18,7 +18,7 @@ class TLDetector(object):
         rospy.init_node('tl_detector')
 
         self.pose = None
-        self.base_waypoints = None
+        self.waypoints = None
         self.camera_image = None
         self.lights = []
 
@@ -54,15 +54,15 @@ class TLDetector(object):
     def pose_cb(self, msg):
         self.pose = msg.pose
 
-    def waypoints_cb(self, lane):
-        self.base_waypoints = lane.waypoints
+    def waypoints_cb(self, msg):
+        self.waypoints = msg.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light to /traffic_waypoint
+            of the waypoint closest to the red light's stop line to /traffic_waypoint
 
         Args:
             msg (Image): image from car-mounted camera
@@ -97,20 +97,19 @@ class TLDetector(object):
             pose (Pose): position to match a waypoint to
 
         Returns:
-            int: index of the closest waypoint in self.base_waypoints
+            int: index of the closest waypoint in self.waypoints
 
         """
-        # IMPLEMENTED: Return closest waypoint given pose.
-
         closest_gap = float('inf')
         closest_idx = 0
-        for idx, awp in enumerate(self.base_waypoints):
+        for idx, awp in enumerate(self.waypoints):
             agap = (awp.pose.pose.position.x - pose.position.x)**2 + \
                    (awp.pose.pose.position.y - pose.position.y)**2
             if agap < closest_gap:
                 closest_gap = agap
                 closest_idx = idx
         return closest_idx
+
 
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
@@ -164,25 +163,26 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        # x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
 
         #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        result = self.light_classifier.get_classification(cv_image)
+        return result
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming traffic light (-1 if none exists)
+            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light_positions = self.config['light_positions']
+        light_positions = self.config['stop_line_positions']
 
-        if(self.pose and self.base_waypoints and self.lights):
+        if(self.pose and self.waypoints and self.lights):
             car_wp = self.get_closest_waypoint(self.pose)
 
             #IMPLEMENTED: find the closest visible traffic light (if one exists)
@@ -211,8 +211,8 @@ class TLDetector(object):
             # --- Get next traffic light ahead.
             light = light_dict.get(light_wp)
             if light:
-                state = light.state
-                # state = self.get_light_state(light) # TODO
+                # state = light.state
+                state = self.get_light_state(light) # TODO
                 return light_wp, state
         return -1, TrafficLight.UNKNOWN
 

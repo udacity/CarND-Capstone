@@ -39,7 +39,8 @@ class DBWNode(object):
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-        brake_deadband = rospy.get_param('~brake_deadband', .1)
+        # brake_deadband = rospy.get_param('~brake_deadband', .1)
+        brake_deadband = rospy.get_param('~brake_deadband', .4)
         decel_limit = rospy.get_param('~decel_limit', -5)
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
@@ -91,7 +92,12 @@ class DBWNode(object):
             if (self.waypoints is not None) and (self.pose is not None) and (self.velocity is not None):
                 # Only proceed if Drive-By-Wire is enabled
                 if self.dbw_enabled is True:
+
+                    # Get the target velocity we want to reach from the final waypoints                    
+                    target_velocity = self.waypoints[0].twist.twist.linear.x
+
                     throttle, brake, steer = self.controller.control(
+                        target_velocity=target_velocity,
                         current_velocity=self.velocity.linear.x,
                         linear_velocity=abs(self.twist.linear.x),
                         angular_velocity=self.twist.angular.z
