@@ -4,7 +4,7 @@ import rospy
 import datetime
 import tf.transformations
 from geometry_msgs.msg import PoseStamped, Point
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, Float32
 from styx_msgs.msg import Lane, Waypoint
 
 import math
@@ -86,10 +86,13 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
         self.next_waypoint_pub = rospy.Publisher('next_waypoint', Int32, queue_size=1)
+        self.tl_distance_pub = rospy.Publisher('tl_distance', Float32, queue_size=1)
         self.wps = []
+        self.wp_ss = []
         # self.full_wps = []
         self.prev_pt = Point()
         self.prev_index = -1
+        self.next_pt = -1
 
         # TODO: Add other member variables you need below
 
@@ -188,6 +191,7 @@ class WaypointUpdater(object):
         # near_pt is only used for testing
         # near_pt = self.nearest_waypoint(msg)
         next_pt = self.next_waypoint(msg)
+        self.next_pt = next_pt
         near_pt = 0
         if next_pt < 0:
             return
@@ -291,6 +295,17 @@ class WaypointUpdater(object):
         '''
         self.wps = waypoints.waypoints
 
+        s = 0.
+        prev_pt = waypoint_to_point(self.wps[0])
+        for i in range(len(self.wps)+1):
+            cur_pt = waypoint_to_point(self.wps[i%(len(self.wps))])
+            d = point_dist(prev_pt, cur_pt)
+            s += d
+            # if i < 10 or i > len(self.wps)-10:
+            #     print(i, s)
+            self.wp_ss.append(s)
+            prev_pt = cur_pt
+
         self.avg_wp_dist = 0.
         for i in range(1, len(self.wps)):
             pt = waypoint_to_point(self.wps[i])
@@ -359,7 +374,16 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         # print("tcb", msg)
-        pass
+        next_tl = msg.data
+        dist = -1.0
+        if self.next_pt >= 0 and next_tl >= 0:
+            sz = len(self.wps)
+            dist = self.wp_ss[next_tl] - self.wp_ss[self.next_pt]
+            if dist < 0:
+                dist += self.wp_ss[sz]
+
+        self.tl_distance_pub.publish(dist)
+        # print("ds", dist)
 
     def obstacle_cb(self, msg):
         # This is never called

@@ -1,6 +1,6 @@
 Changelog
 
-Initial changes (2017-09-11 by C S)
+Initial changes (2017-09-11 by cs4nd13)
 
 Note: this includes a number of performance fixes from
 Alexey Makurin, which are in:
@@ -132,11 +132,11 @@ roslaunch launch/styx.launch
 Start your simulator (it will NOT start automatically), 
 and MAKE SURE to uncheck the "Manual" box!
 
-More changes (2017-09-11 by C S, tagged cs_v1.0)
+More changes (2017-09-11 by cs4nd13, tagged cs_v1.0)
 
 Modified dbw_node.py to remove the "steering angle" message.
 
-Changes (2017-09-20 by C S, tagged cs_v1.1)
+Changes (2017-09-20 by cs4nd13, tagged cs_v1.1)
 
 Merged in Udacity's latest changes.  Took Udacity's version
 (completely replacing my own) for waypoint_loader.py and
@@ -147,7 +147,7 @@ Modified dbw_node.py to remove the multiplier I had put on
 steer_ratio, because Udacity has fixed dbw_sim.launch to
 have the correct value.
 
-Changes (2017-09-20 by C S, tagged cs_v1.2)
+Changes (2017-09-20 by cs4nd13, tagged cs_v1.2)
 
 Added some efficiency fixes that I've been working on.
 
@@ -175,3 +175,20 @@ waypoint_updater.py: At the end of the track, provide waypoints
 from the beginning of the track to complete the loop.  Changed 
 some parameters to allow high-speed driving.
 
+Changes (2017-09-24 by ortizjuan2)
+
+dbw_node.py: fixed bug in setting DBWNode.dbw.  Added PID module
+to control car's velocity, based on velocity suggestions from
+the twist_cmd topic.
+
+Changes (2017-09-24 and 2017-09-25 by cs4nd13)
+
+tl_detector.py: Fixed process_traffic_lights to correctly
+handle the case where the car is past the last traffic light
+on the track; now looks ahead, past the loop, to the first
+traffic light.
+
+waypoint_updater.py: Added new topic, /tl_distance, which provides
+the distance to the next red light stop line, in meters.  If no red 
+light is detected ahead, then returns -1.0.  This topic is published
+at the same frequency as images are received from the car.
