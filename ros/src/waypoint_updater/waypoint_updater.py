@@ -84,18 +84,26 @@ class WaypointUpdater(object):
             Use previous waypoint to speed up search
         """
 
+        # Number of waypoints in complete set
         num_waypoints = len(self.waypoints)
 
-        # Determine subset of waypoints in which to search
-        min_distance = 2
-        previous_wp_distance = self.linear_distance(self.waypoints[self.previous_wp_index].pose.pose, self.current_pose)
-        
-        if self.previous_wp_index != -1 and previous_wp_distance < min_distance:
-            search_start = self.previous_wp_index - 5   # Waypoints behind previous waypoint
-            search_end = self.previous_wp_index + 50    # Waypoints ahead of previous waypoint
+        # Determine whether to search all waypoints or only a subset
+        if self.previous_wp_index == -1:
+            # Search all waypoints when starting
+            search_all_waypoints = True
         else:
+            # Search all waypoints if vehicle is too far from previous waypoint
+            threshold_distance_prev_wp = 2  # Maximum distance for narrow proximity search
+            distance_prev_wp = self.linear_distance(self.waypoints[self.previous_wp_index].pose.pose, self.current_pose)
+            search_all_waypoints = distance_prev_wp > threshold_distance_prev_wp
+
+        # Define subset of waypoints that will be searched
+        if search_all_waypoints:
             search_start = 0
             search_end = num_waypoints
+        else:
+            search_start = self.previous_wp_index - 5   # Waypoints behind previous waypoint
+            search_end = self.previous_wp_index + 50    # Waypoints ahead of previous waypoint
 
         # Get near neighbours and corresponding indexes
         min_distance = 99999
@@ -107,25 +115,17 @@ class WaypointUpdater(object):
                 closest_wp_index = index
                 min_distance = distance
 
+        # Should not be possible
+        assert closest_wp_index != -1
 
-        # TODO: handle the case where min_distance is too high and we need to search with higher radius
-        rospy.loginfo("min_distance = %s",min_distance)
-        # TODO: define this threshold
-        #threshold_dist = 2 #
-        if closest_wp_index != -1:
-        # TODO: uncomment the next line and comment line above
-        #if closest_wp_index != -1 && min_distance < threshold_dist:
-            # Increase index if closest waypoint is behind ego vehicle
-            if self.is_waypoint_ahead(self.waypoints[closest_wp_index].pose.pose):
-                next_wp_index = closest_wp_index
-            else:
-                next_wp_index = closest_wp_index + 1
-            self.previous_wp_index = next_wp_index
+        # Increase index if closest waypoint is behind ego vehicle
+        if self.is_waypoint_ahead(self.waypoints[closest_wp_index].pose.pose):
+            next_wp_index = closest_wp_index
         else:
-            self.previous_wp_index = -1  # reset to search the entire base_waypoints next time
-            rospy.loginfo("Error: Could not find closest waypoint in the base_waypoints!")
-            rospy.logerr("Error: Could not find closest waypoint in the base_waypoints!")
-            rospy.logwarn("Error: Could not find closest waypoint in the base_waypoints!")
+            next_wp_index = (closest_wp_index + 1) % num_waypoints
+
+        # Save waypoint index for next loop iteration
+        self.previous_wp_index = next_wp_index
 
         return next_wp_index
 
