@@ -6,8 +6,8 @@ from keras.preprocessing.image import img_to_array
 from styx_msgs.msg import TrafficLight
 
 class TLClassifier(object):
-    def __init__(self):
-        self.model = load_model('light_classifier_model.h5')
+    def __init__(self, path='light_classifier_model.h5'):
+        self.model = load_model(path)
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -45,7 +45,8 @@ class TLClassifier(object):
                 # Crop
                 x, y, w, h = int(max(0,x)), int(max(0,y)), int(w), int(h)
                 image = original[y:(y+h), x:(x+w)]
-                has_red = (self.predict(image) == RED) or has_red
+                cv2.imwrite('test.jpg', image)
+                has_red = (self.predict(image) == TrafficLight.RED) or has_red
 
                 # cv2.rectangle(img,(x,y),(x+w,y+h),(255,255,255),1)
                 # cv2.putText(img, RESULT[predict(image)], (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255,255,255))
@@ -61,8 +62,8 @@ class TLClassifier(object):
             image_array = img_to_array(image.resize((64, 64), PIL.Image.ANTIALIAS))
         prediction = self.model.predict(image_array[None, :])
         if prediction[0][0] == 1:
-          return GREEN
+          return TrafficLight.GREEN
         elif prediction[0][1] == 1:
-          return RED
+          return TrafficLight.RED
         else:
-          return UNKNOWN
+          return TrafficLight.UNKNOWN
