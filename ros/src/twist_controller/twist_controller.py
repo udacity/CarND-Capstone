@@ -2,6 +2,8 @@
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
+USE_STEER_PID = False  # Steering PID is curently worse than yaw controller approach
+
 from yaw_controller import YawController
 from lowpass import LowPassFilter
 from pid import PID
@@ -26,20 +28,24 @@ class Controller(object):
         self.brake_deadband = params['brake_deadband']
         self.wheel_radius = params['wheel_radius']
         self.sample_rate = params['sample_rate']
-        self.velocity_pid = PID(
+        self.throttle_pid = PID(
             1.0,
-            0.1,
-            0.4,
-            mn=-math.fabs(params['decel_limit']),
-            mx=math.fabs(params['accel_limit'])
+            .08,
+            .2,
+            -math.fabs(params['decel_limit']),
+            math.fabs(params['accel_limit'])
         )
-        #self.accel_pid = PID(
-        #    5.0,
-        #    0.1,
-        #    0.5,
-        #    mn=0.0,
-        #    mx=1.0
-        #)
+        self.steer_pid = PID(
+            10.0,
+            .1,
+            .4,
+            -0.4,
+            0.4
+        )
+
+        # assume tank is full when computing total mass of car
+        self.total_mass = self.vehicle_mass + self.fuel_capacity * GAS_DENSITY
+
 
     def control(self, linear_velocity, angular_velocity, current_velocity,
                 enabled = True):
@@ -48,25 +54,28 @@ class Controller(object):
             angular_velocity = self.yaw_filter.filt(angular_velocity)
 
         velocity_diff = linear_velocity - current_velocity
-        needed_accel = self.velocity_pid.step(velocity_diff, 1.0 / self.sample_rate)
 
-        if needed_accel > 0:
-            throttle = needed_accel
+        throttle = 0.0
+        brake = 0.0
+        steer = 0.0
+        if enabled:
+            if velocity_diff > 0:
+                throttle = self.throttle_pid.step(velocity_diff, 1.0 / self.sample_rate)
+            else:
+                brake = -velocity_diff * self.total_mass * self.wheel_radius
+                self.throttle_pid.reset()
+
+
+            if USE_STEER_PID:
+                steer = self.steer_pid.step(angular_velocity, 1.0 / self.sample_rate)
+            else:
+                steer = self.yaw_controller.get_steering(
+                    linear_velocity,
+                    angular_velocity,
+                    current_velocity
+                )
         else:
-            throttle = 0.0
-            self.velocity_pid.reset()
-
-        # assume tank is full
-        total_mass = self.vehicle_mass + self.fuel_capacity * GAS_DENSITY
-
-        if (needed_accel < -math.fabs(self.brake_deadband)):
-            brake = -needed_accel * total_mass * self.wheel_radius
-        else:
-            brake = 0.0
-
-        steer = self.yaw_controller.get_steering(
-            linear_velocity,
-            angular_velocity,
-            current_velocity)
+            self.throttle_pid.reset()
+            self.steer_pid.reset()
 
         return throttle, brake, steer

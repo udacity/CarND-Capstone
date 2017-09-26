@@ -75,7 +75,7 @@ class DBWNode(object):
         self.loop()
 
     def velocity_cb(self, msg):
-        self.current_velocity = msg.twist.linear.x 
+        self.current_velocity = msg.twist.linear.x
 
     def enabled_cb(self, msg):
         enabled = msg.data
@@ -93,8 +93,10 @@ class DBWNode(object):
             throttle, brake, steer = self.controller.control(
                 linear_velocity=self.linear_velocity,
                 angular_velocity=self.angular_velocity,
-                current_velocity=self.current_velocity)
-          
+                current_velocity=self.current_velocity,
+                enabled=self.dbw_enabled
+            )
+            rospy.logdebug("Thr: %s, Br: %s, St: %s" % (throttle, brake, steer))
             if self.dbw_enabled:
                self.publish(throttle, brake, steer)
 
