@@ -48,9 +48,10 @@ class TLClassifier(object):
 
         return TrafficLight.RED if has_red else TrafficLight.UNKNOWN
 
-    def preprocess(input_img):
-        img = cv2.resize(input_img, (800, 600), interpolation=cv2.INTER_CUBIC)
-        out = cv2.bilateralFilter(input_img,11,75,75)
+    def preprocess(self, input_img):
+        # img = cv2.resize(input_img, (800, 600), interpolation=cv2.INTER_CUBIC)
+        # out = cv2.bilateralFilter(img,11,75,75)
+        out = input_img
         # ----- RGB
         rgb = cv2.cvtColor(out, cv2.COLOR_BGR2RGB)
 
