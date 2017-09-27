@@ -474,11 +474,13 @@ class TLDetector(object):
             # instead of analyzing the image.
             # TODO: Once get_light_state() is working, comment
             # out this line:
-            state = light.state
+            #state = light.state
 
             return light_wp, state
+            
 
         return light_wp, state
+        
 
 if __name__ == '__main__':
     try:
