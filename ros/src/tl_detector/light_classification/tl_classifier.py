@@ -5,9 +5,7 @@ import os
 
 class TLClassifier(object):
     def __init__(self):
-        #TODO load classifier
         # self.model = SimModel()
-        # print(os.getcwd())
         self.model = RealModel("light_classification/models/tl_model")
 
     def get_classification(self, image):

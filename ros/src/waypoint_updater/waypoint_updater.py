@@ -29,7 +29,7 @@ LOOKAHEAD_WPS = 200
 # Car speed in simulator (or real env) is MPH, whereas ROS uses MPS
 MPH_TO_MPS = 0.44704
 # max car speed
-MAX_SPEED = 25 * MPH_TO_MPS #m/s 
+MAX_SPEED = 10 * MPH_TO_MPS #m/s 
 
 
 class WaypointUpdater(object):
