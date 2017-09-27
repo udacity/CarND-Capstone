@@ -102,40 +102,6 @@ class WaypointUpdater(object):
                             wp_x_cmp = wp_x
                             wp_first = wp_cnt
                     
-                    if False:
-                        # waypoints can reverse from increasing to decreasing when vehicle pose is
-                        #   still forward and maximal
-                        # if the position spans from less than vehicle x to a decreasing value then
-                        #   this inflection point is the first waypoint;
-                        #   similarly for reversal from decreasing to increasing
-                        wp_falling_edge = wp_fwd_q and not wp_fwd
-                        wp_rising_edge = not wp_fwd_q and wp_fwd
-                        if veh_fwd:
-                            if wp_q_x <= msg.pose.position.x and wp_x > msg.pose.position.x:
-                                wp_first = wp_cnt
-                                rospy.loginfo("pos wp_q_x %f wp_x %f wp_fwd_q %s wp_fwd %s pose.x %f",
-                                              wp_q_x, wp_x, wp_fwd_q, wp_fwd, msg.pose.position.x)
-                                break
-                            elif wp_q_x <= msg.pose.position.x and wp_falling_edge == True:
-                                rospy.loginfo("wp_falling_edge is set wp_cnt %d", wp_cnt)
-                                rospy.loginfo("wp_q_x %f wp_x %f wp_fwd_q %s wp_fwd %s pose.x %f",
-                                              wp_q_x, wp_x, wp_fwd_q, wp_fwd, msg.pose.position.x)
-                                wp_first = wp_cnt
-                                break
-                            else:
-                                if wp_q_x >= msg.pose.position.x and wp_x < msg.pose.position.x:
-                                    wp_first = wp_cnt
-                                    rospy.loginfo("neg wp_q_x %f wp_x %f wp_fwd_q %s wp_fwd %s pose.x %f",
-                                                  wp_q_x, wp_x, wp_fwd_q, wp_fwd, msg.pose.position.x)
-                                    break
-                                elif wp_q_x >= msg.pose.position.x and wp_rising_edge == True:
-                                    rospy.loginfo("wp_rising_edge is set wp_cnt %d",
-                                                  wp_cnt)                            
-                                    rospy.loginfo("wp_q_x %f wp_x %f wp_fwd_q %s wp_fwd %s pose.x %f",
-                                                  wp_q_x, wp_x, wp_fwd_q, wp_fwd, msg.pose.position.x)
-                                    wp_first = wp_cnt
-                                    break
-                        
                     wp_fwd_q = wp_fwd
                     wp_q_x = self.base_lane.waypoints[wp_cnt].pose.pose.position.x
                     wp_cnt = 0
@@ -160,11 +126,6 @@ class WaypointUpdater(object):
                 l.waypoints = pub_waypoints
                 self.final_waypoints_pub.publish(l)
                             
-            #for wp in self.base_lane.waypoints:
-            #    if ((fwd and wp.pose.pose.position.x > msg.pose.position.x) or
-            #    (not fwd and wp.pose.pose.position.x < msg.pose.position.x)) and wp_cnt < LOOKAHEAD_WPS:
-            #        wp_cnt = wp_cnt + 1
-            #        pub_waypoints.append(wp)
             rospy.loginfo("wp_first %d x %f pose.x %f yaw %f fwd %s wp_cnt %d",
                           wp_first, self.base_lane.waypoints[wp_first].pose.pose.position.x,
                           msg.pose.position.x, yaw, veh_fwd, wp_cnt)
@@ -174,10 +135,6 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
         # TODO: Implement
         self.base_lane = waypoints
-        #if len(self.base_lane.waypoints) > 4500:
-        #    for i in range(4400,4435):
-        #        rospy.loginfo("wp[%d] x=%f y=%f", i, self.base_lane.waypoints[i].pose.pose.position.x,
-        #                      self.base_lane.waypoints[i].pose.pose.position.y)
         pass
 
     def traffic_cb(self, msg):
