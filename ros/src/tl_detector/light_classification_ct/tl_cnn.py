@@ -8,8 +8,8 @@ print(glob.glob("./*"))
 gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
 sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))   
 
-saver = tf.train.import_meta_graph('./tl_cnn_weight-1000.meta')
-saver.restore(sess,tf.train.latest_checkpoint('./'))
+saver = tf.train.import_meta_graph('./light_classification_ct/tl_cnn_weight-1000.meta')
+saver.restore(sess,tf.train.latest_checkpoint('./light_classification_ct'))
 graph = tf.get_default_graph()
     
     
@@ -34,10 +34,7 @@ def augment(raw,boolean, color, dummy):
     for i,j in zip(x,y):
         cv2.rectangle(raw, (i*8,j*8), (i*8+64,j*8+64), color, 2)
 
-i = 0
-outcounter = 0
 def run(testdata):
-    global outcounter, img
     
     #print(np.array(testdata).shape)
 
@@ -45,28 +42,25 @@ def run(testdata):
     testdata = cv2.cvtColor(testdata, cv2.COLOR_BGR2RGB)
     #(b,g,r) = cv2.split(testdata)
     #cv2.imwrite("./sim_imgs/sim%05d.jpg"%outcounter, cv2.merge([r, g, b]))
-    if outcounter%15 ==0:
-        img = sess.run([sm], feed_dict={tf_data: testdata.reshape([1,300, 400, 3]), tf_train: False})
+    img = sess.run([sm], feed_dict={tf_data: testdata.reshape([1,300, 400, 3]), tf_train: False})
 
         
-        threshold = 0.9999
+    threshold = 0.9999
         
-        img = np.array(img)
-        #print("Nothing:",np.sum(img[0,0,:,:,0]>threshold))
-        #print("Red:",np.sum(img[0,0,:,:,1]>threshold))
-        #print("Green:",np.sum(img[0,0,:,:,2]>threshold))
-        #print("Yellow:",np.sum(img[0,0,:,:,3]>threshold))
+    img = np.array(img)
+    #print("Nothing:",np.sum(img[0,0,:,:,0]>threshold))
+    #print("Red:",np.sum(img[0,0,:,:,1]>threshold))
+    #print("Green:",np.sum(img[0,0,:,:,2]>threshold))
+    #print("Yellow:",np.sum(img[0,0,:,:,3]>threshold))
                 
-        augment(testdata,img[0,0,:,:,1]>threshold,(255,0,0), img)
-        augment(testdata,img[0,0,:,:,2]>threshold,(0,255,0), img)
-        augment(testdata,img[0,0,:,:,3]>threshold,(255,255,0), img)
+    augment(testdata,img[0,0,:,:,1]>threshold,(255,0,0), img)
+    augment(testdata,img[0,0,:,:,2]>threshold,(0,255,0), img)
+    augment(testdata,img[0,0,:,:,3]>threshold,(255,255,0), img)
     
-        testdata = cv2.cvtColor(testdata, cv2.COLOR_BGR2RGB)
+    testdata = cv2.cvtColor(testdata, cv2.COLOR_BGR2RGB)
 
-        cv2.imshow('image',testdata)
-    outcounter = outcounter + 1
-
+    cv2.imshow('image',testdata)
     cv2.waitKey(1)
-    
+
     return img
 
