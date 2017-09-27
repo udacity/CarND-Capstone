@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import rospy
+from datetime import datetime, timedelta
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
@@ -80,9 +81,18 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        self.has_image = True
-        self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
+        # Skip certain images to lower the processing rate.
+        # TODO: Tune skip time.
+        now = datetime.now()
+        if now - self.image_date < timedelta(milliseconds=500):
+            # Assume same as previous.
+            light_wp, state = self.last_wp, self.state
+        else:
+            self.image_date = now
+            # Process frame.
+            self.has_image = True
+            self.camera_image = msg
+            light_wp, state = self.process_traffic_lights()
 
         '''
         Publish upcoming red lights at camera frequency.
