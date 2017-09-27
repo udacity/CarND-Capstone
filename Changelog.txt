@@ -192,3 +192,13 @@ waypoint_updater.py: Added new topic, /tl_distance, which provides
 the distance to the next red light stop line, in meters.  If no red 
 light is detected ahead, then returns -1.0.  This topic is published
 at the same frequency as images are received from the car.
+
+Changes (2017-09-24 and 2017-09-27 by calvenn)
+
+tl_detector.py: Comment out line 477 state = light.state. 
+
+tl_cnn.py: add cv2.resize the input image size from 800x600 to 400x300. 
+Process image once for every 15 images pass by and still can produce tl_distance. 
+
+waypoint_updater.py add dist filter  if dist <50: self.tl_distance_pub.publish(dist)
+

@@ -382,7 +382,8 @@ class WaypointUpdater(object):
             if dist < 0:
                 dist += self.wp_ss[sz]
 
-        self.tl_distance_pub.publish(dist)
+        if dist < 50: 
+            self.tl_distance_pub.publish(dist)
         # print("ds", dist)
 
     def obstacle_cb(self, msg):

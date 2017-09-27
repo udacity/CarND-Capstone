@@ -1,6 +1,6 @@
 import tensorflow as tf
 import cv2
-import pylab as plt
+
 import numpy as np
 import glob
 import atexit
@@ -37,33 +37,35 @@ def augment(raw,boolean, color, dummy):
 i = 0
 outcounter = 0
 def run(testdata):
-    global outcounter
+    global outcounter, img
     
     #print(np.array(testdata).shape)
 
-    #testdata = cv2.resize(testdata,(400,300))
+    testdata = cv2.resize(testdata,(400,300))
     testdata = cv2.cvtColor(testdata, cv2.COLOR_BGR2RGB)
     #(b,g,r) = cv2.split(testdata)
     #cv2.imwrite("./sim_imgs/sim%05d.jpg"%outcounter, cv2.merge([r, g, b]))
-
-    img = sess.run([sm], feed_dict={tf_data: testdata.reshape([1,600, 800, 3]), tf_train: False})
+    if outcounter%15 ==0:
+        img = sess.run([sm], feed_dict={tf_data: testdata.reshape([1,300, 400, 3]), tf_train: False})
 
         
-    threshold = 0.9999
+        threshold = 0.9999
         
-    img = np.array(img)
-    #print("Nothing:",np.sum(img[0,0,:,:,0]>threshold))
-    #print("Red:",np.sum(img[0,0,:,:,1]>threshold))
-    #print("Green:",np.sum(img[0,0,:,:,2]>threshold))
-    #print("Yellow:",np.sum(img[0,0,:,:,3]>threshold))
+        img = np.array(img)
+        #print("Nothing:",np.sum(img[0,0,:,:,0]>threshold))
+        #print("Red:",np.sum(img[0,0,:,:,1]>threshold))
+        #print("Green:",np.sum(img[0,0,:,:,2]>threshold))
+        #print("Yellow:",np.sum(img[0,0,:,:,3]>threshold))
                 
-    augment(testdata,img[0,0,:,:,1]>threshold,(255,0,0), img)
-    augment(testdata,img[0,0,:,:,2]>threshold,(0,255,0), img)
-    augment(testdata,img[0,0,:,:,3]>threshold,(255,255,0), img)
+        augment(testdata,img[0,0,:,:,1]>threshold,(255,0,0), img)
+        augment(testdata,img[0,0,:,:,2]>threshold,(0,255,0), img)
+        augment(testdata,img[0,0,:,:,3]>threshold,(255,255,0), img)
     
-    testdata = cv2.cvtColor(testdata, cv2.COLOR_BGR2RGB)
+        testdata = cv2.cvtColor(testdata, cv2.COLOR_BGR2RGB)
+
+        cv2.imshow('image',testdata)
     outcounter = outcounter + 1
-    cv2.imshow('image',testdata)
+
     cv2.waitKey(1)
     
     return img
