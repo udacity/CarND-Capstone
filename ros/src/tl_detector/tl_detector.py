@@ -11,6 +11,7 @@ import tf
 import cv2
 import yaml
 import math
+import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -151,6 +152,28 @@ class TLDetector(object):
         else:
             return 0
 
+    def quaternion_to_rot(self, quaternion, trans):
+        """ 
+        according to:
+        https://en.wikipedia.org/wiki/Rotation_matrix#Quaternion
+        params:
+        quaternion - angles in quaternions
+        trans - transformation vector
+        """
+        x = quaternion[0]
+        y = quaternion[1]
+        z = quaternion[2]
+        w = quaternion[3]
+        t1 = trans[0]
+        t2 = trans[1]
+        t3 = trans[2]
+
+        transform_mat = [   [1-(y*y+z*z), x*y-z*w, x*z+w*y, t1],
+                            [x*y+w*z, 1-(x*x+z*z), y*z-w*x, t2],
+                            [x*z-w*y, y*z+w*x, 1-(x*x+y*y), t3]]
+
+
+        return transform_mat
 
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
@@ -182,9 +205,21 @@ class TLDetector(object):
             rospy.logerr("Failed to find camera to map transform")
 
         #TODO Use tranform and rotation to calculate 2D position of light in image
+        cam_m = [[fx, 0, image_width/2],[0, fy, image_height/2],[0, 0, 1]]
+        trans_m = self.quaternion_to_rot(rot, trans)
 
-        x = 0
-        y = 0
+        # rospy.logwarn("transform matrix: %s", cam_m)
+        # rospy.logwarn("camera rotation: %s", rot)
+        image_vec = np.matmul(cam_m, trans_m)
+        worl_pos_vec = [point_in_world.x, point_in_world.y, point_in_world.z, 1]
+        image_vec = np.matmul(image_vec, worl_pos_vec)
+
+
+
+        x = int(image_vec[0])
+        y = int(image_vec[1])
+
+        rospy.logwarn("image coordinate: %s", (x, y))
 
         return (x, y)
 
@@ -205,16 +240,21 @@ class TLDetector(object):
         self.camera_image.encoding = "rgb8"
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        # x, y = self.project_to_image_plane(light.pose.pose.position)
+        x, y = self.project_to_image_plane(light.pose.pose.position)
+
+
 
         #TODO use light location to zoom in on traffic light in image
         light_wp, state = self.process_traffic_lights()
 
-        rospy.logwarn("Light waypoint: %s", light_wp)
+        rospy.logwarn("Light waypoint: %s", (light_wp, light.pose.pose.position.x))
 
         if light_wp != -1:
             #save images here, if possible
-            # rospy.logwarn("Writing images...")
+            rospy.logwarn("Writing images... %s", (x,y))
+            # draw a circle on the image
+            cv2.circle(cv_image, (x,y), 10, (0, 0, 255), -1)
+            
             cv2.imwrite('images/'+str(rospy.Time.now())+'.jpg', cv_image)
 
         # rospy.logwarn("image size: %s", cv_image.shape)
@@ -317,7 +357,6 @@ class TLDetector(object):
 
             if light and smallest_dist < visible_distance and car_position < light_wp:
                 try:
-                    rospy.logwarn("Writing images...")
                     state = self.get_light_state(light)
                     return light_wp, state
                 except Exception as e:
