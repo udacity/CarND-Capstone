@@ -28,6 +28,11 @@ LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this n
 distance3d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 distance2d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
+MAX_VELOCITY = 4.47 # 4.47 m/s is about 10 mph
+SAMPLE_RATE = 20
+# maximum velocity increase that satisfies accel limits
+MAX_ACCEL = 4.47 / SAMPLE_RATE
+
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -74,6 +79,8 @@ class WaypointUpdater(object):
         self.next_traffic_light = msg.data
         if self.next_traffic_light != -1:
             rospy.loginfo("Traffic light at %s" % self.next_traffic_light)
+        else:
+            rospy.loginfo("No traffic light in sight")
 
     def obstacle_cb(self, msg):
         # TODO Callback for /obstacle_waypoint message. We will implement it later
@@ -86,25 +93,36 @@ class WaypointUpdater(object):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
     def adapt_target_velocities(self, waypoints_ahead):
-        if self.next_traffic_light in (None, -1):
+        if self.next_traffic_light == None:
             return
         if self.next_waypoint_ahead > self.next_traffic_light:
             return
-        rospy.loginfo("Setting velocities so we stop come to a halt")
-        rospy.loginfo("Red light at %s" % (self.next_traffic_light))
-        rospy.loginfo("Next waypoint ahead %s" % (self.next_waypoint_ahead))
         next_waypoint_velocity = self.get_waypoint_velocity(self.all_waypoints[self.next_waypoint_ahead])
-        rospy.loginfo("Current velocity target for next waypoint: %s" % (next_waypoint_velocity))
-        distance_to_stop = self.waypoint_distance(self.all_waypoints, self.next_waypoint_ahead, self.next_traffic_light)
-        rospy.loginfo("Distance of next waypoint to red light: %s" % (distance_to_stop))
 
-        if distance_to_stop > 80:
-            return
-        
-        for i in range(self.next_traffic_light - self.next_waypoint_ahead):
-            velocity_adjusted = next_waypoint_velocity - (i+1) * next_waypoint_velocity /(self.next_traffic_light - self.next_waypoint_ahead)
-            rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i, velocity_adjusted))
-            self.set_waypoint_velocity(waypoints_ahead, i, velocity_adjusted)
+        distance_to_stop = self.waypoint_distance(self.all_waypoints, self.next_waypoint_ahead, self.next_traffic_light)
+        if self.next_traffic_light != -1 and distance_to_stop < 50:
+            rospy.loginfo("Distance of next waypoint to red light: %s" % (distance_to_stop))
+            rospy.loginfo("Setting velocities so we stop come to a halt")
+            rospy.loginfo("Red light at %s" % (self.next_traffic_light))
+            rospy.loginfo("Next waypoint ahead %s" % (self.next_waypoint_ahead))
+            rospy.loginfo("Current velocity target for next waypoint: %s" % (next_waypoint_velocity))
+            for i in range(len(waypoints_ahead)):
+                velocity_adjusted = next_waypoint_velocity
+                if self.next_traffic_light > self.next_waypoint_ahead:
+                    velocity_adjusted = next_waypoint_velocity - (i+1) * next_waypoint_velocity /(self.next_traffic_light - self.next_waypoint_ahead)
+
+                velocity_adjusted = max(velocity_adjusted, 0.0)
+                velocity_adjusted = min(velocity_adjusted, MAX_VELOCITY)
+                rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i, velocity_adjusted))
+                self.set_waypoint_velocity(waypoints_ahead, i, velocity_adjusted)
+
+        else:
+            rospy.loginfo("Increase velocities smoothly to max")
+            for i in range(len(waypoints_ahead)):
+                velocity_adjusted = next_waypoint_velocity + i * MAX_ACCEL
+                velocity_adjusted = min(velocity_adjusted, MAX_VELOCITY)
+                rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i, velocity_adjusted))
+                self.set_waypoint_velocity(waypoints_ahead, i, velocity_adjusted)
 
     def waypoint_distance(self, waypoints, i1, i2):
         dist = 0
