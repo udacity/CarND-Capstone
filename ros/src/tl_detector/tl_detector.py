@@ -9,6 +9,7 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
+import numpy as np
 import yaml
 
 STATE_COUNT_THRESHOLD = 3
@@ -26,7 +27,7 @@ class TLDetector(object):
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
-        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
+        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and 
         helps you acquire an accurate ground truth data source for the traffic light
         classifier by sending the current color state of all traffic lights in the
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
@@ -62,7 +63,7 @@ class TLDetector(object):
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light's stop line to /traffic_waypoint
+            of the waypoint closest to the red light to /traffic_waypoint
 
         Args:
             msg (Image): image from car-mounted camera
@@ -133,12 +134,19 @@ class TLDetector(object):
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
 
-        #TODO Use tranform and rotation to calculate 2D position of light in image
+        # Generate Homogenous Coordinates of point in world.
+        X = [point_in_world.x, point_in_world.y, point_in_world.z, 1]
+        # Create a transformation matrix T mapping points for world coordinate frame to camera frame.
+        T = self.listener.fromTranslationRotation(trans, rot)
+        # Create camera projection matrix K with optical center at center of image.
+        K = np.array([[fx,0,image_width/2,0],[0,fy,image_height/2,0],[0,0,1,0]])
+        # Generate Homogenous Coordinates of point in camera frame
+        P = np.dot(K, np.dot(T,X))
+        # Generate pixel coordinates of point in camera frame
+        x = P[0] / P[2]
+        y = P[1] / P[2]
 
-        x = 0
-        y = 0
-
-        return (x, y)
+        return int(x), int(y)
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -158,24 +166,21 @@ class TLDetector(object):
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
-        #TODO use light location to zoom in on traffic light in image
-
         #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        light_state = self.light_classifier.get_classification(cv_image[:y,:,:])
+        return light_state
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
+            int: index of waypoint closes to the upcoming traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
         light = None
-
-        # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
+        light_positions = self.config['light_positions']
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
