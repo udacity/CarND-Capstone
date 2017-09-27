@@ -33,7 +33,7 @@ class Controller(object):
             .02,
             .2,
             0,
-            1)
+            1
         )
         self.steer_pid = PID(
             1.,
