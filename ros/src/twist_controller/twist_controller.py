@@ -32,8 +32,8 @@ class Controller(object):
             1.0,
             .02,
             .2,
-            0),
-            1)
+            0,
+            1
         )
         self.steer_pid = PID(
             1.,
@@ -55,14 +55,17 @@ class Controller(object):
 
         velocity_diff = linear_velocity - current_velocity
 
+        time_interval = 1.0 / self.sample_rate
+
         throttle = 0.0
         brake = 0.0
         steer = 0.0
+
         if enabled:
             if velocity_diff > 0:
-                throttle = self.throttle_pid.step(velocity_diff, 1.0 / self.sample_rate)
+                throttle = self.throttle_pid.step(velocity_diff, time_interval)
             else:
-                brake = -velocity_diff * self.total_mass * self.wheel_radius
+                brake = -velocity_diff * self.total_mass * self.wheel_radius * time_interval 
                 self.throttle_pid.reset()
 
 
@@ -72,7 +75,7 @@ class Controller(object):
                 current_velocity
             )
             if USE_STEER_PID:
-                steer = self.steer_pid.step(steer, 1.0 / self.sample_rate)
+                steer = self.steer_pid.step(steer, time_interval)
 
         else:
             self.throttle_pid.reset()
