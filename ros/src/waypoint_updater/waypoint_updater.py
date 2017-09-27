@@ -53,39 +53,131 @@ class WaypointUpdater(object):
             quaternion = (msg.pose.orientation.x, msg.pose.orientation.y,
                           msg.pose.orientation.z, msg.pose.orientation.w)
             roll, pitch, yaw = tf.transformations.euler_from_quaternion(quaternion)
-            #rospy.loginfo("roll %f pitch %f yaw %f", roll, pitch, yaw)
+            yaw = yaw % (2.0 * math.pi)
             
             # the course hits an inflection point at x=2339 yaw=90+ at which point x starts to decrease
             # next inflection at x=155 yaw=270+ at which point x starts to increase
             # in front of the car = increasing x for yaw between 270 and 90 and decreasing x from 90 to 270
             pub_waypoints = []
             wp_cnt = 0
-            fwd = True
-            if yaw > 90.0 and yaw <= 270.0:  # exactly 90/270 handling is a bit arbitrary
-                fwd = False
-            for wp in self.base_lane.waypoints:
-                if ((fwd and wp.pose.pose.position.x > msg.pose.position.x) or
-                (not fwd and wp.pose.pose.position.x < msg.pose.position.x)) and wp_cnt < LOOKAHEAD_WPS:
+            veh_fwd = True
+            if yaw > (math.pi/2) and yaw <= (3*math.pi/2):  # 90 to 270 degrees
+                veh_fwd = False
+            wp_first = -1
+            if veh_fwd:
+                wp_x_cmp = 1e9
+            else:
+                wp_x_cmp = -1.0
+            max_decreasing = -1.0
+            min_increasing = 1e9
+            max_dec_idx = -1
+            min_inc_idx = -1
+            if len(self.base_lane.waypoints) > 1:
+                # find the first waypoint in front of the vehicle,
+                #   then take a sequence of LOOKAHEAD_WPS waypoints
+                wp_q_x = self.base_lane.waypoints[0].pose.pose.position.x
+                wp_fwd_q = self.base_lane.waypoints[1].pose.pose.position.x > wp_q_x
+                for wp_cnt in range(len(self.base_lane.waypoints)):
+                    wp_x = self.base_lane.waypoints[wp_cnt].pose.pose.position.x
+                    if wp_q_x == wp_x:
+                        wp_fwd = wp_fwd_q
+                    else:
+                        wp_fwd = wp_x > wp_q_x
+                    if wp_fwd:
+                        if wp_x < min_increasing or min_inc_idx < 0:
+                            min_increasing = wp_x
+                            min_inc_idx = wp_cnt
+                    else:
+                        if wp_x > max_decreasing or max_dec_idx < 0:
+                            max_decreasing = wp_x
+                            max_dec_idx = wp_cnt
+                    if veh_fwd:
+                        # find the smallest increasing value greater than position
+                        if wp_fwd and wp_x > msg.pose.position.x and wp_x < wp_x_cmp:
+                            wp_x_cmp = wp_x
+                            wp_first = wp_cnt
+                    else:
+                        # find the largest decreasing value less than position
+                        if not wp_fwd and wp_x < msg.pose.position.x and wp_x > wp_x_cmp:
+                            wp_x_cmp = wp_x
+                            wp_first = wp_cnt
+                    
+                    if False:
+                        # waypoints can reverse from increasing to decreasing when vehicle pose is
+                        #   still forward and maximal
+                        # if the position spans from less than vehicle x to a decreasing value then
+                        #   this inflection point is the first waypoint;
+                        #   similarly for reversal from decreasing to increasing
+                        wp_falling_edge = wp_fwd_q and not wp_fwd
+                        wp_rising_edge = not wp_fwd_q and wp_fwd
+                        if veh_fwd:
+                            if wp_q_x <= msg.pose.position.x and wp_x > msg.pose.position.x:
+                                wp_first = wp_cnt
+                                rospy.loginfo("pos wp_q_x %f wp_x %f wp_fwd_q %s wp_fwd %s pose.x %f",
+                                              wp_q_x, wp_x, wp_fwd_q, wp_fwd, msg.pose.position.x)
+                                break
+                            elif wp_q_x <= msg.pose.position.x and wp_falling_edge == True:
+                                rospy.loginfo("wp_falling_edge is set wp_cnt %d", wp_cnt)
+                                rospy.loginfo("wp_q_x %f wp_x %f wp_fwd_q %s wp_fwd %s pose.x %f",
+                                              wp_q_x, wp_x, wp_fwd_q, wp_fwd, msg.pose.position.x)
+                                wp_first = wp_cnt
+                                break
+                            else:
+                                if wp_q_x >= msg.pose.position.x and wp_x < msg.pose.position.x:
+                                    wp_first = wp_cnt
+                                    rospy.loginfo("neg wp_q_x %f wp_x %f wp_fwd_q %s wp_fwd %s pose.x %f",
+                                                  wp_q_x, wp_x, wp_fwd_q, wp_fwd, msg.pose.position.x)
+                                    break
+                                elif wp_q_x >= msg.pose.position.x and wp_rising_edge == True:
+                                    rospy.loginfo("wp_rising_edge is set wp_cnt %d",
+                                                  wp_cnt)                            
+                                    rospy.loginfo("wp_q_x %f wp_x %f wp_fwd_q %s wp_fwd %s pose.x %f",
+                                                  wp_q_x, wp_x, wp_fwd_q, wp_fwd, msg.pose.position.x)
+                                    wp_first = wp_cnt
+                                    break
+                        
+                    wp_fwd_q = wp_fwd
+                    wp_q_x = self.base_lane.waypoints[wp_cnt].pose.pose.position.x
+                    wp_cnt = 0
+            if wp_first < 0:
+                if veh_fwd:
+                    # inflection: take the max decreasing waypoint since there was no larger point found
+                    wp_first = max_dec_idx
+                else:
+                    # inflection: take the min increasing waypoint since there was no smaller point found
+                    wp_first = min_inc_idx
+            if wp_first >= 0:
+                for wp_idx in range(LOOKAHEAD_WPS):
+                    idx = (wp_first + wp_idx) % len(self.base_lane.waypoints)
+                    pub_waypoints.append(self.base_lane.waypoints[idx])
                     wp_cnt = wp_cnt + 1
-                    #rospy.loginfo("wp %d: x=%f y=%f", wp_cnt, wp.pose.pose.position.x, wp.pose.pose.position.y)
-                    pub_waypoints.append(wp)
+                # Add velocity command to waypoints
+                # TESTING
+                for wp_cnt in range(len(pub_waypoints)):
+                    self.set_waypoint_velocity(pub_waypoints, wp_cnt, 20.0)
+                l = Lane()
+                l.header = msg.header
+                l.waypoints = pub_waypoints
+                self.final_waypoints_pub.publish(l)
+                            
+            #for wp in self.base_lane.waypoints:
+            #    if ((fwd and wp.pose.pose.position.x > msg.pose.position.x) or
+            #    (not fwd and wp.pose.pose.position.x < msg.pose.position.x)) and wp_cnt < LOOKAHEAD_WPS:
+            #        wp_cnt = wp_cnt + 1
+            #        pub_waypoints.append(wp)
+            rospy.loginfo("wp_first %d x %f pose.x %f yaw %f fwd %s wp_cnt %d",
+                          wp_first, self.base_lane.waypoints[wp_first].pose.pose.position.x,
+                          msg.pose.position.x, yaw, veh_fwd, wp_cnt)
 
-            # Add velocity command to waypoints
-            # TESTING
-            for wp_cnt in range(10):
-                if len(pub_waypoints) > wp_cnt:
-                    self.set_waypoint_velocity(pub_waypoints, wp_cnt, 1)
-            
-            l = Lane()
-            l.header = msg.header
-            l.waypoints = pub_waypoints
-            self.final_waypoints_pub.publish(l)
         pass
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        rospy.loginfo("waypoints_cb got %d waypoints", len(waypoints.waypoints))
         self.base_lane = waypoints
+        #if len(self.base_lane.waypoints) > 4500:
+        #    for i in range(4400,4435):
+        #        rospy.loginfo("wp[%d] x=%f y=%f", i, self.base_lane.waypoints[i].pose.pose.position.x,
+        #                      self.base_lane.waypoints[i].pose.pose.position.y)
         pass
 
     def traffic_cb(self, msg):
