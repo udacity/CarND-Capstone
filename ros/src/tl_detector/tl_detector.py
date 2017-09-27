@@ -20,7 +20,20 @@ class TLDetector(object):
         self.pose = None
         self.waypoints = None
         self.camera_image = None
-        self.lights = []
+        self.lights = None
+
+        self.light_dict = None
+        self.light_waypoints = None
+
+        self.bridge = CvBridge()
+        self.light_classifier = TLClassifier()
+
+        self.state = TrafficLight.UNKNOWN
+        self.state_count = 0
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+
+        self.image_date = datetime.now()
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -40,14 +53,6 @@ class TLDetector(object):
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
-        self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
 
         rospy.spin()
 
@@ -59,6 +64,13 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        # --- Find all waypoints for traffic light.
+        if (not self.light_waypoints or not self.light_dict) and self.waypoints:
+            self.light_dict = {}
+            for idx, alight in enumerate(self.lights):
+                alight_wp = self.get_closest_waypoint(alight.pose.pose)
+                self.light_dict[alight_wp] = alight
+            self.light_waypoints = sorted(self.light_dict.keys())
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -110,43 +122,6 @@ class TLDetector(object):
                 closest_idx = idx
         return closest_idx
 
-
-    def project_to_image_plane(self, point_in_world):
-        """Project point from 3D world coordinates to 2D camera image location
-
-        Args:
-            point_in_world (Point): 3D location of a point in the world
-
-        Returns:
-            x (int): x coordinate of target point in image
-            y (int): y coordinate of target point in image
-
-        """
-
-        fx = self.config['camera_info']['focal_length_x']
-        fy = self.config['camera_info']['focal_length_y']
-        image_width = self.config['camera_info']['image_width']
-        image_height = self.config['camera_info']['image_height']
-
-        # get transform between pose of camera and world frame
-        trans = None
-        try:
-            now = rospy.Time.now()
-            self.listener.waitForTransform("/base_link",
-                  "/world", now, rospy.Duration(1.0))
-            (trans, rot) = self.listener.lookupTransform("/base_link",
-                  "/world", now)
-
-        except (tf.Exception, tf.LookupException, tf.ConnectivityException):
-            rospy.logerr("Failed to find camera to map transform")
-
-        #TODO Use tranform and rotation to calculate 2D position of light in image
-
-        x = 0
-        y = 0
-
-        return (x, y)
-
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
@@ -157,19 +132,16 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
-            self.prev_light_loc = None
-            return False
+        # if(not self.has_image):
+        #     self.prev_light_loc = None
+        #     return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        # x, y = self.project_to_image_plane(light.pose.pose.position)
-
-        #TODO use light location to zoom in on traffic light in image
-
-        #Get classification
-        result = self.light_classifier.get_classification(cv_image)
-        return result
+        # Get classification
+        prediction = self.light_classifier.get_classification(cv_image)
+        # print '--->', prediction
+        return prediction
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -182,37 +154,29 @@ class TLDetector(object):
         """
         light_positions = self.config['stop_line_positions']
 
-        if(self.pose and self.waypoints and self.lights):
+        if(self.pose and self.waypoints and self.lights and self.light_waypoints and self.light_dict):
             car_wp = self.get_closest_waypoint(self.pose)
-
-            #IMPLEMENTED: find the closest visible traffic light (if one exists)
-
-            # --- Find all waypoints for traffic light.
-            light_dict = {}
-            for idx, alight in enumerate(self.lights):
-                alight_wp = self.get_closest_waypoint(alight.pose.pose)
-                light_dict[alight_wp] = alight
-                # print '%d: x=%f y=%f wp=%d' % (idx, alight.pose.pose.position.x, alight.pose.pose.position.y, alight_wp)
-            light_waypoints = sorted(light_dict.keys())
 
             # --- Determine the next traffice light in waypoint.
             light = None
             light_wp = None
 
-            if light_waypoints and (car_wp <= light_waypoints[0]):
-                light_wp = light_waypoints[0] # Before the first light waypoint.
-            elif light_waypoints and (car_wp >= light_waypoints[-1]):
-                light_wp = light_waypoints[0] # After the last light waypoint. So loop around.
+            if car_wp <= self.light_waypoints[0]:
+                light_wp = self.light_waypoints[0] # Before the first light waypoint.
+            elif car_wp >= self.light_waypoints[-1]:
+                light_wp = self.light_waypoints[0] # After the last light waypoint. So loop around.
             else:
-                for light1_wp, light2_wp in zip(light_waypoints, light_waypoints[1:]):
+                for light1_wp, light2_wp in zip(self.light_waypoints, self.light_waypoints[1:]):
                     if car_wp > light1_wp and car_wp <= light2_wp:
                         light_wp = light2_wp
 
             # --- Get next traffic light ahead.
-            light = light_dict.get(light_wp)
+            light = self.light_dict.get(light_wp)
             if light:
+                state = self.get_light_state(light)
+                # --- TESTING ONLY
                 # state = light.state
-                state = self.get_light_state(light) # TODO
+                # --- TESTING ONLY
                 return light_wp, state
         return -1, TrafficLight.UNKNOWN
 
