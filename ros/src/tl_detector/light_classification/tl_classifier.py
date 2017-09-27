@@ -1,6 +1,5 @@
 import numpy as np
 import PIL, cv2
-import light_helper as Helper
 import tensorflow as tf
 from keras.models import load_model
 from keras.preprocessing.image import img_to_array
@@ -21,7 +20,7 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        processed = Helper.preprocess(image)
+        processed = preprocess(image)
 
         # ----- Filter contour.
         width, height = processed.shape
