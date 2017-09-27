@@ -65,7 +65,7 @@ class Controller(object):
             if velocity_diff > 0:
                 throttle = self.throttle_pid.step(velocity_diff, time_interval)
             else:
-                brake = -velocity_diff * self.total_mass * self.wheel_radius * time_interval 
+                brake = -velocity_diff * self.total_mass * self.wheel_radius / time_interval  
                 self.throttle_pid.reset()
 
 
