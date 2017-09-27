@@ -185,6 +185,9 @@ class TLDetector(object):
             x (int): x coordinate of target point in image
             y (int): y coordinate of target point in image
 
+
+        It seems there is a problem with this implmentation. Will consider
+
         """
 
         fx = self.config['camera_info']['focal_length_x']
