@@ -38,7 +38,7 @@ class WaypointLoader(object):
         return tf.transformations.quaternion_from_euler(0., 0., yaw)
 
     def kmph2mps(self, velocity_kmph):
-        return (velocity_kmph * 1000) / (60 * 60)
+        return (velocity_kmph * 1000.) / (60. * 60.)
 
     def load_waypoints(self, fname):
         waypoints = []
