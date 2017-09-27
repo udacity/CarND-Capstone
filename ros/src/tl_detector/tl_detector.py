@@ -182,7 +182,9 @@ class TLDetector(object):
 
             # --- Get next traffic light ahead.
             light = self.light_dict.get(light_wp)
-            if light:
+
+            # Found light_wp and if it is close enough.
+            if light and (light_wp - car_wp) < 60:
                 state = self.get_light_state(light)
                 # --- TESTING ONLY
                 # state = light.state
