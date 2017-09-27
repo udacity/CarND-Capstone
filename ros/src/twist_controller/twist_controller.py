@@ -41,18 +41,18 @@ class TwistController(object):
         
 
 
-    def control(self, velocity_cmd, current_velocity, angular_velocity_cmd, dbw_enabled):
+    def control(self, velocity_cmd, current_velocity, angular_velocity_cmd, dt, dbw_enabled):
         
         if dbw_enabled:
             steer = self.yaw_controller.get_steering(velocity_cmd, angular_velocity_cmd, current_velocity)
             if velocity_cmd > current_velocity:
                 error = velocity_cmd - current_velocity
-                throttle = self.pid_controller.step(error, 0.02)
+                throttle = self.pid_controller.step(error, dt)
                 brake = 0.0
                 self.brake_controller.reset()
             else:
                 error = current_velocity - velocity_cmd
-                brake = brake.pid_controller.step(error, 0.02)
+                brake = brake.pid_controller.step(error, dt)
                 throttle = 0.0
                 self.pid_controller.reset()
         else:
