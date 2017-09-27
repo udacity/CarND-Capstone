@@ -24,9 +24,9 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200  # Number of waypoints to publish
-
-
+LOOKAHEAD_WPS = 50  # Number of waypoints to publish
+WP_UPDATE_RATE = 10; # processing frequency
+REF_VEL = 15
 def to_deg(angle):
     return angle*180.0/math.pi
 
@@ -106,7 +106,7 @@ class WaypointUpdater(object):
 
 
         # TODO: handle the case where min_distance is too high and we need to search with higher radius
-        rospy.loginfo("min_distance = %s",min_distance)
+        #rospy.loginfo("min_distance = %s",min_distance)
         # TODO: define this threshold
         # threshold_dist = 20 #
         if closest_wp_index != -1:
@@ -141,12 +141,14 @@ class WaypointUpdater(object):
         rospy.loginfo("%s waypoints loaded", num_waypoints)
 
         # Set update frequency in Hz. Should be 50Hz TBD
-        update_rate = 1
-        rate = rospy.Rate(update_rate)
-        rospy.loginfo("Waypoint updater running with update freq = %s Hz", update_rate)
+
+        rate = rospy.Rate(WP_UPDATE_RATE)
+        rospy.loginfo("Waypoint updater running with update freq = %s Hz", WP_UPDATE_RATE)
 
         # Loop waypoint publisher
         #list_wp_to_pub = []
+        count_lap = True
+        num_laps = 0
         while not rospy.is_shutdown():
 
             #rospy.loginfo("Current_pose = %s,%s",self.current_pose.position.x,self.current_pose.position.y)
@@ -162,10 +164,15 @@ class WaypointUpdater(object):
                     list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:]) # create a copy to prevent overwritting the original list
                     list_wp_to_pub.extend(self.waypoints[0:excess])
                     #rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s (%s+%s)", len(list_wp_to_pub), next_wp_index, len(self.waypoints)-next_wp_index,excess)
-                    rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s to %s", len(list_wp_to_pub), next_wp_index, excess)
+                    #rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s to %s", len(list_wp_to_pub), next_wp_index, excess)
+                    if count_lap:
+                        num_laps = num_laps + 1
+                        rospy.loginfo("num_laps = %s",num_laps)
+                        count_lap = False
                 else:
                     list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:next_wp_index+LOOKAHEAD_WPS])
-                    rospy.loginfo("Publishing %s wp from index %s to %s", len(list_wp_to_pub),next_wp_index,next_wp_index+LOOKAHEAD_WPS)
+                    #rospy.loginfo("Publishing %s wp from index %s to %s", len(list_wp_to_pub),next_wp_index,next_wp_index+LOOKAHEAD_WPS)
+                    count_lap = True
 
 
 
@@ -173,7 +180,7 @@ class WaypointUpdater(object):
                 # TODO: REMOVE THIS SECTION
                 #force higher speed for testing only
                 for i in range(len(list_wp_to_pub)):
-                    list_wp_to_pub[i].twist.twist.linear.x = 8
+                    list_wp_to_pub[i].twist.twist.linear.x = REF_VEL
                 # TODO: END OF SECTION SECTION TO REMOVE
 
 
