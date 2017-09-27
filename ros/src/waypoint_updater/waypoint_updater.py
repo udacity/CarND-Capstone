@@ -176,7 +176,7 @@ class WaypointUpdater(object):
                 # TODO: REMOVE THIS SECTION
                 #force higher speed for testing only
                 for i in range(len(list_wp_to_pub)):
-                    list_wp_to_pub[i].twist.twist.linear.x = 40
+                    list_wp_to_pub[i].twist.twist.linear.x = 8
                 # TODO: END OF SECTION SECTION TO REMOVE
 
 
