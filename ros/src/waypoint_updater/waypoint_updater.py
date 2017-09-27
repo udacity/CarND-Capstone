@@ -23,7 +23,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 
 distance3d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 distance2d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
@@ -56,16 +56,22 @@ class WaypointUpdater(object):
         self.next_waypoint_ahead_pub = rospy.Publisher(
             'next_waypoint_ahead', Int32, queue_size=1)
 
-        rospy.spin()
+        #rospy.spin()
+        rate = rospy.Rate(SAMPLE_RATE)
+        while not rospy.is_shutdown():
+            self.publish_wp()
+            rate.sleep()
+
+    def publish_wp(self):
+        if len(self.all_waypoints) > 0 and self.last_pose: # base waypoints published
+            next_waypoint_ahead = self.get_next_waypoint_ahead()
+            #if next_waypoint_ahead != self.next_waypoint_ahead:
+            waypoints_ahead = self.get_waypoints_ahead(next_waypoint_ahead)
+            self.adapt_target_velocities(waypoints_ahead)
+            self.publish(next_waypoint_ahead, waypoints_ahead)
 
     def pose_cb(self, msg):
         self.last_pose = msg.pose
-        if len(self.all_waypoints) > 0: # base waypoints published
-            next_waypoint_ahead = self.get_next_waypoint_ahead()
-            if next_waypoint_ahead != self.next_waypoint_ahead:
-                waypoints_ahead = self.get_waypoints_ahead(next_waypoint_ahead)
-                self.adapt_target_velocities(waypoints_ahead)
-                self.publish(next_waypoint_ahead, waypoints_ahead)
 
     def waypoints_cb(self, waypoints):
         # reassign all waypoints of the track 
@@ -95,10 +101,9 @@ class WaypointUpdater(object):
     def adapt_target_velocities(self, waypoints_ahead):
         if self.next_traffic_light == None:
             return
-        if self.next_waypoint_ahead > self.next_traffic_light:
-            return
+        #if self.next_waypoint_ahead > self.next_traffic_light:
+        #    return
         next_waypoint_velocity = self.get_waypoint_velocity(self.all_waypoints[self.next_waypoint_ahead])
-
         distance_to_stop = self.waypoint_distance(self.all_waypoints, self.next_waypoint_ahead, self.next_traffic_light)
         if self.next_traffic_light != -1 and distance_to_stop < 50:
             rospy.loginfo("Distance of next waypoint to red light: %s" % (distance_to_stop))
@@ -106,22 +111,27 @@ class WaypointUpdater(object):
             rospy.loginfo("Red light at %s" % (self.next_traffic_light))
             rospy.loginfo("Next waypoint ahead %s" % (self.next_waypoint_ahead))
             rospy.loginfo("Current velocity target for next waypoint: %s" % (next_waypoint_velocity))
-            for i in range(len(waypoints_ahead)):
-                velocity_adjusted = next_waypoint_velocity
-                if self.next_traffic_light > self.next_waypoint_ahead:
-                    velocity_adjusted = next_waypoint_velocity - (i+1) * next_waypoint_velocity /(self.next_traffic_light - self.next_waypoint_ahead)
+            velocity_adjusted = next_waypoint_velocity
+            for i in range(1, len(waypoints_ahead)):
+                #velocity_adjusted = current_velocity
+                if i < self.next_traffic_light - self.next_waypoint_ahead:
+                    velocity_adjusted -= next_waypoint_velocity /(self.next_traffic_light - self.next_waypoint_ahead)
+                elif i == self.next_traffic_light - self.next_waypoint_ahead:
+                    velocity_adjusted = 0.0
+                else:
+                    velocity_adjusted += MAX_ACCEL
 
                 velocity_adjusted = max(velocity_adjusted, 0.0)
                 velocity_adjusted = min(velocity_adjusted, MAX_VELOCITY)
-                rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i, velocity_adjusted))
+                rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i + self.next_waypoint_ahead, velocity_adjusted))
                 self.set_waypoint_velocity(waypoints_ahead, i, velocity_adjusted)
 
         else:
             rospy.loginfo("Increase velocities smoothly to max")
             for i in range(len(waypoints_ahead)):
-                velocity_adjusted = next_waypoint_velocity + i * MAX_ACCEL
+                velocity_adjusted = next_waypoint_velocity + (i+1) * MAX_ACCEL
                 velocity_adjusted = min(velocity_adjusted, MAX_VELOCITY)
-                rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i, velocity_adjusted))
+                rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i + self.next_waypoint_ahead, velocity_adjusted))
                 self.set_waypoint_velocity(waypoints_ahead, i, velocity_adjusted)
 
     def waypoint_distance(self, waypoints, i1, i2):
