@@ -20,7 +20,7 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        processed = preprocess(image)
+        processed = self.preprocess(image)
 
         # ----- Filter contour.
         width, height = processed.shape
