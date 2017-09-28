@@ -379,7 +379,7 @@ class WaypointUpdater(object):
 
         self.stopPlanner = stop_planner.StopPlanner()
         self.stopPlanner.getMap_s(self.wps)
-        rospy.loginfo("size of map_s: " % len(self.stopPlanner.map_s))
+        rospy.loginfo("size of map_s: %d " % len(self.stopPlanner.map_s))
 
 
         rospy.loginfo("Waypoints: now have %d avg dist %f", len(self.wps), self.avg_wp_dist)

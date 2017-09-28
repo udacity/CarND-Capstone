@@ -43,15 +43,15 @@ class StopPlanner(object):
     ## calculate map of "s" used to convert to frenet coordinates
     ##
     def getMap_s(self, waypoints):
-        map_s = [0.]
+        self.map_s = [0.]
         s = 0
         for i in range(len(waypoints)-1):
             s += self.euclidean_distance(waypoints[i].pose.pose.position.x,
                                     waypoints[i].pose.pose.position.y,
                                     waypoints[i+1].pose.pose.position.x,
                                     waypoints[i+1].pose.pose.position.y)
-            map_s.append(s)
-        return map_s
+            self.map_s.append(s)
+        return
 
     ## calculate distance between two waypoints
     #
