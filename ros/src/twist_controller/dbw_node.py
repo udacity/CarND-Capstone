@@ -85,19 +85,14 @@ class DBWNode(object):
 	def dbw_enabled_cb(self, msg):
 		# to check if drive by wire is enabled
 		self.dbw_enabled_check = msg.data
-		# toggles when the mode is changed in the simulator, e.g. checking the manuel checkbox
-		# rospy.logwarn("dwb enabled: %s", msg.data) 
 
 
 	def crnt_vel_cb(self, msg):
 		# vehicle velocities:
 		# linear
-		# self.cur_vel_lin = self.magnitude(msg.twist.linear.x, msg.twist.linear.y)
 		self.cur_vel_lin = msg.twist.linear.x
 		# angular
 		self.cur_vel_ang = msg.twist.angular.z
-		
-		# rospy.logwarn("current velocity: %s", msg.twist.linear.x)
 
 
 	def twist_cmd_cb(self, msg):
@@ -105,8 +100,6 @@ class DBWNode(object):
 		self.target_vel_lin = msg.twist.linear.x
 		self.target_vel_ang = msg.twist.angular.z
 		
-		# rospy.logwarn("current twist: %s", msg.twist.linear.x)
-
 
 	def waypoints_cb(self, waypoints):
 		self.waypoints = waypoints
@@ -118,7 +111,6 @@ class DBWNode(object):
 
 	def loop(self):
 		rate = rospy.Rate(50) # 50Hz
-		# rospy.logwarn("Entering loop......") 
 		while not rospy.is_shutdown():
 			if hasattr(self, 'dbw_enabled_check'): # and hasattr(self, '')
 				time_elapsed = rospy.rostime.get_time() - self.time_last_sample
@@ -138,8 +130,6 @@ class DBWNode(object):
 															self.cur_vel_lin, 
 															self.cur_vel_ang, 
 															time_elapsed)
-					# rospy.logwarn("Vehicle throttle: %s", throttle)
-					# rospy.logwarn("Vehicle steering: %s", steering)
 				except Exception as e:
 					rospy.logwarn("Error: %s", e)
 					pass

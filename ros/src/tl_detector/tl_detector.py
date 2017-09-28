@@ -54,21 +54,14 @@ class TLDetector(object):
         # initialize traffic light waypoints
         self.prev_nrst_wp = 0
 
-        # cv2.namedWindow('imshow')
-
         rospy.spin()
 
     def pose_cb(self, msg):
         self.pose = msg
         self.vehicle_orientation = msg.pose.orientation
-        # rospy.logwarn("Vehicle postion: %s", msg.pose.position.x)
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
-
-        # # position of waypoints 
-        # rospy.logwarn("position: %s", self.waypoints.waypoints[2].pose.pose.position.x)
-        # rospy.logwarn("waypoints len: %s", len(self.waypoints.waypoints))
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -132,19 +125,6 @@ class TLDetector(object):
                     nearest_wp = i
                     smallest_dist = dist
 
-            # # quaternion conversion (see: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_Angles_Conversion)
-            # q = self.vehicle_orientation
-            # theta = math.asin(2*(q.w*q.y + q.z*q.x))
-            # # if abs(theta)>= 1:
-            # #     theta = math.pi/2.0
-            # # else:
-            # #     theta = math.asin(theta)
-            # heading =  hd(self.vehicle_pos, wp_pos)
-            # angle = abs(theta - heading)
-
-            # if (angle>math.pi/4.0):
-            #     nearest_wp += 1
-
             self.prev_nrst_wp = nearest_wp
             # if nearest_wp > 10696:
             #     self.prev_nrst_wp = 0
@@ -206,7 +186,7 @@ class TLDetector(object):
             y (int): y coordinate of target point in image
 
 
-        It seems there is a problem with this implmentation. Will consider
+        It seems there is a problem with this implmentation. Will consider...
 
         """
 
@@ -231,8 +211,6 @@ class TLDetector(object):
         cam_m = [[fx, 0, image_width/2],[0, fy, image_height/2],[0, 0, 1]]
         trans_m = self.quaternion_to_rot(rot, trans)
 
-        # rospy.logwarn("transform matrix: %s", cam_m)
-        # rospy.logwarn("camera rotation: %s", rot)
         image_vec = np.matmul(cam_m, trans_m)
         worl_pos_vec = [point_in_world.x, point_in_world.y, point_in_world.z, 1]
         image_vec = np.matmul(image_vec, worl_pos_vec)
@@ -241,8 +219,6 @@ class TLDetector(object):
 
         x = int(image_vec[0])
         y = int(image_vec[1])
-
-        # rospy.logwarn("image coordinate: %s", (x, y))
 
         return (x, y)
 
@@ -269,24 +245,10 @@ class TLDetector(object):
 
         #TODO use light location to zoom in on traffic light in image
 
-
-
-        # rospy.logwarn("Light waypoint: %s", (light_wp, light.pose.pose.position.x))
-
-        # if light_wp != -1:
-        #     #save images here, if possible
-        #     rospy.logwarn("Writing images... %s", (x,y))
-        #     # draw a circle on the image
-        #     cv2.circle(cv_image, (x,y), 10, (0, 0, 255), -1)
-            
-        #     cv2.imwrite('images/'+str(rospy.Time.now())+'.jpg', cv_image)
-
-        # rospy.logwarn("image size: %s", cv_image.shape)
-
         #Get classification
         light_state = self.get_classification(cv_image)
 
-        rospy.logwarn("light state: %s", light_state)
+        # rospy.logwarn("light state: %s", light_state)
 
         return self.light_classifier.get_classification(cv_image)
 

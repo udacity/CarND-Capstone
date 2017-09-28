@@ -12,9 +12,7 @@ class Controller(object):
         # TODO: Implement
         # contoller parameters: kp, ki, kd
         self.velocity_pid = PID(1.0, 0.05, 0.2)
-        # self.steer_pid = PID(6.0, 0.3, 1.0)
-        # self.steer_pid = PID(0.6, 0.7, 0.4) 
-        self.steer_pid = PID(6.0, 0.0, 0.00002)
+        self.steer_pid = PID(5.0, 0.0, 0.00002)
 
         self.steer_control = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
@@ -30,17 +28,15 @@ class Controller(object):
         vel_error = target_vel_lin - cur_vel_lin
 
         throttle = self.velocity_pid.step(vel_error, time_elapsed)
-        brake = max(0.0, -throttle) + 0.2
+        brake = max(0.0, -throttle)
         throttle = max(0.0, throttle)
 
-
-        # cur_steer = self.steer_control.get_steering(target_vel_lin, target_vel_ang, cur_vel_lin)
 
         target_steer =  self.steer_control.get_steering(target_vel_lin, target_vel_ang, target_vel_lin)
         cur_steer = self.steer_control.get_steering(cur_vel_lin, cur_vel_ang, cur_vel_lin)
         steer = self.steer_pid.step(target_steer - cur_steer, time_elapsed)
 
-        # steer = self.steer_lowpass.filt(steer)
+        steer = self.steer_lowpass.filt(steer)
         
-        # Return throttle, brake, steer
+        # Return throttle, brake and steer
         return throttle, brake, steer
