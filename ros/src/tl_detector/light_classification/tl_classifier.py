@@ -11,14 +11,13 @@ MODEL_NAME = 'faster_rcnn_resnet101_coco_11_06_2017'
 MODEL_FILE = MODEL_NAME + '.tar.gz'
 DOWNLOAD_BASE = 'http://download.tensorflow.org/models/object_detection/'
 GRAPH_FILE = 'frozen_inference_graph.pb'
-PATH_TO_CKPT = MODEL_NAME + '/' + GRAPH_FILE
 TRAFFIC_SIGNAL_CLASS = 10
 LUMA_THRESHOLD = (200, 255)
-MIN_LIGHT_WEIGHT = .15
+MIN_LIGHT_WEIGHT = 0.1
 
 class TLClassifier(object):
     def __init__(self):
-        if not os.path.isfile(PATH_TO_CKPT):
+        if not os.path.isfile(GRAPH_FILE):
             rospy.loginfo("Downloading Tensorflow model")
             # Download Model.
             opener = urllib.request.URLopener()
@@ -27,13 +26,15 @@ class TLClassifier(object):
             for file in tar_file.getmembers():
                 file_name = os.path.basename(file.name)
                 if GRAPH_FILE in file_name:
+                    file.name = os.path.basename(file.name)
                     tar_file.extract(file, os.getcwd())
+                    break
         rospy.loginfo("Loading Tensorflow model into memory")
         # Load a (frozen) Tensorflow model into memory.
         self.detection_graph = tf.Graph()
         with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
-            with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
+            with tf.gfile.GFile(GRAPH_FILE, 'rb') as fid:
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
@@ -47,6 +48,11 @@ class TLClassifier(object):
             self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
             self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
             self.session = tf.Session(graph=self.detection_graph)
+            # Classify a dummy image to launch the pipeline.
+            dummy_image = np.zeros((1, 1, 1, 3), dtype=np.uint8)
+            (_, _, _, _) = self.session.run(
+                [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
+                feed_dict={self.image_tensor: dummy_image})
         rospy.loginfo("Classifier has been initialized")
 
     def get_classification(self, image):
@@ -57,27 +63,25 @@ class TLClassifier(object):
 
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
-
         """
-        begin_time = rospy.get_rostime()
-
         signal_detected = False
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         image_expanded = np.expand_dims(image, axis=0)
         # Actual detection.
+        begin_time = rospy.get_rostime()
         (boxes, scores, classes, num) = self.session.run(
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: image_expanded})
-        highest_score = 0.
-        for n in range(num):
-            c = np.squeeze(classes)[n]
-            s = np.squeeze(scores)[n]
-            if c == TRAFFIC_SIGNAL_CLASS and s > highest_score:
-                signal_box = np.squeeze(boxes)[n]
-                highest_score = s
-                signal_detected = True
         end_time = rospy.get_rostime()
         rospy.loginfo("Inference duration %.3f s", end_time.to_sec() - begin_time.to_sec())
+        highest_score = 0.
+        for n in range(num):
+            current_class = np.squeeze(classes)[n]
+            current_score = np.squeeze(scores)[n]
+            if current_class == TRAFFIC_SIGNAL_CLASS and current_score > highest_score:
+                signal_box = np.squeeze(boxes)[n]
+                highest_score = current_score
+                signal_detected = True
 
         if not signal_detected:
             return TrafficLight.UNKNOWN
@@ -155,7 +159,9 @@ class TLClassifier(object):
                   (TrafficLight.GREEN, green_weight)]
         lights.sort(key=lambda tup: tup[1], reverse=True)
         rospy.loginfo("Lights %s", lights)
-        if lights[0][1] < MIN_LIGHT_WEIGHT or lights[0][1] - lights[1][1] < MIN_LIGHT_WEIGHT:
+        if lights[0][1] < MIN_LIGHT_WEIGHT or lights[1][1] / lights[0][1] > 0.5:
+            # Disregard the light whose average weight is too low, or whose weight is less than
+            # twice higher than the second greatest one.
             return TrafficLight.UNKNOWN
 
         return lights[0][0]
