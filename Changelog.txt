@@ -192,3 +192,44 @@ waypoint_updater.py: Added new topic, /tl_distance, which provides
 the distance to the next red light stop line, in meters.  If no red 
 light is detected ahead, then returns -1.0.  This topic is published
 at the same frequency as images are received from the car.
+
+Changes (2017-09-24 and 2017-09-27 by calvenn)
+
+tl_detector.py: Comment out line 477 state = light.state. 
+
+tl_cnn.py: add cv2.resize the input image size from 
+800x600 to 400x300.  Process image once for every 15 images 
+pass by and still can produce tl_distance. 
+
+waypoint_updater.py add dist filter if dist <50: 
+self.tl_distance_pub.publish(dist)
+
+Changes (2017-09-27 by cs4nd13)
+
+ros/launch/styx_fast_tl.launch: this is a launch file with 
+the traffic_light_algorithm parameter set to 0 so that the 
+simulator's traffic-light-state detection is used, instead of 
+an image processing algorithm, to determine the traffic light state
+
+tl_detector.py: Moved Calvenn's image processing algorithm out
+of this file into files in the sub-directory light_classification_ct.
+Imported that sub-directory.
+Added a parameter, self.algorithm, which determines which image-processing
+algorithm will be called.  So far there are only two choices: 0 means
+that the traffic-light-state information from the simulator will be
+used; 1 means that Calvenn's algorithm will be used.
+Added a parameter, self.max_tl_distance.  If the car is more than this
+distance from the next light, do not call the image-processing
+algorithm.
+Note that important parameters such as algorithm, max_tl_distance, and
+skip-frame count, are all set in tl_detector.py, in TLDetector.__init__ .
+The algorithm can also be set in the ROS parameter traffic_light_algorithm.
+
+light_classification_ct directory: Moved Calvenn's code and data here.
+tl_cnn.py: Changed file paths to point to the new locations of the data.  
+Moved frame-skipping logic from here to tl_classifier.py.
+tl_classifier.py: Moved Calvenn's code, formerly in tl_detector.py,
+to here.  Moved frame-skipping logic to here.
+
+waypoint_updater.py: Undid Calvenn's change, since the max_tl_distance
+logic in tl_detector.py handles this now.

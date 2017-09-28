@@ -6,11 +6,15 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+# import Udacity (empty) traffic light classifier
 from light_classification.tl_classifier import TLClassifier
+# import Calvenn's traffic light classifier
+from light_classification_ct.tl_classifier import TLClassifierCT
 # tf is related to ROS transforms, not to TensorFlow
 import tf
 import cv2
 import yaml
+import math
 
 # the following 4 routines are
 # cut-and-pasted from update_waypoint.py
@@ -144,7 +148,37 @@ class TLDetector(object):
         # traffic light in the image is red, green, yellow, or unknown.
         # You will need to write the classification code yourself, of
         # course!
-        self.light_classifier = TLClassifier()
+        self.light_classifier = None
+
+        # self.algorithm possible values:
+        # 0: use light-state info from simulator
+        # 1: use light-state info from Calvenn's algorithm
+        # If you add a new image-processing algorithm, give it
+        # a new number!
+
+        # By default (if no parameter set) use Calvenn's algorithm
+        self.algorithm = rospy.get_param("/traffic_light_algorithm", 1)
+
+        if self.algorithm == 0:
+            rospy.logwarn("Using traffic-light state from simulator!")
+
+        # Don't process image data if the traffic light is more
+        # than max_tl_distance (meters) away.  max_tl_distance <= 0 means
+        # process all images
+        self.max_tl_distance = -1
+
+        # Call Calvenn's code
+        if self.algorithm == 1:
+            self.light_classifier = TLClassifierCT()
+            # Which frames to process.  For instance, 
+            # skip_factor = 5 means process every 5th frame
+            self.light_classifier.skip_factor = 5
+            # Don't process image if next light is more than
+            # 200 meters away
+            self.max_tl_distance = 200
+
+        # If you add a new image processing algorithm, set
+        # self.light_classifier here.
 
         # A ROS utility that handles coordinate-system transforms.
         # This will be used below to create a transformation from
@@ -377,6 +411,7 @@ class TLDetector(object):
 
         # TODO Note that you have to write most of project_to_image_plane
         # yourself, only a skeleton is provided.
+
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         # TODO Use light location to zoom in on traffic light in image
@@ -397,9 +432,9 @@ class TLDetector(object):
         #
         # Comment out the next 3 lines when you no longer need to view 
         # this image.
-        targeted_image_msg = self.bridge.cv2_to_imgmsg(
-                targeted_cv_image, "bgr8")
-        self.targeted_image_pub.publish(targeted_image_msg)
+        # targeted_image_msg = self.bridge.cv2_to_imgmsg(
+        #         targeted_cv_image, "bgr8")
+        # self.targeted_image_pub.publish(targeted_image_msg)
 
         # Get classification, using the targeted image
         return self.light_classifier.get_classification(targeted_cv_image)
@@ -449,17 +484,31 @@ class TLDetector(object):
 
         if light:
 
-            state = self.get_light_state(light)
 
-            # Cheating! Uses the light state provided by the simulator,
-            # instead of analyzing the image.
-            # TODO: Once get_light_state() is working, comment
-            # out this line:
-            state = light.state
+            # If using simulator light-state info:
+            if self.algorithm == 0:
+                state = light.state
+            else:
+                # using an algorithm
+
+                # see if traffic light is close enough to
+                # be detected; if not, return "unknown" without
+                # calling the image processing algorithm
+                if self.max_tl_distance > 0:
+                    light_pt = pose_to_point(light.pose.pose)
+                    car_pt = pose_to_point(self.pose.pose)
+                    dist = point_dist(light_pt, car_pt)
+                    if dist > self.max_tl_distance:
+                        return light_wp, state
+
+                # call the image-processing algorithm
+                state = self.get_light_state(light)
 
             return light_wp, state
+            
 
         return light_wp, state
+        
 
 if __name__ == '__main__':
     try:
