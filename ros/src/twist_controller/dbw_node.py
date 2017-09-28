@@ -60,15 +60,15 @@ class DBWNode(object):
         self.controller = TwistController(vehicle_mass, brake_deadband, decel_limit, accel_limit, wheel_radius, wheel_base, steer_ratio, max_lat_accel, max_steer_angle)
 
         # TODO: Subscribe to all the topics you need to
-        self.current_velocity_sub = rospy.Subscriber("/vehicle/current_velocity", TwistStamped, self.current_velocity_callback)
-        self.twist_cmd_sub = rospy.Subscriber("/vehicle/twist_cmd", TwistStamped, self.twist_cmd_callback)
-        self.dbw_enabled_sub = rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enabled_callback)
+        self.current_velocity_sub = rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_callback)
+        self.twist_cmd_sub = rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cmd_callback)
+        self.dbw_enabled_sub = rospy.Subscriber("/dbw_enabled", Bool, self.dbw_enabled_callback)
         
         #set up class variables to store data from subscribers
         self.current_velocity = 0.0     
         self.velocity_cmd = 0.0
         self.angular_velocity_cmd = 0.0
-        self.dbw_enabled = False
+        self.dbw_enabled = True
         
         #set up timestamp for measuring actual cycle time
         self.time = rospy.get_time()

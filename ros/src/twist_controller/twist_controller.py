@@ -52,7 +52,7 @@ class TwistController(object):
                 self.brake_controller.reset()
             else:
                 error = current_velocity - velocity_cmd
-                brake = brake.pid_controller.step(error, dt)
+                brake = self.brake_controller.step(error, dt)
                 throttle = 0.0
                 self.pid_controller.reset()
         else:
