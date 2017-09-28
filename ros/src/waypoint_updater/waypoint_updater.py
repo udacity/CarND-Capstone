@@ -57,7 +57,7 @@ class WaypointUpdater(object):
 
             concatenated = chain(range(self.last_waypoint_idx, len(self.all_waypoints)),
                                  range(self.last_waypoint_idx))
-            rospy.logwarn(len(self.all_waypoints))
+
             x = msg.pose.position.x
             y = msg.pose.position.y
             quaternion = (
@@ -83,6 +83,7 @@ class WaypointUpdater(object):
                                              range(idx, (idx + LOOKAHEAD_WPS) % len(self.all_waypoints))]
                     self.final_waypoints_pub.publish(next_points)
                     self.last_waypoint_idx = idx
+                    rospy.logwarn("First waypoint index " + str(self.last_waypoint_idx))
                     return
 
 
