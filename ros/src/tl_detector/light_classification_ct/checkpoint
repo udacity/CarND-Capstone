@@ -1,0 +1,2 @@
+model_checkpoint_path: "tl_cnn_weight-1000"
+all_model_checkpoint_paths: "tl_cnn_weight-1000"
