@@ -18,7 +18,9 @@ class Controller(object):
         self.linear_controller = PID(self.kp, self.ki, self.kd, mn=self.max_decel, mx=self.max_accel)
         self.angular_controller = YawController(vc.wheel_base, vc.steer_ratio, vc.min_speed, vc.max_lat_accel, vc.max_steer_angle)
 
-        self.linear_filter = LowPassFilter(tau=0.5, ts=1.5) # suggest some values here...
+        # self.linear_filter = LowPassFilter(tau=0.5, ts=1.5) # suggest some values here...
+        # self.linear_filter = LowPassFilter(tau=0.5, ts=1.0) # suggest some values here...
+        self.linear_filter = LowPassFilter(tau=0.5, ts=2.0) # suggest some values here...
 
         # TODO this is not so good
         self.last_run_time = rospy.get_time()
@@ -35,12 +37,10 @@ class Controller(object):
         angular_reference_velocity = twist_cmd.twist.angular.z
         linear_error = linear_reference_velocity - current_velocity.twist.linear.x
 
-        #linear_error = self.linear_filter.filt(linear_error) ##############################################
-
         linear = self.linear_controller.step(linear_error, time_elapsed)
         
         angular = self.angular_controller.get_steering(linear_reference_velocity, angular_reference_velocity, current_velocity.twist.linear.x)
-        # angular = self.angular_controller.get_steering(current_velocity.twist.linear.x, angular_reference_velocity, linear_reference_velocity)
+        
         rospy.loginfo("""Velocity Ref: {} - Curr: {} - Err: {}""".format(linear_reference_velocity, current_velocity.twist.linear.x, linear_error))
 
         self.last_run_time = time_now
