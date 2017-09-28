@@ -1,0 +1,2 @@
+model_checkpoint_path: "tl_model"
+all_model_checkpoint_paths: "tl_model"
