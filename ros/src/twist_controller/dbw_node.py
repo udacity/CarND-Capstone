@@ -111,19 +111,21 @@ class DBWNode(object):
         return
 
     def loop(self):
-        updateRate = 30
-        rate = rospy.Rate(updateRate) # 50Hz
-        rospy.loginfo("dbw running with update freq = %s",updateRate)
+        update_rate = 30
+        rate = rospy.Rate(update_rate)  # 50Hz
+        rospy.loginfo("dbw running with update freq = %s", update_rate)
 
         # initialise a controller
-        self.throtle_control = Controller(pid_kp=0.8, pid_ki=0.25, pid_kd=0.1, min_value=self.decel_limit, max_value=self.accel_limit)
+        self.throttle_control = Controller(pid_kp=0.8, pid_ki=0.25, pid_kd=0.1,
+                                           min_value=self.decel_limit, max_value=self.accel_limit)
 
         while not rospy.is_shutdown():
 
             # pid for acceleration
-            throttle, brake, steering = self.throtle_control.control(self.des_linear_velocity , self.cur_linear_velocity, self.dbw_enabled)
+            throttle, brake, steering = self.throttle_control.control(self.des_linear_velocity,
+                                                                      self.cur_linear_velocity, self.dbw_enabled)
 
-            if throttle < 0.001: # very small number
+            if throttle < 0.001:  # very small number
                 # TODO: maybe verify the units
                 if throttle < -self.brake_deadband:
                     brake = self.vehicle_mass * abs(throttle) * self.wheel_radius
