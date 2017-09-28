@@ -7,8 +7,7 @@ from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from light_classification.tl_classifier import TLClassifierSimple
-from light_classification.tl_classifier_cv import TLClassifierCV
+from light_classification.tl_classifier import TLClassifierCV
 
 import tf
 import cv2
