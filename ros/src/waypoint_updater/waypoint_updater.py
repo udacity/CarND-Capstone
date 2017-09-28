@@ -112,10 +112,7 @@ class WaypointUpdater(object):
                 closest_wp_index = index
                 min_distance = distance
 
-        # handle the case where min_distance is too high and we need to search the entire list of wp
-        if min_distance > self.threshold_dist:
-            rospy.logwarn("min_distance = %s, Reseting search for searching entire list next iteration!",min_distance)
-            self.previous_wp_index = -1
+
 
         if closest_wp_index != -1:
             if self.is_waypoint_ahead(self.waypoints[closest_wp_index].pose.pose):
@@ -128,6 +125,11 @@ class WaypointUpdater(object):
             rospy.loginfo("Error: Could not find closest waypoint in the base_waypoints!")
             rospy.logerr("Error: Could not find closest waypoint in the base_waypoints!")
             rospy.logwarn("Error: Could not find closest waypoint in the base_waypoints!")
+
+        # handle the case where min_distance is too high and we need to search the entire list of wp
+        if min_distance > self.threshold_dist:
+            rospy.logwarn("min_distance = %s, Reseting search for searching entire list next iteration!",min_distance)
+            self.previous_wp_index = -1
 
         return next_wp_index
 
