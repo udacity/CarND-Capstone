@@ -32,7 +32,7 @@ Once you have the proposed throttle, brake, and steer values, publish it on the 
 that we have created in the `__init__` function.
 
 '''
-DBW_UPDATE_RATE = 30
+DBW_UPDATE_RATE = 15
 
 class DBWNode(object):
     def __init__(self):
