@@ -24,9 +24,9 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200  # Number of waypoints to publish
-
-
+LOOKAHEAD_WPS = 50  # Number of waypoints to publish
+WP_UPDATE_RATE = 2; # processing frequency
+REF_VEL = 4.47
 def to_deg(angle):
     return angle*180.0/math.pi
 
@@ -37,6 +37,9 @@ def to_rad(angle):
 
 class WaypointUpdater(object):
     def __init__(self):
+        # Initiate node
+        rospy.init_node('waypoint_updater')
+
         # Waypoint ahead of vehicle in previous loop iteration
         self.previous_wp_index = -1
 
@@ -49,8 +52,12 @@ class WaypointUpdater(object):
         # Traffic light
         self.tf_index = -1  # if -1 then there is no traffic light ahead
 
-        # Initiate node
-        rospy.init_node('waypoint_updater')
+        # watchdogs for safety critical handling
+        self.current_timestamp = rospy.Time.now()
+        self.pose_timestamp = rospy.Time.now()
+        self.tf_timestamp = rospy.Time.now()
+        # TODO verify if this value is OK
+        self.watchdog_limit = 0.5e9 # half second
 
         # Subscribe to topics
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -116,13 +123,11 @@ class WaypointUpdater(object):
         # Should not be possible
         assert closest_wp_index != -1
 
-        # Increase index if closest waypoint is behind ego vehicle
+        # Step one wp ahead if closest wp is behind ego vehicle
         if self.is_waypoint_ahead(self.waypoints[closest_wp_index].pose.pose):
             next_wp_index = closest_wp_index
         else:
             next_wp_index = (closest_wp_index + 1) % num_waypoints
-
-        # Save waypoint index for next loop iteration
         self.previous_wp_index = next_wp_index
 
         return next_wp_index
@@ -142,85 +147,102 @@ class WaypointUpdater(object):
         rospy.loginfo("%s waypoints loaded", num_waypoints)
 
         # Set update frequency in Hz. Should be 50Hz TBD
-        update_rate = 1
-        rate = rospy.Rate(update_rate)
-        rospy.loginfo("Waypoint updater running with update freq = %s Hz", update_rate)
+        rate = rospy.Rate(WP_UPDATE_RATE)
+        rospy.loginfo("Waypoint updater running with update rate = %s Hz", WP_UPDATE_RATE)
 
         # Loop waypoint publisher
+        count_lap = True
+        num_laps = 0
+
         while not rospy.is_shutdown():
+            emergency_stop = False
+            # handle safety critical failures
+            self.current_timestamp = rospy.Time.now()
+            if (self.current_timestamp - self.pose_timestamp).nsecs > self.watchdog_limit:
+                # stop the car
+                rospy.logwarn("Safety hazard: not receiving POSE info for long time. Stopping the vehicle!")
+                emergency_stop = True
 
-            # TODO: Create a safety mechanism if no pose update received stop the car
+            if (self.current_timestamp - self.tf_timestamp).nsecs > self.watchdog_limit:
+                # stop the car
+                rospy.logwarn("Safety hazard: not receiving TRAFFIC_LIGHT info for long time. Stopping the vehicle!")
+                emergency_stop = True
 
-            next_wp_index = self.get_next_waypoint_index()
-
-            if next_wp_index != -1:
-
-                if next_wp_index + LOOKAHEAD_WPS >= num_waypoints:
-                    excess = (next_wp_index + LOOKAHEAD_WPS) % num_waypoints
-                    # Wrap around
-                    list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:])  # Create copy of original list
-                    list_wp_to_pub.extend(self.waypoints[0:excess])
-                    rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s to %s",
-                                  len(list_wp_to_pub), next_wp_index, excess)
-                else:
-                    list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index: next_wp_index + LOOKAHEAD_WPS])
-                    rospy.loginfo("Publishing %s wp from index %s to %s",
-                                  len(list_wp_to_pub), next_wp_index, next_wp_index + LOOKAHEAD_WPS)
-
-
-
-
-                # TODO: REMOVE THIS SECTION
-                #force higher speed for testing only
+            if emergency_stop:
+                list_wp_to_pub = copy.deepcopy(self.waypoints[0:LOOKAHEAD_WPS])
+                # force linear and angular speed to be zero
                 for i in range(len(list_wp_to_pub)):
-                    list_wp_to_pub[i].twist.twist.linear.x = 8
-                # TODO: END OF SECTION SECTION TO REMOVE
-
-
-
-
-                traffic_light_visible = self.tf_index != -1
-                if traffic_light_visible:
-                    # handle the case where the tf_wp is wrapped
-                    if self.tf_index < next_wp_index:
-                        wp_to_end_list = num_waypoints-next_wp_index
-                        index_in_wp_list = wp_to_end_list + self.tf_index
-                    else:
-                        # simple case the tf_index is within the LOOKAHEAD distance
-                        index_in_wp_list = self.tf_index - next_wp_index
-
-                    # handle the case where the tf_wp is beyond the LOOKAHEAD wp list
-                    if index_in_wp_list < LOOKAHEAD_WPS:
-                        # 1st set the velocity of tf_index waypoint and beyond to zero
-                        MARGIN = 3
-                        for i in range(index_in_wp_list-MARGIN, LOOKAHEAD_WPS): # set speed to zero a few waypoints before the traffic_lights
-                            list_wp_to_pub[i].twist.twist.linear.x = 0.0
-
-                        # for wp before the target tf_index decrease speed gradually until the tf_index
-                        ref_speed = 0.0
-                        for i in range(index_in_wp_list-MARGIN-1, -1, -1):
-                            if list_wp_to_pub[i].twist.twist.linear.x > ref_speed:
-                                list_wp_to_pub[i].twist.twist.linear.x = ref_speed
-                                ref_speed = ref_speed + 0.2
-                                #rospy.loginfo("iteration %s = %s", i, ref_speed)
-                            else:
-                                #rospy.loginfo("breaking for loop after %s iterations",i)
-                                break
-
-                # Create and publish Lane message
-                lane_msg = Lane()
-                lane_msg.header.frame_id = '/world'
-                lane_msg.header.stamp = rospy.Time(0)
-                lane_msg.waypoints = list_wp_to_pub
-                self.final_waypoints_pub.publish(lane_msg)
-
+                    list_wp_to_pub[i].twist.twist.linear.x = 0
+                    list_wp_to_pub[i].twist.twist.angular.z = 0
             else:
-                rospy.logwarn("Failed to find closest_waypoint.")
+                # rospy.loginfo("Current_pose = %s,%s",self.current_pose.position.x,self.current_pose.position.y)
+                next_wp_index = self.get_next_waypoint_index()
+                if next_wp_index != -1:
+
+                    if next_wp_index+LOOKAHEAD_WPS >= num_waypoints:
+                        excess = (next_wp_index+LOOKAHEAD_WPS) % num_waypoints
+                        # Wrap around
+                        list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:]) # create a copy to prevent overwritting the original list
+                        list_wp_to_pub.extend(self.waypoints[0:excess])
+                        # rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s (%s+%s)", len(list_wp_to_pub), next_wp_index, len(self.waypoints)-next_wp_index,excess)
+                        # rospy.loginfo("=====> Wrap around: Publishing %s wp from index = %s to %s", len(list_wp_to_pub), next_wp_index, excess)
+                        if count_lap:
+                            num_laps = num_laps + 1
+                            rospy.loginfo("num_laps = %s",num_laps)
+                            count_lap = False
+                    else:
+                        list_wp_to_pub = copy.deepcopy(self.waypoints[next_wp_index:next_wp_index+LOOKAHEAD_WPS])
+                        # rospy.loginfo("Publishing %s wp from index %s to %s", len(list_wp_to_pub),next_wp_index,next_wp_index+LOOKAHEAD_WPS)
+                        count_lap = True
+
+                    # Set reference speed
+                    for i in range(len(list_wp_to_pub)):
+                        list_wp_to_pub[i].twist.twist.linear.x = REF_VEL
+
+                    if self.tf_index != -1:
+                        # handle the case where the tf_wp is wrapped
+                        if self.tf_index < next_wp_index:
+                            wp_to_end_list = num_waypoints-next_wp_index
+                            index_in_wp_list = wp_to_end_list + self.tf_index
+                        else:
+                            # simple case the tf_index is within the LOOKAHEAD distance
+                            index_in_wp_list = self.tf_index - next_wp_index
+
+                        # handle the case where the tf_wp is beyond the LOOKAHEAD wp list
+                        if index_in_wp_list < LOOKAHEAD_WPS:
+                            # 1st set the velocity of tf_index waypoint and beyond to zero
+                            MARGIN = 3
+                            for i in range(index_in_wp_list-MARGIN,LOOKAHEAD_WPS):  # set speed to zero a few waypoints before the traffic_lights
+                                list_wp_to_pub[i].twist.twist.linear.x = 0.0
+
+                            # for wp before the target tf_index decrease speed gradually until the tf_index
+                            ref_speed = 0.0
+                            for i in range(index_in_wp_list-MARGIN-1, -1, -1):
+                                if list_wp_to_pub[i].twist.twist.linear.x > ref_speed:
+                                    list_wp_to_pub[i].twist.twist.linear.x = ref_speed
+                                    ref_speed = ref_speed + 0.2
+                                    #rospy.loginfo("iteration %s = %s", i, ref_speed)
+                                else:
+                                    #rospy.loginfo("breaking for loop after %s iterations",i)
+                                    break
+
+                    #rospy.loginfo("tf_index = %s \tnext_wp_vel = %s",self.tf_index,list_wp_to_pub[0].twist.twist.linear.x)
+
+                    # Create and publish Lane message
+                    lane_msg = Lane()
+                    lane_msg.header.frame_id = '/world'
+                    lane_msg.header.stamp = rospy.Time(0)
+                    lane_msg.waypoints = list_wp_to_pub
+                    self.final_waypoints_pub.publish(lane_msg)
+
+                else:
+                    rospy.logwarn("Failed to find closest_waypoint.")
 
             rate.sleep()
 
     def pose_cb(self, msg):
         self.current_pose = msg.pose
+        self.pose_timestamp = rospy.Time.now()
         #rospy.loginfo("cur_position = (%s,%s)", self.current_pose.position.x, self.current_pose.position.y)
 
     def is_waypoint_ahead(self, wp_pose):
@@ -258,6 +280,7 @@ class WaypointUpdater(object):
         # TODO: Callback for /traffic_waypoint message. Implement
         # rospy.loginfo("traffic_cb msg = %s",msg.data)
         self.tf_index = msg.data
+        self.tf_timestamp = rospy.Time.now()
         return
 
     def obstacle_cb(self, msg):

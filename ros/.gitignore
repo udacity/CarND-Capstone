@@ -1,0 +1,3 @@
+src/tl_detector/red*
+src/tl_detector/notred*
+src/tl_detector/frozen_inference_graph.pb
