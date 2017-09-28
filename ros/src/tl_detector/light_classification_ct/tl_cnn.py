@@ -5,7 +5,8 @@ import numpy as np
 import glob
 import atexit
 print(glob.glob("./*"))
-gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
+#gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
+gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7, allow_growth=True)
 sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))   
 
 saver = tf.train.import_meta_graph('./light_classification_ct/tl_cnn_weight-1000.meta')
