@@ -14,11 +14,11 @@ class Controller(object):
         self.velocity_pid = PID(1.0, 0.05, 0.2)
         # self.steer_pid = PID(6.0, 0.3, 1.0)
         # self.steer_pid = PID(0.6, 0.7, 0.4) 
-        self.steer_pid = PID(6.0, 0.2, 0.0005)
+        self.steer_pid = PID(6.0, 0.0, 0.00002)
 
         self.steer_control = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
-        self.steer_lowpass = LowPassFilter(0.6, 0.2)
+        self.steer_lowpass = LowPassFilter(0.4, 0.1)
 
     def control(self, target_vel_lin, target_vel_ang, cur_vel_lin, cur_vel_ang, time_elapsed):
 

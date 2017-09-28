@@ -175,6 +175,26 @@ class TLDetector(object):
 
         return transform_mat
 
+    def get_classification(self, image):
+        # Initial state
+        state = TrafficLight.UNKNOWN
+
+        # Match pixel area
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        mask_image = cv2.inRange(hsv_image, np.array([150, 100, 150]), np.array([180, 255, 255]))
+        extracted_image = cv2.bitwise_and(image, image, mask=mask_image)
+        area = cv2.countNonZero(mask_image)
+
+        # Check threshold
+        pixels = 40
+
+        if area > pixels:
+            state = TrafficLight.RED
+
+        # Return traffic light state - only UNKNOWN / RED
+
+        return state
+
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
 
@@ -222,7 +242,7 @@ class TLDetector(object):
         x = int(image_vec[0])
         y = int(image_vec[1])
 
-        rospy.logwarn("image coordinate: %s", (x, y))
+        # rospy.logwarn("image coordinate: %s", (x, y))
 
         return (x, y)
 
@@ -248,21 +268,26 @@ class TLDetector(object):
 
 
         #TODO use light location to zoom in on traffic light in image
-        light_wp, state = self.process_traffic_lights()
 
-        rospy.logwarn("Light waypoint: %s", (light_wp, light.pose.pose.position.x))
 
-        if light_wp != -1:
-            #save images here, if possible
-            rospy.logwarn("Writing images... %s", (x,y))
-            # draw a circle on the image
-            cv2.circle(cv_image, (x,y), 10, (0, 0, 255), -1)
+
+        # rospy.logwarn("Light waypoint: %s", (light_wp, light.pose.pose.position.x))
+
+        # if light_wp != -1:
+        #     #save images here, if possible
+        #     rospy.logwarn("Writing images... %s", (x,y))
+        #     # draw a circle on the image
+        #     cv2.circle(cv_image, (x,y), 10, (0, 0, 255), -1)
             
-            cv2.imwrite('images/'+str(rospy.Time.now())+'.jpg', cv_image)
+        #     cv2.imwrite('images/'+str(rospy.Time.now())+'.jpg', cv_image)
 
         # rospy.logwarn("image size: %s", cv_image.shape)
 
         #Get classification
+        light_state = self.get_classification(cv_image)
+
+        rospy.logwarn("light state: %s", light_state)
+
         return self.light_classifier.get_classification(cv_image)
 
     def new_pose(self, x, y, z, yaw=0.):
