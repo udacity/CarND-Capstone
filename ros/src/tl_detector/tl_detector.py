@@ -40,6 +40,7 @@ class TLDetector(object):
         self.lights = []
         self.bridge = CvBridge()        
         self.light_classifier_loaded = False
+        self.traffic_positions = self.get_given_traffic_lights()
 
         # Load the classifier and change the flag
         if self.simulator:
@@ -92,9 +93,226 @@ class TLDetector(object):
 
             self.image_lock.release()
 
+    def get_closest_traffic_light_ahead_of_car(self, traffic_lights, car_position, waypoints):
+        """
+        Given list of traffic lights, car position and waypoints, return closest traffic light
+        ahead of the car. This function wraps around the track, so that if car is at the end of the track,
+        and closest traffic light is at track's beginning, it will be correctly reported
+        :param traffic_lights: list of styx_msgs.msg.TrafficLight instances
+        :param car_position: geometry_msgs.msgs.Pose instance
+        :param waypoints: list of styx_msgs.msg.Waypoint instances
+        :return: styx_msgs.msg.TrafficLight instance
+        """
+
+        waypoints_matrix = self.get_waypoints_matrix(waypoints)
+        car_index = self.get_closest_waypoint_index(car_position, waypoints_matrix)
+
+        # Arrange track waypoints so they start at car position
+        waypoints_ahead = waypoints[car_index:] + waypoints[:car_index]
+        waypoints_ahead_matrix = self.get_waypoints_matrix(waypoints_ahead)
+
+        distances = []
+
+        for traffic_light in traffic_lights:
+
+            waypoint_index = self.get_closest_waypoint_index(traffic_light.pose.pose.position, waypoints_ahead_matrix)
+
+            distance = self.get_road_distance(waypoints_ahead[:waypoint_index])
+            distances.append(distance)
+
+        closest_traffic_light_index = np.argmin(distances)
+
+        return traffic_lights[closest_traffic_light_index]
+
+    def project_to_image_plane(self, point_in_world, car_pose, image_width, image_height):
+        """Project point from 3D world coordinates to 2D camera image location
+
+        Args:
+            point_in_world (Point): 3D location of a point in the world
+            car_pose: current car pose
+            image_width: camera image width
+            image_height: camera image height
+
+        Returns:
+            x (int): x coordinate of target point in image
+            y (int): y coordinate of target point in image
+
+        """
+
+        fx = self.config["camera_info"]["focal_length_x"]
+        fy = self.config["camera_info"]["focal_length_y"]
+
+        # light = None
+        # light_positions = self.config['light_positions']
+        # if(self.pose):
+        #     car_position = self.get_closest_waypoint(self.pose.pose)
+
+        # Commenting out trans and rot code - we aren't using them for now, as they seem broken and
+        # are received using blocking code - thus somewhat slow
+        # # get transform between pose of camera and world frame
+        # trans = None
+        # try:
+        #     now = rospy.Time.now()
+        #     self.listener.waitForTransform("/base_link",
+        #                                    "/world", now, rospy.Duration(1.0))
+        #     (trans, rot) = self.listener.lookupTransform("/base_link",
+        #                                                  "/world", now)
+        #
+        # except (tf.Exception, tf.LookupException, tf.ConnectivityException) as e:
+        #     rospy.logerr("Failed to find camera to map transform")
+
+        #
+        # # rospy.logwarn("Transform shift is: {}".format(trans))
+        # # rospy.logwarn("Rotation is: {}".format(rot))
+
+        # TODO Use transform and rotation to calculate 2D position of light in image
+        world_coordinates_point = np.array(
+            [point_in_world.x, point_in_world.y, point_in_world.z], dtype=np.float32).reshape(3, 1)
+
+        car_position = np.array([car_pose.position.x, car_pose.position.y, car_pose.position.z],
+                                dtype=np.float32).reshape(3, 1)
+        camera_offset = np.array([1.0, 0, 1.2], dtype=np.float32).reshape(3, 1)
+        # translation_vector = np.array(trans, dtype=np.float32).reshape(3, 1)
+        translation_vector = car_position + camera_offset
+
+        # Move point to camera origin
+        world_coordinates_point_shifted_to_camera_coordinates = world_coordinates_point - translation_vector
+
+        homogenous_vector = np.ones(shape=(4, 1), dtype=np.float32)
+        homogenous_vector[:3] = world_coordinates_point_shifted_to_camera_coordinates
+
+        quaternion = np.array([
+            car_pose.orientation.x, car_pose.orientation.y, car_pose.orientation.z, car_pose.orientation.w],
+            dtype=np.float32)
+
+        euler_angles = tf.transformations.euler_from_quaternion(quaternion)
+        rotation_matrix = tf.transformations.euler_matrix(*euler_angles)
+
+        point_in_camera_coordinates = np.dot(rotation_matrix, homogenous_vector)
+
+        x = (fx * point_in_camera_coordinates[0] * point_in_camera_coordinates[2]) + (image_width / 2)
+        y = (fy * point_in_camera_coordinates[1] * point_in_camera_coordinates[2]) + (image_height / 2)
+
+        return int(x), int(y)
+
+    def get_waypoints_matrix(self, waypoints):
+        """
+        Converts waypoints listt to numpy matrix
+        :param waypoints: list of styx_msgs.msg.Waypoint instances
+        :return: 2D numpy array
+        """
+
+        waypoints_matrix = np.zeros(shape=(len(waypoints), 2), dtype=np.float32)
+
+        for index, waypoint in enumerate(waypoints):
+            waypoints_matrix[index, 0] = waypoint.pose.pose.position.x
+            waypoints_matrix[index, 1] = waypoint.pose.pose.position.y
+
+        return waypoints_matrix
+
+
+    def get_closest_waypoint_index(self, position, waypoints_matrix):
+        """
+        Given a pose and waypoints list, return index of waypoint closest to pose
+        :param position: geometry_msgs.msgs.Position instance
+        :param waypoints_matrix: numpy matrix with waypoints coordinates
+        :return: integer index
+        """
+
+        x_distances = waypoints_matrix[:, 0] - position.x
+        y_distances = waypoints_matrix[:, 1] - position.y
+
+        squared_distances = x_distances ** 2 + y_distances ** 2
+        return np.argmin(squared_distances)
+
+
+    def get_road_distance(self, waypoints):
+        """
+        Get road distance covered when following waypoints
+        :param waypoints: list of styx_msgs.msg.Waypoint instances
+        :return: float
+        """
+
+        total_distance = 0.0
+
+        for index in range(1, len(waypoints)):
+
+            x_distance = waypoints[index].pose.pose.position.x - waypoints[index - 1].pose.pose.position.x
+            y_distance = waypoints[index].pose.pose.position.y - waypoints[index - 1].pose.pose.position.y
+
+            distance = np.sqrt((x_distance**2) + (y_distance**2))
+
+            total_distance += distance
+
+        return total_distance
+
+    def get_given_traffic_lights(self):
+        """
+        Return given traffic light positions
+        :return: TrafficLightArray
+        """
+        traffic_lights = TrafficLightArray()
+
+        traffic_light_list = []
+
+        tl_height = 1.524
+        config_string = rospy.get_param("/traffic_light_config")
+        traffic_light_positions = yaml.load(config_string)["light_positions"]
+
+        for traffic_light_index, traffic_light_position in enumerate(traffic_light_positions):
+            traffic_light = TrafficLight()
+
+            traffic_light.pose.pose.position.x = traffic_light_position[0]
+            traffic_light.pose.pose.position.y = traffic_light_position[1]
+            traffic_light.pose.pose.position.z = tl_height
+            traffic_light.state = TrafficLight.UNKNOWN
+            traffic_light_list.append(traffic_light)
+
+            traffic_lights.lights = traffic_light_list
+
+        return traffic_lights
 
     def get_traffic_light_waypoint(self, pose):
-        pass
+
+        light_waypoint = -1
+
+        car_pose = pose.pose
+
+        # For debugging(Ground Truth data)
+        # arguments = [self.traffic_lights, self.car_pose, self.waypoints, self.image]
+
+        arguments = [self.traffic_positions, car_pose, self.waypoints, self.camera_image]
+        are_arguments_available = all([x is not None for x in arguments])
+
+        if are_arguments_available:
+
+            # Get closest traffic light
+            traffic_light = self.get_closest_traffic_light_ahead_of_car(self.traffic_positions.lights, car_pose.position, self.waypoints.waypoints)
+
+            # These values seem so be wrong - Udacity keeps on putting in config different values that what camera
+            # actually publishes.
+            # image_width = self.config["camera_info"]["image_width"]
+            # image_height = self.config["camera_info"]["image_height"]
+
+            # Therefore simply check image size
+            self.camera_image.encoding = "rgb8"
+            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+            image_height = cv_image.shape[0]
+            image_width = cv_image.shape[1]
+
+            x, y = self.project_to_image_plane(
+                traffic_light.pose.pose.position, car_pose, image_width, image_height)
+
+            simulator_traffic_light_in_view = 0 < x < image_width and 0 < y < image_height
+            # As of this writing, site camera mapping is broken (thanks, Udacity...), so we will just process all
+            # images on site
+            site_traffic_light_in_view = True
+
+            light_waypoint = traffic_light
+
+        return light_waypoint
+
         
     def process_and_publish(self, timer):
         if self.has_image:
@@ -147,7 +365,7 @@ class TLDetector(object):
 
         # Default return values
         state = TrafficLight.UNKNOWN   # Default state 
-        closest_waypoint = -1    
+        closest_tf_waypoint = self.get_traffic_light_waypoint(self.pose)   
 
         # Process image if model is ready
         if self.light_classifier_loaded is True:
@@ -158,6 +376,7 @@ class TLDetector(object):
             state = self.light_classifier.get_classification(cv_image)
             state_name = self.get_light_name(state)
             print("Current light: {} {}".format(state, state_name))
+            print("Closest traffic light waypoint: {}, {}", closest_tf_waypoint.pose.pose.position.x, closest_tf_waypoint.pose.pose.position.y)
 
         return -1, state
 
