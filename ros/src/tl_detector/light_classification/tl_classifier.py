@@ -29,6 +29,12 @@ class TLClassifierSimple(object):
             state = TrafficLight.RED
 
         return state
+    def get_traffic_circle(self,image):
+        '''
+        Use Canny to get the circles for the images
+        '''
+        return False
+
 
     def get_colored_area(self, image, lower, upper):
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)

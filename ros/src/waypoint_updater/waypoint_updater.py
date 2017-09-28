@@ -41,34 +41,34 @@ class WaypointUpdater(object):
         self.next_wp_idx= -1
         self.cur_pose = None
         self.waypoints = None
-        
-        
+
+
         #rospy.spin()
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(20)
-        
+
         while not rospy.is_shutdown():
-            
+
             if self.waypoints is not None:
-                
-            
+
+
                 self.next_wp_idx = self.get_next_waypoint_idx()
                 #rospy.loginfo("Next Waypoint Idx: %s", self.next_wp_idx)
                 next_waypoints = self.waypoints
                 next_waypoints = self.waypoints[self.next_wp_idx:(self.next_wp_idx+LOOKAHEAD_WPS)]
-                
+
                 lane = Lane()
                 lane.waypoints = next_waypoints
                 lane.header.frame_id = '/world'
                 lane.header.stamp = rospy.Time(0)
                 self.final_waypoints_pub.publish(lane)
-                
-                rospy.loginfo("Next Waypoint: %s \n 5th: %s\nCurrent Pose: %s", next_waypoints[0].pose.pose, next_waypoints[5].pose.pose,self.cur_pose)
+
+        #        rospy.loginfo("Next Waypoint: %s \n 5th: %s\nCurrent Pose: %s", next_waypoints[0].pose.pose, next_waypoints[5].pose.pose,self.cur_pose)
                 
             rate.sleep()
-    
+
     def pose_cb(self, msg):
         # TODO: Implement
         self.cur_pose = msg.pose
@@ -79,10 +79,10 @@ class WaypointUpdater(object):
         #Samer: waypoints is always the same so only need to load once
         if self.waypoints is None:
             self.waypoints = waypoints.waypoints + waypoints.waypoints
-            
+
             #for i in range(0,len(self.waypoints)):
                 #self.set_waypoint_velocity(self.waypoints,i,40)
-                
+
             self.base_waypoints_sub.unregister()
 
     def traffic_cb(self, msg):
@@ -106,7 +106,7 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
-    
+
     def get_vector_from_quaternion(self, q):
         quaternion = [q.x, q.y, q.z, q.w]
         roll, pitch, yaw = tf.transformations.euler_from_quaternion(quaternion)
@@ -114,15 +114,15 @@ class WaypointUpdater(object):
         y = math.sin(yaw) * math.cos(pitch)
         z = math.sin(pitch)
         return x, y, z
-    
+
     def get_next_waypoint_idx(self):
-        
+
         if self.waypoints is None or self.cur_pose is None:
             return -1
-        
+
         cur_x = self.cur_pose.position.x
         cur_y = self.cur_pose.position.y
-        
+
         #finding closest waypoint
         num_wp = len(self.waypoints)/2 + 5
         min_dist = -1
@@ -130,35 +130,35 @@ class WaypointUpdater(object):
         for i in range(0, num_wp):
             wp_x = self.waypoints[i].pose.pose.position.x
             wp_y = self.waypoints[i].pose.pose.position.y
-            
+
             dist = math.sqrt((wp_x-cur_x)**2 + (wp_y-cur_y)**2)
-            
+
             if min_dist == -1 or dist < min_dist:
                 min_dist = dist
                 closest_wp_idx = i
-                
-                
+
+
         #getting closest waypoint in front of vehicle
         while(1):
             closest_wp = self.waypoints[closest_wp_idx]
             closest_wp_x = closest_wp.pose.pose.position.x
             closest_wp_y = closest_wp.pose.pose.position.y
-            
+
             x_vec, y_vec,z_vec = self.get_vector_from_quaternion(self.cur_pose.orientation)
-            
+
             vec_dist =  math.sqrt((closest_wp_x-cur_x - x_vec*0.1)**2 + (closest_wp_y-cur_y - y_vec*0.1)**2)
-            
+
             closest_wp_idx+=1
-            
+
             if vec_dist > min_dist:
                 break
             #else:
                 #return closest_wp_idx + 1
-        
-        return closest_wp_idx    
-            
-        
-        
+
+        return closest_wp_idx
+
+
+
 
 if __name__ == '__main__':
     try:

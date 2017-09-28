@@ -8,6 +8,8 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifierSimple
+from light_classification.tl_classifier_cv import TLClassifierCV
+
 import tf
 import cv2
 import yaml
@@ -33,8 +35,13 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
 
+        '''
+        Input Subscribers
+        '''
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -44,19 +51,26 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
+        '''
+        Vehicle/HW Configuration
+        '''
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
+
+        '''
+        Output configuration
+        '''
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+
 
         # Testing image queue for traffic light visualization
         self.upcoming_traffic_light_image_pub = rospy.Publisher('/traffic_light_image', Image, queue_size=1)
 
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifierSimple()
+        self.light_classifier = TLClassifierCV()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -113,15 +127,16 @@ class TLDetector(object):
             light_distance = 0
             if(self.last_wp != -1):
                 light_distance = self.pose_distance(self.pose.pose,self.waypoints.waypoints[self.last_wp].pose.pose)
+                rospy.loginfo("Publishing to Red Light - Distance at %0.2fm\n", light_distance)
             else:
                 rospy.loginfo("Publishing to Red Light - No Lights")
 
-            rospy.loginfo("Publishing to Red Light - Distance at %0.2fm\n", light_distance)
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_traffic_light(self, pose):
-        """Identifies the closest traffic light waypoint to the given waypoint
+    def get_closest_traffic_light(self, pose, light_positions):
+        """Identifies the closest traffic light waypoint to the given waypoint.
+
         Args:
             pose (Pose): position to match a light to
 
@@ -130,7 +145,9 @@ class TLDetector(object):
             Light: the closest light from self.lights or None
 
         """
-        if(self.lights):
+
+
+        if(light_positions):
             min_distance = 1e9
             min_light = None
             for ndx,light in enumerate(self.lights):
@@ -247,6 +264,7 @@ class TLDetector(object):
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
 
+
         camera_point=PointStamped()
         camera_point.header.frame_id = "/world"
         camera_point.header.stamp =rospy.Time(0)
@@ -259,8 +277,6 @@ class TLDetector(object):
         roll, pitch, yaw = self.get_orientations_from_quaternion(self.pose.pose.orientation)
 
         y_offset = p.point.x*math.sin(yaw)
-
-        #https://en.wikipedia.org/wiki/Pinhole_camera_model#The_geometry_and_mathematics_of_the_pinhole_camera
         x = -(p.point.y + y_offset)/ p.point.x * fx + image_width*0.5
 
         y = 62 + image_height - (p.point.z / p.point.x * fy + image_height*0.5)
@@ -289,11 +305,11 @@ class TLDetector(object):
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         if self.create_train_data:
-            train_image_path = os.path.join(self.train_data_dir,'{0}.jpg'.format(self.train_data_start_number))
-            cv2.imwrite(train_image_path, cv_image)
-            self.train_data_start_number = self.train_data_start_number + 1
-
-        #TODO use light location to zoom in on traffic light in image
+            light_distance = self.pose_distance(self.pose.pose,light.pose.pose)
+            if light_distance < 150:
+                train_image_path = os.path.join(self.train_data_dir,'{0}.jpg'.format(self.train_data_start_number))
+                cv2.imwrite(train_image_path, cv_image)
+                self.train_data_start_number = self.train_data_start_number + 1
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -310,7 +326,7 @@ class TLDetector(object):
         light = None
         light_positions = self.config['light_positions']
         if(self.pose):
-            light, light_distance = self.get_closest_traffic_light(self.pose.pose)
+            light, light_distance = self.get_closest_traffic_light(self.pose.pose, light_positions)
 
         if light:
             light_wp_ndx = self.get_closest_waypoint(light.pose.pose)
