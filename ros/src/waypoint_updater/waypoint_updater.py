@@ -3,9 +3,12 @@
 import rospy
 import datetime
 import tf.transformations
-from geometry_msgs.msg import PoseStamped, Point
+from geometry_msgs.msg import PoseStamped, Point, Quaternion, TwistStamped
 from std_msgs.msg import Int32, Float32
 from styx_msgs.msg import Lane, Waypoint
+
+import stop_planner
+import numpy as np
 
 import math
 
@@ -77,6 +80,8 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_waypoint_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
 
         # Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
@@ -93,6 +98,11 @@ class WaypointUpdater(object):
         self.prev_pt = Point()
         self.prev_index = -1
         self.next_pt = -1
+        self.stopPlanner = None
+        self.tl_distance = 9999
+        self.test_tl = False
+        self.current_velocity = None
+
 
         # TODO: Add other member variables you need below
 
@@ -116,6 +126,12 @@ class WaypointUpdater(object):
         float64 z
         float64 w
     '''
+    def current_velocity_cb(self, msg):
+        self.current_velocity = msg.twist.linear.x
+
+    def traffic_waypoint_cb(self, msg):
+        #self.tl_distance = msg.data
+        pass
 
     # takes styx_msgs/PoseStamp
     # returns i value of nearest waypoint in self.wps
@@ -228,8 +244,55 @@ class WaypointUpdater(object):
         # TODO: for each waypoint, set velocity to appropriate
         # value; see functions below for getting and setting
         # waypoint velocity
+        
+        ## -----------------------------------------
+        # TODO: This is a Proof of concept code and logic, place it 
+        # in a better palce  
+        if self.tl_distance != -1 and self.tl_distance < 5:
+            rospy.loginfo("setting test tl !!!")
+            self.test_tl = True
 
-        self.final_waypoints_pub.publish(olane)
+        if (self.tl_distance <= 30.) and (self.test_tl == True):
+            s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
+            rospy.loginfo("tl_distance: %d, s: % %f" % self.tl_distance, s)
+            ss = s + self.tl_distance
+            coeff = self.stopPlanner.JMT([s, self.current_velocity, 0], [ss, 0, 0], 3.)
+            fy = np.poly1d(coeff)
+            n = 3. / 0.03
+            s_x = np.linspace(0, 3., n)
+            sss = fy(s_x)
+            final_path = []
+            for i in range(len(sss)):
+                d = 0. ## we dont want to change lanes
+                px, py = self.stopPlanner.getXY(sss[i], d, self.stopPlanner.map_s, self.wps)
+                final_path.append([px, py])
+            final_path = np.array(final_path)
+            o2lane = Lane()
+            o2lane.header.frame_id = '/world'
+            o2lane.header.stamp = rospy.Time(0)
+            cur_x = xyz.x
+            cur_y = xyz.y
+            for i in range(len(final_path)):
+                p = Waypoint()
+                p.pose.pose.position.x = final_path[i][0]
+                p.pose.pose.position.y = final_path[i][1]
+                p.pose.pose.position.z = 0.
+                yw = math.atan2(final_path[i][1] - cur_y, final_path[i][0] - cur_x)
+                cur_x = final_path[i][0]
+                cur_y = final_path[i][1]
+                if yw < 0:
+                    yw = yw + 2 * np.pi
+                q = tf.transformations.quaternion_from_euler(0.,0.,yw)
+                p.pose.pose.orientation = Quaternion(*q)
+                #p.twist.twist.linear.x = float(self.velocity*0.27778)
+                o2lane.waypoints.append(p)
+            
+            self.final_waypoints_pub.publish(o2lane)
+
+        else:
+            ## -----------------------------------------
+            self.final_waypoints_pub.publish(olane)
+        
         self.next_waypoint_pub.publish(next_pt)
 
 
@@ -314,8 +377,14 @@ class WaypointUpdater(object):
             self.avg_wp_dist += d
         self.avg_wp_dist /= len(self.wps) - 1
 
+        self.stopPlanner = stop_planner.StopPlanner()
+        self.stopPlanner.getMap_s(self.wps)
+        rospy.loginfo("size of map_s: " % len(self.stopPlanner.map_s))
+
 
         rospy.loginfo("Waypoints: now have %d avg dist %f", len(self.wps), self.avg_wp_dist)
+
+        
 
         ''' 
         Code below is to see how yaw can be computed from
@@ -381,7 +450,7 @@ class WaypointUpdater(object):
             dist = self.wp_ss[next_tl] - self.wp_ss[self.next_pt]
             if dist < 0:
                 dist += self.wp_ss[sz]
-
+        self.tl_distance = dist
         self.tl_distance_pub.publish(dist)
         # print("ds", dist)
 
