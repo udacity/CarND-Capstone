@@ -20,7 +20,7 @@ STATE_COUNT_THRESHOLD = 3
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
-
+        self.light_classifier = TLClassifier()
         self.use_ground_truth = USE_GROUND_TRUTH
 
         self.pose = None
@@ -53,7 +53,6 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -177,7 +176,8 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x, y = self.project_to_image_plane(self.traffic_lights[light_key].pose.position)
+        #TODO Is this projection needed?
+        #x, y = self.project_to_image_plane(self.traffic_lights[light_key].pose.position)
 
         #TODO use light location to zoom in on traffic light in image
 
@@ -205,7 +205,7 @@ class TLDetector(object):
                 self.traffic_lights.get_next_en_route(self.next_waypoint_ahead)
 
         if light_key:
-            light_state = self.get_light_state(light_key) \
+            light_state = self.get_light_state_from_image(light_key) \
                 if self.use_ground_truth == False \
                 else self.get_light_state_gt(light_key)
 
