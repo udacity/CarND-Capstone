@@ -46,6 +46,7 @@ class TLClassifier(object):
             self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
             self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
             self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
+            self.session = tf.Session(graph=self.detection_graph)
         rospy.loginfo("Classifier has been initialized")
 
     def get_classification(self, image):
@@ -61,23 +62,20 @@ class TLClassifier(object):
         begin_time = rospy.get_rostime()
 
         signal_detected = False
-        with self.detection_graph.as_default():
-            with tf.Session(graph=self.detection_graph) as sess:
-                # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
-                image_expanded = np.expand_dims(image, axis=0)
-                # Actual detection.
-                (boxes, scores, classes, num) = sess.run(
-                    [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
-                    feed_dict={self.image_tensor: image_expanded})
-                highest_score = 0.
-                for n in range(num):
-                    c = np.squeeze(classes)[n]
-                    s = np.squeeze(scores)[n]
-                    if c == TRAFFIC_SIGNAL_CLASS and s > highest_score:
-                        signal_box = np.squeeze(boxes)[n]
-                        highest_score = s
-                        signal_detected = True
-                        print("%d: score %f, class %d, box %s" % (n, s, c, signal_box))
+        # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
+        image_expanded = np.expand_dims(image, axis=0)
+        # Actual detection.
+        (boxes, scores, classes, num) = self.session.run(
+            [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
+            feed_dict={self.image_tensor: image_expanded})
+        highest_score = 0.
+        for n in range(num):
+            c = np.squeeze(classes)[n]
+            s = np.squeeze(scores)[n]
+            if c == TRAFFIC_SIGNAL_CLASS and s > highest_score:
+                signal_box = np.squeeze(boxes)[n]
+                highest_score = s
+                signal_detected = True
         end_time = rospy.get_rostime()
         rospy.loginfo("Inference duration %.3f s", end_time.to_sec() - begin_time.to_sec())
 
