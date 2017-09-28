@@ -277,7 +277,6 @@ class WaypointUpdater(object):
                 
                 # Publish the generated message
                 self.final_waypoints_pub.publish(l)
-                self.debug_traffic_lights()
             rate.sleep()
 
     def waypoints_cb(self, waypoints):
