@@ -26,7 +26,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 50  # Number of waypoints to publish
 WP_UPDATE_RATE = 10; # processing frequency
-REF_VEL = 15
+REF_VEL = 50
 def to_deg(angle):
     return angle*180.0/math.pi
 
@@ -143,7 +143,7 @@ class WaypointUpdater(object):
         # Set update frequency in Hz. Should be 50Hz TBD
 
         rate = rospy.Rate(WP_UPDATE_RATE)
-        rospy.loginfo("Waypoint updater running with update freq = %s Hz", WP_UPDATE_RATE)
+        rospy.loginfo("Waypoint updater running with update rate = %s Hz", WP_UPDATE_RATE)
 
         # Loop waypoint publisher
         #list_wp_to_pub = []

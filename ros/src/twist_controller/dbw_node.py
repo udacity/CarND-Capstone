@@ -32,6 +32,7 @@ Once you have the proposed throttle, brake, and steer values, publish it on the 
 that we have created in the `__init__` function.
 
 '''
+DBW_UPDATE_RATE = 30
 
 class DBWNode(object):
     def __init__(self):
@@ -75,6 +76,13 @@ class DBWNode(object):
         self.cur_linear_velocity = 0.0
         self.cur_angular_velocity = 0.0
 
+        # watchdogs for safety critical handling
+        self.current_timestamp = rospy.Time.now()
+        self.vel_timestamp = rospy.Time.now()
+        self.twist_cmd_timestamp = rospy.Time.now()
+        # TODO verify if this value is OK
+        self.watchdog_limit = 0.5e9 # half second
+
         # init the low_pass filter
         tau = 1.5
         ts = 1.0
@@ -98,6 +106,7 @@ class DBWNode(object):
     def current_velocity_cb(self, msg):
         self.cur_linear_velocity = msg.twist.linear.x
         self.cur_angular_velocity = msg.twist.angular.z
+        self.vel_timestamp = rospy.Time.now()
         return
 
     def dbw_enabled_cb(self, msg):
@@ -106,22 +115,43 @@ class DBWNode(object):
         return
 
     def twist_cmd_cb(self,msg):
+        # TODO: verify if this hack doesn't cause any other problems
+        # discard negative linear speeds
+        if msg.twist.linear.x < 0:
+            return
+
         self.des_linear_velocity = msg.twist.linear.x
         self.des_angular_velocity = msg.twist.angular.z
+        self.twist_cmd_timestamp = rospy.Time.now()
         return
 
     def loop(self):
-        updateRate = 30
-        rate = rospy.Rate(updateRate) # 50Hz
-        rospy.loginfo("dbw running with update freq = %s",updateRate)
+
+        rate = rospy.Rate(DBW_UPDATE_RATE) # 50Hz
+        rospy.loginfo("DBW running with update rate = %s",DBW_UPDATE_RATE)
 
         # initialise a controller
         self.throtle_control = Controller(pid_kp=0.8, pid_ki=0.25, pid_kd=0.1, min_value=self.decel_limit, max_value=self.accel_limit)
 
         while not rospy.is_shutdown():
 
+            # handle safety critical failures
+            self.current_timestamp = rospy.Time.now()
+
+            #rospy.loginfo("vel_gap = %s, cmd_gap = %s",(self.current_timestamp - self.vel_timestamp).nsecs,(self.current_timestamp - self.twist_cmd_timestamp).nsecs)
+            if (self.current_timestamp - self.vel_timestamp).nsecs > self.watchdog_limit:
+                # stop the car
+                rospy.logwarn("Safety hazard: not receiving VEL info for long time. Stopping the vehicle!")
+                self.des_linear_velocity = 0
+                
+            if  (self.current_timestamp - self.twist_cmd_timestamp).nsecs > self.watchdog_limit:
+                # stop the car
+                rospy.logwarn("Safety hazard: not receiving TWIST_CMD info for long time. Stopping the vehicle!")
+                self.des_linear_velocity = 0
+
             # pid for acceleration
             throttle, brake, steering = self.throtle_control.control(self.des_linear_velocity , self.cur_linear_velocity, self.dbw_enabled)
+
 
             if throttle < 0.001: # very small number
                 # TODO: maybe verify the units
@@ -137,6 +167,7 @@ class DBWNode(object):
             # use yaw_controller for steering
             # TODO: verify if this is working correctly
             # TODO: investigate why we get negative linear speeds some times from the pure pursuit
+            # TODO: try using a low pass filter for angular velocity
             steer = self.yaw_control.get_steering(self.des_linear_velocity, self.des_angular_velocity, self.cur_linear_velocity)
 
             if self.dbw_enabled:
