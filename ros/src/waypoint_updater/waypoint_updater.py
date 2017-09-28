@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Quaternion
 from styx_msgs.msg import Lane, Waypoint, TrafficLightArray
+from std_msgs.msg import Int32
 import Utility
 import math
 import time
@@ -28,7 +29,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 '''
 Notes:
-The Waypoint position information is contained in the Pose position and orientation of the 
+The Waypoint position information is contained in the Pose position and orientation of the
 Lane data structure. The rest of the structures appear to be blanked out except for twist - linear velocity
 - x which sometimes has a value set
 
@@ -42,22 +43,22 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 #class Vehicle(object):
 #    pose
-#    
+#
 #    def __init(self):
 #        pass
-#        
+#
 #    def update_pose(self, msg):
 #        # Set the pose - PoseStamped.Pose
 #        self.pose = msg.pose
-#        
+#
 #    def position_xyz(self):
 #        return self.pose.position.x,self.pose.position.y,self.pose.position.z
-#    
+#
 #    def position_frenet(self):
 #        pass
-            
-        
-        
+
+
+
 
 class WaypointUpdater(object):
 #    self.vehicle = Vehicle()
@@ -74,14 +75,19 @@ class WaypointUpdater(object):
     minIdx = 0
     mutex = Lock()
     traffic_light_map = None
-    
+
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /Lantraffic_waypoint and /obstacle_waypoint below
+        # subscriber for /traffic_waypoint from tl_detector/tl_detector
+        # upcoming *red* light index in waypoints of nearest waypoint (else -1)
+        # published at camera frequency
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+
+        #rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
         self.seq = 0
@@ -100,13 +106,13 @@ class WaypointUpdater(object):
             self.pose.orientation.z,
             self.pose.orientation.w)
         self.heading = Utility.getHeading(quaternion)
-        
+
     def ddDistance(self,x1,y1,x2,y2):
         return math.sqrt((x2-x1)**2 + (y2-y1)**2)
-    
+
     def findNextWaypoint(self):
         '''
-        Get the closes waypoint to the vehicle
+        Get the closest waypoint to the vehicle
         '''
         index = 0
         minD = 100000
@@ -120,8 +126,8 @@ class WaypointUpdater(object):
                 index = count
             count += 1
         return index
-        
-    
+
+
     def methodA(self):
         start = time.time()
         self.s, self.d = Utility.convertToFrenet(self.pose.position.x, self.pose.position.y, self.heading, self.map_x, self.map_y)
@@ -145,28 +151,29 @@ class WaypointUpdater(object):
             pts.append(wp)
             # Set the velocity of the newly loaded waypoint
             self.set_waypoint_velocity(pts,i,5)
-            rospy.loginfo('@_2 waypoint_%s: (X,Y) (%s,%s) next idx %s heading %s s %s d %s', str(i), str(x), str(y), str(minIdx), self.heading, self.s, self.d) 
+            rospy.loginfo('@_2 waypoint_%s: (X,Y) (%s,%s) next idx %s heading %s s %s d %s', str(i), str(x), str(y), str(minIdx), self.heading, self.s, self.d)
         self.generated_waypoints = pts
 
     def methodB(self):
         start = time.time()
-        newIdx = Utility.nextWaypoint(self.pose.position.x, self.pose.position.y,self.heading, self.map_x, self.map_y, last_idx=None)
+        newIdx = Utility.nextWaypoint(self.pose.position.x, self.pose.position.y, self.heading, self.map_x, self.map_y, last_idx=None)
         #newIdx = self.findNextWaypoint()
         end = time.time()
         newIdx += 2
         newIdx %= len(self.map_x)
-        rospy.loginfo('@_2 C exeTime %s X,Y (%s,%s) MX,My (%s,%s) NextIDX %s LenWaypoints %s heading %s distance %s', 
-        str(end - start), 
+        rospy.loginfo('@_2 C exeTime %s X,Y (%s,%s) MX,My (%s,%s) NextIDX %s LenWaypoints %s heading %s distance %s',
+        str(end - start),
         str(self.pose.position.x),
-        str(self.pose.position.y), 
+        str(self.pose.position.y),
         str(self.waypoints[newIdx].pose.pose.position.x),
-        str(self.waypoints[newIdx].pose.pose.position.y), 
-        str(self.minIdx), 
-        str(len(self.waypoints)), 
-        self.heading, 
+        str(self.waypoints[newIdx].pose.pose.position.y),
+        str(self.minIdx),
+        str(len(self.waypoints)),
+        self.heading,
         self.distance(self.waypoints,newIdx,self.minIdx) )
+
         self.minIdx = newIdx
-        
+
         if True:
             self.generated_waypoints = []
             for wp in range(LOOKAHEAD_WPS):
@@ -178,7 +185,7 @@ class WaypointUpdater(object):
                     self.set_waypoint_velocity(self.generated_waypoints,wp,20)
         else:
             # Fill in the data first time around
-            if len(self.generated_waypoints) < 1:                            
+            if len(self.generated_waypoints) < 1:
                 for wp in range(LOOKAHEAD_WPS):
                     self.generated_waypoints.append(self.waypoints[self.minIdx+wp%len(self.waypoints)])
             else:
@@ -191,20 +198,20 @@ class WaypointUpdater(object):
                         self.generated_waypoints.pop(0)
                     else:
                         process = False
-                        
+
                 for wp in range(len(self.generated_waypoints),LOOKAHEAD_WPS):
                     self.generated_waypoints.append(self.waypoints[(self.minIdx+wp)%len(self.waypoints)])
-                    
+
     def methodC(self):
         start = time.time()
-        
+
         self.s, self.d = Utility.convertToFrenet(
-        self.pose.position.x, 
-        self.pose.position.y, 
-        self.heading, 
-        self.map_x, 
+        self.pose.position.x,
+        self.pose.position.y,
+        self.heading,
+        self.map_x,
         self.map_y)
-        
+
         # Setup the Coordinates to get the spline between
         px = []
         py = []
@@ -214,14 +221,14 @@ class WaypointUpdater(object):
             py.append(self.prev_pose.position.y)
         px.append(self.pose.position.x)
         py.append(self.pose.position.y)
-        
+
         # Get the next waypoint
         newIdx = Utility.nextWaypoint(
-        self.pose.position.x, 
+        self.pose.position.x,
         self.pose.position.y,
-        self.heading, 
-        self.map_x, 
-        self.map_y, 
+        self.heading,
+        self.map_x,
+        self.map_y,
         last_idx=None)
 
         # Add N future waypoints to the match list
@@ -231,19 +238,19 @@ class WaypointUpdater(object):
             px.append(self.map_x[idx])
             py.append(self.map_y[idx])
 
-        rospy.loginfo( '@_2 nextIdx %s heading %s X %s Y %s %s %s',newIdx, self.heading, self.pose.position.x, self.pose.position.y, px, py )
+        rospy.loginfo( '@_2 nextIdx %s heading %s X %s Y %s %s %s', newIdx, self.heading, self.pose.position.x, self.pose.position.y, px, py )
         # Fit the spline
-        tkc = Utility.getSplineCoeffs(px,py)
-        
+        tkc = Utility.getSplineCoeffs(px, py)
+
         pts = []
-        
+
         s = np.arange(0, tkc.s[-1], 0.5)
         index = 0
         for i in s:
-            ix,iy = Utility.fitX(i,tkc)
+            ix, iy = Utility.fitX(i, tkc)
             wp = Waypoint()
             # Put in the orientation of the waypoint
-            
+
             wp.pose.pose.orientation = Quaternion(*Utility.getQuaternion(0,0,tkc.calc_yaw(i)))
             wp.pose.pose.position.x = ix
             wp.pose.pose.position.y = iy
@@ -274,7 +281,7 @@ class WaypointUpdater(object):
                 l.header.frame_id = '/world'
                 l.header.stamp = rospy.Time(0)
                 l.waypoints = self.generated_waypoints
-                
+
                 # Publish the generated message
                 self.final_waypoints_pub.publish(l)
             rate.sleep()
@@ -282,8 +289,8 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
         # Update / set the current waypoints
         self.waypoints = waypoints.waypoints
-        
-        # Fill in the local map data 
+
+        # Fill in the local map data
         if self.map_x is None:
             self.map_x = []
             self.map_y = []
@@ -291,18 +298,19 @@ class WaypointUpdater(object):
             for wp in self.waypoints:
                 self.map_x.append(wp.pose.pose.position.x)
                 self.map_y.append(wp.pose.pose.position.y)
-            
+
             # Generate the s map
-            self.map_s = Utility.generateMapS(self.map_x,self.map_y)
-            
+            self.map_s = Utility.generateMapS(self.map_x, self.map_y)
+
             # Convert to numpy arrays
             #self.map_x = np.asarray(self.map_x)
             #self.map_s = np.asarray(self.map_s)
             #self.map_y = np.asarray(self.map_y)
-        
+
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
+        #self.lights = msg.lights
         pass
 
     def obstacle_cb(self, msg):
@@ -315,9 +323,9 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
-    def eucld_distance(self, pnta, pntb):
+    def euclid_distance(self, pnta, pntb):
         return math.sqrt((pnta.x-pntb.x)**2 + (pnta.y-pntb.y)**2  + (pnta.z-pntb.z)**2)
-        
+
     def distance(self, waypoints, wp1, wp2):
         '''
         Get the distance between waypoints indexed by wp1 and wp2.
@@ -330,8 +338,6 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
-        
-    
 
 
 if __name__ == '__main__':
