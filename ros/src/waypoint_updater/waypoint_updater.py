@@ -58,6 +58,7 @@ class WaypointUpdater(object):
         # watchdogs for safety critical handling
         self.current_timestamp = rospy.Time.now()
         self.pose_timestamp = rospy.Time.now()
+        self.tf_timestamp = rospy.Time.now()
         # TODO verify if this value is OK
         self.watchdog_limit = 0.5e9 # half second
 
@@ -153,19 +154,27 @@ class WaypointUpdater(object):
         #list_wp_to_pub = []
         count_lap = True
         num_laps = 0
-        while not rospy.is_shutdown():
 
+        while not rospy.is_shutdown():
+            emergency_stop = False
             # handle safety critical failures
             self.current_timestamp = rospy.Time.now()
             if (self.current_timestamp - self.pose_timestamp).nsecs > self.watchdog_limit:
                 # stop the car
                 rospy.logwarn("Safety hazard: not receiving POSE info for long time. Stopping the vehicle!")
+                emergency_stop = True
+
+            if (self.current_timestamp - self.tf_timestamp).nsecs > self.watchdog_limit:
+                # stop the car
+                rospy.logwarn("Safety hazard: not receiving TRAFFIC_LIGHT info for long time. Stopping the vehicle!")
+                emergency_stop = True
+
+            if emergency_stop:
                 list_wp_to_pub = copy.deepcopy(self.waypoints[0:LOOKAHEAD_WPS])
                 # force linear and angular speed to be zero
                 for i in range(len(list_wp_to_pub)):
                     list_wp_to_pub[i].twist.twist.linear.x = 0
                     list_wp_to_pub[i].twist.twist.angular.z = 0
-
             else:
                 #rospy.loginfo("Current_pose = %s,%s",self.current_pose.position.x,self.current_pose.position.y)
                 next_wp_index = self.get_next_waypoint_index()
@@ -277,6 +286,7 @@ class WaypointUpdater(object):
         # TODO: Callback for /traffic_waypoint message. Implement
         # rospy.loginfo("traffic_cb msg = %s",msg.data)
         self.tf_index = msg.data
+        self.tf_timestamp = rospy.Time.now()
         return
 
     def obstacle_cb(self, msg):
