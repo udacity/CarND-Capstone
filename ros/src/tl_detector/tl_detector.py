@@ -37,7 +37,9 @@ class TLDetector(object):
         # mockup tl_dection for testing, reading groud-truth directy from `/vehicle/traffic_lights`
         # TODO: use image classification for traffic light detection
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        # sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber(rospy.get_param("~camera_topic"), Image, self.image_cb)
+        
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -47,7 +49,8 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.scenario = rospy.get_param("~scenario")
+        self.light_classifier = TLClassifier(self.scenario)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
