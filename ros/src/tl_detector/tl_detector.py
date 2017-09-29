@@ -142,37 +142,10 @@ class TLDetector(object):
         fx = self.config["camera_info"]["focal_length_x"]
         fy = self.config["camera_info"]["focal_length_y"]
 
-        # light = None
-        # light_positions = self.config['light_positions']
-        # if(self.pose):
-        #     car_position = self.get_closest_waypoint(self.pose.pose)
+        world_coordinates_point = np.array([point_in_world.x, point_in_world.y, point_in_world.z], dtype=np.float32).reshape(3, 1)
 
-        # Commenting out trans and rot code - we aren't using them for now, as they seem broken and
-        # are received using blocking code - thus somewhat slow
-        # # get transform between pose of camera and world frame
-        # trans = None
-        # try:
-        #     now = rospy.Time.now()
-        #     self.listener.waitForTransform("/base_link",
-        #                                    "/world", now, rospy.Duration(1.0))
-        #     (trans, rot) = self.listener.lookupTransform("/base_link",
-        #                                                  "/world", now)
-        #
-        # except (tf.Exception, tf.LookupException, tf.ConnectivityException) as e:
-        #     rospy.logerr("Failed to find camera to map transform")
-
-        #
-        # # rospy.logwarn("Transform shift is: {}".format(trans))
-        # # rospy.logwarn("Rotation is: {}".format(rot))
-
-        # TODO Use transform and rotation to calculate 2D position of light in image
-        world_coordinates_point = np.array(
-            [point_in_world.x, point_in_world.y, point_in_world.z], dtype=np.float32).reshape(3, 1)
-
-        car_position = np.array([car_pose.position.x, car_pose.position.y, car_pose.position.z],
-                                dtype=np.float32).reshape(3, 1)
+        car_position = np.array([car_pose.position.x, car_pose.position.y, car_pose.position.z], dtype=np.float32).reshape(3, 1)
         camera_offset = np.array([1.0, 0, 1.2], dtype=np.float32).reshape(3, 1)
-        # translation_vector = np.array(trans, dtype=np.float32).reshape(3, 1)
         translation_vector = car_position + camera_offset
 
         # Move point to camera origin
@@ -181,9 +154,7 @@ class TLDetector(object):
         homogenous_vector = np.ones(shape=(4, 1), dtype=np.float32)
         homogenous_vector[:3] = world_coordinates_point_shifted_to_camera_coordinates
 
-        quaternion = np.array([
-            car_pose.orientation.x, car_pose.orientation.y, car_pose.orientation.z, car_pose.orientation.w],
-            dtype=np.float32)
+        quaternion = np.array([car_pose.orientation.x, car_pose.orientation.y, car_pose.orientation.z, car_pose.orientation.w], dtype=np.float32)
 
         euler_angles = tf.transformations.euler_from_quaternion(quaternion)
         rotation_matrix = tf.transformations.euler_matrix(*euler_angles)
@@ -278,36 +249,9 @@ class TLDetector(object):
 
         car_pose = pose.pose
 
-        # For debugging(Ground Truth data)
-        # arguments = [self.traffic_lights, self.car_pose, self.waypoints, self.image]
+        if self.traffic_positions != None and car_pose != None and self.waypoints != None and self.camera_image != None:
 
-        arguments = [self.traffic_positions, car_pose, self.waypoints, self.camera_image]
-        are_arguments_available = all([x is not None for x in arguments])
-
-        if are_arguments_available:
-
-            # Get closest traffic light
             traffic_light = self.get_closest_traffic_light_ahead_of_car(self.traffic_positions.lights, car_pose.position, self.waypoints.waypoints)
-
-            # These values seem so be wrong - Udacity keeps on putting in config different values that what camera
-            # actually publishes.
-            # image_width = self.config["camera_info"]["image_width"]
-            # image_height = self.config["camera_info"]["image_height"]
-
-            # Therefore simply check image size
-            self.camera_image.encoding = "rgb8"
-            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-            image_height = cv_image.shape[0]
-            image_width = cv_image.shape[1]
-
-            x, y = self.project_to_image_plane(
-                traffic_light.pose.pose.position, car_pose, image_width, image_height)
-
-            simulator_traffic_light_in_view = 0 < x < image_width and 0 < y < image_height
-            # As of this writing, site camera mapping is broken (thanks, Udacity...), so we will just process all
-            # images on site
-            site_traffic_light_in_view = True
 
             light_waypoint = traffic_light
 
