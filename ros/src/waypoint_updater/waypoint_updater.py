@@ -48,9 +48,9 @@ class WaypointUpdater(object):
 	# first version	
 	if(self.current_pose and self.base_waypoints):
 	    # get closest waypoint index
-            closest_index = self.get_closest_waypoint(self.current_pose)
+            closest_index = self.get_closest_waypoint(self.current_pose.pose)
             # get the first waypoint index currently ahead of the car 
-            next_index = self.get_next_waypoint(self.current_pose, closest_index)  
+            next_index = self.get_next_waypoint(self.current_pose.pose, closest_index)  
             # final_waypoints
             final_waypoints = []
             for i in range(next_index, next_index + LOOKAHEAD_WPS):
@@ -78,10 +78,11 @@ class WaypointUpdater(object):
         #TODO implement
 	closest_index = 0
      	closest_dist = 100000
-        p1 = self.current_pose.pose.position
-
-	for i in range(len(self.base_waypoints.waypoints)):
-	    p2 = self.base_waypoints.waypoints[i].pose.pose.position
+        p1 = pose.position
+	wl = self.base_waypoints.waypoints
+	
+	for i in range(len(wl)):
+	    p2 = wl[i].pose.pose.position
 	    d = self.dist(p1, p2)
     	    if(d < closest_dist):
      	        closest_dist = d
@@ -99,14 +100,14 @@ class WaypointUpdater(object):
 
 	"""
 	next_index = index 
-        p1 = self.current_pose.pose.position
+        p1 = pose.position
 	p2 = self.base_waypoints.waypoints[index].pose.pose.position
 	heading = math.atan2( (p2.y-p1.y),(p2.x-p1.x) );
 	quaternion = (
-            self.current_pose.pose.orientation.x,
-            self.current_pose.pose.orientation.y,
-            self.current_pose.pose.orientation.z,
-            self.current_pose.pose.orientation.w)
+            pose.orientation.x,
+            pose.orientation.y,
+            pose.orientation.z,
+            pose.orientation.w)
         euler = tf.transformations.euler_from_quaternion(quaternion)
 	yaw = euler[2]
 	angle = abs(yaw-heading);
@@ -127,10 +128,9 @@ class WaypointUpdater(object):
         # TODO: Implement
 	self.current_pose = msg
   
-    def waypoints_cb(self, msg):
+    def waypoints_cb(self, waypoints):
         # TODO: Implement
-        self.base_waypoints = msg
-        rospy.loginfo(msg)
+        self.base_waypoints = waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
