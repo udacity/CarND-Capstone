@@ -24,8 +24,8 @@ class RouteTrafficLights(object):
     def __init__(self):
         self.traffic_lights = []
         self.n_waypoints = 0
-        self.first = 10e9
-        self.last = 0
+        self.first = [None, 10e9] # [index to traffic_lights, waypoint number]
+        self.last = [None, -1]
         self.pose_updated = False
 
     def __getitem__(self, key):
@@ -74,12 +74,15 @@ class RouteTrafficLights(object):
         self.n_waypoints = len(waypoints)
         self.set_stop_points(waypoints)
 
-        for tl in self.traffic_lights:
+        for i, tl in zip(range(len(self.traffic_lights)), self.traffic_lights):
             assert tl.stop_point != None
-            if tl.stop_point < self.first:
-                self.first = tl.stop_point
-            if tl.stop_point > self.last:
-                self.last = tl.stop_point
+            if tl.stop_point < self.first[1]:
+                self.first = [i, tl.stop_point]
+            if tl.stop_point > self.last[1]:
+                self.last = [i, tl.stop_point]
+
+        assert self.first[0] != None
+        assert self.last[0] != None
 
     def update_states(self, traffic_light_array):
         '''
@@ -108,24 +111,20 @@ class RouteTrafficLights(object):
 
         next_p = None
 
-        if car > self.last:
+        if car > self.last[1]:
             next_p = self.first # NOTE assume circular route
-        elif car <= self.first:
+        elif car <= self.first[1]:
             next_p = self.first
         else:
             next_p = self.last
-            for tl in self.traffic_lights:
-                if tl.stop_point > car and tl.stop_point < next_p:
-                    next_p = tl.stop_point
+            for i, tl in zip(range(len(self.traffic_lights)), self.traffic_lights):
+                if tl.stop_point > car and tl.stop_point < next_p[1]:
+                    next_p = [i, tl.stop_point]
 
-        assert next_p != None
+        assert next_p[0] != None
+        assert next_p[1] != None
 
-        next_i = None
-        for i in range(len(self.traffic_lights)):
-            if self.traffic_lights[i].stop_point == next_p:
-                next_i = i
-
-        return next_p, next_i
+        return next_p[1], next_p[0]
 
 # smoke test
 if __name__ == '__main__':

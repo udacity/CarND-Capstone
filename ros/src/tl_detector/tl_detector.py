@@ -145,7 +145,7 @@ class TLDetector(object):
 
     def get_light_state_gt(self, light_key):
         """
-            Get traffic light status from the ground truht messages
+            Get traffic light status from ground truth messages
         """
         d = lambda x,y,s: (x - y + s) % s # distance in waypoints in a circular track
         
@@ -204,7 +204,7 @@ class TLDetector(object):
             light_wp, light_key = \
                 self.traffic_lights.get_next_en_route(self.next_waypoint_ahead)
 
-        if light_wp > -1:
+        if light_key:
             light_state = self.get_light_state(light_key) \
                 if self.use_ground_truth == False \
                 else self.get_light_state_gt(light_key)
