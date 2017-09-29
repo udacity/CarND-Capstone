@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point
 from styx_msgs.msg import Lane, Waypoint
 
 import math
@@ -27,25 +27,29 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 class WaypointUpdater(object):
     def __init__(self):
         self.prev_nrst_wp = 0 # total number of waypoints are 10902
+        self.vehicle_pos = None
 
+        # Subscribers
         rospy.init_node('waypoint_updater')
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/traffic_waypoint', Point, self.traffic_cb, queue_size=1)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
-
+        # Publishers
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-
-        # TODO: Add other member variables you need below
-        # new_wp_lane = Lane()
-        # rospy.logwarn("attributes of lane class %s", new_wp_lane.__dict__)
 
         rospy.spin()
 
     def pose_cb(self, msg):
         # TODO: Implement
         # current pose of the vehicle
+        
+        # Log position change
+        if self.vehicle_pos != None:
+            distance_change = math.sqrt((msg.pose.position.x - self.vehicle_pos.x)**2 + (msg.pose.position.y - self.vehicle_pos.y)**2)
+            if distance_change > 2:
+                print("Vehicle position: {}, {}".format(msg.pose.position.x, msg.pose.position.y))
+        
         self.vehicle_pos = msg.pose.position
 
         # vehicle orientation in quanternions
@@ -55,7 +59,7 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
 
         # TODO: Implement
-        if hasattr(self, 'vehicle_pos'):
+        if self.vehicle_pos != None:
         # try: # to catch when the error when self.vehicle_pos has not been created yet
             smallest_dist = float('inf')
             nearest_wp = 0
@@ -117,8 +121,7 @@ class WaypointUpdater(object):
         return new_wp_lane
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        print("traffic_cb: {}, {}".format(msg.x, msg.y))
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later

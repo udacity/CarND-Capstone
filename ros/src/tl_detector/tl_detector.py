@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import Int32, Header
-from geometry_msgs.msg import PoseStamped, Pose, Quaternion
+from geometry_msgs.msg import PoseStamped, Pose, Quaternion, Point
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
@@ -34,7 +34,7 @@ class TLDetector(object):
         self.has_image = False
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
+        self.last_wp = None
         self.state_count = 0
         self.image_lock = threading.RLock()
         self.lights = []
@@ -64,7 +64,7 @@ class TLDetector(object):
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
         # Publisher
-        self.upcoming_stop_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        self.upcoming_stop_light_pub = rospy.Publisher('/traffic_waypoint', Point, queue_size=1)
 
         rospy.spin()
 
@@ -245,7 +245,7 @@ class TLDetector(object):
 
     def get_traffic_light_waypoint(self, pose):
 
-        light_waypoint = -1
+        light_waypoint = None
 
         car_pose = pose.pose
 
@@ -269,6 +269,9 @@ class TLDetector(object):
             of times till we start using it. Otherwise the previous stable state is
             used.
             '''
+
+            position_to_publish = Point() # Empty point because None is causing error
+
             if self.state != state:
                 # Reset counter
                 self.state_count = 0
@@ -276,16 +279,18 @@ class TLDetector(object):
 
             elif self.state_count >= STATE_COUNT_THRESHOLD:
                 self.last_state = self.state
-                light_wp = light_wp if state == TrafficLight.RED else -1
+                light_wp = light_wp if state == TrafficLight.RED else None
                 self.last_wp = light_wp
 
-                # Publish traffic light data
-                self.upcoming_stop_light_pub.publish(Int32(light_wp))
+                if light_wp != None:
+                    position_to_publish = light_wp.pose.pose.position
 
-            else:
-                # Send last valid value if thereshold is not met
-                self.upcoming_stop_light_pub.publish(Int32(self.last_wp))
+            elif self.last_wp != None:
+                position_to_publish = self.last_wp.pose.pose.position
             
+            # Publish traffic light Point
+            self.upcoming_stop_light_pub.publish(position_to_publish)
+
             # Increase counter
             self.state_count += 1
 
@@ -309,20 +314,20 @@ class TLDetector(object):
 
         # Default return values
         state = TrafficLight.UNKNOWN   # Default state 
-        closest_tf_waypoint = self.get_traffic_light_waypoint(self.pose)   
+        closest_tf_waypoint = self.get_traffic_light_waypoint(self.pose)
 
         # Process image if model is ready
         if self.light_classifier_loaded is True:
-            print("Image process start...") 
+            # print("Image process start...") 
             self.camera_image.encoding = "rgb8"
             cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
             # cv2.imwrite("./../../../asset/test.jpg", cv_image) # debug
             state = self.light_classifier.get_classification(cv_image)
             state_name = self.get_light_name(state)
-            print("Current light: {} {}".format(state, state_name))
-            print("Closest traffic light waypoint: {}, {}", closest_tf_waypoint.pose.pose.position.x, closest_tf_waypoint.pose.pose.position.y)
+            # print("Current light: {} {}".format(state, state_name))
+            # print("Closest traffic light position: {}, {}".format(closest_tf_waypoint.pose.pose.position.x, closest_tf_waypoint.pose.pose.position.y))
 
-        return -1, state
+        return closest_tf_waypoint, state
 
     def get_light_name(self, index):
         name = "Unknown"
