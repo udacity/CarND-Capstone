@@ -28,7 +28,7 @@ class Controller(object):
         vel_error = target_vel_lin - cur_vel_lin
 
         throttle = self.velocity_pid.step(vel_error, time_elapsed)
-        brake = max(0.0, -throttle)
+        brake = max(0.0, -throttle) * 100
         throttle = max(0.0, throttle)
 
 
