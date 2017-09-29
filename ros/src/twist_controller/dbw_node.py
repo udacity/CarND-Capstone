@@ -4,8 +4,6 @@ import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
-import math
-
 from twist_controller import Controller
 
 '''
@@ -31,6 +29,10 @@ that we have created in the `__init__` function.
 
 '''
 
+EPSILON_THROTTLE = 0.05
+EPSILON_BRAKE = 0.05
+EPSILON_STEER = 0.05
+
 class DBWNode(object):
     def __init__(self):
         rospy.init_node('dbw_node')
@@ -43,8 +45,12 @@ class DBWNode(object):
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
         wheel_base = rospy.get_param('~wheel_base', 2.8498)
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+        #steer_ratio = rospy.get_param('~steer_ratio', 118.4)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        kp = rospy.get_param('~kp', .0)
+        ki = rospy.get_param('~ki', .0)
+        kd = rospy.get_param('~kd', .0)
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -53,15 +59,28 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
+        # Create `TwistController` object
+        self.controller = Controller(vehicle_mass, fuel_capacity, brake_deadband, decel_limit, accel_limit,
+                                     wheel_radius, wheel_base, steer_ratio, max_lat_accel, max_steer_angle, kp, ki, kd)
 
-        # TODO: Subscribe to all the topics you need to
+        # Subscribe to all the topics you need to
+        rospy.Subscriber('/dbw_enabled', Bool, self.dbw_enabled_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+
+        # Members
+        self.dbw_enabled = True
+        self.current_velocity = None
+        self.twist_cmd = None
+        self.last_throttle = 0.0
+        self.last_brake = 0.0
+        self.last_steer = 0.0
 
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
+        # rate = rospy.Rate(10)  # 10Hz
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -70,28 +89,69 @@ class DBWNode(object):
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+
+            #rospy.logwarn("dwb_enabled={}, current_velocity={}, twist_cmd={}".format(
+            #    self.dbw_enabled, self.current_velocity != None, self.twist_cmd != None
+            #))
+
+            if (self.dbw_enabled and self.current_velocity != None and self.twist_cmd != None):
+                throttle, brake, steer = self.controller.control(self.twist_cmd, self.current_velocity)
+                rospy.logwarn("Throttle={}, Brake={}, Steer={}, twist_angular_z={}".
+                              format(throttle, brake, steer,
+                                     self.twist_cmd.twist.angular.z))
+                self.publish(throttle, brake, steer)
+
             rate.sleep()
 
+    def dbw_enabled_cb(self, msg):
+        rospy.loginfo("Received dbw_enabled message.")
+        self.dbw_enabled = msg
+        rospy.logdebug(msg)
+
+    def current_velocity_cb(self, msg):
+        rospy.loginfo("Received current_velocity message.")
+        self.current_velocity = msg
+        rospy.logdebug(msg)
+
+    def twist_cmd_cb(self, msg):
+        rospy.loginfo("Received twist_cmd message.")
+        self.twist_cmd = msg
+        rospy.logdebug(msg)
+
     def publish(self, throttle, brake, steer):
-        tcmd = ThrottleCmd()
-        tcmd.enable = True
-        tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
-        tcmd.pedal_cmd = throttle
-        self.throttle_pub.publish(tcmd)
+        if (abs(self.last_throttle - throttle) > EPSILON_THROTTLE):
+            self.last_throttle = throttle
+            tcmd = ThrottleCmd()
+            tcmd.enable = True
+            tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
+            tcmd.pedal_cmd = throttle
+            self.throttle_pub.publish(tcmd)
+            rospy.loginfo("Issued throttle command, value={}".format(throttle))
+        else:
+            rospy.loginfo("Did no issue throttle command, value={}, last value={}".format(throttle, self.last_throttle))
 
-        scmd = SteeringCmd()
-        scmd.enable = True
-        scmd.steering_wheel_angle_cmd = steer
-        self.steer_pub.publish(scmd)
+        if (abs(self.last_steer - steer) > EPSILON_STEER):
+            self.last_steer = steer
+            scmd = SteeringCmd()
+            scmd.enable = True
+            scmd.steering_wheel_angle_cmd = steer
+            self.steer_pub.publish(scmd)
+            rospy.loginfo("Issued steer command, value={}".format(steer))
+        else:
+            rospy.loginfo(
+                "Did no issue steer command, value={}, last value={}".format(steer, self.last_steer))
 
-        bcmd = BrakeCmd()
-        bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
-        bcmd.pedal_cmd = brake
-        self.brake_pub.publish(bcmd)
-
+        if (abs(self.last_brake - brake) > EPSILON_BRAKE):
+            self.last_brake = brake
+            bcmd = BrakeCmd()
+            bcmd.enable = True
+            bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+            bcmd.pedal_cmd = brake
+            self.brake_pub.publish(bcmd)
+            rospy.loginfo("Issued brake command, value={}".format(brake))
+        else:
+            rospy.loginfo(
+                "Did no issue brake command, value={}, last value={}".format(brake, self.last_brake))
 
 if __name__ == '__main__':
     DBWNode()

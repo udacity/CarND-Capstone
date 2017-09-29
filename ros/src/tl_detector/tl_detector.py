@@ -48,17 +48,50 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.has_image = False
+
+        self.collect_training_data = True
+        self.training_data_counter = 0
+        self.state_file = open("../../../training_data/state.txt","w")
 
         rospy.spin()
 
     def pose_cb(self, msg):
         self.pose = msg
 
+        # Plot current pose
+        monitor = False
+        if monitor:
+            rospy.logerr("Seq: {}: X: {}, Y: {}, Orientation: {}".format(
+                self.pose.header.seq,
+                self.pose.pose.position.x,
+                self.pose.pose.position.y,
+                self.pose.pose.orientation.w))
+
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
 
+        # rospy.logerr("X: {}".format(self.waypoints.waypoints[0].pose.pose.position.x))
+
     def traffic_cb(self, msg):
         self.lights = msg.lights
+
+    def save_data(self):
+        if self.pose == None:
+            return
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv2.imwrite("../../../training_data/data{:06d}.png".format(self.training_data_counter), cv_image)
+        self.state_file.write("{}".format(0))
+        #self.state_file.write("Current POSE: {}\nEND POSE\n".format(self.pose))
+        #self.state_file.write("LIGHTS: {}\nEND LIGHTS\n".format(self.lights))
+        rospy.logerr("Curr POSE:")
+        rospy.logerr(self.pose)
+        rospy.logerr("\n")
+        rospy.logerr("LIGHTS:")
+        rospy.logerr(self.lights)
+
+        self.training_data_counter += 1
+        self.collect_training_data = False
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -68,8 +101,13 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        self.has_image = True
+
         self.camera_image = msg
+        self.has_image = True
+
+        if self.collect_training_data:
+            self.save_data()
+
         light_wp, state = self.process_traffic_lights()
 
         '''
@@ -103,6 +141,36 @@ class TLDetector(object):
         #TODO implement
         return 0
 
+    def get_next(self, base_pose, pose_list):
+        """
+        Returns index of the next list entry to base_pose
+        :param base_pose: Single Pose (e.g. current pose)
+        :param pose_list: List with poses to search for the closest
+        :return: Index of closest list entry
+        """
+        closest_dist = float("inf")
+        closest_index = 0
+
+        for i in range(0, len(pose_list)):
+            # Check if pose in list in in front of the vehicle
+            if self.check_is_ahead(base_pose, pose_list[i]):
+
+                # Calculate the distance between pose und pose in list
+                dist = self.squared_dist(base_pose, pose_list[i])
+                # If distance is smaller than last saved distance
+                if dist < closest_dist:
+                    # Save
+                    closest_dist = dist
+                    closest_index = i
+
+    def check_is_ahead(self, pose_1, pose_2):
+        # TODO: Use vehicle orientation to identify which points are ahead
+        return True
+
+    def squared_dist(self, pose_1, pose_2):
+        dx = pose_1.position.x - pose_2.position.x
+        dy = pose_1.position.y - pose_2.position.y
+        return dx*dx + dy*dy
 
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location

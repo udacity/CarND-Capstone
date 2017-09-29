@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
+import sys
 import math
 
 '''
@@ -37,16 +38,101 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.base_waypoints = None
+        self.pose = None
+        self.len_waypoints = None
 
-        rospy.spin()
+        self.loop()
+        #rospy.spin()
+
+    def loop(self):
+        rate = rospy.Rate(10)  # 10Hz
+        while not rospy.is_shutdown():
+            if (self.base_waypoints != None and self.pose != None):
+                closest_dist = float("inf")
+                closest_index = 0
+
+                for i in range(0, self.len_waypoints):
+                    curr_dist = self.squared_dist(i)
+                    if (curr_dist < closest_dist):
+                        closest_dist = curr_dist
+                        closest_index = i
+
+                if (self.check_is_behind(closest_index)):
+                    closest_index += 1
+                    if (closest_index == self.len_waypoints):
+                        closest_index = 0
+
+                rospy.loginfo("Closed Waypoint index is: {}, x={}, y={}".
+                              format(closest_index,
+                                     self.base_waypoints.waypoints[closest_index].pose.pose.position.x,
+                                     self.base_waypoints.waypoints[closest_index].pose.pose.position.y))
+
+                final_waypoints = None
+                if (closest_index < self.len_waypoints - LOOKAHEAD_WPS):
+                    final_waypoints = self.base_waypoints.waypoints[closest_index:closest_index + LOOKAHEAD_WPS]
+                else:
+                    final_waypoints = self.base_waypoints.waypoints[closest_index:]
+                    rest = LOOKAHEAD_WPS - (self.len_waypoints - closest_index)
+                    final_waypoints += self.base_waypoints.waypoints[:rest]
+
+                rospy.loginfo("Length of final_waypoints is {}".format(len(final_waypoints)))
+                assert (len(final_waypoints) == LOOKAHEAD_WPS)
+
+                lane = Lane()
+                lane.header.stamp = rospy.Time.now()
+                lane.header.frame_id = "/world"
+                lane.waypoints = final_waypoints
+                self.final_waypoints_pub.publish(lane)
+
+                rospy.loginfo("Published final waypoints...")
+                rospy.logdebug(lane)
+
+            rate.sleep()
+
+
+    def check_is_behind(self, index):
+        dx = self.base_waypoints.waypoints[index].pose.pose.position.x - self.pose.position.x
+        dy = self.base_waypoints.waypoints[index].pose.pose.position.y - self.pose.position.y
+        wp_angle = None
+
+        if (dy == 0):
+            if (dx >= 0):
+                wp_angle = 0.5 * math.pi
+            else:
+                wp_angle = 1.5 * math.pi
+        elif (dx >= 0.0 and dy > 0.0):
+            wp_angle = math.atan(dx / dy)
+        elif (dx >= 0.0 and dy < 0.0):
+            wp_angle = math.pi - math.atan(-dx / dy)
+        elif (dx < 0.0 and dy < 0.0):
+            wp_angle = math.pi + math.atan(dx / dy)
+        else:
+            wp_angle = 2 * math.pi - math.atan(-dx / dy)
+
+        # Normalize car's angle?
+        delta_angle = abs(wp_angle - self.pose.orientation.w)
+        if (delta_angle >= 0.5 * math.pi and delta_angle <= 1.5 * math.pi):
+            return True
+        else:
+            return False
+
+    def squared_dist(self, index):
+        dx = self.pose.position.x - self.base_waypoints.waypoints[index].pose.pose.position.x
+        dy = self.pose.position.y - self.base_waypoints.waypoints[index].pose.pose.position.y
+        return dx**2 + dy**2
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        self.pose = msg.pose
+        rospy.loginfo("Received new position: x={}, y={}".format(self.pose.position.x,
+                                                                 self.pose.position.y))
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        if (self.base_waypoints == None):
+            self.base_waypoints = waypoints
+            self.len_waypoints = len(self.base_waypoints.waypoints)
+            rospy.loginfo("Waypoints loaded... found {}.".format(self.len_waypoints))
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
