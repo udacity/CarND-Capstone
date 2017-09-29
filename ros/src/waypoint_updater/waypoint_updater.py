@@ -28,7 +28,7 @@ LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this nu
 distance3d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 distance2d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
-MAX_VELOCITY = 4.4 # 4.47 m/s is about 10 mph
+MAX_VELOCITY = 4.35 # 4.47 m/s is about 10 mph
 SAMPLE_RATE = 20
 
 class WaypointUpdater(object):
@@ -105,7 +105,7 @@ class WaypointUpdater(object):
             velocity_adjusted = next_waypoint_velocity
             for i in range(1, len(waypoints_ahead)):
                 if i < self.next_traffic_light - self.next_waypoint_ahead:
-                    velocity_adjusted -= next_waypoint_velocity /(self.next_traffic_light - self.next_waypoint_ahead) * 1.3
+                    velocity_adjusted -= next_waypoint_velocity /(self.next_traffic_light - self.next_waypoint_ahead)
                 elif i == self.next_traffic_light - self.next_waypoint_ahead:
                     velocity_adjusted = 0.0
                 else:
