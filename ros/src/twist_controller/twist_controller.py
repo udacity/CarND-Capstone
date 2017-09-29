@@ -57,4 +57,4 @@ class Controller(object):
 
         # throttle = 0.25
         # brake = 0.0
-        return throttle, brake, (steer * 10.0)
+        return throttle, brake, steer
