@@ -25,7 +25,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
 MAX_DECEL     = 4.0
-STOP_BUFFER   = 5.0
+STOP_BUFFER   = 6.0
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -56,15 +56,14 @@ class WaypointUpdater(object):
 
     def loop(self):
 
-        # TODO: Implement
         if self.vehicle_pos != None and self.waypoints != None:
             waypoints = self.waypoints
+            
             # try: # to catch when the error when self.vehicle_pos has not been created yet
             smallest_dist = float('inf')
             nearest_wp = 0
 
             # rospy.logwarn("previous nearest waypoint: %s", self.prev_nrst_wp)
-
             self.wp_num = len(waypoints.waypoints)
             dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
             hd = lambda a, b: math.atan2((b.y-a.y), (b.x-a.x))
@@ -84,10 +83,6 @@ class WaypointUpdater(object):
             # quaternion conversion (see: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_Angles_Conversion)
             q = self.vehicle_orientation
             theta = math.asin(2*(q.w*q.y + q.z*q.x))
-            # if abs(theta)>= 1:
-            #     theta = math.pi/2.0
-            # else:
-            #     theta = math.asin(theta)
             heading =  hd(self.vehicle_pos, wp_pos)
             angle = abs(theta - heading)
 
@@ -108,13 +103,11 @@ class WaypointUpdater(object):
                 tl_closest_waypoint_index = self.get_closest_waypoint(self.upcoming_traffic_light_position, waypoints.waypoints)
                 final_wps = self.get_final_waypoints(waypoints.waypoints, nearest_wp, tl_closest_waypoint_index)
             
-            # rospy.logwarn("nearest waypoint: %s", nearest_wp)
+            rospy.logwarn("nearest waypoint: %s", nearest_wp)
             self.final_waypoints_pub.publish(final_wps)
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        # current pose of the vehicle
-        
+
         # Log position change
         if self.vehicle_pos != None:
             distance_change = math.sqrt((msg.pose.position.x - self.vehicle_pos.x)**2 + (msg.pose.position.y - self.vehicle_pos.y)**2)
@@ -157,7 +150,6 @@ class WaypointUpdater(object):
             wp.pose.pose.orientation = waypoints[index].pose.pose.orientation
 
             if self.braking:
-                # Slowly creep up to light if we have stopped short
                 dist = self.distance(wp.pose.pose.position, waypoints[end_wp].pose.pose.position)
                 if dist > STOP_BUFFER and self.current_linear_velocity < 1.0:
                     wp.twist.twist.linear.x = 2.0
@@ -170,10 +162,8 @@ class WaypointUpdater(object):
             final_waypoints.append(wp)
 
         if self.braking:
-            # Find the traffic_wp index in final_waypoints to pass to decelerate
             tl_wp = len(final_waypoints)
 
-            # If we are braking set all waypoints passed traffic_wp within LOOKAHEAD_WPS to 0.0
             for i in range(end_wp, start_wp + LOOKAHEAD_WPS):
                 index = i % len(waypoints)
                 wp = Waypoint()
