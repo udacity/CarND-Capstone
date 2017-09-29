@@ -11,12 +11,12 @@ class Controller(object):
     def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle): # , *args, **kwargs
         # TODO: Implement
         # contoller parameters: kp, ki, kd
-        self.velocity_pid = PID(1.0, 0.05, 0.2)
-        self.steer_pid = PID(5.0, 0.0, 0.00002)
+        self.velocity_pid = PID(2.0, 0.0, 0.0)
+        self.steer_pid = PID(6.8, 0.0, 0.05)
 
         self.steer_control = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
-        self.steer_lowpass = LowPassFilter(0.4, 0.1)
+        self.steer_lowpass = LowPassFilter(1.1, 0.05)
 
     def control(self, target_vel_lin, target_vel_ang, cur_vel_lin, cur_vel_ang, time_elapsed):
 
