@@ -29,16 +29,16 @@ class Controller(object):
         self.wheel_radius = params['wheel_radius']
         self.sample_rate = params['sample_rate']
         self.throttle_pid = PID(
-            .2,
+            .11,
             .0,
             .2,
             0,
             1
         )
         self.steer_pid = PID(
-            1.,
+            1.5,
             .0,
-            .6,
+            .4,
             -params['max_steer_angle'],
             params['max_steer_angle']
         )
@@ -63,9 +63,12 @@ class Controller(object):
 
         if enabled:
             if velocity_diff > 0:
-                throttle = self.throttle_pid.step(velocity_diff, time_interval)
-            else:
-                brake = -velocity_diff * self.total_mass * self.wheel_radius / time_interval
+                # put the velocity diff on sigmoid to smooth PID control
+                logistic_diff = 1 / (1 + math.exp(-2*(linear_velocity - 2.0)))
+                #logistic_diff = 1 / (1 + math.exp(-2*(velocity_diff - 0.5)))
+                throttle = self.throttle_pid.step(logistic_diff, time_interval)
+            elif velocity_diff < -0.5 or current_velocity < 2.0:
+                brake = -velocity_diff * self.total_mass * self.wheel_radius
                 self.throttle_pid.reset()
 
 
