@@ -467,7 +467,7 @@ class TLDetector(object):
 
         # Find the closest visible traffic light (if one exists)
         positions = self.config['stop_line_positions']
-        if len(positions) == 0 or len(positions[0]) < 3:
+        if len(positions) == 0 or len(positions[0]) < 3 or len(self.lights) == 0:
             return light_wp, state
         for i in range(len(positions)):
             (x, y, wp) = positions[i]

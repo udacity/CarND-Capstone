@@ -63,10 +63,10 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        self.tl_distance = -1
-        self.prev_tl_distance = -1
-        self.red_tl = True
-        self.tl_count = 0
+        # self.tl_distance = -1
+        # self.prev_tl_distance = -1
+        # self.red_tl = True
+        # self.tl_count = 0
 
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
@@ -110,15 +110,15 @@ class DBWNode(object):
         float64 z
     '''
     def tl_distance_cb(self, msg):
-        self.tl_distance = msg.data
-        if self.prev_tl_distance == msg.data == -1:
-            self.tl_count += 1 % 1000
-            if self.tl_count > 10: self.red_tl = False
-        else:
-            self.tl_count = 0
-            self.prev_tl_distance = msg.data
-            self.red_tl = True
-
+        # self.tl_distance = msg.data
+        # if self.prev_tl_distance == msg.data == -1:
+        #     self.tl_count += 1 % 1000
+        #     if self.tl_count > 10: self.red_tl = False
+        # else:
+        #     self.tl_count = 0
+        #     self.prev_tl_distance = msg.data
+        #     self.red_tl = True
+        pass
 
 
     def twist_cmd_cb(self, msg):
@@ -126,10 +126,10 @@ class DBWNode(object):
         (x, y, yaw) = twist_to_xyy(msg)
         # rospy.loginfo("twist_cmd_cb %d", seq)
         self.twist_yaw_filter.filt(yaw)
-        if self.red_tl == True:
-            vtwist = self.twist_velocity_filter.filt(0.1)
-        else:
-            vtwist = self.twist_velocity_filter.filt(x)
+        # if self.red_tl == True:
+        #     vtwist = self.twist_velocity_filter.filt(0.1)
+        # else:
+        vtwist = self.twist_velocity_filter.filt(x)
         # calculate error between desired velocity and current velocity
         
 
@@ -209,7 +209,7 @@ class DBWNode(object):
                 # if self.red_tl == True and self.tl_distance > 0 and self.tl_distance < 50:
                 #     throttle = 0
                 #     brake = 1.
-                rospy.loginfo("throttle: %f brake: %f steering angle: %f " % (throttle, brake , steer))
+                #rospy.loginfo("throttle: %f brake: %f steering angle: %f " % (throttle, brake , steer))
                 # throttle is 0.35, which runs the car at about 40 mph.
                 # throttle of 0.98 will run the car at about 115 mph.
                 self.publish(throttle, brake, steer)
