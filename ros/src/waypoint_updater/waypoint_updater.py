@@ -278,11 +278,13 @@ class WaypointUpdater(object):
                     v = float(dst / 0.03)
                     p.twist.twist.linear.x = v
                     o2lane.waypoints.append(p)
-                    # rospy.loginfo("x: %2.3f y: %2.3f new_yaw: %2.3f dst: %2.3f v: %2.3f" % (final_path[i][0],
-                    #                                                             final_path[i][1],
-                    #                                                             yw,
-                    #                                                             dst,
-                    #                                                             v))
+                if self.dump == False:
+                    self.dump = True
+                    rospy.loginfo("x: %2.3f y: %2.3f new_yaw: %2.3f dst: %2.3f v: %2.3f" % (final_path[i][0],
+                                                                                 final_path[i][1],
+                                                                                 yw,
+                                                                                 dst,
+                                                                                 v))
 
                 #self.final_wps = o2lane.waypoints
                 self.final_waypoints_pub.publish(o2lane)
