@@ -48,6 +48,11 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.has_image = False
+
+        self.collect_training_data = True
+        self.training_data_counter = 0
+        self.state_file = open("../../../training_data/state.txt","w")
 
         rospy.spin()
 
@@ -60,6 +65,23 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
+    def save_data(self):
+        if self.pose == None:
+            return
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv2.imwrite("../../../training_data/data{:06d}.png".format(self.training_data_counter), cv_image)
+        self.state_file.write("{}".format(0))
+        #self.state_file.write("Current POSE: {}\nEND POSE\n".format(self.pose))
+        #self.state_file.write("LIGHTS: {}\nEND LIGHTS\n".format(self.lights))
+        rospy.logerr("Curr POSE:")
+        rospy.logerr(self.pose)
+        rospy.logerr("\n")
+        rospy.logerr("LIGHTS:")
+        rospy.logerr(self.lights)
+
+        self.training_data_counter += 1
+        self.collect_training_data = False
+
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
@@ -68,8 +90,13 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        self.has_image = True
+
         self.camera_image = msg
+        self.has_image = True
+
+        if self.collect_training_data:
+            self.save_data()
+
         light_wp, state = self.process_traffic_lights()
 
         '''
