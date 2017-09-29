@@ -59,8 +59,19 @@ class TLDetector(object):
     def pose_cb(self, msg):
         self.pose = msg
 
+        # Plot current pose
+        monitor = False
+        if monitor:
+            rospy.logerr("Seq: {}: X: {}, Y: {}, Orientation: {}".format(
+                self.pose.header.seq,
+                self.pose.pose.position.x,
+                self.pose.pose.position.y,
+                self.pose.pose.orientation.w))
+
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
+
+        # rospy.logerr("X: {}".format(self.waypoints.waypoints[0].pose.pose.position.x))
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -130,6 +141,36 @@ class TLDetector(object):
         #TODO implement
         return 0
 
+    def get_next(self, base_pose, pose_list):
+        """
+        Returns index of the next list entry to base_pose
+        :param base_pose: Single Pose (e.g. current pose)
+        :param pose_list: List with poses to search for the closest
+        :return: Index of closest list entry
+        """
+        closest_dist = float("inf")
+        closest_index = 0
+
+        for i in range(0, len(pose_list)):
+            # Check if pose in list in in front of the vehicle
+            if self.check_is_ahead(base_pose, pose_list[i]):
+
+                # Calculate the distance between pose und pose in list
+                dist = self.squared_dist(base_pose, pose_list[i])
+                # If distance is smaller than last saved distance
+                if dist < closest_dist:
+                    # Save
+                    closest_dist = dist
+                    closest_index = i
+
+    def check_is_ahead(self, pose_1, pose_2):
+        # TODO: Use vehicle orientation to identify which points are ahead
+        return True
+
+    def squared_dist(self, pose_1, pose_2):
+        dx = pose_1.position.x - pose_2.position.x
+        dy = pose_1.position.y - pose_2.position.y
+        return dx*dx + dy*dy
 
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
