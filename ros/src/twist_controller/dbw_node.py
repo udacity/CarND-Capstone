@@ -81,14 +81,14 @@ class DBWNode(object):
 
         self.dbw = False
         self.angular_velocity_filter = LowPassFilter(.90, 1)
-        self.velocity_filter = LowPassFilter(.8, .9)
+        self.velocity_filter = LowPassFilter(.8, 1)
         self.twist_yaw_filter = LowPassFilter(.2, .96)
-        self.twist_velocity_filter = LowPassFilter(.8, .9)
+        self.twist_velocity_filter = LowPassFilter(.8, 1)
         self.steer_filter = LowPassFilter(.2, .90)
         self.p_v = [1.187355162, 0.044831144, 0.00295747]
         self.pidv = pid.PID(self.p_v[0], self.p_v[1], self.p_v[2])
         self.throttle = 0.
-        min_speed = .1
+        min_speed = .01
         # At high speeds, a multiple of 1.2 seems to work a bit
         # better than 1.0
         self.yaw_controller = YawController(wheel_base, 1.2*steer_ratio, min_speed, 8*max_lat_accel, max_steer_angle)
