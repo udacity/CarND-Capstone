@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -100,8 +101,24 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        def distance_to_waypoint(pose, waypoint):
+            veh_x = pose.position.x
+            veh_y = pose.position.y
+            wp_x = waypoint.pose.pose.position.x
+            wp_y = waypoint.pose.pose.position.y
+            dx = veh_x - wp_x
+            dy = veh_y - wp_y
+            return math.sqrt(dx * dx + dy * dy)
+
+        nearest = None
+        min_dist = float("inf")
+        for index, waypoint in enumerate(self.waypoints.waypoints):
+            dist = distance_to_waypoint(pose, waypoint)
+            if dist < min_dist:
+                min_dist = dist
+                nearest = index
+
+        return nearest
 
 
     def project_to_image_plane(self, point_in_world):
@@ -150,6 +167,18 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        # TODO(Olala): return the real state
+        # Fake light detection with ground truth
+        if not self.lights:
+            return TrafficLight.UNKNOWN
+        light_index = self.get_closest_waypoint(light.pose)
+        for light_3d in self.lights:
+            light_3d_index = self.get_closest_waypoint(light_3d.pose.pose)
+            if abs(light_index - light_3d_index) < 50:
+                return light_3d.state
+        return TrafficLight.UNKNOWN
+        # End of fake light detection
+
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -172,17 +201,58 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        if not self.waypoints or not self.pose:
+            return -1, TrafficLight.UNKNOWN
+
         light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
+
+        # car_fwd indicates whether car's moving the same direction as the waypoint index increase
+        car_fwd = False
+        closest_wp_index = None
+        waypoints = self.waypoints.waypoints
+        wp_length = len(waypoints)
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+            car_orientation = self.pose.pose.orientation
+            quaternion = (car_orientation.x, car_orientation.y,
+                          car_orientation.z, car_orientation.w)
+            _, _, yaw = tf.transformations.euler_from_quaternion(quaternion)
+
+            car_pose = self.pose.pose
+            closest_wp_index = self.get_closest_waypoint(car_pose)
+            wp1 = waypoints[closest_wp_index]
+            wp2 = waypoints[closest_wp_index + 1 % wp_length]
+            fwd_angle = math.atan2(wp2.pose.pose.position.y - wp1.pose.pose.position.y,
+                                   wp2.pose.pose.position.x - wp1.pose.pose.position.x)
+
+            if -math.pi / 2.0 < yaw - fwd_angle < math.pi / 2:
+                car_fwd = True
 
         #TODO find the closest visible traffic light (if one exists)
+        traffic_lights = dict()
+        for stop_line in stop_line_positions:
+            stop_line_pose = Pose()
+            stop_line_pose.position.x = stop_line[0]
+            stop_line_pose.position.y = stop_line[1]
+            line_position = self.get_closest_waypoint(stop_line_pose)
+            traffic_lights[line_position] = stop_line_pose
+
+        light, light_wp = None, None
+
+        for i in range(wp_length):
+            inc = 1 if car_fwd else -1
+            index = (closest_wp_index + i * inc) % wp_length
+            if index in traffic_lights:
+                light = TrafficLight()
+                light_wp = index
+                light.pose = traffic_lights[index]
+                break
 
         if light:
             state = self.get_light_state(light)
+            rospy.loginfo('light color ahead %s' % state)
             return light_wp, state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
