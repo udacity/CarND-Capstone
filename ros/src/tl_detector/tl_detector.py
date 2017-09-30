@@ -40,7 +40,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-        self.next_waypoint_ahead = None 
+        self.next_waypoint_ahead = None
         self.waypoints = None
         self.traffic_lights = RouteTrafficLights()
 
@@ -99,7 +99,7 @@ class TLDetector(object):
             # Get next traffic light ahead.
             light_wp, light_key = \
                 self.traffic_lights.get_next_en_route(self.next_waypoint_ahead)
-        
+
         if light_key == None:
             # Next light key is unknown so as the light state.
             self.publish_red_light(light_wp, light_state)
