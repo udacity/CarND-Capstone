@@ -80,8 +80,8 @@ class DBWNode(object):
         self.dbw = False
         self.angular_velocity_filter = LowPassFilter(.90, 1)
         self.velocity_filter = LowPassFilter(.90, 1)
-        self.twist_yaw_filter = LowPassFilter(.96, 1)
-        self.twist_velocity_filter = LowPassFilter(.96, .8)
+        self.twist_yaw_filter = LowPassFilter(.96, .3)
+        self.twist_velocity_filter = LowPassFilter(.96, .6)
         self.p_v = [1.187355162, 0.044831144, 0.00295747]
         self.pidv = pid.PID(self.p_v[0], self.p_v[1], self.p_v[2])
         self.throttle = 0.
@@ -197,11 +197,11 @@ class DBWNode(object):
                         throttle = 1.0
                     else: 
                         throttle = 0.
-                        brake = 1.0 #* 20000
+                        brake = 1.0 * 100
                 elif self.throttle < 0:
                     throttle = 0
-                    brake = (abs(self.throttle) + self.brake_deadband) #* 20000
-                    if brake > 1.: brake = 1. #* 20000 
+                    brake = (abs(self.throttle) + self.brake_deadband) * 100
+                    if brake > 1.: brake = 1. * 100 
                 else:
                     throttle = self.throttle + self.brake_deadband
                     if throttle > 1. : throttle = 1.
@@ -209,7 +209,7 @@ class DBWNode(object):
                 # if self.red_tl == True and self.tl_distance > 0 and self.tl_distance < 50:
                 #     throttle = 0
                 #     brake = 1.
-                #rospy.loginfo("throttle: %f brake: %f steering angle: %f " % (throttle, brake , steer))
+                rospy.loginfo("throttle: %f brake: %f steering angle: %f " % (throttle, brake , steer))
                 # throttle is 0.35, which runs the car at about 40 mph.
                 # throttle of 0.98 will run the car at about 115 mph.
                 self.publish(throttle, brake, steer)
