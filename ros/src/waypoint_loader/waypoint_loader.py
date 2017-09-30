@@ -72,13 +72,7 @@ class WaypointLoader(object):
         return waypoints
 
     def publish(self, waypoints):
-<<<<<<< HEAD
-        rate = rospy.Rate(1)# 40 Hz Original doesn't help drive the car.
-||||||| merged common ancestors
-        rate = rospy.Rate(40)
-=======
         rate = rospy.Rate(1) # seems downgrading this is crucial!
->>>>>>> upstream/master
         while not rospy.is_shutdown():
             lane = Lane()
             lane.header.frame_id = '/world'

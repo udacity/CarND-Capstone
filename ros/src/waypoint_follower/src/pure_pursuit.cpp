@@ -32,7 +32,7 @@
 
 constexpr int LOOP_RATE = 30; //processing frequency
 
-constexpr int QUEUE = 1;
+const int QUEUE = 1;
 
 int main(int argc, char **argv)
 {
