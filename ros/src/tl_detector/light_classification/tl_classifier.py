@@ -4,9 +4,11 @@ from real_model import RealModel
 import os
 
 class TLClassifier(object):
-    def __init__(self):
-        # self.model = SimModel()
-        self.model = RealModel("light_classification/models/tl_model")
+    def __init__(self, scenario):
+        if scenario == "sim":
+            self.model = SimModel()
+        else:
+            self.model = RealModel("light_classification/models/tl_model")
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
