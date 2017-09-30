@@ -57,7 +57,7 @@ roslaunch launch/site.launch
 ### Team
 The project is a team work. We are (as in registration form),
 
-- Priyanka Dwivedi (priya.toronto3@gmail.com)
+- Priyanka Dwivedi (priyanka.kochhar3@gmail.com)
 - Li Ma (ma.li.cn@gmail.com)
 - Raghu Ramarao (raghu.ramarao@gmail.com)
 - Tim Tobey (timtobey@gmail.com)
