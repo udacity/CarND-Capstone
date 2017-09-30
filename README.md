@@ -2,11 +2,11 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 Team PolbyteCar:
 
-Artur Olszak (olszak.artur@gmail.com)
-David Vidal (dvidalrk@gmail.com)
-Joshua Owoyemi (tjosh.owoyemi@gmail.com)
-Marcel Lotsch (marcel.lotsch@gmail.com)
-Aleksandrs Levinskis (a.levinskis@gmail.com)
+- Artur Olszak (olszak.artur@gmail.com)
+- David Vidal (dvidalrk@gmail.com)
+- Joshua Owoyemi (tjosh.owoyemi@gmail.com)
+- Marcel Lotsch (marcel.lotsch@gmail.com)
+- Aleksandrs Levinskis (a.levinskis@gmail.com)
 
 
 ### Installation 
