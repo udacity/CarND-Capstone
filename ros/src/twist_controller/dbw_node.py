@@ -63,6 +63,8 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        # self.prev_steer_val = None
+        # self.prev_steer_val_set = False
         # self.tl_distance = -1
         # self.prev_tl_distance = -1
         # self.red_tl = True
@@ -79,9 +81,10 @@ class DBWNode(object):
 
         self.dbw = False
         self.angular_velocity_filter = LowPassFilter(.90, 1)
-        self.velocity_filter = LowPassFilter(.90, 1)
-        self.twist_yaw_filter = LowPassFilter(.96, .3)
-        self.twist_velocity_filter = LowPassFilter(.96, .6)
+        self.velocity_filter = LowPassFilter(.8, .9)
+        self.twist_yaw_filter = LowPassFilter(.2, .96)
+        self.twist_velocity_filter = LowPassFilter(.8, .9)
+        self.steer_filter = LowPassFilter(.2, .90)
         self.p_v = [1.187355162, 0.044831144, 0.00295747]
         self.pidv = pid.PID(self.p_v[0], self.p_v[1], self.p_v[2])
         self.throttle = 0.
@@ -187,7 +190,11 @@ class DBWNode(object):
             #   self.publish(throttle, brake, steer)
             if self.dbw == True:
                 twist = self.twist_yaw_filter.get()
-                steer = self.yaw_controller.get_steering(self.twist_velocity_filter.get(), twist, self.velocity_filter.get())
+                #steer = self.yaw_controller.get_steering(self.twist_velocity_filter.get(), twist, self.velocity_filter.get())
+                steer = self.yaw_controller.get_steering(self.velocity_filter.get(), twist, self.velocity_filter.get())
+                steer = self.steer_filter.filt(steer)
+
+
                 # define throttle command based on pid controller
                 throttle = brake = 0.
 

@@ -113,6 +113,8 @@ class WaypointUpdater(object):
         self.dump = False
         self.dump2 = False
 
+        self.velocity = rospy.get_param('velocity') * 0.27778
+
         # TODO: Add other member variables you need below
 
         rospy.spin()
@@ -229,7 +231,12 @@ class WaypointUpdater(object):
         if self.next_pt < self.next_tl-1:
             distance_to_tl = self.stopPlanner.distance(self.wps, self.next_pt, self.next_tl-1)
             rospy.loginfo("distance to next tl: %2.3f Red light: %s", distance_to_tl, self.red_tl)
-            if distance_to_tl <= 30 and self.red_tl == True: # mts
+            if distance_to_tl <= 200:
+                
+                if distance_to_tl <= 30 and self.red_tl == True: # mts
+                    stop_v = 0.
+                else:
+                    stop_v = self.velocity / 2.
                 (roll1, pitch1, yaw1) = tf.transformations.euler_from_quaternion([self.wps[self.next_pt].pose.pose.orientation.x,
                                                                     self.wps[self.next_pt].pose.pose.orientation.y,
                                                                     self.wps[self.next_pt].pose.pose.orientation.z,
@@ -239,7 +246,7 @@ class WaypointUpdater(object):
                                                                     self.wps[self.next_tl-1].pose.pose.orientation.z,
                                                                     self.wps[self.next_tl-1].pose.pose.orientation.w])
                 #T = distance_to_tl / self.current_velocity
-                T = distance_to_tl / 10.10 # average velocity in mts/s
+                T = distance_to_tl / self.velocity # average velocity in mts/s
                 
 
                 s, d = self.stopPlanner.getFrenet(self.wps[self.next_pt].pose.pose.position.x,
@@ -248,13 +255,14 @@ class WaypointUpdater(object):
                 s_stop, d_stop = self.stopPlanner.getFrenet(self.wps[self.next_tl-1].pose.pose.position.x,
                                             self.wps[self.next_tl-1].pose.pose.position.y,
                                              yaw2, self.wps)
-                coeff = self.stopPlanner.JMT([s, self.current_velocity, 0], [s_stop, 0, 0], T)
+                ## --- JMT for waypoints distance
+                coeff = self.stopPlanner.JMT([s, self.current_velocity, 0], [s_stop, stop_v, 0], T)
                 fy = np.poly1d(coeff)
                 n = T / 0.03
                 s_x = np.linspace(0, T, n)
                 sss = fy(s_x)
                 ## --- jmt for the velocity
-                coeff_v = self.stopPlanner.JMT([self.current_velocity, 1., 0], [0, 0, 0], T)
+                coeff_v = self.stopPlanner.JMT([self.current_velocity, 1., 0], [stop_v, 0, 0], T)
                 fyv = np.poly1d(coeff_v)
                 v_values = fyv(s_x)
                 ## --- jmt for the angles
