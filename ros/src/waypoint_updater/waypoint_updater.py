@@ -114,7 +114,7 @@ class WaypointUpdater(object):
 
                 velocity_adjusted = max(velocity_adjusted, 0.0)
                 velocity_adjusted = min(velocity_adjusted, self.max_velocity)
-                rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i + self.next_waypoint_ahead, velocity_adjusted))
+                rospy.logdebug("Setting velocity of waypoint index %s to %s" % (i + self.next_waypoint_ahead, velocity_adjusted))
                 self.set_waypoint_velocity(waypoints_ahead, i, velocity_adjusted)
 
         else:
