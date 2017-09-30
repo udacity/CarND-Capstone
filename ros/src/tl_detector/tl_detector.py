@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -100,8 +101,24 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        def distance_to_waypoint(pose, waypoint):
+            veh_x = pose.position.x
+            veh_y = pose.position.y
+            wp_x = waypoint.pose.pose.position.x
+            wp_y = waypoint.pose.pose.position.y
+            dx = veh_x - wp_x
+            dy = veh_y - wp_y
+            return math.sqrt(dx * dx + dy * dy)
+
+        nearest = None
+        min_dist = float("inf")
+        for index, waypoint in enumerate(self.waypoints):
+            dist = distance_to_waypoint(pose, waypoint)
+            if dist < min_dist:
+                min_dist = dist
+                nearest = index
+
+        return nearest
 
 
     def project_to_image_plane(self, point_in_world):
