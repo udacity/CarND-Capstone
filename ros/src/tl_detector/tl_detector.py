@@ -167,6 +167,18 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        # TODO(Olala): return the real state
+        # Fake light detection with ground truth
+        if not self.lights:
+            return TrafficLight.UNKNOWN
+        light_index = self.get_closest_waypoint(light.pose)
+        for light_3d in self.lights:
+            light_3d_index = self.get_closest_waypoint(light_3d.pose.pose)
+            if abs(light_index - light_3d_index) < 50:
+                return light_3d.state
+        return TrafficLight.UNKNOWN
+        # End of fake light detection
+
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -236,13 +248,11 @@ class TLDetector(object):
                 light = TrafficLight()
                 light_wp = index
                 light.pose = traffic_lights[index]
-                # TODO(Olala): fill it with the correct light state
-                light.state = TrafficLight.RED
                 break
 
         if light:
-            # state = self.get_light_state(light)
-            state = light.state
+            state = self.get_light_state(light)
+            rospy.loginfo('light color ahead %s' % state)
             return light_wp, state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
