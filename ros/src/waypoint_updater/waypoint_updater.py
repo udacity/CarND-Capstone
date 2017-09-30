@@ -28,7 +28,6 @@ LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this nu
 distance3d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 distance2d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
-MAX_VELOCITY = 4.35 # 4.47 m/s is about 10 mph
 SAMPLE_RATE = 20
 
 class WaypointUpdater(object):
@@ -46,6 +45,7 @@ class WaypointUpdater(object):
         self.last_pose = None
         self.next_waypoint_ahead = None
         self.next_traffic_light = None
+        self.max_velocity = None
 
         self.final_waypoints_pub = rospy.Publisher(
             'final_waypoints', Lane, queue_size=1)
@@ -61,6 +61,7 @@ class WaypointUpdater(object):
 
     def publish_wp(self):
         if len(self.all_waypoints) > 0 and self.last_pose: # base waypoints published
+            self.max_velocity = self.get_waypoint_velocity(self.all_waypoints[0])
             next_waypoint_ahead = self.get_next_waypoint_ahead()
             #if next_waypoint_ahead != self.next_waypoint_ahead:
             waypoints_ahead = self.get_waypoints_ahead(next_waypoint_ahead)
@@ -112,13 +113,13 @@ class WaypointUpdater(object):
                     velocity_adjusted = 0.0
 
                 velocity_adjusted = max(velocity_adjusted, 0.0)
-                velocity_adjusted = min(velocity_adjusted, MAX_VELOCITY)
-                rospy.logdebug("Setting velocity of waypoint index %s to %s" % (i + self.next_waypoint_ahead, velocity_adjusted))
+                velocity_adjusted = min(velocity_adjusted, self.max_velocity)
+                rospy.loginfo("Setting velocity of waypoint index %s to %s" % (i + self.next_waypoint_ahead, velocity_adjusted))
                 self.set_waypoint_velocity(waypoints_ahead, i, velocity_adjusted)
 
         else:
             for i in range(len(waypoints_ahead)):
-                self.set_waypoint_velocity(waypoints_ahead, i, MAX_VELOCITY)
+                self.set_waypoint_velocity(waypoints_ahead, i, self.max_velocity)
 
     def waypoint_distance(self, waypoints, i1, i2):
         dist = 0
