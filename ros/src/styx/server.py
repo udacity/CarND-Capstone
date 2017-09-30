@@ -11,9 +11,16 @@ from conf import conf
 
 sio = socketio.Server()
 app = Flask(__name__)
+<<<<<<< HEAD
 bridge = Bridge(conf)
 #msgs = []
 msgs = {}
+||||||| merged common ancestors
+bridge = Bridge(conf)
+msgs = []
+=======
+msgs = []
+>>>>>>> upstream/master
 
 dbw_enable = False
 
@@ -27,7 +34,7 @@ def send(topic, data):
     #sio.emit(topic, data=json.dumps(data), skip_sid=True)
     msgs[topic] = data #new line
 
-bridge.register_server(send)
+bridge = Bridge(conf, send)
 
 @sio.on('telemetry')
 def telemetry(sid, data):

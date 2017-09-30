@@ -4,3 +4,9 @@ build
 devel
 
 profile.tmp
+
+# raw bag files
+bags/
+# extracted image files
+bagimgs/
+data/camera_training
