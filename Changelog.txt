@@ -233,3 +233,18 @@ to here.  Moved frame-skipping logic to here.
 
 waypoint_updater.py: Undid Calvenn's change, since the max_tl_distance
 logic in tl_detector.py handles this now.
+
+Changes (2017-09-29 by cs4nd13)
+
+Merged in latest changes from the Udacity upstream repository.  
+The main changes affecting us:
+
+Various unit-conversion bugs in waypoint_loader.py have been fixed.
+The units are a bit confusing, because the launch file gives the
+desired velocity in km per hour, the simulator displays velocity in 
+miles per hour, and internally the code uses meters per second.
+
+requirements.txt has been updated to require version 1.0.0 of
+tensorflow.  (Udacity's change actually has a typo, so I have
+incorporated a fix from a pull request that Udacity hasn't yet
+acted on).
