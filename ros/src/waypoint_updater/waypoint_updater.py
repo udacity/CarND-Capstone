@@ -526,15 +526,27 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         # print("tcb", msg)
-        self.next_tl = msg.data
+        # If next_tl is positive, then next_tl has the waypoint
+        # of the next red light.  If next_tl is negative, then
+        # abs(next_tl) has the waypoint of the next light, and the
+        # negative sign signals that the next light is NOT red.
+        next_tl = msg.data
+        sgn = 1
+        if next_tl < 0:
+            sgn = -1
+            next_tl *= -1
         dist = -1.0
         if self.next_pt >= 0 and self.next_tl >= 0:
             sz = len(self.wps)
             dist = self.wp_ss[self.next_tl] - self.wp_ss[self.next_pt]
             if dist < 0:
                 dist += self.wp_ss[sz]
-        self.tl_distance = dist
-        self.tl_distance_pub.publish(dist)
+
+        # Output: distance to next light.  If output is positive,
+        # it means that the next light is red.  If distance is negative,
+        # it means that the next light is NOT red, and abs(distance)
+        # gives the distance to this non-red light.
+        self.tl_distance_pub.publish(sgn*dist)
         # print("ds", dist)
         self.tl_distance = msg.data
         if self.prev_tl_distance == msg.data == -1:
