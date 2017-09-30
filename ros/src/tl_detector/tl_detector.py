@@ -163,7 +163,9 @@ class TLDetector(object):
             self.state = light_state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state in (TrafficLight.RED, TrafficLight.YELLOW) else -1
+            light_wp = light_wp \
+                if light_state in (TrafficLight.RED, TrafficLight.YELLOW) \
+                else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
