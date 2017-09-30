@@ -3,6 +3,11 @@ import cv2
 import numpy as np
 
 class TLClassifierSim(object):
+
+    def __init__(self):
+        self.is_loaded = True
+        print("Simulator Classifier loaded")
+
     def get_classification(self, image):
         
         # Initial state
@@ -19,5 +24,5 @@ class TLClassifierSim(object):
         if area > pixels:
             state = TrafficLight.RED
 
-        # Return traffic light state - only UNKNOWN / RED
-        return state
+        # Return traffic light state - only UNKNOWN / RED, and preview image
+        return state, None

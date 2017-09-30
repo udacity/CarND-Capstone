@@ -25,7 +25,7 @@ class TLDetector(object):
         # Load config
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
-        self.simulator = True # TODO: add global parameter in the project
+        self.is_site_environment = rospy.get_param('environment', 0)
 
         # Properties
         self.pose = None
@@ -39,32 +39,29 @@ class TLDetector(object):
         self.image_lock = threading.RLock()
         self.lights = []
         self.bridge = CvBridge()        
-        self.light_classifier_loaded = False
         self.traffic_positions = self.get_given_traffic_lights()
 
-        # Load the classifier and change the flag
-        if self.simulator:
-            self.light_classifier = TLClassifierSim()
-            self.light_classifier_loaded = True
-            print("Simulator Classifier loaded")
-        else:
+        # Load the classifier
+        if self.is_site_environment:
             self.light_classifier = TLClassifier()
-            def start_callback(timer):
-                self.light_classifier_loaded = True
-                print("TF classifier load delay end")
-            rospy.Timer(rospy.Duration(8), start_callback, True) # Wait few seconds until TF model is loaded
-
+        else:
+            self.light_classifier = TLClassifierSim()
+            
         # Start image processing in recursive loop - one frame at a time
         rospy.Timer(rospy.Duration(0.2), self.process_and_publish, True)
 
         # Subscribers
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+        if self.is_site_environment:
+            rospy.Subscriber('/image_raw', Image, self.image_cb)
+        else:
+            rospy.Subscriber('/image_color', Image, self.image_cb)
 
-        # Publisher
+        # Publishers
         self.upcoming_stop_light_pub = rospy.Publisher('/traffic_waypoint', Point, queue_size=1)
+        self.recognition_pub = rospy.Publisher('/traffic_light_preview', Image, queue_size=1)
 
         rospy.spin()
 
@@ -317,15 +314,28 @@ class TLDetector(object):
         closest_tf_waypoint = self.get_traffic_light_waypoint(self.pose)
 
         # Process image if model is ready
-        if self.light_classifier_loaded is True:
-            # print("Image process start...") 
-            self.camera_image.encoding = "rgb8"
-            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-            # cv2.imwrite("./../../../asset/test.jpg", cv_image) # debug
-            state = self.light_classifier.get_classification(cv_image)
-            state_name = self.get_light_name(state)
-            # print("Current light: {} {}".format(state, state_name))
-            # print("Closest traffic light position: {}, {}".format(closest_tf_waypoint.pose.pose.position.x, closest_tf_waypoint.pose.pose.position.y))
+        if self.light_classifier.is_loaded is True:
+
+            print("Image process start... {} x {}".format(self.camera_image.width, self.camera_image.height)) 
+            state = None
+            state_name = None
+
+            # Simulator has different images than rosbags, so we process it differently
+            if self.is_site_environment:
+                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+                state, preview_image = self.light_classifier.get_classification(cv_image)
+                state_name = self.get_light_name(state)
+                # Publish preview
+                self.recognition_pub.publish(self.bridge.cv2_to_imgmsg(preview_image, "rgb8"))
+            
+            else:
+                camera_image = self.camera_image
+                camera_image.encoding = "rgb8"
+                cv_image = self.bridge.imgmsg_to_cv2(camera_image, "bgr8")
+                state, _ = self.light_classifier.get_classification(cv_image)
+                state_name = self.get_light_name(state)
+
+            print("Current light: {} {}".format(state, state_name))
 
         return closest_tf_waypoint, state
 
