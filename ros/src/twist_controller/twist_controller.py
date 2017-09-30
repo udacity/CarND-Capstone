@@ -83,11 +83,6 @@ class Controller(object):
                 if self.filter_throttle:
                     throttle = self.throttle_filter.filt(throttle)
 
-            steer = self.yaw_controller.get_steering(
-                linear_velocity,
-                angular_velocity,
-                current_velocity
-            )
             if USE_STEER_PID:
                 steer = self.steer_pid.step(angular_velocity, time_interval)
             else:
