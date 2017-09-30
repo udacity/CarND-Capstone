@@ -43,14 +43,14 @@ class Controller(object):
         self.throttle_pid = PID(
             10.,
             .0,
-            10.,
+            5.,
             0,
             1
         )
         self.steer_pid = PID(
             1.0,
             .0,
-            10.0,
+            5.0,
             -params['max_steer_angle'],
             params['max_steer_angle']
         )
