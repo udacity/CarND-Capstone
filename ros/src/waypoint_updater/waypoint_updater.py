@@ -226,18 +226,18 @@ class WaypointUpdater(object):
         if seq%5 == 0:
             pass
         # rospy.loginfo("next wp: %d next tl: %d", self.next_pt, self.next_tl)
-        if self.next_pt < self.next_tl:
-            distance_to_tl = self.stopPlanner.distance(self.wps, self.next_pt, self.next_tl)
+        if self.next_pt < self.next_tl-1:
+            distance_to_tl = self.stopPlanner.distance(self.wps, self.next_pt, self.next_tl-1)
             rospy.loginfo("distance to next tl: %2.3f Red light: %s", distance_to_tl, self.red_tl)
             if distance_to_tl <= 30 and self.red_tl == True: # mts
                 (roll1, pitch1, yaw1) = tf.transformations.euler_from_quaternion([self.wps[self.next_pt].pose.pose.orientation.x,
                                                                     self.wps[self.next_pt].pose.pose.orientation.y,
                                                                     self.wps[self.next_pt].pose.pose.orientation.z,
                                                                     self.wps[self.next_pt].pose.pose.orientation.w])
-                (roll2, pitch2, yaw2) = tf.transformations.euler_from_quaternion([self.wps[self.next_tl].pose.pose.orientation.x,
-                                                                    self.wps[self.next_tl].pose.pose.orientation.y,
-                                                                    self.wps[self.next_tl].pose.pose.orientation.z,
-                                                                    self.wps[self.next_tl].pose.pose.orientation.w])
+                (roll2, pitch2, yaw2) = tf.transformations.euler_from_quaternion([self.wps[self.next_tl-1].pose.pose.orientation.x,
+                                                                    self.wps[self.next_tl-1].pose.pose.orientation.y,
+                                                                    self.wps[self.next_tl-1].pose.pose.orientation.z,
+                                                                    self.wps[self.next_tl-1].pose.pose.orientation.w])
                 #T = distance_to_tl / self.current_velocity
                 T = distance_to_tl / 10.10 # average velocity in mts/s
                 
@@ -245,8 +245,8 @@ class WaypointUpdater(object):
                 s, d = self.stopPlanner.getFrenet(self.wps[self.next_pt].pose.pose.position.x,
                                             self.wps[next_pt].pose.pose.position.y,
                                              yaw1, self.wps)
-                s_stop, d_stop = self.stopPlanner.getFrenet(self.wps[self.next_tl].pose.pose.position.x,
-                                            self.wps[self.next_tl].pose.pose.position.y,
+                s_stop, d_stop = self.stopPlanner.getFrenet(self.wps[self.next_tl-1].pose.pose.position.x,
+                                            self.wps[self.next_tl-1].pose.pose.position.y,
                                              yaw2, self.wps)
                 coeff = self.stopPlanner.JMT([s, self.current_velocity, 0], [s_stop, 0, 0], T)
                 fy = np.poly1d(coeff)
