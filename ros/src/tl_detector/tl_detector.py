@@ -17,6 +17,7 @@ import threading
 import time
 
 STATE_COUNT_THRESHOLD = 2
+TRAFFIC_LIGHT_HEIGHT = 1.524
 
 class TLDetector(object):
 	def __init__(self):
@@ -223,7 +224,7 @@ class TLDetector(object):
 
 		traffic_light_list = []
 
-		tl_height = 1.524
+		tl_height = TRAFFIC_LIGHT_HEIGHT
 		config_string = rospy.get_param("/traffic_light_config")
 		traffic_light_positions = yaml.load(config_string)["light_positions"]
 
