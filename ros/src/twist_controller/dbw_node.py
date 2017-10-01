@@ -72,13 +72,19 @@ class DBWNode(object):
 
         #self.controller = Controller(kp=0.4, ki=0.0, kd=0.5, vc=vc) # working: car stays on track, but throttle oscillates a lot
         # self.controller = Controller(kp=0.2, ki=0.001, kd=0.15, vc=vc) # sort of OK
-        # self.controller = Controller(kp=0.8, ki=0.005, kd=0.5, vc=vc) # better
-        # self.controller = Controller(kp=0.8, ki=0.005, kd=0.5, vc=vc) # fine
-        # self.controller = Controller(kp=1.2, ki=0.005, kd=0.5, vc=vc) # fine
-        self.controller = Controller(kp=1.0, ki=0.005, kd=0.3, vc=vc) # fine ++
-        # self.controller = Controller(kp=1.0, ki=0.004, kd=0.2, vc=vc) # fine
-        # self.controller = Controller(kp=1.0, ki=0.005, kd=0.1, vc=vc) # fine
+        # self.controller = Controller(kp=0.1, ki=0.0, kd=0.05, vc=vc) # fits expectation better
+        # self.controller = Controller(kp=0.1, ki=0.0, kd=0.03, vc=vc) # fits expectation even better
+        # self.controller = Controller(kp=0.1, ki=0.0, kd=0.02, vc=vc) # fits expectation even better - car overshoots
+        # self.controller = Controller(kp=0.1, ki=0.0, kd=0.025, vc=vc) # good
+        # self.controller = Controller(kp=0.15, ki=0.001, kd=0.025, vc=vc) # 
+        # self.controller = Controller(kp=0.9, ki=0.0, kd=0.0, vc=vc) # good
+        # self.controller = Controller(kp=1.0, ki=0.0, kd=0.0, vc=vc) #
+        # self.controller = Controller(kp=1.6, ki=0.0, kd=0.01, vc=vc) # good
+        # self.controller = Controller(kp=1.6, ki=0.0, kd=0.04, vc=vc) # good ++++++++++++++
+        # self.controller = Controller(kp=1.6, ki=0.00005, kd=0.04, vc=vc) # good ++++++++++++
+        self.controller = Controller(kp=1.6, ki=0.00001, kd=0.04, vc=vc) # good
 
+        
 
         self.dbw_enabled = False
         self.controller_reset = False
