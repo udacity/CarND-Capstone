@@ -16,6 +16,7 @@ class Controller(object):
     	self.max_accel = vc.accel_limit
     	self.max_decel = vc.decel_limit
         self.brake_deadband = vc.brake_deadband
+        self.brake_factor = vc.brake_factor
 
         self.linear_controller = PID(self.kp, self.ki, self.kd, mn=self.max_decel, mx=self.max_accel)
         self.angular_controller = YawController(vc.wheel_base, vc.steer_ratio, vc.min_speed, vc.max_lat_accel, vc.max_steer_angle)
@@ -58,6 +59,6 @@ class Controller(object):
         # linear = self.linear_filter.filt(linear) ##############################################
 
         throttle = linear if linear > 0.0 else 0.0
-        brake = -linear-self.brake_deadband if linear <= 0.0 else 0.0
+        brake = ((-linear)*self.brake_factor)-self.brake_deadband if linear <= 0.0 else 0.0
 
         return throttle, brake, angular

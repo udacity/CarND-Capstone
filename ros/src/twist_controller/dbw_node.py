@@ -54,6 +54,7 @@ class DBWNode(object):
         vc.vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         vc.fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
         vc.brake_deadband = rospy.get_param('~brake_deadband', .1)
+        vc.brake_factor = rospy.get_param('~brake_factor', 5.0)
         vc.decel_limit = rospy.get_param('~decel_limit', -1.)
         vc.accel_limit = rospy.get_param('~accel_limit', 1.)
         vc.wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
