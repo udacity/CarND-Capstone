@@ -36,3 +36,7 @@ class Controller(object):
     
     # Return throttle, brake and steer
     return throttle, brake, steer
+
+  def reset(self):
+    self.velocity_pid.reset()
+    self.steer_pid.reset()
