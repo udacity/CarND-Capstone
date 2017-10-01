@@ -59,6 +59,6 @@ class Controller(object):
         # linear = self.linear_filter.filt(linear) ##############################################
 
         throttle = linear if linear > 0.0 else 0.0
-        brake = ((-linear)*self.brake_factor)-self.brake_deadband if linear <= 0.0 else 0.0
+        brake = ((-linear)*self.brake_factor)+self.brake_deadband if linear <= 0.0 else 0.0
 
         return throttle, brake, angular
