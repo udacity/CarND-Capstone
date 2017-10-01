@@ -9,7 +9,11 @@ from flask import Flask, render_template
 from bridge import Bridge
 from conf import conf
 
-sio = socketio.Server()
+# new additions
+eventlet.monkey_patch()
+sio = socketio.Server(async_mode='eventlet')
+
+
 app = Flask(__name__)
 bridge = Bridge(conf)
 msgs = []
@@ -65,3 +69,5 @@ if __name__ == '__main__':
 
     # deploy as an eventlet WSGI server
     eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
+
+    
