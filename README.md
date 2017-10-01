@@ -18,7 +18,7 @@
 * Steering Control : PID
   * aaa
 * Brake Control : Torque control
-  * The brake control is enabled instead of the throttle control when (1) the target velocity is decreasing or smaller than the threshold (```brake_deadband```) AND (2) the difference between the target velocity and the current velocity (```velocity_diff = linear_velocity - current_velocity```) is positive and less than the threshold value (1.0 in our implementation).
+  * The brake control is enabled instead of the throttle control when (1) the target velocity is decreasing and the difference between the target velocity and the current velocity (```velocity_diff = linear_velocity - current_velocity```) is positive and less than the threshold value (1.0 in our implementation) OR (2) the target velocity is smaller than the threshold (```brake_deadband```).
   * From the requirement of the brake controller, we calculated the total brake torque by the multiplication of the car's total mass (```self.total_mass.```), wheel radius (```self.wheel_radius```), the required deacceleration (```velocity_diff/time_interval```) and a brake constant as a tuning parameter. If the deacceleration is too small, the car cannot stop completely. Then we took the maximum of the required acceleration and a constant to ensure the stop. 
 
 ***
