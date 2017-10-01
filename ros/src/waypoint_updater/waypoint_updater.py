@@ -24,8 +24,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
-MAX_DECEL     = 4.0
-STOP_BUFFER   = 6.0
+MAX_DECEL     = 1.0
+STOP_BUFFER   = 5.0
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -37,7 +37,6 @@ class WaypointUpdater(object):
         self.upcoming_traffic_light_position = None
         self.waypoints = None
         self.braking = None
-        self.decel = 1.0
 
         # Subscribers
         rospy.init_node('waypoint_updater')
@@ -200,7 +199,7 @@ class WaypointUpdater(object):
             for wp in waypoints[:tl_wp][::-1]:
                 dist = self.distance(wp.pose.pose.position, last.pose.pose.position)
                 dist = max(0.0, dist - STOP_BUFFER)
-                vel  = math.sqrt(2 * self.decel * dist)
+                vel  = math.sqrt(2 * MAX_DECEL * dist)
                 if vel < 1.0:
                     vel = 0.0
                 wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
