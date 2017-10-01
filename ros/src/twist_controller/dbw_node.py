@@ -114,11 +114,11 @@ class DBWNode(object):
 
 				try:
 					throttle, brake, steering = self.controller.control(
-																							self.target_vel_lin, 
-																							self.target_vel_ang, 
-																							self.cur_vel_lin, 
-																							self.cur_vel_ang, 
-																							time_elapsed)
+													self.target_vel_lin, 
+													self.target_vel_ang, 
+													self.cur_vel_lin, 
+													self.cur_vel_ang, 
+													time_elapsed)
 				except Exception as e:
 					rospy.logwarn("Error: %s", e)
 					pass
@@ -142,8 +142,8 @@ class DBWNode(object):
 
 		bcmd = BrakeCmd()
 		bcmd.enable = True
-		bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
-		bcmd.pedal_cmd = brake
+		bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
+		bcmd.pedal_cmd = brake * 100.0
 		self.brake_pub.publish(bcmd)
 
 

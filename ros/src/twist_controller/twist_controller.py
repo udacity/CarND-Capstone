@@ -18,12 +18,11 @@ class Controller(object):
     self.steer_lowpass = LowPassFilter(1.1, 0.05)
 
   def control(self, target_vel_lin, target_vel_ang, cur_vel_lin, cur_vel_ang, time_elapsed):
-    brake = 0
 
     vel_error = target_vel_lin - cur_vel_lin
 
     throttle = self.velocity_pid.step(vel_error, time_elapsed)
-    brake = max(0.0, -throttle) * 100
+    brake = max(0.0, -throttle)
     throttle = max(0.0, throttle)
 
 
