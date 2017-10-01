@@ -33,7 +33,7 @@ class WaypointUpdater(object):
         # Properties
         self.prev_nrst_wp = 0 # total number of waypoints are 10902
         self.vehicle_pos = None
-        self.current_linear_velocity = None
+        self.current_linear_velocity = 0.0
         self.upcoming_traffic_light_position = None
         self.waypoints = None
         self.braking = None
@@ -103,7 +103,7 @@ class WaypointUpdater(object):
                 tl_closest_waypoint_index = self.get_closest_waypoint(self.upcoming_traffic_light_position, waypoints.waypoints)
                 final_wps = self.get_final_waypoints(waypoints.waypoints, nearest_wp, tl_closest_waypoint_index)
             
-            rospy.logwarn("nearest waypoint: %s", nearest_wp)
+            # rospy.logwarn("nearest waypoint: %s", nearest_wp)
             self.final_waypoints_pub.publish(final_wps)
 
     def pose_cb(self, msg):
