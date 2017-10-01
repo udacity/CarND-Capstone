@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
+from std_msgs.msg import Int32, Header	
+from geometry_msgs.msg import PoseStamped, Pose, PointStamped, Point
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
@@ -49,6 +49,10 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+
+        # Added parameters for project_to_image_plane
+	self.camera_param = (fx, fy, cx, cy) = (2552.7, 2280.5, 366, 652.4)  # Manually tweaked
+	self.camera_image_pub = rospy.Publisher('/image_color_info', Image, queue_size=1)
 
         rospy.spin()
 
@@ -202,6 +206,25 @@ class TLDetector(object):
 	
 	return next_index
 
+    def project_car_to_image(self, point):
+        """Project point from 3D car coordinates to 2D camera image location
+           http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html
+        """
+        fx, fy, cx, cy = self.camera_param
+        p = Point(-point.y, -point.z, point.x)
+        x_img = int(fx*p.x/p.z + cx)
+        y_img = int(fy*p.y/p.z + cy)
+        return (x_img, y_img), p
+
+    def bounding_box(self, center, width, height):
+        # Given center point, width and hight of object in car coordinate, return bounding box in image coordinate.
+        top_left = Point(center.x, center.y+width/2, center.z+height/2)
+        bottom_right = Point(center.x, center.y-width/2, center.z-height/2)
+        (left, top),_ = self.project_car_to_image(top_left)
+        (right, bottom),_ = self.project_car_to_image(bottom_right)
+        return left, right, top, bottom
+
+
     def project_to_image_plane(self, point_in_world):
         """Project point from 3D world coordinates to 2D camera image location
 
@@ -214,10 +237,10 @@ class TLDetector(object):
 
         """
 
-        fx = self.config['camera_info']['focal_length_x']
-        fy = self.config['camera_info']['focal_length_y']
-        image_width = self.config['camera_info']['image_width']
-        image_height = self.config['camera_info']['image_height']
+        #fx = self.config['camera_info']['focal_length_x']
+        #fy = self.config['camera_info']['focal_length_y']
+        #image_width = self.config['camera_info']['image_width']
+        #image_height = self.config['camera_info']['image_height']
 
         # get transform between pose of camera and world frame
         trans = None
@@ -233,10 +256,19 @@ class TLDetector(object):
 
         #TODO Use tranform and rotation to calculate 2D position of light in image
 
-        x = 0
-        y = 0
+	# Transform from world coodinate to car coordinate
+        point_wc = PointStamped(Header(0, now, '/world'), point_in_world)
+        point_cc = self.listener.transformPoint('/base_link', point_wc).point
 
-        return (x, y)
+        # Transform from vehicle camera coodinate to image plane coordinate
+        point_img, point_cam = self.project_car_to_image(point_cc)
+
+        # Bounding box for traffic light
+        light_width, light_height = 0.8, 2.2  # In meter. Manually tweaked
+        bb = self.bounding_box(point_cc, light_width, light_height)
+
+        return (point_img, bb, point_cam)
+
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -252,9 +284,24 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+	point_img, bb, point_cam = self.project_to_image_plane(light.pose.pose.position)
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        # Put additional information on image and publish for testing. (but latency is large)
+        text = '(%.2f, %.2f, %.2f)' % (point_cam.x, point_cam.y, point_cam.z)
+
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+	
+	cv2.putText(cv_image, 'light in camera coordinate', (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
+        cv2.putText(cv_image, text, (50,100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
+        cv2.circle(cv_image, point_img, 5, (255,255,255), 2)
+        cv2.rectangle(cv_image, (bb[0],bb[2]), (bb[1],bb[3]), (255,255,255), 2)
+        image_message = self.bridge.cv2_to_imgmsg(cv_image, "bgr8")
+        try:
+            self.camera_image_pub.publish(image_message)
+        except CvBridgeError as e:
+            rospy.loginfo(e)
+
+        #x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
 
