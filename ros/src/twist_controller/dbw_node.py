@@ -98,7 +98,7 @@ class DBWNode(object):
         self.loop()
 
     def set_dbw_enabled(self, dbw_enabled):
-        self.dbw_enabled = dbw_enabled
+        self.dbw_enabled = dbw_enabled.data
 
     def set_current_velocity(self, current_velocity):
         self.current_velocity = current_velocity
@@ -115,9 +115,9 @@ class DBWNode(object):
 
             if self.dbw_enabled and self.current_velocity is not None and self.latest_twist_cmd is not None:
                 if not self.controller_reset:
+                    rospy.loginfo('Resetting DBW controller.')
                     self.controller.reset()
                     self.controller_reset = True
-
 
                 # TODO re-add this output
                 #rospy.loginfo("""Velocity Ref: {} - Curr: {} - Err: {}""".format(self.ref_velocity, self.current_velocity, velocity_error))
