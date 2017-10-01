@@ -38,6 +38,8 @@ class DBWNode(object):
 
 		self.cur_vel_lin = 0.0
 		self.cur_vel_ang = 0.0
+		self.target_vel_lin = 0.0
+		self.target_vel_ang = 0.0
 
 		vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
 		fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
