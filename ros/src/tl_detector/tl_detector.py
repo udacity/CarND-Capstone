@@ -102,72 +102,72 @@ class TLDetector(object):
 
         if light_key == None:
             # Next light key is unknown so as the light state.
-            self.publish_red_light(light_wp, light_state)
+            self.publish_red_light(-1, light_state)
         else:
+            stop_wp = self.traffic_lights[light_key].stop_point
             # Distance in waypoints in a circular track.
             d = lambda x,y,s: (x - y + s) % s
-            stop_point = self.traffic_lights[light_key].stop_point
-            if d(stop_point, self.next_waypoint_ahead, len(self.waypoints)) \
+            if d(light_wp, self.next_waypoint_ahead, len(self.waypoints)) \
                     > LIGHT_DETECTION_DISTANCE:
                 # Next traffic light is too far, its state is unknown.
-                self.publish_red_light(light_wp, light_state)
+                self.publish_red_light(stop_wp, light_state)
             else:
                 # Get state of next waypoint from either simulator or image.
                 if self.use_ground_truth:
-                    self.detect_light_state_from_gt(light_wp, light_key)
+                    self.detect_light_state_from_gt(stop_wp, light_key)
                 else:
-                    self.detect_light_state_from_img(light_wp, msg)
+                    self.detect_light_state_from_img(stop_wp, msg)
 
-    def classified_cb(self, light_wp, light_state):
+    def classified_cb(self, stop_wp, light_state):
         ''' Dispatches the traffic light classification result.
         Args:
-            light_wp (Int32): Index of the traffic light's waypoint.
+            stop_wp (Int32): Index of the traffic light's stop waypoint.
             light_state (TrafficLight): State of the traffic light.
         '''
         self.image_processing = False
-        self.publish_red_light(light_wp, light_state)
+        self.publish_red_light(stop_wp, light_state)
 
-    def detect_light_state_from_img(self, light_wp, image_msg):
+    def detect_light_state_from_img(self, stop_wp, image_msg):
         ''' Detects and classifies traffic lights in the image message.
         Args:
-            light_wp (Int32): Index of the traffic light's waypoint.
+            stop_wp (Int32): Index of the traffic light's stop waypoint.
             image_msg (Image): Image from car-mounted camera.
         '''
         if not self.image_processing:
             image = self.cv_bridge.imgmsg_to_cv2(image_msg, "bgr8")
             self.image_processing = True
-            self.queue.put((light_wp, image))
+            self.queue.put((stop_wp, image))
 
-    def detect_light_state_from_gt(self, light_wp, light_key):
+    def detect_light_state_from_gt(self, stop_wp, light_key):
         ''' Detects and classifies traffic lights from the ground truth.
         Args:
-            light_wp (Int32): Index of the traffic light's waypoint.
+            stop_wp (Int32): Index of the traffic light's stop waypoint.
             light_key: Index of the traffic light.
         '''
         light_state = self.traffic_lights[light_key].state
-        self.publish_red_light(light_wp, light_state)
+        self.publish_red_light(stop_wp, light_state)
 
-    def publish_red_light(self, light_wp, light_state):
+    def publish_red_light(self, stop_wp, light_state):
         ''' Publishes the index of the waypoint closest to the red light's stop
             line to /traffic_waypoint. Each predicted state has to occur
             STATE_COUNT_THRESHOLD number of times till we start using it.
             Otherwise the previous stable state is used.
         Args:
-            light_wp (Int32): Index of the traffic light's waypoint.
+            stop_wp (Int32): Index of the traffic light's stop waypoint.
             light_state (TrafficLight): State of the traffic light.
         '''
-        rospy.logdebug("publish_red_light: light_wp %d, light_state %d",
-                      light_wp, light_state)
+        rospy.logdebug("publish_red_light: stop_wp %d, light_state %d",
+                       stop_wp, light_state)
         if self.state != light_state:
             self.state_count = 0
             self.state = light_state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp \
+            stop_wp = stop_wp \
                 if light_state in (TrafficLight.RED, TrafficLight.YELLOW) \
                 else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
+            self.last_wp = stop_wp
+            self.upcoming_red_light_pub.publish(Int32(stop_wp))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
