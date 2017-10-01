@@ -32,6 +32,7 @@
 
 constexpr int LOOP_RATE = 30; //processing frequency
 
+const int QUEUE = 1;
 
 int main(int argc, char **argv)
 {
@@ -51,16 +52,16 @@ int main(int argc, char **argv)
 
   ROS_INFO("set publisher...");
   // publish topic
-  ros::Publisher cmd_velocity_publisher = nh.advertise<geometry_msgs::TwistStamped>("twist_cmd", 10);
+  ros::Publisher cmd_velocity_publisher = nh.advertise<geometry_msgs::TwistStamped>("twist_cmd", QUEUE);
 
   ROS_INFO("set subscriber...");
   // subscribe topic
   ros::Subscriber waypoint_subscriber =
-      nh.subscribe("final_waypoints", 10, &waypoint_follower::PurePursuit::callbackFromWayPoints, &pp);
+      nh.subscribe("final_waypoints", QUEUE, &waypoint_follower::PurePursuit::callbackFromWayPoints, &pp);
   ros::Subscriber ndt_subscriber =
-      nh.subscribe("current_pose", 10, &waypoint_follower::PurePursuit::callbackFromCurrentPose, &pp);
+      nh.subscribe("current_pose", QUEUE, &waypoint_follower::PurePursuit::callbackFromCurrentPose, &pp);
   ros::Subscriber est_twist_subscriber =
-      nh.subscribe("current_velocity", 10, &waypoint_follower::PurePursuit::callbackFromCurrentVelocity, &pp);
+      nh.subscribe("current_velocity", QUEUE, &waypoint_follower::PurePursuit::callbackFromCurrentVelocity, &pp);
 
   ROS_INFO("pure pursuit start");
   ros::Rate loop_rate(LOOP_RATE);

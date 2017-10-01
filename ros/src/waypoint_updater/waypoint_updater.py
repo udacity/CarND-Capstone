@@ -11,16 +11,6 @@ import tf
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
 
-As mentioned in the doc, you should ideally first implement a version which does not care
-about traffic lights or obstacles.
-
-Once you have created dbw_node, you will update this node to use the status of traffic lights too.
-
-Please note that our simulator also provides the exact location of traffic lights and their
-current status in `/vehicle/traffic_lights` message. You can use this message to build this node
-as well as to verify your TL classifier.
-
-TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 ## Control Parameters
@@ -28,7 +18,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 200 
 # Car speed in simulator (or real env) is MPH, whereas ROS uses MPS
 MPH_TO_MPS = 0.44704
-# max car speed
+# Max car speed
 MAX_SPEED = 10 * MPH_TO_MPS #m/s 
 
 
@@ -119,7 +109,8 @@ class WaypointUpdater(object):
 
             # stop at the end of road
             if lane_start + LOOKAHEAD_WPS >= len(self.base_waypoints_msg.waypoints):
-                for waypoint in waypoints[-10:]:
+                
+		for waypoint in waypoints[-10:]:
                     self.set_waypoint_velocity(waypoint, 0.)
             lane = self.make_lane_msg(frame_id, waypoints)
 
@@ -180,7 +171,7 @@ class WaypointUpdater(object):
 
     def ahead_of(self, waypoint, car_pose):
         """If a waypoint is ahead of the car based on its current pose.
-        Logic: In the local coordinate system (car as origin), the angel
+        Logic: In the local coordinate system (car as origin), the angle
         between the waypoint vector and the car's current yaw vector should be
         less than 90, which also means their innter product should be positive.
         """
@@ -206,7 +197,7 @@ class WaypointUpdater(object):
             light_wp = base_waypoints[self.redlight_wp_index]
             distance = self.distance(light_wp, self.car_pose)
             # stops in x distance 
-            if self.ahead_of(light_wp, self.car_pose) and distance <= 50: 
+            if self.ahead_of(light_wp, self.car_pose) and distance <= 35: 
                 return True
             else:
                 return False

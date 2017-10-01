@@ -106,7 +106,7 @@ class TLDetector(object):
         self.state_count += 1
 
 
-    ################################## utilisty functions #################################
+    ################################## utility functions #################################
 
     def ahead_of(self, waypoint, car_pose):
         """If a waypoint is ahead of the car based on its current pose.
