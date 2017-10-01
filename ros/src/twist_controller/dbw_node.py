@@ -76,7 +76,7 @@ class DBWNode(object):
         # self.controller = Controller(kp=0.1, ki=0.0, kd=0.03, vc=vc) # fits expectation even better
         # self.controller = Controller(kp=0.1, ki=0.0, kd=0.02, vc=vc) # fits expectation even better - car overshoots
         # self.controller = Controller(kp=0.1, ki=0.0, kd=0.025, vc=vc) # good
-        # self.controller = Controller(kp=0.15, ki=0.001, kd=0.025, vc=vc) # 
+        # self.controller = Controller(kp=0.15, ki=0.001, kd=0.025, vc=vc) #
         # self.controller = Controller(kp=0.9, ki=0.0, kd=0.0, vc=vc) # good
         # self.controller = Controller(kp=1.0, ki=0.0, kd=0.0, vc=vc) #
         # self.controller = Controller(kp=1.6, ki=0.0, kd=0.01, vc=vc) # good
@@ -84,7 +84,7 @@ class DBWNode(object):
         # self.controller = Controller(kp=1.6, ki=0.00005, kd=0.04, vc=vc) # good ++++++++++++
         self.controller = Controller(kp=1.6, ki=0.00001, kd=0.04, vc=vc) # good
 
-        
+
 
         self.dbw_enabled = False
         self.controller_reset = False
