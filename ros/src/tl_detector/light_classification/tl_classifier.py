@@ -148,7 +148,7 @@ class TLClassifier(Thread):
     def __init__(self, queue, classified_cb):
         ''' Constructor.
         Args:
-            queue: Task queue. Each task is a tuple (light_wp, image).
+            queue: Task queue. Each task is a tuple (stop_wp, image).
             classified_cb: Completion callback.
         '''
         Thread.__init__(self)
@@ -208,7 +208,7 @@ class TLClassifier(Thread):
         while True:
             # Read an image from the queue and determine the color of the
             # traffic light. Queue:get() is a blocking call.
-            light_wp, image = self.queue.get()
+            stop_wp, image = self.queue.get()
             # Expand dimensions since the model expects images to have shape:
             # [1, None, None, 3]
             image_expanded = np.expand_dims(image, axis=0)
@@ -240,5 +240,5 @@ class TLClassifier(Thread):
             light_state = TrafficLight.UNKNOWN
             if signal_detected:
                 light_state = get_light_state(image, signal_box)
-            self.classified_cb(light_wp, light_state)
+            self.classified_cb(stop_wp, light_state)
             self.queue.task_done()
