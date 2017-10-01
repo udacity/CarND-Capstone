@@ -49,22 +49,14 @@ class DBWNode(object):
 
 
 		# publishers
-		self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
-										 SteeringCmd, queue_size=1)
-		self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
-											ThrottleCmd, queue_size=1)
-		self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
-										 BrakeCmd, queue_size=1)
+		self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
+		self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
+		self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
-		# TODO: Create `TwistController` object
-		# self.controller = TwistController(<Arguments you wish to provide>)
-		# Contoller(kp, ki, kd)
-
+		# controller
 		min_speed = 0
 		self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
-
-		# %% TODO: Subscribe to all the topics you need to
 		# vehicle drive by wire
 		rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 		# vehicle current velocity
@@ -115,21 +107,14 @@ class DBWNode(object):
 			if hasattr(self, 'dbw_enabled_check'): # and hasattr(self, '')
 				time_elapsed = rospy.rostime.get_time() - self.time_last_sample
 				self.time_last_sample = rospy.rostime.get_time()
-				# TODO: Get predicted throttle, brake, and steering using `twist_controller`
-				# You should only publish the control commands if dbw is enabled
-				# throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-				#                                                     <proposed angular velocity>,
-				#                                                     <current linear velocity>,
-				#                                                     <dbw status>,
 
-				# check if dbw is enabled before publishing
 				try:
 					throttle, brake, steering = self.controller.control(
-															self.target_vel_lin, 
-															self.target_vel_ang, 
-															self.cur_vel_lin, 
-															self.cur_vel_ang, 
-															time_elapsed)
+																							self.target_vel_lin, 
+																							self.target_vel_ang, 
+																							self.cur_vel_lin, 
+																							self.cur_vel_ang, 
+																							time_elapsed)
 				except Exception as e:
 					rospy.logwarn("Error: %s", e)
 					pass
