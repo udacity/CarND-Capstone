@@ -138,9 +138,9 @@ class WaypointUpdater(object):
     for i in range(start_wp, end_wp):
       index = i % len(waypoints)
       wp = Waypoint()
-      wp.pose.pose.position.x  = waypoints[index].pose.pose.position.x
-      wp.pose.pose.position.y  = waypoints[index].pose.pose.position.y
-      wp.pose.pose.position.z  = waypoints[index].pose.pose.position.z
+      wp.pose.pose.position.x = waypoints[index].pose.pose.position.x
+      wp.pose.pose.position.y = waypoints[index].pose.pose.position.y
+      wp.pose.pose.position.z = waypoints[index].pose.pose.position.z
       wp.pose.pose.orientation = waypoints[index].pose.pose.orientation
 
       if self.braking:
@@ -161,11 +161,11 @@ class WaypointUpdater(object):
       for i in range(end_wp, start_wp + LOOKAHEAD_WPS):
         index = i % len(waypoints)
         wp = Waypoint()
-        wp.pose.pose.position.x  = waypoints[index].pose.pose.position.x
-        wp.pose.pose.position.y  = waypoints[index].pose.pose.position.y
-        wp.pose.pose.position.z  = waypoints[index].pose.pose.position.z
+        wp.pose.pose.position.x = waypoints[index].pose.pose.position.x
+        wp.pose.pose.position.y = waypoints[index].pose.pose.position.y
+        wp.pose.pose.position.z = waypoints[index].pose.pose.position.z
         wp.pose.pose.orientation = waypoints[index].pose.pose.orientation
-        wp.twist.twist.linear.x  = 0.0
+        wp.twist.twist.linear.x = 0.0
         final_waypoints.append(wp)
       final_waypoints = self.decelerate(final_waypoints, tl_wp)
 
@@ -180,7 +180,7 @@ class WaypointUpdater(object):
     if self.waypoints != None and self.vehicle_pos != None and self.upcoming_traffic_light_position != None:
       wpts = self.waypoints.waypoints
       tl_dist = self.distance(self.vehicle_pos, self.upcoming_traffic_light_position)
-      min_stopping_dist = (self.current_linear_velocity**2 / (2.0 * MAX_DECEL) + STOP_BUFFER) * 2
+      min_stopping_dist = self.current_linear_velocity**2 / (2.0 * MAX_DECEL) + STOP_BUFFER
       should_brake = (tl_dist < min_stopping_dist)
 
     print("Should brake: {}, Has red light: {}".format(should_brake, self.upcoming_traffic_light_position != None))
