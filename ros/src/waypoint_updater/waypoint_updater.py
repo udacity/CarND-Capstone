@@ -38,7 +38,7 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         # subscribe to the topic /traffic_waypoint
-        #rospy.Subscriber('/traffic_waypoint', , self.traffic_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         # subscribe to the topic /obstacle_waypoint
         #rospy.Subscriber('/obstacle_waypoint', , self.obstacle_cb)
 
@@ -54,6 +54,7 @@ class WaypointUpdater(object):
         self.frame_id = ''
         # initialize self.lights
         #self.lights = []
+        self.waypoint_on_red_light = -1
 
         # we use the method rospy.spin() to block until a shutdown request is received from the node
         rospy.spin()
@@ -71,9 +72,10 @@ class WaypointUpdater(object):
         self.waypoints = waypoints
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        #self.lights = msg.lights
-        pass
+        if msg.data > -1:
+            self.waypoint_on_red_light = msg.data
+            self.publish()
+
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
