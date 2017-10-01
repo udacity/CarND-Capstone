@@ -33,7 +33,7 @@ class Controller(object):
             self.throttle_filter = LowPassFilter(time_interval=0.1,
                                                  time_constant=0.1)
 
-        self.break_constant = 0.3
+        self.break_constant = 0.33
 
         self.vehicle_mass = params['vehicle_mass']
         self.fuel_capacity = params['fuel_capacity']
@@ -71,11 +71,17 @@ class Controller(object):
         brake = 0.0
         steer = 0.0
         if enabled:
-            if velocity_diff < 1.0 and (target_velocity_diff < 0.0 or linear_velocity < self.brake_deadband):
+            if (velocity_diff < 1.0 and target_velocity_diff < 0.0) or linear_velocity < self.brake_deadband:
                 # Brake in torque [N*m]
                 acc = velocity_diff/time_interval # Required acceleration
-                brake = max(self.break_constant*math.fabs(acc), 0.19) * self.total_mass * self.wheel_radius
+                brake = self.break_constant*max(math.fabs(acc), 0.19) * self.total_mass * self.wheel_radius
+
+                # Reset controllers
+                self.throttle_filter.reset()
                 self.throttle_pid.reset()
+                self.steer_filter.reset()
+                if USE_STEER_PID:
+                    self.steer_pid.reset()
             else:
                 throttle = self.throttle_pid.step(velocity_diff, time_interval)
 
