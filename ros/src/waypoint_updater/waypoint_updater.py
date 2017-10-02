@@ -50,8 +50,6 @@ class WaypointUpdater(object):
         self.current_pose = None
         # initialize self.waypoints
         self.waypoints = None
-        # initialize self.frame_id
-        self.frame_id = ''
         # initialize self.lights
         #self.lights = []
 
@@ -62,13 +60,14 @@ class WaypointUpdater(object):
         # TODO: Implement
         #set pose to msg.pose
         self.current_pose = msg.pose
-        self.frame_id = msg.header.frame_id
         self.publish()
 
-    def waypoints_cb(self, waypoints):
+    def waypoints_cb(self, msg):
         # TODO: Implement
         # set waypoints
-        self.waypoints = waypoints
+        if self.waypoints is None:
+            self.waypoints = msg.waypoints
+            self.publish()
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -98,9 +97,9 @@ class WaypointUpdater(object):
         closest_len = 100000
         closest_waypoint = 0
         # define dl lambda function (distance between two points in 2D)
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z -b.z)**2)
         # make a loop to determine the closest waypoint to our position
-        for i,waypoint in enumerate(self.waypoints):
+        for i,waypoint in enumerate(waypoints):
             dist = dl(pose.position,waypoint.pose.pose.position)
             if dist < closest_len:
                 closest_len = dist
@@ -117,32 +116,38 @@ class WaypointUpdater(object):
         map_x = waypoints[closest_waypoint].pose.pose.position.x
         map_y = waypoints[closest_waypoint].pose.pose.position.y
         # compute the heading 
-        heading = math.atan2(map_y-pose.position.y,map_y-pose.position.x)
+        heading = math.atan2(map_y-pose.position.y,map_x-pose.position.x)
         # compute yaw using transformations euler from quaternion
         orientations = (pose.orientation.x,pose.orientation.y,pose.orientation.z,pose.orientation.w)
-        _,_,yaw = tf.transformations.euler_from_quaternion(orientations)
+        (_,_,yaw) = tf.transformations.euler_from_quaternion(orientations)
         # compute the angle difference between yaw and heading
-        angle = abs(yaw - heading)
+        angle = math.fabs(yaw - heading)
         if angle > (math.pi/4):
-            closest_waypoint += 1
+            closest_waypoint = (closest_waypoint + 1) % len(waypoints)
 
         return closest_waypoint
 
     def publish(self):
-        if self.current_pose is not None:
+        if (self.current_pose is not None) and (self.waypoints is not None):
+            # compute number of waypoints
+            nw = len(self.waypoints)
             # compute the index of the next waypoint
             index = self.next_waypoint(self.current_pose,self.waypoints)
-            # obtain the list of waypoints to publish as a subset of waypoints
-            # (from next waypoint index to this index plus LOOKAHEAD_WPS)
-            pub_waypoints = self.waypoints[index:index+LOOKAHEAD_WPS]
-            # set the max speed of the list of waypoints
-            for i in range(len(pub_waypoints) - 1):
+            # define the list of waypoints to publish
+            pub_waypoints = []
+            # build the list of waypoints and set the max speed of the list of waypoints
+            for i in range(LOOKAHEAD_WPS):
+                # add the _ith waypoint to the list pub_waypoints
+                pub_waypoints.append(self.waypoints[index])
                 # set the MAX_SPEED as speed for each waypoint in the list
                 self.set_waypoint_velocity(pub_waypoints,i,MAX_SPEED)
+                # obtain index
+                index = (index + 1) % nw
+
             # initialize lane object
             lane = Lane()
             # set lane frame_id
-            lane.header.frame_id = self.frame_id
+            lane.header.frame_id = '/world'
             # set lane time
             lane.header.stamp = rospy.Time(0)
             # set lane waypoints
