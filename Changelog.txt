@@ -263,3 +263,11 @@ If tld (the published value) is > 0, then tld is the distance in
 meters to the next light, and the next light is red.  If tld < 0,
 then abs(tld) is the distance to the next light, and the next
 light is not red (or its state is unknown).
+Changes (2017-10-01 by cs4nd13)
+
+Merged in Christian's changes:
+This classifier is activated when traffic_light_algorithm is set to 2.
+More details of this classifier can be found in the repo:
+https://github.com/neocsr/traffic-light-detection
+
+Created ros/launch/styx_csr.launch to launch using this algorithm.
