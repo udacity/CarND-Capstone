@@ -10,6 +10,7 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 # import Calvenn's traffic light classifier
 from light_classification_ct.tl_classifier import TLClassifierCT
+from light_classification_csr.tl_classifier import TLClassifierCSR
 # tf is related to ROS transforms, not to TensorFlow
 import tf
 import cv2
@@ -171,6 +172,14 @@ class TLDetector(object):
         if self.algorithm == 1:
             self.light_classifier = TLClassifierCT()
             # Which frames to process.  For instance, 
+            # skip_factor = 5 means process every 5th frame
+            self.light_classifier.skip_factor = 5
+            # Don't process image if next light is more than
+            # 200 meters away
+            self.max_tl_distance = 200
+        elif self.algorithm == 2:
+            self.light_classifier = TLClassifierCSR()
+            # Which frames to process.  For instance,
             # skip_factor = 5 means process every 5th frame
             self.light_classifier.skip_factor = 5
             # Don't process image if next light is more than
