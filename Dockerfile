@@ -42,3 +42,4 @@ RUN sed -i 's/prohibit-password/yes/' /etc/ssh/sshd_config
 # Run startup script to init the workspace
 COPY startup.sh ./startup.sh
 CMD /bin/bash -c "./startup.sh" && /bin/bash
+
