@@ -8,11 +8,20 @@
 
 ## Notes on our Implementation
 
-### Traffic Light detection
+### Traffic Light Detection
 
-The traffic light classifier uses a neural network (trained with Bosch training data) to classify traffic light images.
+The traffic light detection is done by using a Tensorflow model Faster R-CNN + ResNet101 trained on the COCO dataset which also includes traffic lights: [faster\_rcnn\_resnet101\_coco](http://download.tensorflow.org/models/object_detection/faster_rcnn_resnet101_coco_11_06_2017.tar.gz). The output of this model is a series of bounding boxes, which are screened for traffic signals of a high score (>10%).
 
-The traffic light detector gets stop line positions for the traffic lights from the route configuration, and the waypoints of the route from the ```/base_waypoints``` ROS topic. It uses this information to find out a stop point for each traffic light along the route. A stop point is a waypoint on which the vehicle should stop in case of red light.
+Classification of traffic signals is implemented in this way:
+1) Threshold luma of each third of the signal image resulting in a binary image.
+2) Add binary of the red color detected in the HSV color space of the first third of the signal
+   image.
+3) Add binary of the yellow color of the second third.
+4) Add binary of the green color of the last third.
+5) Pick the light whose average weight is higher than 0.1 and at least twice higher than the second greatest
+   weight.
+
+The traffic light detector gets stop line positions for the traffic lights from the route configuration, and the waypoints of the route from the `/base_waypoints` ROS topic. It uses this information to find out a stop point for each traffic light along the route. A stop point is a waypoint on which the vehicle should stop in case of red light.
 
 ![tl detection](./videos/tl_detection.gif)
 
