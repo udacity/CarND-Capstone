@@ -31,8 +31,9 @@ class TLDetector(object):
         self.image_processing = False
         self.queue = Queue()
         self.light_classifier = TLClassifier(self.queue, self.classified_cb)
-        self.light_classifier.daemon = True
-        self.light_classifier.start()
+        if not USE_GROUND_TRUTH:
+            self.light_classifier.daemon = True
+            self.light_classifier.start()
 
         self.config = yaml.load(rospy.get_param("/traffic_light_config"))
         self.cv_bridge = CvBridge()

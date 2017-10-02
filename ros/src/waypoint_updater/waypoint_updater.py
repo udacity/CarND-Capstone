@@ -24,15 +24,30 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+# Local Constants
+# ------------------------------------------------------------------------------
 
-distance3d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-distance2d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 
 SAMPLE_RATE = 20
 
 # Maximum distance to the stop line when to start breaking.
 MAX_DISTANCE_TO_STOP = 50.
+
+# Local Helper-Functions
+# ------------------------------------------------------------------------------
+
+distance3d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+distance2d = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+
+def get_pose_distance(pose1, pose2):
+    ''' Computes the distance between to poses.
+    Args:
+        pose1, pose2: Poses to compute the distance between.
+    Returns:
+        Distance [m]
+    '''
+    return distance2d(pose1.position, pose2.position)
 
 def waypoint_distance(waypoints, i1, i2):
     ''' Computes the distance between two waypoints in a list along
@@ -66,6 +81,28 @@ def set_waypoint_velocity(waypoint, velocity):
         velocity: Velocity [m/s]
     '''
     waypoint.twist.twist.linear.x = velocity
+
+def transform_coordinates(x0, y0, yaw0, xp, yp):
+    ''' Computes the coordinates of a point in a new coordinate system.
+    Args:
+        x0, y0: Absolute coordinates of the origin of a new coordinate system.
+        yaw:    Angle at which the new coordinate system is tilted.
+        xp, yp: Absolute coordinates of a point.
+    Returns:
+        (x, y) coordinates of the point in the new coordinate system.
+    '''
+    # Compute coordinates of the point relative to the new origin.
+    xr = xp - x0
+    yr = yp - y0
+    # Apply a 2D-transform of the point compensating for the tilt. Since the new
+    # coordinate system is tilted by angle yaw0 in the absolute coordinate
+    # system, rotation of the point must be done by angle -yaw0.
+    cos_yaw = math.cos(-yaw0)
+    sin_yaw = math.sin(-yaw0)
+    return xr * cos_yaw - yr * sin_yaw, xr * sin_yaw + yr * cos_yaw
+
+# WaypointUpdater
+# ------------------------------------------------------------------------------
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -168,49 +205,63 @@ class WaypointUpdater(object):
                 adjusted_waypoints_ahead.append(adjusted_waypoint)
         return adjusted_waypoints_ahead
 
-    def pose_distance(self, pose1, pose2):
-        return distance2d(pose1.position, pose2.position)
-
-    def find_first_waypoint_ahead(self):
-        return 275 # TODO search this
-
     def yaw_from_quaternion(self, q):
         euler = tf.transformations.euler_from_quaternion([q.x,q.y,q.z,q.w])
         return euler[2]
- 
-    def coordinate_transform(self, x, y, yaw):
-        # TODO explain to myself why negative yaw works!
-        cos_yaw = math.cos(-yaw)
-        sin_yaw = math.sin(-yaw)
-        return x*cos_yaw-y*sin_yaw, x*sin_yaw+y*cos_yaw
-        
-    def car_has_passed_waypoint(self, car_pose, waypoint):
+
+    def car_has_passed_waypoint(self, waypoint):
         # waypoint is the origo, and waypoint yaw x-axis direction
-        x, y = self.coordinate_transform(
-            car_pose.position.x - waypoint.pose.pose.position.x,
-            car_pose.position.y - waypoint.pose.pose.position.y,
-            self.yaw_from_quaternion(waypoint.pose.pose.orientation))
+        x, y = transform_coordinates(
+            waypoint.pose.pose.position.x,
+            waypoint.pose.pose.position.y,
+            self.yaw_from_quaternion(waypoint.pose.pose.orientation),
+            self.last_pose.position.x,
+            self.last_pose.position.y)
         return (x > 0.0) # car is ahead of the waypoint
        
     def add_waypoint_index(self, i, n):
         return (i + n) % len(self.all_waypoints)
 
+    def find_nearest_waypoint(self):
+        ''' Finds the waypoint nearest to the car.
+        Returns:
+          Index of the nearest waypoint.
+        '''
+        nwp = None
+        for i in range(len(self.all_waypoints)):
+            distance = get_pose_distance(self.last_pose,
+                                         self.all_waypoints[i].pose.pose)
+            if nwp == None or distance < closest_distance:
+                nwp = i
+                closest_distance = distance
+        return nwp
+
+    def find_first_waypoint_ahead(self):
+        ''' Finst the nearest waypoint ahead of the car.
+        Returns:
+          Index of the nearest waypoint ahead.
+        '''
+        fwpa = self.find_nearest_waypoint()
+        if self.car_has_passed_waypoint(self.all_waypoints[fwpa]):
+            fwpa = self.add_waypoint_index(fwpa, 1)
+        return fwpa
+
     def find_next_waypoint_ahead(self):
         nwpa1 = self.add_waypoint_index(self.next_waypoint_ahead, 1)
         nwpa2 = self.add_waypoint_index(nwpa1, 1)
         car = self.last_pose
-        dist1 = self.pose_distance(car, self.all_waypoints[nwpa1].pose.pose)
-        dist2 = self.pose_distance(car, self.all_waypoints[nwpa2].pose.pose)
+        dist1 = get_pose_distance(car, self.all_waypoints[nwpa1].pose.pose)
+        dist2 = get_pose_distance(car, self.all_waypoints[nwpa2].pose.pose)
 
         # go forward in the waypoint list in order to find local minimum distance
         while dist2 < dist1:
             dist1 = dist2
             nwpa1 = nwpa2
             nwpa2 = self.add_waypoint_index(nwpa2, 1)
-            dist2 = self.pose_distance(car, self.all_waypoints[nwpa2].pose.pose)
+            dist2 = get_pose_distance(car, self.all_waypoints[nwpa2].pose.pose)
 
         # take next if we have already passed the closest one
-        if self.car_has_passed_waypoint(car, self.all_waypoints[nwpa1]):
+        if self.car_has_passed_waypoint(self.all_waypoints[nwpa1]):
             nwpa1 = nwpa2
 
         return nwpa1
@@ -220,18 +271,18 @@ class WaypointUpdater(object):
         next_waypoint_ahead = cwpa
         if cwpa == None:
             next_waypoint_ahead = self.find_first_waypoint_ahead()
-        elif self.car_has_passed_waypoint(self.last_pose, self.all_waypoints[cwpa]):
+        elif self.car_has_passed_waypoint(self.all_waypoints[cwpa]):
             next_waypoint_ahead = self.find_next_waypoint_ahead()
 
         # debugging
         if next_waypoint_ahead != cwpa:
-            dist = self.pose_distance(
+            dist = get_pose_distance(
                 self.last_pose,
                 self.all_waypoints[next_waypoint_ahead].pose.pose)
-            dist2 = self.pose_distance(
+            dist2 = get_pose_distance(
                 self.last_pose,
                 self.all_waypoints[next_waypoint_ahead-1].pose.pose)
-            dist3 = self.pose_distance(
+            dist3 = get_pose_distance(
                 self.all_waypoints[next_waypoint_ahead-1].pose.pose,
                 self.all_waypoints[next_waypoint_ahead].pose.pose)
             rospy.loginfo(
