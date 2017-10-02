@@ -1,4 +1,5 @@
 import math
+import rospy
 
 
 class FSM(object):
@@ -24,15 +25,18 @@ class FSM(object):
     def get_currentState(self):
         return self.currentState
     
-    def run(self, conditions): 
+    def run(self, conditions=''): 
         assert self.currentState != None
         for tostate in self.states[self.currentState]:
             try:
-                result = tostate[2](conditions)
+                #rospy.loginfo(tostate)
+                result = tostate[2]()
                 if result == True:
                     self.currentState = tostate[0]
-            except TypeError:
-                pass
+                    break # don't check any other state
+            except TypeError as e:
+                rospy.logwarn(e)
+                
     
 
 
