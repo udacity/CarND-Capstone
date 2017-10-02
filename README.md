@@ -10,16 +10,18 @@
 
 ### Traffic Light detection
 
-Traffic light detector gets stop line positions for the traffic lights from route configuration, and the waypoints of the route from ```/base_waypoints``` ROS topic. It uses this information to find out a stop point for each traffic light along the route. A stop point is a waypoint on which the vechile should stop in case of red light.
+The traffic light classifier uses a neural network (trained with Bosch training data) to classify traffic light images.
 
-The waypoint updater publishes ```/next_waypoint_ahead``` topic, which contains the next upcoming waypoint for the vehicle. Traffic light detection uses this information and stop points for finding out the distance to the next traffic light.
- 
+The traffic light detector gets stop line positions for the traffic lights from the route configuration, and the waypoints of the route from the ```/base_waypoints``` ROS topic. It uses this information to find out a stop point for each traffic light along the route. A stop point is a waypoint on which the vehicle should stop in case of red light.
 
+![tl detection](./videos/tl_detection.gif)
 
 ### Waypoint Updater
 After the traffic light detection was working sufficiently, we used the traffic light position and its status to adjust the vehicle target velocities.
 
 The vehicle's target velocty is adjusted from the original waypoint velocity when a traffic light is closer than 50 meters ahead of the car and the status of the traffic light is either 'RED' or 'YELLOW'. Once these condition are met, the target velocities for each waypoint will be linearly decreased down to a complete stop at the light.
+
+The waypoint updater publishes to the ```/next_waypoint_ahead``` topic, which contains the next upcoming waypoint for the vehicle. 
 
 ### Twist Cotroller
 * Throttle Control : PID control
@@ -29,6 +31,9 @@ The vehicle's target velocty is adjusted from the original waypoint velocity whe
 * Brake Control : Torque control
   * The brake control is enabled instead of the throttle control when (1) the target velocity is decreasing and the difference between the target velocity and the current velocity (```velocity_diff = linear_velocity - current_velocity```) is positive and less than the threshold value (1.0 in our implementation) OR (2) the target velocity is smaller than the threshold (```brake_deadband```).
   * From the requirement of the brake controller, we calculated the total brake torque by the multiplication of the car's total mass (```self.total_mass.```), wheel radius (```self.wheel_radius```), the required deacceleration (```velocity_diff/time_interval```) and a brake constant as a tuning parameter. If the deacceleration is too small, the car cannot stop completely. In order to ensure the stop at red traffic lights, we took the larger one from the required acceleration or a constant.
+
+![twist control](./videos/twist_controller.gif)
+
 
 ***
 
