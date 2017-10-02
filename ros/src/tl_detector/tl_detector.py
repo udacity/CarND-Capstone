@@ -289,7 +289,7 @@ class TLDetector(object):
         # Put additional information on image and publish for testing. (but latency is large)
         text = '(%.2f, %.2f, %.2f)' % (point_cam.x, point_cam.y, point_cam.z)
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 	
 	cv2.putText(cv_image, 'light in camera coordinate', (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
         cv2.putText(cv_image, text, (50,100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
@@ -304,6 +304,7 @@ class TLDetector(object):
         #x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
+        #image = cv2.resize(cv_image, (224, 224, 3))
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -336,10 +337,12 @@ class TLDetector(object):
 	next_light_index = self.get_next_trafficlight(self.pose.pose, closest_light_index, stop_line_positions)
 	light = self.lights[next_light_index]
         light_wp = self.get_closest_waypoint(light.pose.pose)
- 	rospy.loginfo(light_wp)
+ 	
 
         if light:
             state = self.get_light_state(light)
+   	    rospy.loginfo(light_wp)
+	    rospy.loginfo(state)
             return light_wp, state
         
         return -1, TrafficLight.UNKNOWN
