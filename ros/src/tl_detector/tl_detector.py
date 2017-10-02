@@ -13,7 +13,7 @@ import rospy
 import yaml
 
 # Use state from traffic lights topic.
-USE_GROUND_TRUTH = True
+USE_GROUND_TRUTH = False
 # Min distance (in waypoints) when to start detecting traffic light.
 LIGHT_DETECTION_DISTANCE = 200
 # Number of detection before a state change is accepted.

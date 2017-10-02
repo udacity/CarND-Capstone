@@ -10,6 +10,12 @@
 
 ### Traffic Light detection
 
+Traffic light detector gets stop line positions for the traffic lights from route configuration, and the waypoints of the route from ```/base_waypoints``` ROS topic. It uses this information to find out a stop point for each traffic light along the route. A stop point is a waypoint on which the vechile should stop in case of red light.
+
+The waypoint updater publishes ```/next_waypoint_ahead``` topic, which contains the next upcoming waypoint for the vehicle. Traffic light detection uses this information and stop points for finding out the distance to the next traffic light.
+ 
+
+
 ### Waypoint Updater
 After the traffic light detection was working sufficiently, we used the traffic light position and its status to adjust the vehicle target velocities.
 
