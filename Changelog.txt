@@ -248,3 +248,12 @@ requirements.txt has been updated to require version 1.0.0 of
 tensorflow.  (Udacity's change actually has a typo, so I have
 incorporated a fix from a pull request that Udacity hasn't yet
 acted on).
+
+Changes (2017-10-01 by cs4nd13)
+
+Merged in Christian's changes:
+This classifier is activated when traffic_light_algorithm is set to 2.
+More details of this classifier can be found in the repo:
+https://github.com/neocsr/traffic-light-detection
+
+Created ros/launch/styx_csr.launch to launch using this algorithm.
