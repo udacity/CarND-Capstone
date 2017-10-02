@@ -15,6 +15,7 @@ GRAPH_FILE = 'frozen_inference_graph.pb'
 TRAFFIC_SIGNAL_CLASS = 10
 LUMA_THRESHOLD = (200, 255)
 MIN_LIGHT_WEIGHT = 0.1
+MIN_DETECTION_SCORE = 0.1
 DUMP_IMAGES = False
 
 def get_light_state(image, signal_box):
@@ -238,7 +239,8 @@ class TLClassifier(Thread):
 
             # Default traffic light state is unknown.
             light_state = TrafficLight.UNKNOWN
-            if signal_detected:
+            if signal_detected and highest_score > MIN_DETECTION_SCORE:
+                rospy.logdebug("Signal detected with score %.3f", highest_score)
                 light_state = get_light_state(image, signal_box)
             self.classified_cb(stop_wp, light_state)
             self.queue.task_done()
