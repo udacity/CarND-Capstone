@@ -18,7 +18,7 @@ class TLClassifier(object):
         if sim:
             model_name = 'squeezeNet_sim'
         else:
-            model_name = 'squeezeNet_real'
+            model_name = 'squeezeNet_candidate'
 
         self.graph, ops = load_graph('light_classification/trained_model/{}.frozen.pb'.format(model_name))
         self.sess = tf.Session(graph = self.graph)
@@ -58,7 +58,7 @@ class TLClassifier(object):
 
             with self.graph.as_default() as graph:
                 feed_dict = {self.input_tensor: image, self.learning_phase_tensor: False}
-                preds = self.sess.run(self.op_tensor, feed_dict)
+                preds = self.sess.run(self.op_tensor, feed_dict)[0]
 
             pred_index = np.argmax(preds)
             pred = self.pred_dict[pred_index]

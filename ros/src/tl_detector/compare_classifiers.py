@@ -21,7 +21,7 @@ def measure_accuracy(classes_filename, image_dir, classifier):
 
 def compare_classifiers(sim):
     sim_classes = 'light_classification/sim/sorted_classes.txt'
-    bag_classes = 'light_classification/bag/sorted_classes.txt'
+    bag_classes = 'light_classification/real/sorted_classes.txt'
     sim_image_dir = '/home/eljefec/data/traffic_light_sim/rgb'
     bag_image_dir = '/home/eljefec/data/traffic_light_bag_files/rgb'
 

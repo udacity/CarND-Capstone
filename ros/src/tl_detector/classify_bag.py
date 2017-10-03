@@ -104,7 +104,9 @@ if __name__ == '__main__':
 
     classifier = TLClassifier(sim = False)
 
-    run_name = '.refactor'
+    run_name = '.candidate'
+
+    classify_bag(classifier, '/home/eljefec/data/traffic_light_bag_files/udacity_successful_light_detection.bag', run_name)
 
     classify_bag(classifier, '/home/eljefec/data/traffic_light_bag_files/just_traffic_light.bag', run_name)
 
