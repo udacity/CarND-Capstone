@@ -123,7 +123,8 @@ class TLDetector(object):
         # our code: the waypoint id of the stop-line
         # at the next red light in front of the car.  If the next light 
         # is not red, or no lights are close enough to be visible, 
-        # then -1 is published instead of the waypoint id.  This topic 
+        # then -1*(waypoint_id) is published instead of the waypoint id.  
+        # This topic 
         # is subscribed to by dbw_node.py, which uses the information 
         # to decide whether to brake or accelerate.
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
@@ -296,7 +297,7 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+            light_wp = light_wp if state == TrafficLight.RED else -1*light_wp
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
