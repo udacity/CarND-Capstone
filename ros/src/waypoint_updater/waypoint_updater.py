@@ -88,14 +88,12 @@ class WaypointUpdater(object):
                 # Calculates yaw rate
                 next_wp = self.waypoints[(idx+1)%n]
                 next_yaw = math.atan2(next_wp.pose.pose.position.y-wp.pose.pose.position.y,
-                                 next_wp.pose.pose.position.x-wp.pose.pose.position.x)
+                                 next_wp.pose.pose.position.x-wp.pose.pose.position.x) + (math.pi)
 
-                rospy.loginfo("curyaw: {}, nextyaw: {}".format(yaw, next_yaw))
-                
                 yaw_dist = next_yaw - yaw
-                dt = rospy.Rate(10)
-                yaw_rate = yaw_dist / dt
-                self.set_waypoint_yawrate(wp, yaw_rate)
+                rospy.loginfo("curyaw: {}, nextyaw: {}, diff: {}".format(yaw, next_yaw, yaw_dist))
+
+                self.set_waypoint_yawrate(wp, yaw_dist)
 
                 lane.waypoints.append(deepcopy(wp))
 

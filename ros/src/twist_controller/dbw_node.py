@@ -67,11 +67,13 @@ class DBWNode(object):
         rospy.Subscriber('/dbw_enabled', Bool, self.dbw_enabled_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+        rospy.Subscriber('/final_waypoints', Lane, self.wp_updater_cb)
 
         # Member vars
         self.dbw_enabled = True
         self.current_velocity = None
         self.twist_cmd = None
+        self.wp_cmd = # TODO: Try to subscribe to final waypoints directly
 
         self.loop()
 
@@ -127,6 +129,9 @@ class DBWNode(object):
         rospy.loginfo("Received twist command %s", msg)
         self.twist_cmd = msg
 
+    def wp_updater_cb(self, msg):
+        rospy.loginfo("Received wp command %s", msg)
+        self.twist_cmd = msg
 
 
 if __name__ == '__main__':

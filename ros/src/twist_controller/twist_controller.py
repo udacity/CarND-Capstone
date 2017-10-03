@@ -52,7 +52,7 @@ class Controller(object):
         #     brake = 12.0
 
         steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
-        rospy.loginfo('steer: {}'.format(steer))
+        rospy.loginfo('target_w.z: {}, steer: {}'.format(target_w.z, steer))
         # if(target_v.x <= 1.0):
         #     brake = 6.0
         #     throttle = 0.0
