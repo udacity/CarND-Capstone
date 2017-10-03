@@ -1,6 +1,11 @@
 *.py[cod]
 
+demo_data
+windows_sys_int
+ros/src/tl_detector/train
+
 build
 devel
 
 profile.tmp
+.DS_Store
