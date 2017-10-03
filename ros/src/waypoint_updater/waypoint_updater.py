@@ -119,6 +119,30 @@ class WaypointUpdater(object):
 
         return closest_waypoint
 
+    def slow_down(self, waypoints, redlight_index):
+        try:          
+            first = waypoints[0]
+            last = waypoints[redlight_index]
+
+            last.twist.twist.linear.x = 0.
+            total_dist = self.distance(first.pose.pose.position, last.pose.pose.position)
+            start_vel = first.twist.twist.linear.x
+            for index, wp in enumerate(waypoints):
+                if index > redlight_index:
+                    vel = 0
+                else:
+                    dist = self.distance(wp.pose.pose.position, last.pose.pose.position)
+                    dist = max(0, dist - STOP_DIST)                
+                    vel  = math.sqrt(2 * MAX_DECEL * dist) 
+                    if vel < 1.:
+                        vel = 0.
+                wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+
+            return waypoints
+        except:
+            return []
+
+
     def publish(self):
         if (self.current_pose is not None) and (self.waypoints is not None):
             # compute number of waypoints
