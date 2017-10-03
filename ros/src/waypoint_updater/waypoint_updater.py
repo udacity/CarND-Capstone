@@ -3,8 +3,12 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+import tf
 
 import math
+import PyKDL
+from scipy.interpolate import interp1d
+from copy import deepcopy
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -38,22 +42,60 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
 
+        self.waypoints = None
+        self.waypoints_header = None
+
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        rospy.loginfo('pose_cb')
-        pass
+        """
+        msg:
+
+        geometry_msgs/Pose pose
+          geometry_msgs/Point position
+            float64 x
+            float64 y
+            float64 z
+          geometry_msgs/Quaternion orientation
+            float64 x
+            float64 y
+            float64 z
+            float64 w
+        """
+        pose = msg.pose
+        pos = pose.position
+        quat = PyKDL.Rotation.Quaternion(pose.orientation.x,
+                                         pose.orientation.y,
+                                         pose.orientation.z,
+                                         pose.orientation.w)
+        orient = quat.GetRPY()
+        yaw = orient[2]
+        # rospy.loginfo("xy: {}, {}".format(pos.x, pos.y))
+        # rospy.loginfo("orient: {}".format(orient))
+
+        if self.waypoints is not None:
+            cur_wp_id = self.closest_waypoint(pos, yaw)
+            # rospy.loginfo("cur_wp_id: {}".format(cur_wp_id))
+            wp_x = []
+            wp_y = []
+            lane = Lane()
+            for wp in self.waypoints[cur_wp_id:(cur_wp_id+LOOKAHEAD_WPS)]:
+                x = wp.twist.twist.linear.x
+                y = wp.twist.twist.linear.y
+
+                wp_x.append(x)
+                wp_y.append(y)
+                lane.waypoints.append(deepcopy(wp))
+
+            spline_xy = interp1d(wp_x, wp_y)
+
+            rospy.loginfo("About to publish to final_waypoints")
+            self.final_waypoints_pub.publish(lane)
+
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        rospy.loginfo('waypoints_cb1')
-        #add velocity to each waypoint and publish
-        for waypoint in waypoints.waypoints:
-        	waypoint.twist.twist.linear.x = 10
-           
-        self.final_waypoints_pub.publish(waypoints)
-        pass
+        self.waypoints = waypoints.waypoints
+        self.waypoints_header = waypoints.header
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -77,6 +119,51 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    def closest_waypoint(self, position, yaw):
+        """ Find the closest waypoint from a given pose
+        
+        Args:
+            position (geometry_msgs/Point): Position from pose returned from `pose_cb()` method.
+            yaw (float): The car's yaw.
+
+        Return:
+            int: ID of waypoint.
+        """
+
+        pos_threshold = 0.01
+        yaw_threshold = 0.01
+
+        min_dist = 10.0
+        min_id = None
+
+        # TODO: May need to find a faster way to find closest waypoint.
+        for idx, wp in enumerate(self.waypoints):
+            pos_dist = self.pos_distance(wp.pose.pose.position,
+                                    position)
+            quat = PyKDL.Rotation.Quaternion(wp.pose.pose.orientation.x,
+                                             wp.pose.pose.orientation.y,
+                                             wp.pose.pose.orientation.z,
+                                             wp.pose.pose.orientation.w)
+            orient = quat.GetRPY()
+
+            yaw_dist = abs(orient[2] - yaw)
+            comb_dist = (pos_dist + yaw_dist)
+            if (pos_dist <= pos_threshold and yaw_dist <= yaw_threshold):
+                return idx
+            else:
+                if comb_dist < min_dist:
+                    min_dist = comb_dist
+                    min_id = idx
+
+        return min_id
+
+    def pos_distance(self, a, b):
+        """ Distance between two positions
+        """
+        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
+    def trycall():
+        return 1;
 
 if __name__ == '__main__':
     try:
