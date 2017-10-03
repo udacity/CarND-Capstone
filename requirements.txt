@@ -4,7 +4,7 @@ eventlet>=0.19.0
 python-socketio>=1.6.1
 numpy>=1.13.1
 Pillow>=2.2.1
-scipy
-keras
+scipy>=0.13.3
+keras==1.2.0
 tensorflow==1.0.0
-h5py
+h5py>=2.6.0
