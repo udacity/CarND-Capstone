@@ -43,6 +43,7 @@ class Bridge(object):
         self.yaw = None
         self.angular_vel = 0.
         self.bridge = CvBridge()
+        self.prev_time = rospy.get_time()
 
         self.callbacks = {
             '/vehicle/steering_cmd': self.callback_steering,
@@ -104,10 +105,12 @@ class Bridge(object):
 
     def calc_angular(self, yaw):
         angular_vel = 0.
-        if self.yaw is not None:
-            angular_vel = (yaw - self.yaw)/(rospy.get_time() - self.prev_time)
+        current_time = rospy.get_time()
+        print 'current time: ', current_time, ' prev_time: ', self.prev_time
+        if self.yaw is not None and current_time != self.prev_time:
+            angular_vel = (yaw - self.yaw)/(current_time - self.prev_time)
         self.yaw = yaw
-        self.prev_time = rospy.get_time()
+        self.prev_time = current_time
         return angular_vel
 
     def create_point_cloud_message(self, pts):
@@ -126,6 +129,7 @@ class Bridge(object):
             "world")
 
     def publish_odometry(self, data):
+        print "got odometry data"
         pose = self.create_pose(data['x'], data['y'], data['z'], data['yaw'])
 
         position = (data['x'], data['y'], data['z'])

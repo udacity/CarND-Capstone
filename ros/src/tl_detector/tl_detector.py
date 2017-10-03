@@ -14,6 +14,7 @@ import yaml
 import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
+DEBUG = False
 
 
 class TLDetector(object):
@@ -216,7 +217,8 @@ class TLDetector(object):
         stop_line_positions = self.config['stop_line_positions']
         if (self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
-            print car_position
+            if DEBUG:
+                print "Car position is: ", car_position
             # TODO find the closest visible traffic light (if one exists)
 
 
@@ -240,7 +242,7 @@ class TLDetector(object):
                         light = light_i
 
             # if light_wp is close car_position, then light will be visible
-            if light_wp - car_position < 100:
+            if light_wp is not None and light_wp - car_position < 100:
                 visible = True
 
         if light is not None and visible:

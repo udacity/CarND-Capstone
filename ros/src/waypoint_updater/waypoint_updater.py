@@ -105,17 +105,21 @@ class WaypointUpdater(object):
                 # if dot producti is > sqrt(2)/2 which corresponds to 45 degrees
                 if (ux * wx + uy * wy) > math.sqrt(2) / 2:
 
-                    (position, quaternion) = self.tranform_listener.lookupTransform(CAR_FRAME_NAME, "world", rospy.Time())
-                    matrix = tf.transformations.quaternion_matrix(quaternion)
+                    try:
+                        (position, quaternion) = self.tranform_listener.lookupTransform(CAR_FRAME_NAME, "world", rospy.Time())
+                        matrix = tf.transformations.quaternion_matrix(quaternion)
 
-                    next_points = Lane()
-                    next_points.header.stamp = rospy.Time.now()
-                    next_points.waypoints = [self.transformWaypoint(matrix, self.all_waypoints[i]) for i in
-                                             range(idx, (idx + LOOKAHEAD_WPS) % len(self.all_waypoints))]
-                    self.final_waypoints_pub.publish(next_points)
-                    self.last_waypoint_idx = idx
-                    rospy.loginfo("Waypoints sent")
-                    return
+                        next_points = Lane()
+                        next_points.header.stamp = rospy.Time.now()
+                        next_points.waypoints = [self.transformWaypoint(matrix, self.all_waypoints[i]) for i in
+                                                range(idx, (idx + LOOKAHEAD_WPS) % len(self.all_waypoints))]
+                        self.final_waypoints_pub.publish(next_points)
+                        self.last_waypoint_idx = idx
+                        rospy.loginfo("Waypoints sent")
+                        return
+                    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                        print "LookupException"
+                        continue
 
     def waypoints_cb(self, waypoints):
         rospy.loginfo("Waypoints received")
