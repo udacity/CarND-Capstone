@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 
 import math
 import tf
@@ -36,25 +37,14 @@ class WaypointUpdater(object):
         # subscribe to the topic /base_waypoints
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        # subscribe to the topic /traffic_waypoint
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        # subscribe to the topic /obstacle_waypoint
         #rospy.Subscriber('/obstacle_waypoint', , self.obstacle_cb)
-
-        #publisher to the topic final_waypoints
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
-        # initialize self.pose (current vehicle position and orientation)
         self.current_pose = None
-        # initialize self.waypoints
         self.waypoints = None
-        # initialize self.lights
-        #self.lights = []
         self.waypoint_on_red_light = -1
 
-        # we use the method rospy.spin() to block until a shutdown request is received from the node
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -134,7 +124,16 @@ class WaypointUpdater(object):
             # compute number of waypoints
             nw = len(self.waypoints)
             # compute the index of the next waypoint
-            index = self.next_waypoint(self.current_pose,self.waypoints)
+            index = self.next_waypoint(self.current_pose, self.waypoints)
+            lookahead_waypoints = self.waypoints[index: (index + LOOKAHEAD_WPS)]
+
+            if self.waypoint_on_red_light < 0:
+                for i in range(len(lookahead_waypoints) - 1):
+                    self.set_waypoint_velocity(lookahead_waypoints, i, MAX_SPEED)
+            else:
+                redlight_lookahead_index = max(0, self.waypoint_on_red_light - index)
+                lookahead_waypoints = self.slow_down(lookahead_waypoints, redlight_lookahead_index)
+
             # define the list of waypoints to publish
             pub_waypoints = []
             # build the list of waypoints and set the max speed of the list of waypoints
