@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped, Vector3
+from geometry_msgs.msg import Pose, PoseStamped, Vector3
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
+from visualization_msgs.msg import Marker
 from itertools import chain
 import tf
 import tf.transformations as tft
@@ -48,6 +49,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_vis_pub = rospy.Publisher('final_waypoints_vis', Marker, queue_size=1)
         self.last_pose_time = rospy.Time.now()
         self.waypoints_received = False
         self.all_waypoints = []
@@ -116,6 +118,24 @@ class WaypointUpdater(object):
                         self.final_waypoints_pub.publish(next_points)
                         self.last_waypoint_idx = idx
                         rospy.loginfo("Waypoints sent")
+                        #generate visualization msg
+                        vis_msg = Marker()
+                        vis_msg.header.stamp = rospy.Time.now()
+                        vis_msg.header.frame_id = CAR_FRAME_NAME
+                        vis_msg.id = 0
+                        vis_msg.type = vis_msg.LINE_STRIP
+                        vis_msg.action = vis_msg.ADD
+                        vis_msg.scale.x = 0.2
+                        vis_msg.scale.y = 0.2
+                        vis_msg.scale.z = 0.2
+                        vis_msg.color.a = 1.0
+                        vis_msg.color.r = 1.0
+                        vis_msg.color.g = 1.0
+                        vis_msg.color.b = 0.0
+                        for wp in next_points.waypoints:
+                            vis_msg.points.append(wp.pose.pose.position)
+
+                        self.final_waypoints_vis_pub.publish(vis_msg)
                         return
                     except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                         print "LookupException"
