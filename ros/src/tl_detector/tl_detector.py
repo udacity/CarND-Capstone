@@ -177,7 +177,7 @@ class TLDetector(object):
             self.light_classifier.skip_factor = 5
             # Don't process image if next light is more than
             # 200 meters away
-            self.max_tl_distance = 200
+            self.max_tl_distance = 100
         elif self.algorithm == 2:
             self.light_classifier = TLClassifierCSR()
             # Which frames to process.  For instance,
@@ -185,7 +185,7 @@ class TLDetector(object):
             self.light_classifier.skip_factor = 5
             # Don't process image if next light is more than
             # 200 meters away
-            self.max_tl_distance = 200
+            self.max_tl_distance = 100
 
         # If you add a new image processing algorithm, set
         # self.light_classifier here.

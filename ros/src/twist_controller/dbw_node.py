@@ -216,7 +216,7 @@ class DBWNode(object):
                 # if self.red_tl == True and self.tl_distance > 0 and self.tl_distance < 50:
                 #     throttle = 0
                 #     brake = 1.
-                rospy.loginfo("throttle: %f brake: %f steering angle: %f " % (throttle, brake , steer))
+                # rospy.loginfo("throttle: %f brake: %f steering angle: %f " % (throttle, brake , steer))
                 # throttle is 0.35, which runs the car at about 40 mph.
                 # throttle of 0.98 will run the car at about 115 mph.
                 self.publish(throttle, brake, steer)
