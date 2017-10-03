@@ -72,6 +72,7 @@ class WaypointLoader(object):
         return waypoints
 
     def publish(self, waypoints):
+        # Since publisher has latch set to True, a single publish is sufficient.
         lane = Lane()
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)

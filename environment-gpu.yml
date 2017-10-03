@@ -1,0 +1,38 @@
+name: capstone
+channels:
+    - https://conda.anaconda.org/menpo
+    - conda-forge
+dependencies:
+    - python==2.7.13
+    - numpy>=1.13.1
+    - matplotlib
+    - jupyter
+    - opencv3
+    - pillow>=2.2.1
+    - scikit-learn
+    - scikit-image
+    - scipy
+    - h5py
+    - eventlet>=0.19.0
+    - flask>=0.11.1
+    - flask-socketio
+    - attrdict>=2.0.0
+    - python-socketio>=1.6.1
+    - seaborn
+    - pandas
+    - ffmpeg
+    - imageio=2.1.2
+    - pyqt=4.11.4
+    - pip:
+        - moviepy
+        - https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.0.0-cp27-none-linux_x86_64.whl
+        - keras==2.0.4
+        - rospkg
+        - catkin-pkg
+        - monotonic
+        - mem_top
+        - easydict==1.6
+        - joblib==0.10.3
+        - shapely
+        - filterpy
+        - empy

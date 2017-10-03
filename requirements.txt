@@ -8,3 +8,4 @@ scipy
 keras
 tensorflow==1.0.0
 h5py
+monotonic
