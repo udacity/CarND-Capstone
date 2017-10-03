@@ -42,7 +42,8 @@ def get_filename(idx):
     return '{:06d}'.format(idx) + '.png'
 
 def save_images(bag_files, rgb_dir, bgr_dir):
-    idx = 0
+    # Start at 2000 because 0-1862 are taken by traffic_light_bag_files.
+    idx = 2000
     for bag in bag_files:
         image_gen = read_images(bag)
         for img in image_gen:
@@ -56,11 +57,10 @@ def makedir(out_dir):
         os.makedirs(out_dir)
 
 def generate_training_images():
-    bags = ['/home/eljefec/data/traffic_light_bag_files/just_traffic_light.bag',
-            '/home/eljefec/data/traffic_light_bag_files/loop_with_traffic_light.bag']
+    bags = ['/home/eljefec/data/traffic_light_bag_files/udacity_successful_light_detection.bag']
 
-    rgb_dir = './out/traffic_light_bag_files/rgb'
-    bgr_dir = './out/traffic_light_bag_files/bgr'
+    rgb_dir = '/home/eljefec/data/traffic_light_bag_files/udacity_successful_light_detection/rgb'
+    bgr_dir = '/home/eljefec/data/traffic_light_bag_files/udacity_successful_light_detection/bgr'
     makedir(rgb_dir)
     makedir(bgr_dir)
 
@@ -148,8 +148,7 @@ def setup_imagedata(train, val, image_dir):
 
 if __name__ == '__main__':
     # generate_training_images()
-    # record_classes('/home/eljefec/data/traffic_light_sim')
-    # sort_classes('classes.txt')
-    # get_examples('sorted_classes.txt')
+    record_classes('/home/eljefec/data/traffic_light_bag_files/labeled')
+    sort_classes('classes.txt')
     (train, val) = split_train_val('sorted_classes.txt')
-    setup_imagedata(train, val, '/home/eljefec/data/traffic_light_sim/rgb')
+    setup_imagedata(train, val, '/home/eljefec/data/traffic_light_bag_files/rgb')

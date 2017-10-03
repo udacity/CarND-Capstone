@@ -8,7 +8,7 @@ from consts import DATASET_FOLDER, BATCH_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH
 class dataHandler:
     def getGenerators(self, batch_size=BATCH_SIZE):
         datagen = image.ImageDataGenerator(rescale=1.0/255,
-                                           width_shift_range=0.2,
+                                           width_shift_range=0.5,
                                            height_shift_range=0.2,
                                            shear_range=0.2,
                                            zoom_range=0.2,
