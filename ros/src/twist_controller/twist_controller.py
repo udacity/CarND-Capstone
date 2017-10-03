@@ -1,3 +1,5 @@
+import rospy
+
 from yaw_controller import YawController
 from lowpass import LowPassFilter
 from pid import PID
@@ -50,6 +52,7 @@ class Controller(object):
         #     brake = 12.0
 
         steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
+        rospy.loginfo('steer: {}'.format(steer))
         # if(target_v.x <= 1.0):
         #     brake = 6.0
         #     throttle = 0.0
