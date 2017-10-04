@@ -249,7 +249,7 @@ tensorflow.  (Udacity's change actually has a typo, so I have
 incorporated a fix from a pull request that Udacity hasn't yet
 acted on).
 
-Changes (2017-09-29 by cs4nd13)
+Changes (2017-09-29 by cs4nd13, merged 2017-10-02)
 
 Publish distance to next light, even if not red
 
@@ -271,3 +271,10 @@ More details of this classifier can be found in the repo:
 https://github.com/neocsr/traffic-light-detection
 
 Created ros/launch/styx_csr.launch to launch using this algorithm.
+
+Changes (2017-10-02 by cs4nd13)
+
+Fixed bug in waypoint_updater.py.  Sometimes due to timing issues,
+the waypoint in /traffic_waypoint is behind, instead of in front of,
+the car's current position.  If this is the case, report tl_distance
+as 0.
