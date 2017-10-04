@@ -939,7 +939,10 @@ class WaypointUpdater(object):
             sz = len(self.wps)
             dist = self.wp_ss[next_tl] - self.wp_ss[self.next_pt]
             if dist < 0:
-                dist += self.wp_ss[sz]
+                if dist < -300:
+                    dist += self.wp_ss[sz]
+                else:
+                    dist = 0
 
         # Output: distance to next light.  If output is positive,
         # it means that the next light is red.  If distance is negative,
