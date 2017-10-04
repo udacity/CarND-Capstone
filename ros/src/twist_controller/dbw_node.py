@@ -4,6 +4,7 @@ import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
+from styx_msgs.msg import Lane
 import math
 
 from twist_controller import Controller
@@ -67,11 +68,13 @@ class DBWNode(object):
         rospy.Subscriber('/dbw_enabled', Bool, self.dbw_enabled_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+        rospy.Subscriber('/final_waypoints', Lane, self.wp_updater_cb)
 
         # Member vars
         self.dbw_enabled = True
         self.current_velocity = None
         self.twist_cmd = None
+        self.wp_cmd = None
 
         self.loop()
 
@@ -81,11 +84,13 @@ class DBWNode(object):
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
 
-            if self.twist_cmd is None or self.current_velocity is None:
+            if self.twist_cmd is None or self.current_velocity is None or self.wp_cmd is None:
                 continue
 
+            next_wp = self.wp_cmd.waypoints[0].twist
+            rospy.loginfo("next_wp angular.z: {}".format(next_wp.twist.angular.z))
             throttle, brake, steering = self.controller.control(self.twist_cmd.twist.linear,
-                self.twist_cmd.twist.angular,
+                next_wp.twist.angular,
                 self.current_velocity.twist.linear,
                 self.dbw_enabled)
 
@@ -127,7 +132,9 @@ class DBWNode(object):
         rospy.loginfo("Received twist command %s", msg)
         self.twist_cmd = msg
 
-
+    def wp_updater_cb(self, msg):
+        rospy.loginfo("Received wp command %s", msg)
+        self.wp_cmd = msg
 
 if __name__ == '__main__':
     DBWNode()

@@ -7,7 +7,6 @@ import tf
 
 import math
 import PyKDL
-from scipy.interpolate import interp1d
 from copy import deepcopy
 
 '''
@@ -25,7 +24,9 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+# Number of waypoints to publish. Setting this number too low will cause the car
+# (e.g. 1 or 2) to pass future waypoints without knowing what to do next.
+LOOKAHEAD_WPS = 100
 
 
 class WaypointUpdater(object):
@@ -70,26 +71,34 @@ class WaypointUpdater(object):
                                          pose.orientation.w)
         orient = quat.GetRPY()
         yaw = orient[2]
-        # rospy.loginfo("xy: {}, {}".format(pos.x, pos.y))
-        # rospy.loginfo("orient: {}".format(orient))
 
         if self.waypoints is not None:
-            cur_wp_id = self.closest_waypoint(pos, yaw)
-            # rospy.loginfo("cur_wp_id: {}".format(cur_wp_id))
-            wp_x = []
-            wp_y = []
-            lane = Lane()
-            for wp in self.waypoints[cur_wp_id:(cur_wp_id+LOOKAHEAD_WPS)]:
-                x = wp.twist.twist.linear.x
-                y = wp.twist.twist.linear.y
+            # For circular id i.e. to keep from breaking when
+            # `(cur_wp_id + LOOKAHEAD_WPS) > len(self.waypoints)`
+            n = len(self.waypoints)
 
-                wp_x.append(x)
-                wp_y.append(y)
+            cur_wp_id = self.closest_waypoint(pos, yaw)
+
+            lane = Lane()
+            for idx, wp in enumerate(self.waypoints[
+                cur_wp_id%n:(cur_wp_id+LOOKAHEAD_WPS)%n]):
+                self.set_waypoint_velocity(wp, 10)
+
+
+                # Calculates yaw rate
+                next_wp = self.waypoints[(idx+1)%n]
+                next_yaw = math.atan2(next_wp.pose.pose.position.y-wp.pose.pose.position.y,
+                                 next_wp.pose.pose.position.x-wp.pose.pose.position.x) + (math.pi)
+
+                yaw_dist = next_yaw - yaw
+                rospy.loginfo("curyaw: {}, nextyaw: {}, diff: {}".format(yaw, next_yaw, yaw_dist))
+
+                wp = self.set_waypoint_yawrate(wp, yaw_dist)
+                rospy.loginfo("wp angular afterset: {}".format(wp.twist.twist.angular))
+
                 lane.waypoints.append(deepcopy(wp))
 
-            spline_xy = interp1d(wp_x, wp_y)
-
-            rospy.loginfo("About to publish to final_waypoints")
+            rospy.loginfo("(p) next_wp angular: {}".format(lane.waypoints[0].twist.twist.angular))
             self.final_waypoints_pub.publish(lane)
 
 
@@ -108,8 +117,15 @@ class WaypointUpdater(object):
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+    def set_waypoint_velocity(self, waypoint, velocity):
+        waypoint.twist.twist.linear.x = velocity
+
+    def set_waypoint_yawrate(self, waypoint, yawrate):
+        rospy.loginfo("set angular z to: {}".format(yawrate))
+        waypoint.twist.twist.angular.z = -yawrate
+        rospy.loginfo("new angular: {}".format(waypoint.twist.twist.angular))
+        rospy.loginfo("new angular.z: {}".format(waypoint.twist.twist.angular.z))
+        return waypoint
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
