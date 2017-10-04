@@ -153,7 +153,7 @@ class WaypointUpdater(object):
             lookahead_waypoints = self.waypoints[index: (index + LOOKAHEAD_WPS)]
 
             if self.waypoint_on_red_light < 0:
-                for i in range(len(lookahead_waypoints) - 1):
+                for i in range(LOOKAHEAD_WPS - 1):
                     self.set_waypoint_velocity(lookahead_waypoints, i, MAX_SPEED)
             else:
                 redlight_lookahead_index = max(0, self.waypoint_on_red_light - index)
@@ -177,7 +177,7 @@ class WaypointUpdater(object):
             # set lane time
             lane.header.stamp = rospy.Time(0)
             # set lane waypoints
-            lane.waypoints = pub_waypoints
+            lane.waypoints = lookahead_waypoints
 
             # publish lane
             self.final_waypoints_pub.publish(lane)
