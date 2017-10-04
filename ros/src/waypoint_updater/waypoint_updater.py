@@ -3,8 +3,11 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+import tf
 
 import math
+import PyKDL
+from copy import deepcopy
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -21,7 +24,9 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+# Number of waypoints to publish. Setting this number too low will cause the car
+# (e.g. 1 or 2) to pass future waypoints without knowing what to do next.
+LOOKAHEAD_WPS = 100
 
 
 class WaypointUpdater(object):
@@ -38,22 +43,68 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
 
+        self.waypoints = None
+        self.waypoints_header = None
+
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        rospy.loginfo('pose_cb')
-        pass
+        """
+        msg:
+
+        geometry_msgs/Pose pose
+          geometry_msgs/Point position
+            float64 x
+            float64 y
+            float64 z
+          geometry_msgs/Quaternion orientation
+            float64 x
+            float64 y
+            float64 z
+            float64 w
+        """
+        pose = msg.pose
+        pos = pose.position
+        quat = PyKDL.Rotation.Quaternion(pose.orientation.x,
+                                         pose.orientation.y,
+                                         pose.orientation.z,
+                                         pose.orientation.w)
+        orient = quat.GetRPY()
+        yaw = orient[2]
+
+        if self.waypoints is not None:
+            # For circular id i.e. to keep from breaking when
+            # `(cur_wp_id + LOOKAHEAD_WPS) > len(self.waypoints)`
+            n = len(self.waypoints)
+
+            cur_wp_id = self.closest_waypoint(pos, yaw)
+
+            lane = Lane()
+            for idx, wp in enumerate(self.waypoints[
+                cur_wp_id%n:(cur_wp_id+LOOKAHEAD_WPS)%n]):
+                self.set_waypoint_velocity(wp, 10)
+
+
+                # Calculates yaw rate
+                next_wp = self.waypoints[(idx+1)%n]
+                next_yaw = math.atan2(next_wp.pose.pose.position.y-wp.pose.pose.position.y,
+                                 next_wp.pose.pose.position.x-wp.pose.pose.position.x) + (math.pi)
+
+                yaw_dist = next_yaw - yaw
+                rospy.loginfo("curyaw: {}, nextyaw: {}, diff: {}".format(yaw, next_yaw, yaw_dist))
+
+                wp = self.set_waypoint_yawrate(wp, yaw_dist)
+                rospy.loginfo("wp angular afterset: {}".format(wp.twist.twist.angular))
+
+                lane.waypoints.append(deepcopy(wp))
+
+            rospy.loginfo("(p) next_wp angular: {}".format(lane.waypoints[0].twist.twist.angular))
+            self.final_waypoints_pub.publish(lane)
+
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        rospy.loginfo('waypoints_cb1')
-        #add velocity to each waypoint and publish
-        for waypoint in waypoints.waypoints:
-        	waypoint.twist.twist.linear.x = 10
-           
-        self.final_waypoints_pub.publish(waypoints)
-        pass
+        self.waypoints = waypoints.waypoints
+        self.waypoints_header = waypoints.header
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -66,8 +117,15 @@ class WaypointUpdater(object):
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+    def set_waypoint_velocity(self, waypoint, velocity):
+        waypoint.twist.twist.linear.x = velocity
+
+    def set_waypoint_yawrate(self, waypoint, yawrate):
+        rospy.loginfo("set angular z to: {}".format(yawrate))
+        waypoint.twist.twist.angular.z = -yawrate
+        rospy.loginfo("new angular: {}".format(waypoint.twist.twist.angular))
+        rospy.loginfo("new angular.z: {}".format(waypoint.twist.twist.angular.z))
+        return waypoint
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
@@ -77,6 +135,51 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    def closest_waypoint(self, position, yaw):
+        """ Find the closest waypoint from a given pose
+        
+        Args:
+            position (geometry_msgs/Point): Position from pose returned from `pose_cb()` method.
+            yaw (float): The car's yaw.
+
+        Return:
+            int: ID of waypoint.
+        """
+
+        pos_threshold = 0.01
+        yaw_threshold = 0.01
+
+        min_dist = 10.0
+        min_id = None
+
+        # TODO: May need to find a faster way to find closest waypoint.
+        for idx, wp in enumerate(self.waypoints):
+            pos_dist = self.pos_distance(wp.pose.pose.position,
+                                    position)
+            quat = PyKDL.Rotation.Quaternion(wp.pose.pose.orientation.x,
+                                             wp.pose.pose.orientation.y,
+                                             wp.pose.pose.orientation.z,
+                                             wp.pose.pose.orientation.w)
+            orient = quat.GetRPY()
+
+            yaw_dist = abs(orient[2] - yaw)
+            comb_dist = (pos_dist + yaw_dist)
+            if (pos_dist <= pos_threshold and yaw_dist <= yaw_threshold):
+                return idx
+            else:
+                if comb_dist < min_dist:
+                    min_dist = comb_dist
+                    min_id = idx
+
+        return min_id
+
+    def pos_distance(self, a, b):
+        """ Distance between two positions
+        """
+        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
+    def trycall():
+        return 1;
 
 if __name__ == '__main__':
     try:
