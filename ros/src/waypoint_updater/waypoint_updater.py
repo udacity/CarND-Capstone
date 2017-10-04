@@ -93,11 +93,12 @@ class WaypointUpdater(object):
                 yaw_dist = next_yaw - yaw
                 rospy.loginfo("curyaw: {}, nextyaw: {}, diff: {}".format(yaw, next_yaw, yaw_dist))
 
-                self.set_waypoint_yawrate(wp, yaw_dist)
+                wp = self.set_waypoint_yawrate(wp, yaw_dist)
+                rospy.loginfo("wp angular afterset: {}".format(wp.twist.twist.angular))
 
                 lane.waypoints.append(deepcopy(wp))
 
-
+            rospy.loginfo("(p) next_wp angular: {}".format(lane.waypoints[0].twist.twist.angular))
             self.final_waypoints_pub.publish(lane)
 
 
@@ -120,7 +121,11 @@ class WaypointUpdater(object):
         waypoint.twist.twist.linear.x = velocity
 
     def set_waypoint_yawrate(self, waypoint, yawrate):
-        waypoint.twist.twist.angular.z = yawrate
+        rospy.loginfo("set angular z to: {}".format(yawrate))
+        waypoint.twist.twist.angular.z = -yawrate
+        rospy.loginfo("new angular: {}".format(waypoint.twist.twist.angular))
+        rospy.loginfo("new angular.z: {}".format(waypoint.twist.twist.angular.z))
+        return waypoint
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
