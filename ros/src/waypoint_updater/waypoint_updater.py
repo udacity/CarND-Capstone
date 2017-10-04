@@ -38,7 +38,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        #rospy.Subscriber('/obstacle_waypoint', , self.obstacle_cb)
+        # rospy.Subscriber('/obstacle_waypoint', , self.obstacle_cb)
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         self.current_pose = None
@@ -61,8 +61,9 @@ class WaypointUpdater(object):
             self.publish()
 
     def traffic_cb(self, msg):
+        self.waypoint_on_red_light = msg.data
+
         if msg.data > -1:
-            self.waypoint_on_red_light = msg.data
             self.publish()
 
 
@@ -120,27 +121,27 @@ class WaypointUpdater(object):
         return closest_waypoint
 
     def slow_down(self, waypoints, redlight_index):
-        try:          
-            first = waypoints[0]
-            last = waypoints[redlight_index]
-
-            last.twist.twist.linear.x = 0.
-            total_dist = self.distance(first.pose.pose.position, last.pose.pose.position)
-            start_vel = first.twist.twist.linear.x
-            for index, wp in enumerate(waypoints):
-                if index > redlight_index:
-                    vel = 0
-                else:
-                    dist = self.distance(wp.pose.pose.position, last.pose.pose.position)
-                    dist = max(0, dist - STOP_DIST)                
-                    vel  = math.sqrt(2 * MAX_DECEL * dist) 
-                    if vel < 1.:
-                        vel = 0.
-                wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
-
-            return waypoints
-        except:
+        if len(waypoints) < 1:
             return []
+
+        first = waypoints[0]
+        last = waypoints[redlight_index]
+
+        last.twist.twist.linear.x = 0.
+        total_dist = self.distance(first.pose.pose.position, last.pose.pose.position)
+        start_vel = first.twist.twist.linear.x
+        for index, wp in enumerate(waypoints):
+            if index > redlight_index:
+                vel = 0
+            else:
+                dist = self.distance(wp.pose.pose.position, last.pose.pose.position)
+                dist = max(0, dist - STOP_DIST)                
+                vel  = math.sqrt(2 * MAX_DECEL * dist) 
+                if vel < 1.:
+                    vel = 0.
+            wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+
+        return waypoints
 
 
     def publish(self):
