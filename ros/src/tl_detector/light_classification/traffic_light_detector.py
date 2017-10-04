@@ -3,6 +3,7 @@ import numpy as np
 import time
 
 TRAFFIC_CLASSIFIER_MDOEL_PATH = '/Users/qitonghu/Desktop/final_project/old/Cargo-CarND-Capstone/traffic_light_detection_profiles/frozen_inference_graph.pb'
+DETECTION_THRESHOLD = 0.5
 
 class TrafficLightDetector(object):
     def __init__(self):
@@ -55,24 +56,51 @@ class TrafficLightDetector(object):
                 time1 = time.time()
 
                 print("Time in milliseconds", (time1 - time0) * 1000)
-                print(boxes, scores, classes)
-        return 0 #TrafficLight.UNKNOWN
+                #print(boxes, scores, classes)
+
+        return self.__postprocessing_detected_box(scores[0], classes[0])
 
     def __preprocess_image(self, image):
         (im_width, im_height) = image.size
         return np.array(image.getdata()).reshape(
             (im_height, im_width, 3)).astype(np.uint8)
 
-    def __postprocessing_detected_box(self):
-        pass
+    def __postprocessing_detected_box(self, scores, classes):
+        candidate_num = 5
+        vote = []
+        for i in range(candidate_num):
+            if scores[i] < DETECTION_THRESHOLD:
+                break
+            vote.append(self.__label_map_to_traffic_light(int(classes[i])))
+        if vote:
+            return max(vote, key=vote.count)
+        else:
+            return 4
+
+
+    def __label_map_to_traffic_light(self, label_id):
+        label_map = ['Green', 'Red', 'GreenLeft', 'GreenRight', 'RedLeft', 'RedRight', 'Yellow', 'off', 'RedStraight',
+                     'GreenStraight', 'GreenStraightLeft', 'GreenStraightRight', 'RedStraightLeft', 'RedStraightRight']
+        if 0 < label_id <= len(label_map):
+            light = label_map[label_id-1]
+            if light.startswith('Green'):
+                return 2
+            elif light.startswith('Red'):
+                return 0
+            elif light.startswith('Yellow'):
+                return 1
+            else:
+                return 4 # off
+        else:
+            return 4
 
 if __name__ == "__main__":
     from PIL import Image
 
     tlc = TrafficLightDetector()
-    image_path = '/Users/qitonghu/Desktop/final_project/old/Cargo-CarND-Capstone/traffic_light_detection_profiles/test_images_bosch/image3.png'
+    image_path = '/Users/qitonghu/Desktop/final_project/old/Cargo-CarND-Capstone/traffic_light_detection_profiles/test_images_bosch/sim_image5.png'
     image = Image.open(image_path)
-    tlc.get_classification(image)
-    image_path = '/Users/qitonghu/Desktop/final_project/old/Cargo-CarND-Capstone/traffic_light_detection_profiles/test_images_bosch/image4.png'
-    image = Image.open(image_path)
-    tlc.get_classification(image)
+    print(tlc.get_classification(image))
+    # image_path = '/Users/qitonghu/Desktop/final_project/old/Cargo-CarND-Capstone/traffic_light_detection_profiles/test_images_bosch/image4.png'
+    # image = Image.open(image_path)
+    # tlc.get_classification(image)
