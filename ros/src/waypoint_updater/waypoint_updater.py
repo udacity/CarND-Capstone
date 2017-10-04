@@ -6,6 +6,7 @@ from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
 from visualization_msgs.msg import Marker
 from itertools import chain
+from copy import deepcopy
 import tf
 import tf.transformations as tft
 import numpy as np
@@ -27,6 +28,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+SLOWDOWN_WPS  = 100  # Number of waypoints before traffic light which we reduce speed for
+STOP_SPEED    =   0. # Desired speed sent to PID for traffic lights
 PUBLISH_PERIOD = rospy.Duration.from_sec(0.5)
 CAR_FRAME_NAME = "car"
 
@@ -54,6 +57,7 @@ class WaypointUpdater(object):
         self.waypoints_received = False
         self.all_waypoints = []
         self.last_waypoint_idx = 0
+        self.red_light_idx = -1
         self.tranform_listener = tf.TransformListener(True, rospy.Duration(10.0))
         # TODO: Add other member variables you need below
 
@@ -113,7 +117,10 @@ class WaypointUpdater(object):
 
                         next_points = Lane()
                         next_points.header.stamp = rospy.Time.now()
-                        next_points.waypoints = [self.transformWaypoint(matrix, self.all_waypoints[i]) for i in
+                        #next_points.waypoints = [self.transformWaypoint(matrix, self.all_waypoints[i]) for i in
+                        #                        range(idx, (idx + LOOKAHEAD_WPS) % len(self.all_waypoints))]
+                        self.update_waypoint_speeds()
+                        next_points.waypoints = [self.all_waypoints[i] for i in
                                                 range(idx, (idx + LOOKAHEAD_WPS) % len(self.all_waypoints))]
                         self.final_waypoints_pub.publish(next_points)
                         self.last_waypoint_idx = idx
@@ -144,14 +151,36 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
         rospy.loginfo("Waypoints received")
         self.all_waypoints = waypoints.waypoints
+        self.original_waypoint_speeds = list()
         for idx in range(len(self.all_waypoints)):
             self.all_waypoints[idx].pose.header.frame_id = "world"
             self.all_waypoints[idx].twist.header.frame_id = "world"
+            self.original_waypoint_speeds.append(waypoints.waypoints[idx].twist.twist.linear.x)
         self.waypoints_received = True
+
+    def reset_waypoint_speeds(self):
+        for idx in range(len(self.all_waypoints)):
+            self.all_waypoints[idx].twist.twist.linear.x = self.original_waypoint_speeds[idx]
+
+    def update_waypoint_speeds(self):
+        # adjust velocities based on traffic light index
+        self.reset_waypoint_speeds();
+        if self.red_light_idx != -1:
+            #TODO: make this more robust to loops
+            start_index = max(0,self.red_light_idx - SLOWDOWN_WPS)
+            end_index = self.red_light_idx
+            start_speed = self.get_waypoint_velocity(self.all_waypoints[start_index])
+            end_speed = STOP_SPEED
+            for index in range(start_index,end_index+1):
+                anti_weight = (index - start_index) / float(end_index - start_index)
+                weight = 1 - anti_weight
+                speed = weight*start_speed + anti_weight*end_speed
+                print("speed for idx: ", index, " is ",speed)
+                self.all_waypoints[index].twist.twist.linear.x = speed
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.red_light_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later

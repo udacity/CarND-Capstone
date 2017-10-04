@@ -1,19 +1,25 @@
 
 from yaw_controller import YawController
+from lowpass import LowPassFilter
 from pid import PID
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
+CONTROL_FREQ = 50.0
 
 
 class Controller(object):
-    def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
+    def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, vehicle_mass, wheel_radius, brake_deadband):
     	self.yaw_controller_ = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-    	self.brake_pid = PID(1,0,0)
-    	self.throttle_pid = PID(1,0,0)
+    	self.steer_filter = LowPassFilter(0.25,1/CONTROL_FREQ)
+    	self.brake_pid = PID(50,0,0)
+    	self.throttle_pid = PID(10,0,0)
+    	self.vehicle_mass = vehicle_mass
+    	self.brake_deadband = brake_deadband
+    	self.wheel_radius = wheel_radius
 
     def control(self, linear_velocity, angular_velocity, current_velocity, dbw_enabled):
-    	steer = self.yaw_controller_.get_steering(linear_velocity, angular_velocity, current_velocity)
+    	steer = self.steer_filter.filt(self.yaw_controller_.get_steering(linear_velocity, angular_velocity, current_velocity))
     	
     	if not dbw_enabled:
     		self.brake_pid.reset()
@@ -23,11 +29,12 @@ class Controller(object):
     	elif linear_velocity > current_velocity:
     		#use throttle and not brake
     		brake = 0
-    		throttle = self.throttle_pid.step(linear_velocity - current_velocity,0.02)
+    		throttle = self.throttle_pid.step(linear_velocity - current_velocity,1/CONTROL_FREQ)
     	else:
     		#use brake and not throttle
     		throttle = 0
-    		brake = self.brake_pid.step(linear_velocity - current_velocity, 0.02)
+    		brake = self.brake_pid.step(linear_velocity - current_velocity, 1/CONTROL_FREQ)
+    		brake = -1*(self.brake_deadband + brake*self.vehicle_mass*self.wheel_radius) 
 
         # Return throttle, brake, steer
         return throttle, brake, steer

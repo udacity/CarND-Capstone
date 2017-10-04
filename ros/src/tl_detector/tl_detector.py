@@ -10,11 +10,12 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import time
 
 import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
-DEBUG = False
+DEBUG = True
 
 
 class TLDetector(object):
@@ -116,7 +117,8 @@ class TLDetector(object):
                 if distance < min_distance or min_distance is None:
                     min_distance = distance
                     min_dist_ind = i
-
+        else:
+            print "No waypoints in TL Detector"
         return min_dist_ind
 
     def project_to_image_plane(self, point_in_world):
@@ -191,13 +193,23 @@ class TLDetector(object):
         h, w, _ = cv_image.shape
 
         # TODO modify it to extract light image according to light distance
+        #x0, x1 = max(x-16, 0), min(x+16, w)
+        #y0, y1 = max(y-16, 0), min(y+16, h)
         x0, x1 = max(x-16, 0), min(x+16, w)
-        y0, y1 = max(y-16, 0), min(y+16, h)
+        y0, y1 = max(y-0, 0), min(y+96, h)
 
         im_light = cv_image[y0:y1, x0:x1, :]
 
+        #write image to file
+        img_save_path = '/home/marv/data/tl/udacity_img' + str(int(time.time()*1000)) + '.jpg'
+        #if DEBUG:
+        #    cv2.imwrite(img_save_path,im_light)
+
         # Get classification
-        return self.light_classifier.get_classification(im_light)
+        tl_class = self.light_classifier.get_classification(im_light)
+        if DEBUG:
+            print("Traffic Light Classification is: ", tl_class)
+        return tl_class
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -247,8 +259,13 @@ class TLDetector(object):
 
         if light is not None and visible:
             state = self.get_light_state(light)
+            #KR testing
+            state = light.state
+            if DEBUG:
+                print("Correct TL State is: ", state)
             return light_wp, state
-        self.waypoints = None
+        #Why are we setting self.waypoints to None?
+        #self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 
