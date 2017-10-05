@@ -55,6 +55,7 @@ class WaypointUpdater(object):
 
 
     # Find waypoint coordinates in Car Coordinate Systems
+    # Return dot product of unit yaw vector and car_to_waypoint vector
     def waypoint_in_car_coordinate_system(self, closest_waypoint_index):
         # Find World Coordinates for Waypoint
         world_closest_waypoint_x = self.waypoints[closest_waypoint_index].pose.pose.position.x
@@ -69,8 +70,7 @@ class WaypointUpdater(object):
             self.current_pose.pose.orientation.z,
             self.current_pose.pose.orientation.w))
         # Map the closest Waypoint in Car Coordinate System
-        # Return as (x, y) tuple
-        closest_waypoint_in_car_coordinate_system = ((world_closest_waypoint_x-car_coordinate_x) * math.cos(yaw), (world_closest_waypoint_y-car_coordinate_y) * math.sin(yaw))
+        closest_waypoint_in_car_coordinate_system = ((world_closest_waypoint_x-car_coordinate_x) * math.cos(yaw) + (world_closest_waypoint_y-car_coordinate_y) * math.sin(yaw))
         return closest_waypoint_in_car_coordinate_system
 
     # Update to the closest waypoint of your current position
@@ -80,7 +80,7 @@ class WaypointUpdater(object):
         # Find Map Coordinates for this WayPoint
         closest_waypoint_in_car_coordinate_system = self.waypoint_in_car_coordinate_system(closest_waypoint_index)
         # If Behind increase the waypoint index 
-        if ( closest_waypoint_in_car_coordinate_system[0] < 0.):
+        if ( closest_waypoint_in_car_coordinate_system < 0.):
             closest_waypoint_index += 1
         self.next_waypoint_index = closest_waypoint_index % len(self.waypoints)
         return closest_waypoint_index
