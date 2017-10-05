@@ -185,9 +185,11 @@ class TLDetector(object):
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #TODO use light location to zoom in on traffic light in image
+	tl_state = self.light_classifier.get_classification(cv_image)
 
+        print("status of traffic light: %i" % tl_state)
         #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        return tl_state
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -217,7 +219,7 @@ class TLDetector(object):
         
         if light:
             state = self.get_light_state(light)
-            state = self.lights[idx_next_light].state  # TODO: stop cheating
+            #state = self.lights[idx_next_light].state  # TODO: stop cheating
             return self.stop_lines_closest_wp[idx_next_light], state
         return -1, TrafficLight.UNKNOWN
 
