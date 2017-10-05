@@ -149,6 +149,9 @@ class WaypointUpdater(object):
                         continue
 
     def waypoints_cb(self, waypoints):
+        if len(waypoints.waypoints) == 0:
+            rospy.loginfo("Empty waypoints message received")
+            return
         rospy.loginfo("Waypoints received")
         self.all_waypoints = waypoints.waypoints
         self.original_waypoint_speeds = list()

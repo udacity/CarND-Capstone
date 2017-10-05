@@ -201,9 +201,19 @@ class TLDetector(object):
         im_light = cv_image[y0:y1, x0:x1, :]
 
         #write image to file
-        img_save_path = '/home/marv/data/tl/udacity_img' + str(int(time.time()*1000)) + '.jpg'
-        #if DEBUG:
-        #    cv2.imwrite(img_save_path,im_light)
+        base_dir = '/home/marv/data/tl/'
+        current_time_str = str(int(time.time()*1000))
+        if (light.state == TrafficLight.RED):
+            img_save_path = base_dir + 'red/udacity_img' + current_time_str + '.jpg'
+        elif (light.state == TrafficLight.GREEN):
+            img_save_path = base_dir + 'green/udacity_img' + current_time_str + '.jpg'
+        elif (light.state == TrafficLight.YELLOW):
+            img_save_path = base_dir + 'yellow/udacity_img' + current_time_str + '.jpg'
+        else:
+            img_save_path = base_dir + 'unknown/udacity_img' + current_time_str + '.jpg'
+
+        if DEBUG:
+            cv2.imwrite(img_save_path,im_light)
 
         # Get classification
         tl_class = self.light_classifier.get_classification(im_light)
