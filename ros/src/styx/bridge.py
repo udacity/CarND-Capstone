@@ -92,6 +92,7 @@ class Bridge(object):
 
     def create_twist(self, velocity, angular):
         tw = TwistStamped()
+        tw.header.stamp = rospy.Time.now()
         tw.twist.linear.x = velocity
         tw.twist.angular.z = angular
         return tw
@@ -167,9 +168,8 @@ class Bridge(object):
         status = data['light_state']
 
         lights = TrafficLightArray()
-        header = Header()
-        header.stamp = rospy.Time.now()
-        header.frame_id = '/world'
+        lights.header.stamp = rospy.Time.now()
+        lights.header.frame_id = '/world'
         lights.lights = [self.create_light(*e) for e in zip(x, y, z, yaw, status)]
         self.publishers['trafficlights'].publish(lights)
 
@@ -182,6 +182,7 @@ class Bridge(object):
         image_array = np.asarray(image)
 
         image_message = self.bridge.cv2_to_imgmsg(image_array, encoding="rgb8")
+        image_message.header.stamp = rospy.Time.now() - rospy.Duration(0.3) #adjust for estimated latency
         self.publishers['image'].publish(image_message)
 
     def callback_steering(self, data):

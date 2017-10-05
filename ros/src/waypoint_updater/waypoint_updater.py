@@ -120,8 +120,14 @@ class WaypointUpdater(object):
                         #next_points.waypoints = [self.transformWaypoint(matrix, self.all_waypoints[i]) for i in
                         #                        range(idx, (idx + LOOKAHEAD_WPS) % len(self.all_waypoints))]
                         self.update_waypoint_speeds()
-                        next_points.waypoints = [self.all_waypoints[i] for i in
-                                                range(idx, (idx + LOOKAHEAD_WPS) % len(self.all_waypoints))]
+                        waypoints_count = 0
+                        current_idx = idx
+                        while waypoints_count <= LOOKAHEAD_WPS:
+                            next_points.waypoints.append(self.all_waypoints[current_idx % len(self.all_waypoints)])
+                            current_idx += 1
+                            waypoints_count += 1
+                        #next_points.waypoints = [self.all_waypoints[i] for i in
+                        #                        range(idx, (idx + LOOKAHEAD_WPS) % len(self.all_waypoints))]
                         self.final_waypoints_pub.publish(next_points)
                         self.last_waypoint_idx = idx
                         rospy.loginfo("Waypoints sent")
@@ -178,7 +184,6 @@ class WaypointUpdater(object):
                 anti_weight = (index - start_index) / float(end_index - start_index)
                 weight = 1 - anti_weight
                 speed = weight*start_speed + anti_weight*end_speed
-                print("speed for idx: ", index, " is ",speed)
                 self.all_waypoints[index].twist.twist.linear.x = speed
 
     def traffic_cb(self, msg):
