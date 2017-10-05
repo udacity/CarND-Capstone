@@ -105,8 +105,34 @@ class WaypointUpdater(object):
                 closest_waypoint_index = idx
         return closest_waypoint_index
 
+    def find_close_waypoint_in_range(self):
+        minimum_distance_value = 90000
+        closest_waypoint_index = 0
+        car_current_position = self.current_pose.pose.position
+        nwaypoints = len(self.waypoints)
+        if self.next_waypoint_index != None:
+            search_idx_list = []
+            search_range_begin_index = self.next_waypoint_index - waypoints_search_range
+            if search_range_begin_index < 0:
+                search_idx_list.extend(range(search_range_begin_index % nwaypoints, nwaypoints))
+                search_range_begin_index = 0     
+            search_range_end_index = self.next_waypoint_index + waypoints_search_range
+            if search_range_end_index > nwaypoints:
+                search_idx_list.extend(range(0, search_range_end_index % nwaypoints))
+                search_range_end_index = nwaypoints
+            search_idx_list.extend(range(search_range_begin_index, search_range_end_index))
+        else:
+            search_idx_list = range(0, nwaypoints)
+        for idx in search_idx_list:
+            car_future_position = self.waypoints[idx].pose.pose.position
+            dist = self.distance_between_two_points(car_current_position, car_future_position)
+            if dist < minimum_distance_value:
+                minimum_distance_value = dist
+                closest_waypoint_index = idx
+        return closest_waypoint_index    
+
     # Helper method 
-    def find_close_waypoint_in_range(self):       
+    def find_close_waypoint_in_range_org(self):       
         search_range_begin_index, search_range_end_index = self.find_search_range()
         return self.find_shortest_distance_waypoint_bet_range(search_range_begin_index, search_range_end_index)
 
