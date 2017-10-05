@@ -28,7 +28,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
-SLOWDOWN_WPS  = 100  # Number of waypoints before traffic light which we reduce speed for
+SLOWDOWN_WPS  = 100  # Number of waypoints before traffic light stop line which we reduce speed for
+STOP_WPS      =  50  # Number of waypoints after the traffic light stop line which are set to stop speed
 STOP_SPEED    =   0. # Desired speed sent to PID for traffic lights
 PUBLISH_PERIOD = rospy.Duration.from_sec(0.5)
 CAR_FRAME_NAME = "car"
@@ -185,6 +186,11 @@ class WaypointUpdater(object):
                 weight = 1 - anti_weight
                 speed = weight*start_speed + anti_weight*end_speed
                 self.all_waypoints[index].twist.twist.linear.x = speed
+            
+            start_index = self.red_light_idx
+            end_index = min(self.red_light_idx + STOP_WPS, len(self.all_waypoints))
+            for index in range (start_index, end_index + 1):
+                self.all_waypoints[index].twist.twist.linear.x = STOP_SPEED
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
