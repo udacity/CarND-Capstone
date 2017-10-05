@@ -1,5 +1,7 @@
 
 class LowPassFilter(object):
+    # use tau = 1.5
+    # use ts = 1
     def __init__(self, tau, ts):
         self.a = 1. / (tau / ts + 1.)
         self.b = tau / ts / (tau / ts + 1.);
