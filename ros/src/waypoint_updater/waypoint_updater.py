@@ -32,13 +32,17 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            if (self.waypoints and self.next_waypoint_index):
+            if (self.waypoints and self.next_waypoint_index != None):
                 # For now a very simple implementation to get things moving. Find and then Publish the Lookahead waypoints
                 lane = Lane()
                 lane.header.frame_id = self.current_pose.header.frame_id
-                lane.header.stamp = rospy.Time(0)
+                lane.header.stamp = rospy.Time.now()
                 # Publish Waypoints for the lookahead defined
-                lane.waypoints = self.waypoints[self.next_waypoint_index:self.next_waypoint_index+LOOKAHEAD_WPS]
+                if self.next_waypoint_index+LOOKAHEAD_WPS < len(self.waypoints):
+                    lane.waypoints = self.waypoints[self.next_waypoint_index:self.next_waypoint_index+LOOKAHEAD_WPS]
+                else:
+                    lane.waypoints = self.waypoints[self.next_waypoint_index:]
+                    lane.waypoints.extend(self.waypoints[0:(self.next_waypoint_index+LOOKAHEAD_WPS) % len(self.waypoints)])
                 self.final_waypoints_pub.publish(lane)
             rate.sleep()
 
@@ -51,6 +55,7 @@ class WaypointUpdater(object):
 
 
     # Find waypoint coordinates in Car Coordinate Systems
+    # Return dot product of unit yaw vector and car_to_waypoint vector
     def waypoint_in_car_coordinate_system(self, closest_waypoint_index):
         # Find World Coordinates for Waypoint
         world_closest_waypoint_x = self.waypoints[closest_waypoint_index].pose.pose.position.x
@@ -65,7 +70,7 @@ class WaypointUpdater(object):
             self.current_pose.pose.orientation.z,
             self.current_pose.pose.orientation.w))
         # Map the closest Waypoint in Car Coordinate System
-        closest_waypoint_in_car_coordinate_system = ((world_closest_waypoint_x-car_coordinate_x) * math.cos(yaw) + (world_closest_waypoint_y-car_coordinate_x) * math.sin(yaw))
+        closest_waypoint_in_car_coordinate_system = ((world_closest_waypoint_x-car_coordinate_x) * math.cos(yaw) + (world_closest_waypoint_y-car_coordinate_y) * math.sin(yaw))
         return closest_waypoint_in_car_coordinate_system
 
     # Update to the closest waypoint of your current position
@@ -74,10 +79,10 @@ class WaypointUpdater(object):
         closest_waypoint_index = self.find_close_waypoint_in_range()
         # Find Map Coordinates for this WayPoint
         closest_waypoint_in_car_coordinate_system = self.waypoint_in_car_coordinate_system(closest_waypoint_index)
-        # If Behind increase the waypoint index cound
-        if ( closest_waypoint_in_car_coordinate_system < 0. ):
+        # If Behind increase the waypoint index 
+        if ( closest_waypoint_in_car_coordinate_system < 0.):
             closest_waypoint_index += 1
-        self.next_waypoint_index = closest_waypoint_index
+        self.next_waypoint_index = closest_waypoint_index % len(self.waypoints)
         return closest_waypoint_index
 
     def find_search_range(self):
@@ -100,8 +105,34 @@ class WaypointUpdater(object):
                 closest_waypoint_index = idx
         return closest_waypoint_index
 
+    def find_close_waypoint_in_range(self):
+        minimum_distance_value = 90000
+        closest_waypoint_index = 0
+        car_current_position = self.current_pose.pose.position
+        nwaypoints = len(self.waypoints)
+        if self.next_waypoint_index != None:
+            search_idx_list = []
+            search_range_begin_index = self.next_waypoint_index - waypoints_search_range
+            if search_range_begin_index < 0:
+                search_idx_list.extend(range(search_range_begin_index % nwaypoints, nwaypoints))
+                search_range_begin_index = 0     
+            search_range_end_index = self.next_waypoint_index + waypoints_search_range
+            if search_range_end_index > nwaypoints:
+                search_idx_list.extend(range(0, search_range_end_index % nwaypoints))
+                search_range_end_index = nwaypoints
+            search_idx_list.extend(range(search_range_begin_index, search_range_end_index))
+        else:
+            search_idx_list = range(0, nwaypoints)
+        for idx in search_idx_list:
+            car_future_position = self.waypoints[idx].pose.pose.position
+            dist = self.distance_between_two_points(car_current_position, car_future_position)
+            if dist < minimum_distance_value:
+                minimum_distance_value = dist
+                closest_waypoint_index = idx
+        return closest_waypoint_index    
+
     # Helper method 
-    def find_close_waypoint_in_range(self):       
+    def find_close_waypoint_in_range_org(self):       
         search_range_begin_index, search_range_end_index = self.find_search_range()
         return self.find_shortest_distance_waypoint_bet_range(search_range_begin_index, search_range_end_index)
 
