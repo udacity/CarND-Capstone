@@ -130,10 +130,10 @@ Our initial strategy was to have a system that could use the simulator or the re
 ### Obstacle detection
 Implemented for the real vehicle only by Carla team at Udacity.
 
-### Traffic light detector:
+### Traffic light detector
 A CNN classifier was trained with a mixture of images from the simulator as well as real images...
 
-### Waypoint Loader:
+### Waypoint loader
 The update frequency was removed and this node only publishes one message at the start to reduce the overhead to a minimum. The list of base waypoints forms an enclosed path along a track.
 
 ![Track waypoints](./track_waypoints.png)
@@ -190,11 +190,11 @@ if self.tf_index != -1:
                     ref_speed = ref_speed + 0.2
 ```
 
-### Waypoint Follower:
+### Waypoint follower
 
 This node implements a pure pursuit algorithm. The update frequency was changed to 15Hz in order to save resources and improve performance of the overall system.
 
-### DBW Node:
+### Drive-by-wire
 
 
 ## Conclusions
