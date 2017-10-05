@@ -55,7 +55,7 @@ def point_to_pose(x, y):
     pose.position = pt
     return pose
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 5
 
 class TLDetector(object):
     def __init__(self):

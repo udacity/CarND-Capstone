@@ -204,11 +204,11 @@ class DBWNode(object):
                         throttle = 1.0
                     else: 
                         throttle = 0.
-                        brake = 1.0 * 100
+                        brake = 1.0 * 1000
                 elif self.throttle < 0:
                     throttle = 0
-                    brake = (abs(self.throttle) + self.brake_deadband) * 100
-                    if brake > 1.: brake = 1. * 100 
+                    brake = (abs(self.throttle) + self.brake_deadband) * 1000
+                    if brake > 1.: brake = 1. * 1000 
                 else:
                     throttle = self.throttle + self.brake_deadband
                     if throttle > 1. : throttle = 1.
