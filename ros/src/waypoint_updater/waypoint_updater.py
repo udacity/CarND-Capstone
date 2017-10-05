@@ -15,7 +15,7 @@ import yaml
 import math
 
 MAX_DECEL = 0.05
-MAX_ACCEL = 1.0
+MAX_ACCEL = 2.0
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -127,13 +127,13 @@ class WaypointUpdater(object):
         self.red_tl = True
         self.red_tl_prev = True
         self.tl_count = 0
-        self.dump = True
-        self.dump2 = False
         self.stopped = False
         self.started = False    
 
         self.pose_set = False
         self.prev_pose = None
+        self.accel_wps = []
+        self.decel_wps = []
 
         self.velocity = rospy.get_param('velocity') * 1000. / (60. * 60.)
 
@@ -143,7 +143,6 @@ class WaypointUpdater(object):
         ## state table with transitions 
         self.fsm = statemachine.FSM({'stopped':[
                                                 ['stopped', 'conditions', self.stopped_cb], 
-                                                ['go_to_stop', 'conditions', self.go_to_stop_cb],
                                                 ['start_moving_cb', 'conditions', self.start_moving_cb]
                                                 ],
                                     'start_moving_cb': [
@@ -161,7 +160,8 @@ class WaypointUpdater(object):
                                     'go_to_stop': [
                                                     ['go_to_stop', 'conditions', self.go_to_stop_cb], 
                                                     ['stopped', 'conditions', self.stopped_cb], 
-                                                    ['start_moving_cb', 'conditions', self.start_moving_cb]]})
+                                                    ['start_moving_cb', 'conditions', self.start_moving_cb]]},
+                                    curstate='go_to_stop')
 
         
 
@@ -174,7 +174,7 @@ class WaypointUpdater(object):
         '''
         In this state the car will start to slow its velocity when aproaching to the tl
         '''
-        if self.distance_to_tl < 100 and self.distance_to_tl > 30:
+        if self.distance_to_tl > 30:
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
@@ -196,29 +196,10 @@ class WaypointUpdater(object):
 
     def start_moving_cb(self):
         '''
-        In this state the car will go from stoped moving at tl
+        In this state the car will go from stoped  to moving at tl
         '''
         #rospy.logwarn("Entering moving_cb !!!")
-        if self.current_velocity < self.velocity * .8:
-            # olane = Lane()
-            # olane.header.frame_id = '/world'
-            # olane.header.stamp = rospy.Time(0)
-            # sz = len(self.wps)
-            # wpsz = len(self.wps)
-            # end_pt = self.next_pt+LOOKAHEAD_WPS
-            # past_zero_pt = end_pt - wpsz
-            # end_pt = min(end_pt, wpsz)
-            # olane.waypoints=self.wps[self.next_pt:end_pt][:]
-            # # Handle case where we are near the end of the track;
-            # # add points at the beginning of the track
-            # if past_zero_pt > 0:
-            #     olane.waypoints.extend(self.wps[:past_zero_pt][:])
-
-            
-            # olane.waypoints=self.accelerate(olane.waypoints)
-            # rospy.loginfo('[start_moving_cb] velocity: %f', olane.waypoints[0].twist.twist.linear.x)
-            # self.final_waypoints_pub.publish(olane)
-            # self.next_waypoint_pub.publish(self.next_pt)
+        if self.current_velocity < (self.velocity * .8):
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
@@ -227,17 +208,20 @@ class WaypointUpdater(object):
             end_pt = self.next_pt+LOOKAHEAD_WPS
             past_zero_pt = end_pt - wpsz
             end_pt = min(end_pt, wpsz)
-            olane.waypoints=self.wps[self.next_pt:end_pt][:]
+            waypoints=self.wps[self.next_pt:end_pt][:]
             # Handle case where we are near the end of the track;
             # add points at the beginning of the track
             if past_zero_pt > 0:
-                olane.waypoints.extend(self.wps[:past_zero_pt][:])
-            #rospy.loginfo('[start_moving_cb] velocity: %f, current velocity: %f, threshold: %f', olane.waypoints[0].twist.twist.linear.x, self.current_velocity, self.velocity)
-            for i in range(len(olane.waypoints)):
-                olane.waypoints[i].twist.twist.linear.x = self.velocity
+                waypoints.extend(self.wps[:past_zero_pt][:])
+            waypoints = self.accelerate(waypoints)
+            olane.waypoints = waypoints
+            self.accel_wps = waypoints
+            #rospy.loginfo('[start_moving_cb] velocity: %f', olane.waypoints[0].twist.twist.linear.x)
             self.final_waypoints_pub.publish(olane)
             self.next_waypoint_pub.publish(self.next_pt)
             return True
+        else:
+            self.accel_wps = []
         return False
 
         
@@ -245,14 +229,6 @@ class WaypointUpdater(object):
         '''
         In this state the car will move at full speed
         '''
-        #rospy.logwarn("Entering moving_cb !!!")
-        # if self.stopped == True:
-        #     # maybe manual stilla active
-        #     self.final_waypoints_pub.publish(Lane())
-        #     self.next_waypoint_pub.publish(self.next_pt)
-        #     rospy.loginfo("Not moving, Traffic Ligh was True: %s", self.red_tl)
-        #     return False
-        
         if self.distance_to_tl > 100:
             olane = Lane()
             olane.header.frame_id = '/world'
@@ -279,11 +255,11 @@ class WaypointUpdater(object):
         '''
         In this state the car will stop or remain stop at tl
         '''
-        if self.red_tl == True and self.distance_to_tl <= 3:
+        if self.red_tl == True:
             self.final_waypoints_pub.publish(Lane())
             self.next_waypoint_pub.publish(self.next_pt)
             return True
-        rospy.loginfo("[stopped_cb] moving to stop line, Traffic Ligh : %s", self.red_tl)
+        # rospy.loginfo("[stopped_cb] moving to stop line, Traffic Ligh : %s", self.red_tl)
         return False
     
     
@@ -291,15 +267,17 @@ class WaypointUpdater(object):
         '''
         In this stop the car will reduce speed to stop at tl
         '''
-        if self.distance_to_tl <= 30 and self.distance_to_tl > 3 and self.red_tl == True: ## start moving
+        if self.distance_to_tl > 3 and self.red_tl == True: 
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
             next_tl = self.get_next_tl(self.next_pt)
             if self.next_pt == next_tl-1:
                 next_tl += 1
-            olane.waypoints=self.wps[self.next_pt:next_tl-1][:]
-            self.decelerate(olane.waypoints)
+            waypoints=self.wps[self.next_pt:next_tl-1][:]
+            waypoints=self.decelerate(waypoints)
+            olane.waypoints = waypoints
+            self.decel_wps = waypoints
             # Handle case where we are near the end of the track;
             # add points at the beginning of the track
             # if past_zero_pt > 0:
@@ -308,6 +286,8 @@ class WaypointUpdater(object):
             self.final_waypoints_pub.publish(olane)
             self.next_waypoint_pub.publish(self.next_pt)
             return True
+        else:
+            self.decel_wps = []
         return False
 
        
@@ -321,6 +301,9 @@ class WaypointUpdater(object):
         Copy of the function used in waypoing loader to reduce 
         the velocity of the car when apporaching a tl
         '''
+        if len(self.decel_wps) > 10:
+            return self.decel_wps[1:]
+
         last = waypoints[-1]
         last.twist.twist.linear.x = 0.
         for wp in waypoints[:-1][::-1]:
@@ -335,29 +318,26 @@ class WaypointUpdater(object):
         '''
         Used by start_moving state but is not working yet
         '''
-        # TODO: Use frenet
-        vs = []
-        start = waypoints[0]
-        if self.current_velocity < 3.0:
-            vel = 3. 
-        else:
-            vel = self.current_velocity
+        if len(self.accel_wps) > 10:
+            return self.accel_wps[1:]
+        
+        start = self.next_pt - 1
+        if start < 0:
+            start = 0
+        start_pos = self.wps[start]
+        vel = self.current_velocity
+
         #rospy.loginfo("[accelerate] current velocity: %f", vel)
         for wp in waypoints[:]:
-            dist = self.distance(wp.pose.pose.position, start.pose.pose.position)
-            vel = math.sqrt(vel*vel + (2 * MAX_ACCEL * dist))
+            dist = self.distance(wp.pose.pose.position, start_pos.pose.pose.position)
+            vel = math.sqrt(vel**2 + (2 * MAX_ACCEL * dist))
+            if vel < 1.0:
+                vel = 1.0
+            wp.twist.twist.linear.x = vel
             if vel > self.velocity:
                 vel = self.velocity
-            elif vel < 3.0:
-                vel = 3.0
-            wp.twist.twist.linear.x = vel
-            vs.append(vel)
-        # if self.dump == True:
-        #     self.dump = False
-        #     print(vs)
-        # else:
-        #     print(vs)
-
+        
+        
         return waypoints
 
 
@@ -511,215 +491,7 @@ class WaypointUpdater(object):
         self.distance_to_tl = self.stopPlanner.distance(self.wps, next_pt, next_tl)
         self.fsm.run()
 
-        ## CODE FOR JMT Not working
-        # distance_to_tl = self.stopPlanner.distance(self.wps, next_pt, next_tl)
-        # #rospy.loginfo("next wp: %d next tl: %d distance to tl: %f", next_pt, next_tl, distance_to_tl)
         
-
-        # if distance_to_tl <= 100:
-            
-        #     #rospy.loginfo("distance to next tl: %2.3f Red light: %s", distance_to_tl, self.red_tl)
-        #     #if distance_to_tl <= 100: # go to stop line
-                
-        #     # if self.stopped==True and self.red_tl==False:
-        #     #     self.stopped = False
-                
-        #     stop_v = 0.0
-
-        #     (roll1, pitch1, yaw1) = tf.transformations.euler_from_quaternion([self.wps[next_pt].pose.pose.orientation.x,
-        #                                                         self.wps[next_pt].pose.pose.orientation.y,
-        #                                                         self.wps[next_pt].pose.pose.orientation.z,
-        #                                                         self.wps[next_pt].pose.pose.orientation.w])
-        #     (roll2, pitch2, yaw2) = tf.transformations.euler_from_quaternion([self.wps[next_tl].pose.pose.orientation.x,
-        #                                                         self.wps[next_tl].pose.pose.orientation.y,
-        #                                                         self.wps[next_tl].pose.pose.orientation.z,
-        #                                                         self.wps[next_tl].pose.pose.orientation.w])
-        #     # if self.current_velocity <= 1e-2:
-        #     #     self.stopped = True
-        #     #     rospy.loginfo("current velocity is 0 !!!")
-
-        #     velocity = self.current_velocity
-        #     if self.stopped == True and self.red_tl == False:
-        #         velocity = 1.0
-                
-        #     rospy.loginfo("red_tl: %s", self.red_tl)
-        #     # if self.stopped == True and self.red_tl == False:
-        #     #     self.stopped = False
-        #     #     rospy.loginfo("stopped and no red light moving !!!")
-        #     #     olane = Lane()
-        #     #     olane.header.frame_id = '/world'
-        #     #     olane.header.stamp = rospy.Time(0)
-        #     #     sz = len(self.wps)
-        #     #     # may add fewer points if near the end of the track
-        #     #     '''
-        #     #     for i in range(0, LOOKAHEAD_WPS):
-        #     #         if i >= sz:
-        #     #             break
-        #     #         wp = self.wps[i+next_pt]
-        #     #         olane.waypoints.append(wp)
-        #     #     '''
-        #     #     wpsz = len(self.wps)
-        #     #     end_pt = next_pt+LOOKAHEAD_WPS
-        #     #     past_zero_pt = end_pt - wpsz
-        #     #     end_pt = min(end_pt, wpsz)
-        #     #     olane.waypoints=self.wps[next_pt:end_pt]
-        #     #     # Handle case where we are near the end of the track;
-        #     #     # add points at the beginning of the track
-        #     #     if past_zero_pt > 0:
-        #     #         olane.waypoints.extend(self.wps[:past_zero_pt])
-
-        #     #     # xx = []
-        #     #     # yy = []
-        #     #     # vv = []
-        #     #     # if self.dump2 == False:
-        #     #     #     self.dump2 = True
-        #     #     #     for i in range(len(olane.waypoints)):
-        #     #     #         xx.append(olane.waypoints[i].pose.pose.position.x)
-        #     #     #         yy.append(olane.waypoints[i].pose.pose.position.y)
-        #     #     #         vv.append(olane.waypoints[i].twist.twist.linear.x)
-        #     #     #     print("x values waypoints:")
-        #     #     #     print(xx)
-        #     #     #     print("y values waypoints:")
-        #     #     #     print(yy)
-        #     #     #     print("v values waypoints:")
-        #     #     #     print(vv)
-
-        #     #     self.final_waypoints_pub.publish(olane)
-        #     #     self.next_waypoint_pub.publish(next_pt)
-        #     #     return
-
-            
-        #     #T = distance_to_tl / self.current_velocity
-        #     #T = distance_to_tl / self.velocity # average velocity in mts/s
-        #     T = math.sqrt(distance_to_tl * 2)
-        #     # rospy.loginfo("T: %f distance to tl: %f velocity: %f", T, distance_to_tl, self.velocity)
-        #     # if T > 10:
-        #     #     T = 10
-
-        #     s, d = self.stopPlanner.getFrenet(self.wps[next_pt].pose.pose.position.x,
-        #                                 self.wps[next_pt].pose.pose.position.y,
-        #                                     yaw1, self.wps)
-        #     s_stop, d_stop = self.stopPlanner.getFrenet(self.wps[next_tl].pose.pose.position.x,
-        #                                 self.wps[next_tl].pose.pose.position.y,
-        #                                     yaw2, self.wps)
-        #     ## --- JMT for waypoints distance
-        #     rospy.loginfo("current velocity: %f", self.current_velocity)
-        #     #coeff = self.stopPlanner.JMT([s, self.current_velocity, 0], [s_stop, stop_v, 0], T)
-        #     coeff = self.stopPlanner.JMT([s, velocity, 1.0], [s_stop, 0., 0], T)
-        #     fy = np.poly1d(coeff)
-        #     n = T / 0.03
-        #     s_x = np.linspace(0, T, n)
-        #     sss = fy(s_x)
-        #     ## --- jmt for the velocity
-        #     #coeff_v = self.stopPlanner.JMT([self.current_velocity, 1., 0], [stop_v, 0, 0], T)
-        #     coeff_v = self.stopPlanner.JMT([velocity, 1., 1.], [0, 0, 0], T)
-        #     fyv = np.poly1d(coeff_v)
-        #     v_values = fyv(s_x)
-        #     ## --- jmt for the angles
-        #     coeff_angles = self.stopPlanner.JMT([yaw1, 0.01, 0], [yaw2, 0, 0], T)
-        #     fyangles = np.poly1d(coeff_angles)
-        #     angles_values = fyangles(s_x)
-        #     final_path = []
-        #     d = 0. ## we dont want to change lanes
-        #     for i in range(len(sss)):
-        #         px, py = self.stopPlanner.getXY(sss[i], d, self.stopPlanner.map_s, self.wps)
-        #         final_path.append([px, py])
-        #     # print("-------")
-        #     # print(final_path)    
-        #     final_path = np.array(final_path)
-        #     o2lane = Lane()
-        #     o2lane.header.frame_id = '/world'
-        #     o2lane.header.stamp = rospy.Time(0)
-        #     prev_pt = xyz
-        #     xx = []
-        #     yy = []
-        #     angles = []
-        #     vel = []
-        #     for i in range(len(final_path)):
-        #         xx.append(final_path[i][0])
-        #         yy.append(final_path[i][1])
-        #         angles.append(angles_values[i])
-        #         vel.append(v_values[i])
-        #         p = Waypoint()
-        #         p.pose.pose.position.x = final_path[i][0]
-        #         p.pose.pose.position.y = final_path[i][1]
-        #         p.pose.pose.position.z = 0.
-        #         yw = angles_values[i]
-        #         q = tf.transformations.quaternion_from_euler(0.,0.,yw)
-        #         p.pose.pose.orientation = Quaternion(*q)
-        #         dst = point_dist(prev_pt, p.pose.pose.position)
-        #         prev_pt = p.pose.pose.position
-        #         #v = float(dst / 0.03)
-        #         v = v_values[i]
-        #         p.twist.twist.linear.x = v  * 0.9
-        #         o2lane.waypoints.append(p)
-        #     if self.dump == False:
-        #         self.dump = True
-        #         rospy.loginfo("x: %2.3f y: %2.3f new_yaw: %2.3f v: %2.3f" % (final_path[0][0],
-        #                                                                         final_path[0][1],
-        #                                                                         angles_values[0],
-        #                                                                         v_values[0]))
-        #         rospy.loginfo("size of stop waypoints: %d", len(final_path))
-        #         print("x values:")
-        #         print(xx)
-        #         print("y values:")
-        #         print(yy)
-        #         print("angles:")
-        #         print(angles)
-        #         print("velocity:")
-        #         print(vel)
-                
-
-        #     #self.final_wps = o2lane.waypoints
-        #     self.final_waypoints_pub.publish(o2lane)
-        #     self.next_waypoint_pub.publish(next_pt)
-        #     return
-                
-        # rospy.loginfo("Pose %d %.6f %f %f  %f %d %d", seq, ts, xyz.x, xyz.y, math.degrees(yaw), near_pt, next_pt)
-        # The consumer of the final_waypoints message
-        # doesn't seem to care about anything except waypoint pose.pose
-        # and waypoint twist.twist.linear.x
-        # olane = Lane()
-        # olane.header.frame_id = '/world'
-        # olane.header.stamp = rospy.Time(0)
-        # sz = len(self.wps)
-        # # may add fewer points if near the end of the track
-        # '''
-        # for i in range(0, LOOKAHEAD_WPS):
-        #     if i >= sz:
-        #         break
-        #     wp = self.wps[i+next_pt]
-        #     olane.waypoints.append(wp)
-        # '''
-        # wpsz = len(self.wps)
-        # end_pt = next_pt+LOOKAHEAD_WPS
-        # past_zero_pt = end_pt - wpsz
-        # end_pt = min(end_pt, wpsz)
-        # olane.waypoints=self.wps[next_pt:end_pt]
-        # # Handle case where we are near the end of the track;
-        # # add points at the beginning of the track
-        # if past_zero_pt > 0:
-        #     olane.waypoints.extend(self.wps[:past_zero_pt])
-
-        # # xx = []
-        # # yy = []
-        # vv = []
-        # if self.dump2 == False:
-        #     self.dump2 = True
-        #     for i in range(len(olane.waypoints)):
-        #         # xx.append(olane.waypoints[i].pose.pose.position.x)
-        #         # yy.append(olane.waypoints[i].pose.pose.position.y)
-        #         vv.append(olane.waypoints[i].twist.twist.linear.x)
-        #     # print("x values waypoints:")
-        #     # print(xx)
-        #     # print("y values waypoints:")
-        #     # print(yy)
-        #     print("v values waypoints:")
-        #     print(vv)
-
-        # self.final_waypoints_pub.publish(olane)
-        # self.next_waypoint_pub.publish(next_pt)
-
 
     '''
     styx_msgs/Lane:
@@ -768,19 +540,7 @@ class WaypointUpdater(object):
         if len(waypoints.waypoints) == len(self.wps):
             # rospy.loginfo("Waypoints: same as before")
             return
-        '''
-        local_wps = []
-        for wp in waypoints.waypoints:
-            # just position; ignoring yaw
-            # and speed information
-            # x = wp.pose.pose.position.x
-            # y = wp.pose.pose.position.y
-            local_wps.append(wp.pose.pose.position)
-            # v = wp.twist.twist.linear.x
-            # local_wps.append((x,y,v))
-
-        self.wps = local_wps
-        '''
+        
         self.wps = waypoints.waypoints
 
         s = 0.
@@ -892,20 +652,23 @@ class WaypointUpdater(object):
         ## had to put this threshold to avoid false positives
 
         if msg.data < 0: # no red light
-            if self.red_tl_prev == False:
-                self.tl_count += 1
-                if self.tl_count >= 5:
-                    self.red_tl = False
-                    self.tl_count = 0
-                else:
-                    self.red_tl = True
-            else:
-                self.red_tl_prev = False
-                self.tl_count += 1
+            self.red_tl = False
         else:
             self.red_tl = True
-            self.red_tl_prev = True
+        
+        if self.red_tl_prev == self.red_tl == False:
+            self.tl_count += 1
+            if self.tl_count < 5:
+                self.red_tl = True
+            else:
+                self.red_tl = False
+
+        else:
+            self.red_tl_prev = self.red_tl
+            self.red_tl = True
             self.tl_count = 0
+
+
 
         rospy.logwarn('[traffic_cb] traffict ligth: %s', self.red_tl)
         next_tl = msg.data
