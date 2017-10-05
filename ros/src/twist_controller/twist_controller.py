@@ -36,6 +36,7 @@ class Controller(object):
         # Controller for Managing the Yaw
         self.yaw_controller = YawController(self.wheel_base, self.steer_ratio, self.min_speed, self.max_lat_accel, self.max_steer_angle )
         self.previous_time = None
+        self.loop_freq = params['loop_freq']
         pass
     
     
@@ -49,7 +50,8 @@ class Controller(object):
         if self.previous_time: 
             dt = current_time - self.previous_time 
         else :
-            dt = 0.05
+            # Default to using controller loop frequency
+            dt = 1./self.loop_freq
         self.previous_time = current_time
         # Apply a PID controller
         velocity_correction = self.linear_pid.step(linear_velocity_error, dt)
@@ -63,12 +65,17 @@ class Controller(object):
         throttle = velocity_correction
         brake = 0.
         if throttle < 0.:
+            if throttle < self.decel_limit:
+                throttle = self.decel_limit
             decel = abs(throttle)
             if decel > self.brake_deadband:
                 brake = self.brake_constant * decel 
             else:
                 brake = 0.
             throttle = 0.
+        elif throttle > self.accel_limit:
+            throttle = self.accel_limit
+            
          # Apply Correction for Yaw Steering
         steering = self.yaw_controller.get_steering(proposed_linear_velocity, proposed_angular_velocity, current_linear_velocity)
 

@@ -53,6 +53,7 @@ class DBWNode(object):
                                             ThrottleCmd, queue_size=1)
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
+        self.loop_freq = 10 # hertz
 
         params = {
             'vehicle_mass'      : vehicle_mass,
@@ -64,7 +65,8 @@ class DBWNode(object):
             'wheel_base'        : wheel_base,
             'steer_ratio'       : steer_ratio,
             'max_lat_accel'     : max_lat_accel,
-            'max_steer_angle'   : max_steer_angle
+            'max_steer_angle'   : max_steer_angle,
+            'loop_freq'         : self.loop_freq,
         }
         # Set the Parameter for the Contoller
         self.controller = Controller(**params)
@@ -80,7 +82,7 @@ class DBWNode(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(10) # Set to low value to avoid throttle
+        rate = rospy.Rate(self.loop_freq) # Set to low value to avoid throttle
         while not rospy.is_shutdown():
             # You should only publish the control commands if all the values have been set by the callback methods
             if (self.current_velocity is not None) \
