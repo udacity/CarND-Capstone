@@ -238,7 +238,7 @@ class TLDetector(object):
         center_x = int((camera_rel_x * fx / camera_rel_z) + x_offset)
         center_y = int((camera_rel_y * fy / camera_rel_z) + y_offset)
 
-        corner_offset = 1.5
+        corner_offset = 3.0 #1.5
 
         #  top left
         top_x = int(((camera_rel_x - corner_offset) * fx / camera_rel_z) + x_offset)
@@ -268,8 +268,13 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         x0, y0, x1, y1 = self.project_to_image_plane(light.pose.pose.position)
-        
+        x0 = max(x0,0)
+        y0 = max(y0,0)
+
+
         h, w, _ = cv_image.shape
+        x1 = min(x1,w)
+        y1 = min(y1,h)
         
         if (x0 == x1 or y0 == y1 or x0 < 0 or x1 < 0 or y0 < 0 or y1 < 0 or
             x0 > w or x1 > w or y0 > h or y1 > h):
