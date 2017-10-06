@@ -8,6 +8,7 @@ import tf
 import math
 import PyKDL
 from copy import deepcopy
+# from scipy.interpolate import interp1d
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -26,7 +27,9 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 # Number of waypoints to publish. Setting this number too low will cause the car
 # (e.g. 1 or 2) to pass future waypoints without knowing what to do next.
-LOOKAHEAD_WPS = 100
+LOOKAHEAD_WPS = 2
+
+FINAL_WPS = 20
 
 
 class WaypointUpdater(object):
@@ -38,13 +41,15 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
 
         self.waypoints = None
         self.waypoints_header = None
+
+        # To avoid publishing same points multiple times.
+        self.published_wp = None
 
         rospy.spin()
 
@@ -72,35 +77,53 @@ class WaypointUpdater(object):
         orient = quat.GetRPY()
         yaw = orient[2]
 
+
         if self.waypoints is not None:
             # For circular id i.e. to keep from breaking when
             # `(cur_wp_id + LOOKAHEAD_WPS) > len(self.waypoints)`
             n = len(self.waypoints)
 
+            # rospy.loginfo("curyaw: {}".format(yaw))
+
             cur_wp_id = self.closest_waypoint(pos, yaw)
 
             lane = Lane()
-            for idx, wp in enumerate(self.waypoints[
+            for i, wp in enumerate(self.waypoints[
                 cur_wp_id%n:(cur_wp_id+LOOKAHEAD_WPS)%n]):
-                self.set_waypoint_velocity(wp, 10)
 
+                idx = cur_wp_id + i
+                self.set_waypoint_velocity(wp, 5)
 
                 # Calculates yaw rate
                 next_wp = self.waypoints[(idx+1)%n]
-                next_yaw = math.atan2(next_wp.pose.pose.position.y-wp.pose.pose.position.y,
-                                 next_wp.pose.pose.position.x-wp.pose.pose.position.x) + (math.pi)
+                next_x = next_wp.pose.pose.position.x
+                next_y = next_wp.pose.pose.position.y
+                next_yaw = math.atan2(next_y-pos.y,
+                                      next_x-pos.x)
+
+                # quat = PyKDL.Rotation.Quaternion(pose.orientation.x,
+                #                                  pose.orientation.y,
+                #                                  pose.orientation.z,
+                #                                  pose.orientation.w)
+                # next_orient = quat.GetRPY()
+                # next_yaw = next_orient[2]
 
                 yaw_dist = next_yaw - yaw
-                rospy.loginfo("curyaw: {}, nextyaw: {}, diff: {}".format(yaw, next_yaw, yaw_dist))
+
+                rospy.loginfo("curxy: ({}, {}), nextxy: ({}, {}), dist: {}".format(
+                    pos.x, pos.y, next_x, next_y,
+                    self.pos_distance(next_wp.pose.pose.position, pos)
+                    ))
+                rospy.loginfo("curyaw: {}, nextyaw: {}, diff: {} wp: {}".format(
+                    math.degrees(yaw), math.degrees(next_yaw), math.degrees(yaw_dist), cur_wp_id))
 
                 wp = self.set_waypoint_yawrate(wp, yaw_dist)
-                rospy.loginfo("wp angular afterset: {}".format(wp.twist.twist.angular))
+                # rospy.loginfo("wp angular afterset: {}".format(wp.twist.twist.angular))
 
                 lane.waypoints.append(deepcopy(wp))
 
-            rospy.loginfo("(p) next_wp angular: {}".format(lane.waypoints[0].twist.twist.angular))
+            # rospy.loginfo("(p) next_wp angular: {}".format(lane.waypoints[0].twist.twist.angular))
             self.final_waypoints_pub.publish(lane)
-
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
@@ -122,7 +145,7 @@ class WaypointUpdater(object):
 
     def set_waypoint_yawrate(self, waypoint, yawrate):
         rospy.loginfo("set angular z to: {}".format(yawrate))
-        waypoint.twist.twist.angular.z = -yawrate
+        waypoint.twist.twist.angular.z = yawrate * 0.1
         rospy.loginfo("new angular: {}".format(waypoint.twist.twist.angular))
         rospy.loginfo("new angular.z: {}".format(waypoint.twist.twist.angular.z))
         return waypoint
@@ -156,27 +179,33 @@ class WaypointUpdater(object):
         for idx, wp in enumerate(self.waypoints):
             pos_dist = self.pos_distance(wp.pose.pose.position,
                                     position)
-            quat = PyKDL.Rotation.Quaternion(wp.pose.pose.orientation.x,
-                                             wp.pose.pose.orientation.y,
-                                             wp.pose.pose.orientation.z,
-                                             wp.pose.pose.orientation.w)
-            orient = quat.GetRPY()
+            # quat = PyKDL.Rotation.Quaternion(wp.pose.pose.orientation.x,
+            #                                  wp.pose.pose.orientation.y,
+            #                                  wp.pose.pose.orientation.z,
+            #                                  wp.pose.pose.orientation.w)
+            # orient = quat.GetRPY()
 
-            yaw_dist = abs(orient[2] - yaw)
-            comb_dist = (pos_dist + yaw_dist)
-            if (pos_dist <= pos_threshold and yaw_dist <= yaw_threshold):
+            # yaw_dist = abs(orient[2] - yaw)
+            # comb_dist = (pos_dist + yaw_dist)
+            # if (pos_dist <= pos_threshold and yaw_dist <= yaw_threshold):
+            #     return idx
+            # else:
+            #     if comb_dist < min_dist:
+            #         min_dist = comb_dist
+            #         min_id = idx
+
+            if (pos_dist <= pos_threshold):
                 return idx
             else:
-                if comb_dist < min_dist:
-                    min_dist = comb_dist
+                if pos_dist < min_dist:
+                    min_dist = pos_dist
                     min_id = idx
-
         return min_id
 
     def pos_distance(self, a, b):
         """ Distance between two positions
         """
-        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
     def trycall():
         return 1;
