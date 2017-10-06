@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import math
 import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
@@ -22,7 +23,9 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
 
+        #  can be used used to determine the vehicle's location.
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        # provides the complete list of waypoints for the course.
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
@@ -33,6 +36,8 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+
+        # provides an image stream from the car's camera. These images are used to determine the color of upcoming traffic lights.
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
         config_string = rospy.get_param("/traffic_light_config")
@@ -49,6 +54,7 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+        self.closest_waypoint = 0
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -100,8 +106,23 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        closest_waypoint = self.closest_waypoint
+        if self.waypoints is not None:
+            waypoints = self.waypoints.waypoints
+            min_dist = self.distance(pose.position, waypoints[0].pose.pose.position)
+            for wp, point in enumerate(waypoints):
+                dist = self.distance(pose.position, point.pose.pose.position)
+                if dist < min_dist:
+                    closest_waypoint = wp
+                    min_dist = dist
+            self.closest_waypoint = closest_waypoint
+            return closest_waypoint
+
+    def distance(self, p1, p2):
+        dx = p1.x - p2.x
+        dy = p1.y - p2.y
+        return math.sqrt(dx*dx + dy*dy)
+
 
 
     def project_to_image_plane(self, point_in_world):
@@ -120,6 +141,11 @@ class TLDetector(object):
         fy = self.config['camera_info']['focal_length_y']
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
+
+        # image Center
+        cx = image_width / 2.0
+        cy = image_height / 2.0
+
 
         # get transform between pose of camera and world frame
         trans = None
