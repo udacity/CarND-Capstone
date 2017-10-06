@@ -107,6 +107,8 @@ class TLDetector(object):
                 self.state_count = 0
                 self.state = state
             elif self.state_count >= STATE_COUNT_THRESHOLD:
+                if self.last_state != self.state:
+                    rospy.loginfo('Current light state: %d', state)
                 self.last_state = self.state
                 light_wp = light_wp if state == TrafficLight.RED else -1
                 self.last_wp = light_wp
@@ -153,7 +155,7 @@ class TLDetector(object):
 
         tl_state = self.light_classifier.get_classification(cv_image)
 
-        print("status of traffic light: %i" % tl_state)
+        rospy.logdebug("status of traffic light: %i" % tl_state)
         return tl_state
 
     def process_traffic_lights(self):
