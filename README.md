@@ -200,31 +200,29 @@ The Drive by Wire node is part of the control layer which interfaces directly wi
 
 The steering control was implemented independently of the throttle and braking control.
 
-
 The steering is limited by a maximum steering angle which is a constraint of the system. Given the desired linear and angular velocities together with the current linear velocity the get_steering function outputs the steering command to be applied directly to the system.
 
-
-	steer = self.yaw_control.get_steering(self.des_linear_velocity, self.des_angular_velocity, self.cur_linear_velocity)
-
-        
+```python
+steer = self.yaw_control.get_steering(self.des_linear_velocity, self.des_angular_velocity, self.cur_linear_velocity)
+```
 
 The throttle command is controlled by a PID controller. The PID parameters were manually tuned (Kp=0.8, Ki=0.25, Kd=0.1).
+```python
+# Set once at the beginning
+self.throttle_control = Controller(pid_kp=0.8, pid_ki=0.25, pid_kd=0.1,
+                                   min_value=self.decel_limit, max_value=self.accel_limit)
 
-	# set once at the beginning
-        self.throttle_control = Controller(pid_kp=0.8, pid_ki=0.25, pid_kd=0.1,
-                                           min_value=self.decel_limit, max_value=self.accel_limit)
-
-
-        # pid for acceleration
-        throttle, brake, steering = self.throttle_control.control(self.des_linear_velocity,
-                                                                      self.cur_linear_velocity, self.dbw_enabled)
-
+# pid for acceleration
+throttle, brake, steering = self.throttle_control.control(self.des_linear_velocity,
+                                                          self.cur_linear_velocity,
+                                                          self.dbw_enabled)
+```
 A low pass filter was implemented to smooth throttle commands according to the following the equation:
 
 ![Low Pass filter equation](imgs/filter_eq.png)
 
 
-This filter as any filter of this nature produces a smoother transition but also some delay in response time as shown in the picture below. 
+This filter as any filter of this nature produces a smoother transition but also some delay in response time as shown in the picture below.
 
 ![Low Pass filter equation](imgs/filter.png)
 
@@ -233,33 +231,34 @@ Since breaking corresponds to a deceleration which in turn is just a negative th
 
 Brake commands are published as torque values and calculated as:
 brake = vehicle_mass * deceleration * wheel_radius
-
-        if throttle < -self.brake_deadband:
-            brake = self.vehicle_mass * abs(throttle) * self.wheel_radius
-                
+```python
+if throttle < -self.brake_deadband:
+    brake = self.vehicle_mass * abs(throttle) * self.wheel_radius
+```
 
 The auto/manual mode is toggled by the operator and the DBW node receives its status through a variable dbw_enabled. In order to prevent obsolete proportional, differential and specially PID integral errors to influence the behaviour the PID error values are reset every time the manual mode gets active. This way once auto mode is enabled again the PID controller starts fresh and responsive.
 
 The reset function is called inside control function in twist_controller file.
-
-	if dbw_enabled:
-		...
-	else:
-	    self.reset()
-
+```python
+if dbw_enabled:
+    ...
+else:
+    self.reset()
+```
 
 Safety critical failures were handled with a watchdog mechanism in the same way as before by stopping the car safely if the expected messages are not received within a reasonable time frame. In this case failure to receive updated current velocity, current pose or the final waypoints before the watchdog periodic check leads to the decision of making the car stop as soon as possible. This is achieved indirectly by setting the desired linear speed to zero in order to let the controller bring the car to a smooth stop. 
 
-    if (self.current_timestamp - self.vel_timestamp).nsecs > self.watchdog_limit:
-        # stop the car
-        rospy.logwarn("Safety hazard: not receiving VEL info for long time. Stopping the vehicle!")
-        self.des_linear_velocity = 0
-        
-    if  (self.current_timestamp - self.twist_cmd_timestamp).nsecs > self.watchdog_limit:
-        # stop the car
-        rospy.logwarn("Safety hazard: not receiving TWIST_CMD info for long time. Stopping the vehicle!")
-        self.des_linear_velocity = 0
+```python
+if (self.current_timestamp - self.vel_timestamp).nsecs > self.watchdog_limit:
+    # Stop the car
+    rospy.logwarn("Safety hazard: not receiving VEL info for long time. Stopping the vehicle!")
+    self.des_linear_velocity = 0
 
+if  (self.current_timestamp - self.twist_cmd_timestamp).nsecs > self.watchdog_limit:
+    # Stop the car
+    rospy.logwarn("Safety hazard: not receiving TWIST_CMD info for long time. Stopping the vehicle!")
+    self.des_linear_velocity = 0
+```
 
 
 ## Conclusions
@@ -277,7 +276,7 @@ Here is a list of potential improvements and other things to try:
 ## Instructions
 
 ### Run
-```
+```bash
 catkin_make & source devel/setup.bash & roslaunch launch/styx.launch
 ```
 Then launch the simulator
