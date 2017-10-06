@@ -15,7 +15,7 @@ import math
 
 import numpy as np
 
-STATE_COUNT_THRESHOLD = 0 #3 #NOTE: change back to 3 after training/testing
+STATE_COUNT_THRESHOLD = 3
 DEBUG = True
 
 
@@ -103,7 +103,7 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-        print "state: ", state, " red: ", TrafficLight.RED
+        #print "state: ", state, " red: ", TrafficLight.RED
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -153,23 +153,32 @@ class TLDetector(object):
             y (int): y coordinate of target point in image
 
         """
-
+        #used equations and parameters from https://discussions.udacity.com/t/focal-length-wrong/358568/23
         fx = self.config['camera_info']['focal_length_x']
         fy = self.config['camera_info']['focal_length_y']
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
-        '''
+
+        
+        x_offset = 0
+        y_offset = 0
+        if self.unity_sim:
+            x_offset = (image_width / 2) - 30
+            y_offset = image_height + 50
+        ##########################################################################################
+       
         # get transform between pose of camera and world frame
         trans = None
         try:
             now = rospy.Time.now()
             self.listener.waitForTransform("/base_link",
-                                           "/world", now, rospy.Duration(1.0))
+                                           "/world", self.pose.header.stamp, rospy.Duration(1.0))
             (trans, rot) = self.listener.lookupTransform("/base_link",
-                                                         "/world", now)
+                                                         "/world", self.pose.header.stamp)
 
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
+            return (0, 0, 0, 0)
 
         # TODO Use tranform and rotation to calculate 2D position of light in image
         # DONE by Facheng Li
@@ -182,73 +191,33 @@ class TLDetector(object):
 
         point_3d = np.mat([[point_in_world.x], [point_in_world.y],
                               [point_in_world.z], [1.0]])
+        point_3d_vehicle = (RT * point_3d)[:-1, :]
+        
+        '''
         point_2d = camMat * (RT * point_3d)[:-1, :]
 
         x = int(point_2d[0, 0] / point_2d[2, 0])
         y = int(point_2d[1, 0] / point_2d[2, 0])
         '''
-        #used equations and parameters from https://discussions.udacity.com/t/focal-length-wrong/358568/23
-        x_offset = 0
-        y_offset = 0
-        if self.unity_sim:
-            x_offset = (image_width / 2) - 30
-            y_offset = image_height + 50
-        ##########################################################################################
-
-        # get transform between pose of camera and world frame
-        try:
-            now = rospy.Time.now()
-            self.listener.waitForTransform("/base_link",
-                                           "/world", now, rospy.Duration(1.0))
-            (trans, rot) = self.listener.lookupTransform("/base_link",
-                                                           "/world", now)
-
-        except (tf.Exception, tf.LookupException, tf.ConnectivityException):
-            rospy.logerr("Failed to find camera to map transform")
-            return (0, 0, 0, 0)
-
-        # car yaw angle
-        yaw = tf.transformations.euler_from_quaternion(rot)[2]
-
-        # Rotate the coordinate space on the z axis to align relative to car
-        world_x = point_in_world.x
-        world_y = point_in_world.y
-        world_z = point_in_world.z
-
-        sin_yaw = math.sin(yaw)
-        cos_yaw = math.cos(yaw)
-
-        yaw_oriented_point = (world_x * cos_yaw - world_y * sin_yaw,
-                              world_x * sin_yaw + world_y * cos_yaw,
-                              world_z)
-
-        # Apply transformation to center on car position
-        car_rel_x = yaw_oriented_point[0] + trans[0]
-        car_rel_y = yaw_oriented_point[1] + trans[1]
-        car_rel_z = yaw_oriented_point[2] + trans[2]
-
-        # rotate to camera view space with offset
+        
         camera_height_offset = 1.1
-        camera_rel_x = -car_rel_y
-        camera_rel_z = car_rel_x
-        camera_rel_y = -(car_rel_z - camera_height_offset)
+        camera_x = -point_3d_vehicle[1]
+        camera_y = -(point_3d_vehicle[2] - camera_height_offset)
+        camera_z = point_3d_vehicle[0]
 
         # apply focal length and offsets
-        #  center
-        center_x = int((camera_rel_x * fx / camera_rel_z) + x_offset)
-        center_y = int((camera_rel_y * fy / camera_rel_z) + y_offset)
 
-        corner_offset = 3.0 #1.5
+        corner_offset = 1.5
 
         #  top left
-        top_x = int(((camera_rel_x - corner_offset) * fx / camera_rel_z) + x_offset)
-        top_y = int(((camera_rel_y - corner_offset) * fy / camera_rel_z) + y_offset)
+        left_x = int((camera_x - corner_offset) * fx / camera_z) + x_offset
+        top_y  = int((camera_y - corner_offset) * fy / camera_z) + y_offset
 
         #  bottom right
-        bottom_x = int(((camera_rel_x + corner_offset) * fx / camera_rel_z) + x_offset)
-        bottom_y = int(((camera_rel_y + corner_offset) * fy / camera_rel_z) + y_offset)
+        right_x  = int((camera_x + corner_offset) * fx / camera_z) + x_offset
+        bottom_y = int((camera_y + corner_offset) * fy / camera_z) + y_offset
 
-        return (top_x, top_y, bottom_x, bottom_y)
+        return (left_x, top_y, right_x, bottom_y)
 
 
     def get_light_state(self, light):
@@ -268,30 +237,16 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         x0, y0, x1, y1 = self.project_to_image_plane(light.pose.pose.position)
-        x0 = max(x0,0)
-        y0 = max(y0,0)
 
 
         h, w, _ = cv_image.shape
-        x1 = min(x1,w)
-        y1 = min(y1,h)
         
         if (x0 == x1 or y0 == y1 or x0 < 0 or x1 < 0 or y0 < 0 or y1 < 0 or
             x0 > w or x1 > w or y0 > h or y1 > h):
             return TrafficLight.UNKNOWN
 
-        # TODO use light location to zoom in on traffic light in image
-
-        
-        
-        # TODO modify it to extract light image according to light distance
-        #x0, x1 = max(x-16, 0), min(x+16, w)
-        #y0, y1 = max(y-16, 0), min(y+16, h)
-        #x0, x1 = max(x-16, 0), min(x+16, w)
-        #y0, y1 = max(y-0, 0), min(y+96, h)
-
         im_light = cv_image[y0:y1, x0:x1, :]
-
+        '''
         #write image to file
         base_dir = '/home/marv/data/tl/'
         current_time_str = str(int(time.time()*1000))
@@ -306,7 +261,7 @@ class TLDetector(object):
 
         if DEBUG:
             cv2.imwrite(img_save_path,im_light)
-
+        '''
         # Get classification
         tl_class = self.light_classifier.get_classification(im_light)
        
@@ -331,7 +286,8 @@ class TLDetector(object):
         if (self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
             if DEBUG:
-                print "Car position is: ", car_position
+                pass
+                #print "Car position is: ", car_position
             # TODO find the closest visible traffic light (if one exists)
 
 
@@ -366,10 +322,10 @@ class TLDetector(object):
             
             #get state
             state = self.get_light_state(light)
-            #print("Inferred Traffic Light state is: ", state)
+            print("Inferred Traffic Light state is: ", state)
             #KR testing
-            state = light.state
-            #print("Correct TL State is: ", state)
+            #state = light.state
+            print("Correct TL State is: ", light.state)
             return light_wp, state
         #Why are we setting self.waypoints to None?
         #self.waypoints = None

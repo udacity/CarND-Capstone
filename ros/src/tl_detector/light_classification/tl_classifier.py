@@ -77,13 +77,13 @@ class TLClassifier(object):
         matched_light = top_k[0]
 
         if matched_light == 0:
-            return TrafficLight.UNKNOWN
-        if matched_light == 1:
             return TrafficLight.RED
+        if matched_light == 1:
+            return TrafficLight.YELLOW
         if matched_light == 2:
-            return TrafficLight.YELLOW 
+            return TrafficLight.GREEN 
         if matched_light == 3:
-            return TrafficLight.GREEN
+            return TrafficLight.UNKNOWN
         
 #if __name__ == "__main__":
  #   get_classification()
