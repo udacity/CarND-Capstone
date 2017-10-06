@@ -22,6 +22,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.next_wp_pub = rospy.Publisher('/next_wp', Int32, queue_size=1)
         # Store the Waypoint List when Base WayPoint is Called 
         self.waypoints = None
         self.current_pose = None
@@ -140,6 +141,8 @@ class WaypointUpdater(object):
         self.current_pose = msg
         if self.waypoints:
             next_waypoint_index = self.identify_next_waypoint_index()
+            self.next_wp_pub.publish(Int32(next_waypoint_index))
+
 
     def waypoints_cb(self, lane):
         if hasattr(self, 'waypoints') and self.waypoints != lane.waypoints:
