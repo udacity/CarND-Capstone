@@ -122,16 +122,37 @@ Waypoint Updater | 2 Hz
 Waypoint Follower | 5 Hz
 DBW Node | 15 Hz
 
-With these settings it is possible to run the car along the track in a smooth and continuous mode with limited hardware resources. This works quite well for low speeds but as expected the low update frequencies somehow limit the maximum reference speed the car can be driven.  
+With these settings it is possible to run the car along the track in a smooth and continuous mode with limited hardware resources. This works quite well for low speeds but as expected the low update frequencies somehow limit the maximum reference speed the car can be driven.
 
 ### Car/Simulator
-Our initial strategy was to have a system that could use the simulator or the real car seamlessly. With that respect the controllers have the same settings and only the configuration values (constraints) change slightly according to whereas we are using the simulator or the car.  
+Our initial strategy was to have a system that could use the simulator or the real car seamlessly. With that respect the controllers have the same settings and only the configuration values (constraints) change slightly according to whereas we are using the simulator or the car.
 
 ### Obstacle detection
 Implemented for the real vehicle only by Carla team at Udacity.
 
 ### Traffic light detector
-A CNN classifier was trained with a mixture of images from the simulator as well as real images...
+
+The light detector module first checks if the linear distance between the next stop line, whose coordinates are known, and the car is less than seventy meters. Although traffic lights are visible and can be classified from farther , the chosen distance threshold is big enough for the car to stop in time.
+
+Traffic lights are classified in two classes: `red` and `not red`, where the latter includes green, yellow and unknown state. Pictures where there is no traffic light are classified as `not red`.
+
+Two main approaches were followed in order to detect red traffic lights: localization and classification and whole picture classification.
+
+##### Localization and classification
+
+A detector capable of locating traffic lights within an image is implemented. The detector outputs a bounding box enclosing the traffic light. Then, the region of the picture where the traffic light is located can be extracted and fed to a classifier.
+
+Two approaches were studied for the localization part:
+
+* Tensorflow's object detection API. It works very well even with the out-of-the-box models, which detect traffic lights among other objects, but processing times are too slow for real time detection. A custom trained model can solve performance problems, but there is the risk that the Tensorflow version installed in Carla is not compatible with the object detection API.
+
+* Use of the traffic light's 3D coordinates, camera parameters and current car pose to calculate the 2D coordinates of the traffic light within a picture. This was the main approach suggested by Udacity, according to the initial code templates, but it [proved to be more complicated than expected](https://discussions.udacity.com/t/focal-length-wrong/358568). Through some manual tweaking, we managed to develop a good enough implementation for the simulator, but the real camera requires additional effort.
+
+Once a detector is implemented, cropped pictures of traffic lights from both the simulator and the test site can be used to train a classifier. If the accuracy of the bounding boxes is good, the classifier can be pretty simple and fast. In fact, very simple models such a support vector machine or a small convolutional network were implemented, both showing accurate results.
+
+Unfortunately, due to the problems described above, we switched to a whole picture approach, which needs a considerably more complex classifier, but eliminates the need of an object detector.
+
+##### Whole picture classification
 
 ### Waypoint loader
 The update frequency was removed and this node only publishes one message at the start to reduce the overhead to a minimum. The list of base waypoints forms an enclosed path along a track.
