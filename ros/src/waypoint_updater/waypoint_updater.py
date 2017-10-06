@@ -27,6 +27,9 @@ CONVERSION_FACTOR = 0.447039 # Factor for converting MPH (miles per hour) in MPS
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. Number to adapt
 MAX_SPEED = 10 * CONVERSION_FACTOR #Speed limit (in MPS)
 
+MAX_DECEL = 0.5
+STOP_DIST = 5.0
+
 class WaypointUpdater(object):
     def __init__(self):
         # initialize the node waypoint_updater
