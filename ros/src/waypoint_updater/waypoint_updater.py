@@ -51,14 +51,16 @@ def pose_to_point(pose):
     point = pose.pose.position
     return point
 
+# takes geometry_msgs/Point 
+# returns tuple of floats 
 def waypoints_to_vec(a, b):
     return (b.x-a.x, b.y-a.y)
 
 def dot_prod(a, b):
     return a[0]*b[0]+a[1]*b[1]
 
-# takes 3 styx_msgs/Waypoints
-# returns ratio of distance that b,
+# takes 3 geometry_msgs/Point 
+# returns float ratio of distance that b,
 # projected onto line ac, is between
 # a and c (ratio is 0. if b is at a, and
 # 1. if b is at c
