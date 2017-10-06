@@ -15,7 +15,7 @@ import yaml
 import math
 
 MAX_DECEL = 0.05
-MAX_ACCEL = 2.0
+MAX_ACCEL = 1.0
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -586,7 +586,7 @@ class WaypointUpdater(object):
             # items: x, y, waypoint id
             pos.append(nearest)
 
-        #rospy.loginfo(self.stop_lines)
+        rospy.loginfo(self.stop_lines)
 
         ''' 
         Code below is to see how yaw can be computed from

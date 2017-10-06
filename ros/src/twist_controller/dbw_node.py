@@ -85,7 +85,8 @@ class DBWNode(object):
         self.twist_yaw_filter = LowPassFilter(.2, .96)
         self.twist_velocity_filter = LowPassFilter(.96, .9)
         self.steer_filter = LowPassFilter(.2, .90)
-        self.p_v = [1.187355162, 0.044831144, 0.00295747]
+        # self.p_v = [1.187355162, 0.044831144, 0.00295747] # v1.3
+        self.p_v = [1.325735147117472, 0.06556341512981727, 0.013549012506233077]
         self.pidv = pid.PID(self.p_v[0], self.p_v[1], self.p_v[2])
         self.throttle = 0.
         min_speed = .01
@@ -128,14 +129,13 @@ class DBWNode(object):
         seq = msg.header.seq
         (x, y, yaw) = twist_to_xyy(msg)
         # rospy.loginfo("twist_cmd_cb %d", seq)
+        # print("twist linear: [%f, %f, %f]" % (x, y, yaw))
         self.twist_yaw_filter.filt(yaw)
         # if self.red_tl == True:
         #     vtwist = self.twist_velocity_filter.filt(0.1)
         # else:
         vtwist = self.twist_velocity_filter.filt(x)
         # calculate error between desired velocity and current velocity
-        
-
         e = vtwist - self.velocity_filter.get()
         # feed pid controller with a dt of 0.033
         self.throttle = self.pidv.step(e, 0.033)
