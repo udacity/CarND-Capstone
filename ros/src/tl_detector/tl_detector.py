@@ -55,7 +55,7 @@ def point_to_pose(x, y):
     pose.position = pt
     return pose
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 5
 
 class TLDetector(object):
     def __init__(self):
@@ -477,7 +477,7 @@ class TLDetector(object):
 
         # Find the closest visible traffic light (if one exists)
         positions = self.config['stop_line_positions']
-        if len(positions) == 0 or len(positions[0]) < 3:
+        if len(positions) == 0 or len(positions[0]) < 3 or len(self.lights) == 0:
             return light_wp, state
         for i in range(len(positions)):
             (x, y, wp) = positions[i]
