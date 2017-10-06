@@ -8,6 +8,8 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
+from math import inf
+import numpy as np
 import cv2
 import yaml
 
@@ -100,8 +102,18 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        best_dist = inf
+        best_index = 0
+
+        for idx, waypoint in enumerate(self.waypoints):
+            dx = pose.pose.position.x - waypoint.x
+            dy = pose.pose.position.y - waypoint.y
+            dist = dx * dx + dy * dy
+
+            if dist < best_dist:
+                best_dist, best_index = dist, idx
+
+        return best_index
 
 
     def project_to_image_plane(self, point_in_world):
@@ -123,6 +135,8 @@ class TLDetector(object):
 
         # get transform between pose of camera and world frame
         trans = None
+        rot = None
+
         try:
             now = rospy.Time.now()
             self.listener.waitForTransform("/base_link",
@@ -133,10 +147,16 @@ class TLDetector(object):
         except (tf.Exception, tf.LookupException, tf.ConnectivityException):
             rospy.logerr("Failed to find camera to map transform")
 
-        #TODO Use tranform and rotation to calculate 2D position of light in image
+        # Use tranform and rotation to calculate 2D position of light in image
 
-        x = 0
-        y = 0
+        # Assuming we can use the translation and rotation matrices without modifying them.
+        A = np.matrix([[fx, 0,  image_width / 2.0],
+                       [0,  fy, image_height / 2.0],
+                       [0,  0,  1]])
+        points = cv2.projectPoints([[point_in_world.x, point_in_world.y, point_in_world.z]],
+                          rot, trans, A, np.float64([]))
+        x = points[0][0]
+        y = points[0][1]
 
         return (x, y)
 
@@ -158,7 +178,10 @@ class TLDetector(object):
 
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
-        #TODO use light location to zoom in on traffic light in image
+        # TODO: Figure out an appropriate crop size.
+        crop_width_x = 100
+        crop_width_y = 100
+        cropped = cv_image[y:y+crop_width_x, x:x+crop_width_x]
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
