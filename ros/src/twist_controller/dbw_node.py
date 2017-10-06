@@ -91,8 +91,8 @@ class DBWNode(object):
             rospy.loginfo("next_wp angular.z: {}".format(next_wp.twist.angular.z))
             rospy.loginfo("twist_cmd angular.z: {}".format(self.twist_cmd.twist.angular.z))
             throttle, brake, steering = self.controller.control(self.twist_cmd.twist.linear,
-                # self.twist_cmd.twist.angular,
-                next_wp.twist.angular,
+                self.twist_cmd.twist.angular,
+                # next_wp.twist.angular,
                 self.current_velocity.twist.linear,
                 self.dbw_enabled)
 

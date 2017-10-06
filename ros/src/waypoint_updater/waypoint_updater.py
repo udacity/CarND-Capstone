@@ -92,33 +92,31 @@ class WaypointUpdater(object):
                 cur_wp_id%n:(cur_wp_id+LOOKAHEAD_WPS)%n]):
 
                 idx = cur_wp_id + i
-                self.set_waypoint_velocity(wp, 5)
+                self.set_waypoint_velocity(wp, 8)
 
                 # Calculates yaw rate
                 next_wp = self.waypoints[(idx+1)%n]
                 next_x = next_wp.pose.pose.position.x
                 next_y = next_wp.pose.pose.position.y
-                next_yaw = math.atan2(next_y-pos.y,
-                                      next_x-pos.x)
 
-                # quat = PyKDL.Rotation.Quaternion(pose.orientation.x,
-                #                                  pose.orientation.y,
-                #                                  pose.orientation.z,
-                #                                  pose.orientation.w)
-                # next_orient = quat.GetRPY()
-                # next_yaw = next_orient[2]
+                quat = PyKDL.Rotation.Quaternion(next_wp.pose.pose.orientation.x,
+                                                 next_wp.pose.pose.orientation.y,
+                                                 next_wp.pose.pose.orientation.z,
+                                                 next_wp.pose.pose.orientation.w)
+                next_orient = quat.GetRPY()
+                next_yaw = next_orient[2]
 
                 yaw_dist = next_yaw - yaw
 
-                rospy.loginfo("curxy: ({}, {}), nextxy: ({}, {}), dist: {}".format(
-                    pos.x, pos.y, next_x, next_y,
-                    self.pos_distance(next_wp.pose.pose.position, pos)
-                    ))
-                rospy.loginfo("curyaw: {}, nextyaw: {}, diff: {} wp: {}".format(
-                    math.degrees(yaw), math.degrees(next_yaw), math.degrees(yaw_dist), cur_wp_id))
+                # rospy.loginfo("curxy: ({}, {}), nextxy: ({}, {}), dist: {}".format(
+                #     pos.x, pos.y, next_x, next_y,
+                #     self.pos_distance(next_wp.pose.pose.position, pos)
+                #     ))
+                # rospy.loginfo("curyaw: {}, nextyaw: {}, diff: {} wp: {}".format(
+                #     math.degrees(yaw), math.degrees(next_yaw),
+                #     math.degrees(yaw_dist), cur_wp_id))
 
                 wp = self.set_waypoint_yawrate(wp, yaw_dist)
-                # rospy.loginfo("wp angular afterset: {}".format(wp.twist.twist.angular))
 
                 lane.waypoints.append(deepcopy(wp))
 
@@ -145,16 +143,15 @@ class WaypointUpdater(object):
 
     def set_waypoint_yawrate(self, waypoint, yawrate):
         rospy.loginfo("set angular z to: {}".format(yawrate))
-        waypoint.twist.twist.angular.z = yawrate * 0.1
+        waypoint.twist.twist.angular.z = yawrate
         rospy.loginfo("new angular: {}".format(waypoint.twist.twist.angular))
         rospy.loginfo("new angular.z: {}".format(waypoint.twist.twist.angular.z))
         return waypoint
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            dist += self.pos_distance(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
 
