@@ -27,6 +27,8 @@ class WaypointUpdater(object):
         self.waypoints = None
         self.current_pose = None
         self.next_waypoint_index = None
+        self.traffic_stop_waypoint = None
+        self.decel_limit = rospy.get_param('~decel_limit', -5)
         self.loop()
 
     def loop(self):
@@ -43,6 +45,27 @@ class WaypointUpdater(object):
                 else:
                     lane.waypoints = self.waypoints[self.next_waypoint_index:]
                     lane.waypoints.extend(self.waypoints[0:(self.next_waypoint_index+LOOKAHEAD_WPS) % len(self.waypoints)])
+
+                if self.traffic_stop_waypoint != None:
+                    # Calculate deceleration needed to stop at traffic stop waypoint
+                    vx = self.get_waypoint_velocity(lane.waypoints[0])
+                    vx2 = vx * vx
+                    stopping_distance = self.distance(self.waypoints, self.next_waypoint_index, self.traffic_stop_waypoint)
+                    if stopping_distance > 0:
+                        ax = - vx2 / (2. * stopping_distance)
+                    
+                        prev_pos = lane.waypoints[0].pose.pose.position
+                        for wp in lane.waypoints[1:]:
+                            next_pos = wp.pose.pose.position
+                            dist = self.distance_between_two_points(prev_pos, next_pos)
+                            prev_pos = next_pos
+                            vwp2 = vx2 + 2 *ax * dist
+                            if vwp2 > 0:
+                                vwp = math.sqrt(vwp2)
+                            else:
+                                vwp = 0
+                            wp.twist.twist.linear.x = vwp
+                    
                 self.final_waypoints_pub.publish(lane)
             rate.sleep()
 
@@ -51,7 +74,6 @@ class WaypointUpdater(object):
         a = position1
         b = position2
         return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2)
-
 
 
     # Find waypoint coordinates in Car Coordinate Systems
@@ -80,29 +102,11 @@ class WaypointUpdater(object):
         # Find Map Coordinates for this WayPoint
         closest_waypoint_in_car_coordinate_system = self.waypoint_in_car_coordinate_system(closest_waypoint_index)
         # If Behind increase the waypoint index 
-        if ( closest_waypoint_in_car_coordinate_system < 0.):
+        if ( closest_waypoint_in_car_coordinate_system < 0. ) :
+            closest_waypoint_index += 1
+        if ( closest_waypoint_in_car_coordinate_system == self.next_waypoint_index) :
             closest_waypoint_index += 1
         self.next_waypoint_index = closest_waypoint_index % len(self.waypoints)
-        return closest_waypoint_index
-
-    def find_search_range(self):
-        search_range_begin_index = 0
-        search_range_end_index = len(self.waypoints)
-        if (self.next_waypoint_index):
-            search_range_begin_index = max (self.next_waypoint_index - waypoints_search_range, 0)
-            search_range_end_index = min (self.next_waypoint_index + waypoints_search_range, search_range_end_index)
-        return search_range_begin_index, search_range_end_index
-    
-    def find_shortest_distance_waypoint_bet_range(self, search_range_begin_index, search_range_end_index):
-        minimum_distance_value = 90000
-        closest_waypoint_index = 0
-        car_current_position = self.current_pose.pose.position
-        for idx in range(search_range_begin_index, search_range_end_index):
-            car_future_position = self.waypoints[idx].pose.pose.position
-            dist = self.distance_between_two_points(car_current_position, car_future_position)
-            if dist < minimum_distance_value:
-                minimum_distance_value = dist
-                closest_waypoint_index = idx
         return closest_waypoint_index
 
     def find_close_waypoint_in_range(self):
@@ -131,10 +135,6 @@ class WaypointUpdater(object):
                 closest_waypoint_index = idx
         return closest_waypoint_index    
 
-    # Helper method 
-    def find_close_waypoint_in_range_org(self):       
-        search_range_begin_index, search_range_end_index = self.find_search_range()
-        return self.find_shortest_distance_waypoint_bet_range(search_range_begin_index, search_range_end_index)
 
     # This is where the real magic happens of moving the car. Find the closes waypoint and publish it
     def pose_cb(self, msg):
@@ -151,7 +151,23 @@ class WaypointUpdater(object):
 
 
     def traffic_cb(self, traffic_waypoint):
-        pass
+        if traffic_waypoint.data >= 0:
+            self.traffic_stop_waypoint = traffic_waypoint.data
+
+
+    def get_waypoint_velocity(self, waypoint):
+        return waypoint.twist.twist.linear.x
+
+    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+        waypoints[waypoint].twist.twist.linear.x = velocity
+
+    def distance(self, waypoints, wp1, wp2):
+        dist = 0
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        for i in range(wp1, wp2+1):
+            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            wp1 = i
+        return dist
 
 
 if __name__ == '__main__':
