@@ -5,3 +5,7 @@ devel
 test
 
 profile.tmp
+
+ros/src/CMakeLists.txt
+
+
