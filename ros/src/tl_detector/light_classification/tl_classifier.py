@@ -8,11 +8,17 @@ import numpy as np
 import os
 
 model_file = 'model/output_graph.pb'
+site_model_file = 'model/output_graph_site.pb'
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self, sim):
         #TODO load classifier
-        self.graph = self.load_graph(model_file)
+        if sim:
+            self.graph = self.load_graph(model_file)
+            self.sim = True
+        else:
+            self.graph = self.load_graph(site_model_file)
+            self.sim = False
       
     
     
@@ -76,14 +82,23 @@ class TLClassifier(object):
 
         matched_light = top_k[0]
 
-        if matched_light == 0:
-            return TrafficLight.RED
-        if matched_light == 1:
-            return TrafficLight.YELLOW
-        if matched_light == 2:
-            return TrafficLight.GREEN 
-        if matched_light == 3:
-            return TrafficLight.UNKNOWN
+        if self.sim:
+            if matched_light == 0:
+                return TrafficLight.RED
+            if matched_light == 1:
+                return TrafficLight.YELLOW
+            if matched_light == 2:
+                return TrafficLight.GREEN 
+            else:
+                return TrafficLight.UNKNOWN
+        else:
+            #real car/camera/scene
+            if matched_light == 0:
+                return TrafficLight.RED
+            if matched_light == 1:
+                return TrafficLight.GREEN
+            else:
+                return TrafficLight.UNKNOWN
         
 #if __name__ == "__main__":
  #   get_classification()

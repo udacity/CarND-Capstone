@@ -15,7 +15,7 @@ import math
 
 import numpy as np
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 5
 DEBUG = True
 
 
@@ -48,13 +48,15 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(self.unity_sim)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        if not self.unity_sim:
+            STATE_COUNT_THRESHOLD = 10
 
         self.poses = []
         self.lights_list = []
@@ -68,6 +70,8 @@ class TLDetector(object):
         self.waypoints = waypoints
 
     def traffic_cb(self, msg):
+        if not self.unity_sim:
+            msg.header.stamp = rospy.Time.now() #hack for missing timestamp in real vehicle!!!!! 
         self.lights_list.append(msg)
 
     def find_closest(self, time, input_list):
@@ -76,7 +80,7 @@ class TLDetector(object):
             if (item.header.stamp > time):
                 return item
         if input_list:
-            return input_list.pop()
+            return input_list[0]
         return None
 
     def image_cb(self, msg):
@@ -162,13 +166,21 @@ class TLDetector(object):
         
         x_offset = 0
         y_offset = 0
+        corner_offset = 0 
         if self.unity_sim:
             x_offset = (image_width / 2) - 30
             y_offset = image_height + 50
+            corner_offset = 1.5
+        else:
+            x_offset = 170
+            y_offset = 350
+            corner_offset = 1.5
         ##########################################################################################
        
         # get transform between pose of camera and world frame
         trans = None
+        if not self.pose:
+            return (0,0,0,0)
         try:
             now = rospy.Time.now()
             self.listener.waitForTransform("/base_link",
@@ -206,8 +218,6 @@ class TLDetector(object):
         camera_z = point_3d_vehicle[0]
 
         # apply focal length and offsets
-
-        corner_offset = 1.5
 
         #  top left
         left_x = int((camera_x - corner_offset) * fx / camera_z) + x_offset
@@ -322,10 +332,10 @@ class TLDetector(object):
             
             #get state
             state = self.get_light_state(light)
-            print("Inferred Traffic Light state is: ", state)
+            print "Inferred Traffic Light state is: ", state
             #KR testing
             #state = light.state
-            print("Correct TL State is: ", light.state)
+            #print("Correct TL State is: ", light.state)
             return light_wp, state
         #Why are we setting self.waypoints to None?
         #self.waypoints = None
