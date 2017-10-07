@@ -22,11 +22,12 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. Number to adapt
 DEBUG_MODE = False
 MAX_DECEL = 0.5
 STOP_DIST = 5.0
-TARGET_SPEED_MPH = 10
+CONVERSION_FACTOR = 0.447039 # Factor for converting MPH (miles per hour) in MPS (meters per second)
+MAX_SPEED = 20 * CONVERSION_FACTOR
 
 
 class WaypointUpdater(object):
@@ -152,7 +153,7 @@ class WaypointUpdater(object):
                 # set the velocity for lookahead waypoints
                 for i in range(len(lookahead_waypoints) - 1):
                     # convert 10 miles per hour to meters per sec
-                    self.set_waypoint_velocity(lookahead_waypoints, i, (TARGET_SPEED_MPH * 1609.34) / (60 * 60))
+                    self.set_waypoint_velocity(lookahead_waypoints, i, MAX_SPEED)
 
             else:
                 redlight_lookahead_index = max(0, self.red_light_waypoint - next_waypoint_index)
