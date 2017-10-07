@@ -118,7 +118,7 @@ class WaypointUpdater(object):
 
                 wp = self.set_waypoint_yawrate(wp, yaw_dist)
 
-                lane.waypoints.append(deepcopy(wp))
+                lane.waypoints.append(wp)
 
             # rospy.loginfo("(p) next_wp angular: {}".format(lane.waypoints[0].twist.twist.angular))
             self.final_waypoints_pub.publish(lane)
