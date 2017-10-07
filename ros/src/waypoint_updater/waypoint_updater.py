@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 import rospy
-import math
-import tf
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
 
+import math
+import tf
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
 
@@ -22,13 +22,12 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
+CONVERSION_FACTOR = 0.447039 # Factor for converting MPH (miles per hour) in MPS (meters per second)
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. Number to adapt
-DEBUG_MODE = False
+MAX_SPEED = 20 * CONVERSION_FACTOR #Speed limit (in MPS)
+
 MAX_DECEL = 0.5
 STOP_DIST = 5.0
-CONVERSION_FACTOR = 0.447039 # Factor for converting MPH (miles per hour) in MPS (meters per second)
-MAX_SPEED = 20 * CONVERSION_FACTOR
-
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -158,11 +157,6 @@ class WaypointUpdater(object):
             else:
                 redlight_lookahead_index = max(0, self.red_light_waypoint - next_waypoint_index)
                 lookahead_waypoints = self.decelerate(lookahead_waypoints, redlight_lookahead_index)
-
-            if DEBUG_MODE:
-                posx = self.waypoints[next_waypoint_index].pose.pose.position.x
-                posy = self.waypoints[next_waypoint_index].pose.pose.position.y
-                rospy.loginfo("Closest waypoint: [index=%d posx=%f posy=%f]", next_waypoint_index, posx, posy)
 
             lane = Lane()
             lane.header.frame_id = '/world'
