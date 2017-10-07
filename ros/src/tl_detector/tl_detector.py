@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 import rospy
+import tf
+import cv2
+import yaml
+import os
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
@@ -7,11 +11,12 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
-import tf
-import cv2
-import yaml
+from tl_helper import create_dir_if_nonexistent
+from os.path import expanduser, join, exists
+
 
 STATE_COUNT_THRESHOLD = 3
+
 
 class TLDetector(object):
     def __init__(self):
@@ -35,6 +40,8 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
+        rospy.Subscriber('/image_color', Image, self.collect_images_callback)
+
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
@@ -49,7 +56,34 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+        # Parameters for collecting frames from the camera
+        self.should_collect_data = True
+        self.dump_images_dir = create_dir_if_nonexistent(join(expanduser('~'), 'traffic_light_dataset', 'raw_images'))
+        self.dump_images_counter = len(os.listdir(self.dump_images_dir))
+        self.last_dump_tstamp = rospy.get_time()
+
         rospy.spin()
+
+    def collect_images_callback(self, msg):
+        """
+        Save camera images (currently once per second)
+        """
+        def should_collect_camera_image():
+            return self.should_collect_data and (rospy.get_time() - self.last_dump_tstamp > 1)
+
+        if should_collect_camera_image():
+
+            # Convert image message to actual numpy data
+            image_data = self.bridge.imgmsg_to_cv2(msg)
+            image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # opencv uses BGR convention
+            image_path = join(self.dump_images_dir, '{:06d}.jpg'.format(self.dump_images_counter))
+
+            # Dump image to dump directory
+            cv2.imwrite(image_path, image_data)
+
+            # Update counter and timestamp
+            self.dump_images_counter += 1
+            self.last_dump_tstamp = rospy.get_time()
 
     def pose_cb(self, msg):
         self.pose = msg
