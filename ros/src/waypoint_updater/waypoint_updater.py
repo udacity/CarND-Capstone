@@ -28,7 +28,13 @@ class WaypointUpdater(object):
         self.current_pose = None
         self.next_waypoint_index = None
         self.traffic_stop_waypoint = None
-        self.decel_limit = rospy.get_param('~decel_limit', -5)
+
+        self.decel_limit = rospy.get_param('/dbw_node/decel_limit', -5)
+        self.accel_limit = rospy.get_param('/dbw_node/accel_limit', 1)              
+
+        # Convert kph to meters per sec
+        self.velocity = rospy.get_param('/waypoint_loader/velocity', 10) * 0.27778
+        
         self.loop()
 
     def loop(self):
@@ -39,6 +45,7 @@ class WaypointUpdater(object):
                 lane = Lane()
                 lane.header.frame_id = self.current_pose.header.frame_id
                 lane.header.stamp = rospy.Time.now()
+                
                 # Publish Waypoints for the lookahead defined
                 if self.next_waypoint_index+LOOKAHEAD_WPS < len(self.waypoints):
                     lane.waypoints = self.waypoints[self.next_waypoint_index:self.next_waypoint_index+LOOKAHEAD_WPS]
@@ -46,25 +53,47 @@ class WaypointUpdater(object):
                     lane.waypoints = self.waypoints[self.next_waypoint_index:]
                     lane.waypoints.extend(self.waypoints[0:(self.next_waypoint_index+LOOKAHEAD_WPS) % len(self.waypoints)])
 
+                # Current target car velocity in m/s
+                vx = self.get_waypoint_velocity(lane.waypoints[0])
+                vx2 = vx * vx
+       
                 if self.traffic_stop_waypoint != None:
+                    # Stop light ahead
+        
                     # Calculate deceleration needed to stop at traffic stop waypoint
-                    vx = self.get_waypoint_velocity(lane.waypoints[0])
-                    vx2 = vx * vx
                     stopping_distance = self.distance(self.waypoints, self.next_waypoint_index, self.traffic_stop_waypoint)
                     if stopping_distance > 0:
                         ax = - vx2 / (2. * stopping_distance)
+##                        if ax < self.decel_limit:
+##                            ax = self.decel_limit
+                    else:
+                        ax = self.decel_limit                  
                     
-                        prev_pos = lane.waypoints[0].pose.pose.position
-                        for wp in lane.waypoints[1:]:
-                            next_pos = wp.pose.pose.position
-                            dist = self.distance_between_two_points(prev_pos, next_pos)
-                            prev_pos = next_pos
-                            vwp2 = vx2 + 2 *ax * dist
-                            if vwp2 > 0:
-                                vwp = math.sqrt(vwp2)
-                            else:
-                                vwp = 0
-                            wp.twist.twist.linear.x = vwp
+                else:
+                    # No stop light ahead
+                    if vx < self.velocity:
+                        ax = self.accel_limit
+                        if vx < .5:
+                            vx = 0.5
+                            self.set_waypoint_velocity(self.waypoints, 0, vx)
+                            vx2 = vx * vx
+                    else:
+                        ax = 0
+                    
+                prev_pos = lane.waypoints[0].pose.pose.position
+                for wp in lane.waypoints[1:]:
+                    next_pos = wp.pose.pose.position
+                    dist = self.distance_between_two_points(prev_pos, next_pos)
+                    prev_pos = next_pos
+                    if ax:
+                        vwp2 = vx2 + 2 * ax * dist
+                        if vwp2 > 0:
+                            vwp = math.sqrt(vwp2)
+                        else:
+                            vwp = 0
+                    else:
+                        vwp = vx
+                    wp.twist.twist.linear.x = vwp                
                     
                 self.final_waypoints_pub.publish(lane)
             rate.sleep()
@@ -104,7 +133,7 @@ class WaypointUpdater(object):
         # If Behind increase the waypoint index 
         if ( closest_waypoint_in_car_coordinate_system < 0. ) :
             closest_waypoint_index += 1
-        if ( closest_waypoint_in_car_coordinate_system == self.next_waypoint_index) :
+        if ( closest_waypoint_index == self.next_waypoint_index) :
             closest_waypoint_index += 1
         self.next_waypoint_index = closest_waypoint_index % len(self.waypoints)
         return closest_waypoint_index
@@ -151,8 +180,13 @@ class WaypointUpdater(object):
 
 
     def traffic_cb(self, traffic_waypoint):
-        if traffic_waypoint.data >= 0:
-            self.traffic_stop_waypoint = traffic_waypoint.data
+        if self.traffic_stop_waypoint is None:
+            if self.waypoints and traffic_waypoint.data >= 0 and traffic_waypoint.data < len(self.waypoints):
+                self.traffic_stop_waypoint = traffic_waypoint.data
+                rospy.loginfo('Setting traffic stop waypoint to %s', traffic_waypoint.data)
+        elif traffic_waypoint.data == 0:
+            self.traffic_stop_waypoint = None
+            rospy.loginfo('Setting traffic stop waypoint to None')
 
 
     def get_waypoint_velocity(self, waypoint):
