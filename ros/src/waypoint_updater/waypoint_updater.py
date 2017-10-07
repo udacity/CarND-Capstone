@@ -51,9 +51,9 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def pose_cb(self, msg):
+        #set pose to msg.pose
         self.current_pose = msg.pose
-        if self.waypoints is not None:
-            self.publish()
+        self.publish()
 
     def waypoints_cb(self, lane):
         # do this once and not all the time
