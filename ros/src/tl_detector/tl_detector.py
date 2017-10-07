@@ -138,23 +138,23 @@ class TLDetector(object):
         """
 
         #TODO implement
-        if (self.waypoints is not None and self.kdtree is None):
-            if (VERBOSE):
-                print ("initializing kdtree")
-            points=[]
-            i=0
-            for waypoint in self.waypoints:
+        if self.waypoints is not None and self.kdtree is None:
+            if VERBOSE:
+                print('initializing kdtree')
+            points = []
+
+            for i, waypoint in enumerate(self.waypoints):
                 points.append((float(waypoint.pose.pose.position.x),
                                float(waypoint.pose.pose.position.y),
-                               int(i)))
-                i += 1
+                               i))
+
             self.kdtree = KDTree(points)
 
-        if (self.kdtree is not None):
+        if self.kdtree is not None:
             current_position = (pose.position.x, pose.position.y)
             closest = self.kdtree.closest_point(current_position)
-            if (VERBOSE):
-                print ("closest point to {} is {}".format(current_position, closest))
+            if VERBOSE:
+                print('closest point to {} is {}'.format(current_position, closest))
             return closest[2]
 
         return 0
