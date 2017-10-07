@@ -48,9 +48,10 @@ class Controller(object):
         else:
             brake = 0.0
 
-        steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
-        rospy.loginfo('target_w.z: {}, steer: {}'.format(target_w.z, steer))
-
+        # steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
+        # rospy.loginfo('target_w.z: {}, steer: {}'.format(target_w.z, steer))
+        error_yaw = target_w.z
+        steer = self.steering_pid.step(error_yaw, dt)
 
         #steer = self.filter.filt(steer)
         self.last_t = time.time()

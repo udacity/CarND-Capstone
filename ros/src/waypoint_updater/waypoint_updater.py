@@ -92,7 +92,7 @@ class WaypointUpdater(object):
                 cur_wp_id%n:(cur_wp_id+LOOKAHEAD_WPS)%n]):
 
                 idx = cur_wp_id + i
-                self.set_waypoint_velocity(wp, 8)
+                self.set_waypoint_velocity(wp, 20)
 
                 # Calculates yaw rate
                 next_wp = self.waypoints[(idx+1)%n]
