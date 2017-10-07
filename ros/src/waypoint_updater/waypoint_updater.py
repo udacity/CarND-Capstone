@@ -89,6 +89,7 @@ class WaypointUpdater(object):
         x, y, z = p1.x - p2.x, p1.y - p2.y, p1.z - p2.z
         return math.sqrt(x * x + y * y + z * z)
 
+    # funtion to compute the closest waypoint to our current position
     def closest_waypoint(self, pose):
         # simply take the code from the path planning module and re-implement it here
         closest_len = 100000
@@ -101,6 +102,8 @@ class WaypointUpdater(object):
 
         return closest_waypoint
 
+    # funtion to compute the next waypoint to our current position
+    # the next waypoint is the closest point in front of our car
     def next_waypoint(self, pose):
         waypoints = self.waypoints
         # compute the closest waypoint to our position
@@ -120,17 +123,13 @@ class WaypointUpdater(object):
 
         return closest_waypoint
 
-    def decelerate(self, waypoints, redlight_index):
-
+    def slow_down(self, waypoints, redlight_index):
         if len(waypoints) < 1:
             return []
 
-        first = waypoints[0]
         last = waypoints[redlight_index]
 
         last.twist.twist.linear.x = 0.
-        total_dist = self.distance_euclid(first.pose.pose.position, last.pose.pose.position)
-        start_vel = first.twist.twist.linear.x
         # start from the waypoint before last and go backwards
         for index, wp in enumerate(waypoints):
 
@@ -161,7 +160,7 @@ class WaypointUpdater(object):
 
             else:
                 redlight_lookahead_index = max(0, self.waypoint_on_red_light - next_waypoint_index)
-                lookahead_waypoints = self.decelerate(lookahead_waypoints, redlight_lookahead_index)
+                lookahead_waypoints = self.slow_down(lookahead_waypoints, redlight_lookahead_index)
 
             lane = Lane()
             lane.header.frame_id = '/world'
