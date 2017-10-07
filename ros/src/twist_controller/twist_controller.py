@@ -15,11 +15,11 @@ class Controller(object):
         # TODO: Implement
         self.throttle_pid = PID(kwargs['throttle_gains'])
         self.steering_pid = PID(kwargs['steering_gains'])
-        self.yaw_control = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
-                                         kwargs['min_speed'], kwargs['max_lat_accel'],
-                                         kwargs['max_steer_angle'],
-                                         kwargs['steering_gains']
-                                         )
+        # self.yaw_control = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
+        #                                  kwargs['min_speed'], kwargs['max_lat_accel'],
+        #                                  kwargs['max_steer_angle'],
+        #                                  kwargs['steering_gains']
+        #                                  )
         self.last_t = None
         #self.filter = LowPassFilter(0.2,0.1)
 
