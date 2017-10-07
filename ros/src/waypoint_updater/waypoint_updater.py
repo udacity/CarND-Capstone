@@ -15,7 +15,7 @@ import yaml
 import math
 
 MAX_DECEL = 0.05
-MAX_ACCEL = 1.0
+MAX_ACCEL = 0.8
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -280,6 +280,7 @@ class WaypointUpdater(object):
         In this stop the car will reduce speed to stop at tl
         '''
         if self.distance_to_tl > 3 and self.red_tl == True: 
+            
             self.go_to_stop_state_pub.publish(True)
             olane = Lane()
             olane.header.frame_id = '/world'
