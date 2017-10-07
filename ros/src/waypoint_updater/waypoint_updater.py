@@ -44,15 +44,19 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
+        # If waypoints not yet received, do nothing
         if len(self.base_waypoints) == 0:
             print("didn't get base waypoints yet")
             return
+
+        # Find car position and direction
         car_x = msg.pose.position.x
         car_y = msg.pose.position.y
         quaternion = (msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w)
         car_yaw = tf.transformations.euler_from_quaternion(quaternion)[2]
         #print("Car is at %f, %f and facing %f" % (car_x, car_y, car_yaw))
+        
+        # Find nearest waypoint
         min_distance = float("inf")
         min_distance_waypoint = 0
         for i in range(0, len(self.base_waypoints)):
@@ -63,12 +67,26 @@ class WaypointUpdater(object):
             if distance < min_distance:
                 min_distance = distance
                 min_distance_waypoint = i
-        #print("Closest waypoint is %d (%f)" % (min_distance_waypoint, min_distance))
 
+        # Nearest waypoint may be behind us!  Check this by transforming waypoint to
+        # car's coordinate system.
+        waypoint_x = self.base_waypoints[min_distance_waypoint].pose.pose.position.x
+        waypoint_y = self.base_waypoints[min_distance_waypoint].pose.pose.position.y
+        #print("Closest waypoint is %d, at %f, %f (distance %f)" % (min_distance_waypoint, waypoint_x, waypoint_y, min_distance))
+        transformed = self.transform(waypoint_x, waypoint_y, -car_x, -car_y, -car_yaw)
+        #print("Transformed: %f, %f" % (transformed[0], transformed[1]))
+        
+        # If x coordinate of nearest waypoint is negative, that means it's behind us.
+        # Use next waypoint instead.
+        if transformed[0] < 0:
+            #print("Closest waypoint is behind us, using the next one")
+            min_distance_waypoint = min_distance_waypoint+1
+
+        # Publish LOOKAHEAD_WPS waypoints
         lane = Lane()
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time(0)
-        lane.waypoints = self.base_waypoints[min_distance_waypoint+1:min_distance_waypoint+LOOKAHEAD_WPS+1]
+        lane.waypoints = self.base_waypoints[min_distance_waypoint:min_distance_waypoint+LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(lane)
         pass
 
@@ -99,6 +117,14 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    # transform coordinate systems
+    def transform(self, x, y, x_offset, y_offset, rotation):
+        x = x + x_offset
+        y = y + y_offset
+        new_x = x * math.cos(rotation) - y * math.sin(rotation)
+        new_y = x * math.sin(rotation) + y * math.cos(rotation)
+        return [new_x, new_y]
 
 
 if __name__ == '__main__':
