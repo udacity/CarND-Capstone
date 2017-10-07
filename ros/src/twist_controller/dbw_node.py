@@ -222,11 +222,16 @@ class DBWNode(object):
                         if throttle > 1. : throttle = 1.
                 else:
                     v = self.velocity_filter.get()
-                    D = (v * 1.0) + (v**2 / (2. * 0.7 * 9.8))
+                    t = 1.0  # time to brake
+                    u = 0.7  # friction coeficcient
+                    g = 9.8  # gravity force 
+                    D = (v * t) + (v**2 / (2. * u * 9.8))
+                    # calculate work needed to stop
                     w = 0.5 * self.vehicle_mass * v**2
+                    # caculate the force
                     F = w / D
-                    brake = (2 * 0.7 * F * self.wheel_radius) + self.brake_deadband
-                    brake *= 10
+                    brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
+                    brake *= 100
                     rospy.loginfo("throttle: %f brake: %f steering angle: %f " % (throttle, brake , steer))
 
                 # throttle is 0.35, which runs the car at about 40 mph.
