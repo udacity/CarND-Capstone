@@ -4,7 +4,7 @@ import rospy
 import datetime
 import tf.transformations
 from geometry_msgs.msg import PoseStamped, Point, Quaternion, TwistStamped
-from std_msgs.msg import Int32, Float32
+from std_msgs.msg import Int32, Float32, Bool
 from styx_msgs.msg import Lane, Waypoint
 
 import stop_planner
@@ -111,6 +111,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
         self.next_waypoint_pub = rospy.Publisher('next_waypoint', Int32, queue_size=1)
         self.tl_distance_pub = rospy.Publisher('tl_distance', Float32, queue_size=1)
+        self.go_to_stop_state_pub = rospy.Publisher('go_to_stop_state', Bool, queue_size=1)
         self.wps = []
         self.wp_ss = []
         # self.full_wps = []
@@ -138,6 +139,11 @@ class WaypointUpdater(object):
         self.decel_wps = []
 
         self.velocity = rospy.get_param('velocity') * 1000. / (60. * 60.)
+        ## calculate stopping distance based on allowed max velocity
+        # u = 0.7 = friction coefficient
+        # t = 1.5 = brake time
+        # g = 9.8 = force due to earth gravity
+        self.stopping_distance = (self.velocity * 1.5) + (self.velocity**2 / (2. * 0.7 * 9.8))
 
 
         ## get stop lines positions from paramenter
@@ -176,7 +182,8 @@ class WaypointUpdater(object):
         '''
         In this state the car will start to slow its velocity when aproaching to the tl
         '''
-        if self.distance_to_tl > 30:
+        if self.distance_to_tl > self.stopping_distance:
+            self.go_to_stop_state_pub.publish(False)
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
@@ -184,7 +191,7 @@ class WaypointUpdater(object):
             if self.next_pt == next_tl-1:
                 next_tl += 1
             olane.waypoints=self.wps[self.next_pt:next_tl-1][:]
-            self.decelerate(olane.waypoints)
+            self.decelerate(olane.waypoints, self.current_velocity * 0.8)  # deceleraate upto 80% of current velocity
             # Handle case where we are near the end of the track;
             # add points at the beginning of the track
             # if past_zero_pt > 0:
@@ -202,6 +209,7 @@ class WaypointUpdater(object):
         '''
         #rospy.logwarn("Entering moving_cb !!!")
         if self.current_velocity < (self.velocity * .8):
+            self.go_to_stop_state_pub.publish(False)
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
@@ -232,6 +240,7 @@ class WaypointUpdater(object):
         In this state the car will move at full speed
         '''
         if self.distance_to_tl > 100:
+            self.go_to_stop_state_pub.publish(False)
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
@@ -258,6 +267,7 @@ class WaypointUpdater(object):
         In this state the car will stop or remain stop at tl
         '''
         if self.red_tl == True:
+            self.go_to_stop_state_pub.publish(True)
             self.final_waypoints_pub.publish(Lane())
             self.next_waypoint_pub.publish(self.next_pt)
             return True
@@ -270,6 +280,7 @@ class WaypointUpdater(object):
         In this stop the car will reduce speed to stop at tl
         '''
         if self.distance_to_tl > 3 and self.red_tl == True: 
+            self.go_to_stop_state_pub.publish(True)
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
@@ -285,6 +296,7 @@ class WaypointUpdater(object):
             # if past_zero_pt > 0:
             #     olane.waypoints.extend(self.wps[:past_zero_pt])
             # rospy.loginfo('[go_to_stop] velocity: %f', olane.waypoints[0].twist.twist.linear.x)
+            self.go_to_stop_state_pub.publish(True)
             self.final_waypoints_pub.publish(olane)
             self.next_waypoint_pub.publish(self.next_pt)
             return True
@@ -298,7 +310,7 @@ class WaypointUpdater(object):
         x, y, z = p1.x - p2.x, p1.y - p2.y, p1.z - p2.z
         return math.sqrt(x*x + y*y + z*z)
 
-    def decelerate(self, waypoints):
+    def decelerate(self, waypoints, target_velocity=0.):
         '''
         Copy of the function used in waypoing loader to reduce 
         the velocity of the car when apporaching a tl
@@ -307,7 +319,7 @@ class WaypointUpdater(object):
             return self.decel_wps[1:]
 
         last = waypoints[-1]
-        last.twist.twist.linear.x = 0.
+        last.twist.twist.linear.x = target_velocity
         for wp in waypoints[:-1][::-1]:
             dist = self.distance(wp.pose.pose.position, last.pose.pose.position)
             vel = math.sqrt(2 * MAX_DECEL * dist)
