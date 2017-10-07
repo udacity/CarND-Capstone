@@ -92,7 +92,7 @@ class WaypointUpdater(object):
                 cur_wp_id%n:(cur_wp_id+LOOKAHEAD_WPS)%n]):
 
                 idx = cur_wp_id + i
-                self.set_waypoint_velocity(wp, 8)
+                self.set_waypoint_velocity(wp, 20)
 
                 # Calculates yaw rate
                 next_wp = self.waypoints[(idx+1)%n]
@@ -118,7 +118,7 @@ class WaypointUpdater(object):
 
                 wp = self.set_waypoint_yawrate(wp, yaw_dist)
 
-                lane.waypoints.append(deepcopy(wp))
+                lane.waypoints.append(wp)
 
             # rospy.loginfo("(p) next_wp angular: {}".format(lane.waypoints[0].twist.twist.angular))
             self.final_waypoints_pub.publish(lane)
