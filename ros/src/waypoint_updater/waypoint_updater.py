@@ -89,7 +89,7 @@ class WaypointUpdater(object):
         x, y, z = p1.x - p2.x, p1.y - p2.y, p1.z - p2.z
         return math.sqrt(x * x + y * y + z * z)
 
-    def closest_waypoint(self, pose, waypoints):
+    def closest_waypoint(self, pose):
         # simply take the code from the path planning module and re-implement it here
         closest_len = 100000
         closest_waypoint = 0
@@ -101,19 +101,22 @@ class WaypointUpdater(object):
 
         return closest_waypoint
 
-    def next_waypoint(self, pose, waypoints):
-        # same concepts from path planning in here
-        closest_waypoint = self.closest_waypoint(pose, waypoints)
+    def next_waypoint(self, pose):
+        waypoints = self.waypoints
+        # compute the closest waypoint to our position
+        closest_waypoint = self.closest_waypoint(pose)
+        # determine map_x and map_y
         map_x = waypoints[closest_waypoint].pose.pose.position.x
         map_y = waypoints[closest_waypoint].pose.pose.position.y
-
-        heading = math.atan2((map_y - pose.position.y), (map_x - pose.position.x))
-        quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
-        _, _, yaw = tf.transformations.euler_from_quaternion(quaternion)
-        angle = abs(yaw - heading)
-
-        if angle > (math.pi / 4):
-            closest_waypoint += 1
+        # compute the heading
+        heading = math.atan2(map_y-pose.position.y,map_x-pose.position.x)
+        # compute yaw using transformations euler from quaternion
+        orientations = (pose.orientation.x,pose.orientation.y,pose.orientation.z,pose.orientation.w)
+        (_,_,yaw) = tf.transformations.euler_from_quaternion(orientations)
+        # compute the angle difference between yaw and heading
+        angle = math.fabs(yaw - heading)
+        if angle > (math.pi/4):
+            closest_waypoint = (closest_waypoint + 1) % len(waypoints)
 
         return closest_waypoint
 
@@ -146,7 +149,7 @@ class WaypointUpdater(object):
     def publish(self):
 
         if self.current_pose is not None:
-            next_waypoint_index = self.next_waypoint(self.current_pose, self.waypoints)
+            next_waypoint_index = self.next_waypoint(self.current_pose)
             lookahead_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index + LOOKAHEAD_WPS]
 
             if self.waypoint_on_red_light is None or self.waypoint_on_red_light < 0:
