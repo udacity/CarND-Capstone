@@ -31,25 +31,27 @@ STOP_DIST = 5.0
 
 class WaypointUpdater(object):
     def __init__(self):
+        # initialize the node waypoint_updater
         rospy.init_node('waypoint_updater')
 
+        # subscribe to the topic /current_pose
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        # subscribe to the topic /base_waypoints
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
-        rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb, queue_size=1)
+        # rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb, queue_size=1)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-        self.cur_pose = None
+        self.current_pose = None
         self.waypoints = None
-        self.red_light_waypoint = None
+        self.waypoint_on_red_light = -1
         self.waypoints = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        self.cur_pose = msg.pose
+        self.current_pose = msg.pose
         if self.waypoints is not None:
             self.publish()
 
@@ -59,9 +61,9 @@ class WaypointUpdater(object):
             self.waypoints = lane.waypoints
 
     def traffic_cb(self, msg):
-        self.red_light_waypoint = msg.data
+        self.waypoint_on_red_light = msg.data
         rospy.loginfo("Detected light: " + str(msg.data))
-        if self.red_light_waypoint > -1:
+        if self.waypoint_on_red_light > -1:
             self.publish()
 
     def obstacle_cb(self, msg):
@@ -143,11 +145,11 @@ class WaypointUpdater(object):
 
     def publish(self):
 
-        if self.cur_pose is not None:
-            next_waypoint_index = self.next_waypoint(self.cur_pose, self.waypoints)
+        if self.current_pose is not None:
+            next_waypoint_index = self.next_waypoint(self.current_pose, self.waypoints)
             lookahead_waypoints = self.waypoints[next_waypoint_index:next_waypoint_index + LOOKAHEAD_WPS]
 
-            if self.red_light_waypoint is None or self.red_light_waypoint < 0:
+            if self.waypoint_on_red_light is None or self.waypoint_on_red_light < 0:
 
                 # set the velocity for lookahead waypoints
                 for i in range(len(lookahead_waypoints) - 1):
@@ -155,7 +157,7 @@ class WaypointUpdater(object):
                     self.set_waypoint_velocity(lookahead_waypoints, i, MAX_SPEED)
 
             else:
-                redlight_lookahead_index = max(0, self.red_light_waypoint - next_waypoint_index)
+                redlight_lookahead_index = max(0, self.waypoint_on_red_light - next_waypoint_index)
                 lookahead_waypoints = self.decelerate(lookahead_waypoints, redlight_lookahead_index)
 
             lane = Lane()
