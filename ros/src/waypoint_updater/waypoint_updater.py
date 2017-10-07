@@ -56,9 +56,11 @@ class WaypointUpdater(object):
         self.publish()
 
     def waypoints_cb(self, lane):
-        # do this once and not all the time
+        # TODO: Implement
+        # set waypoints
         if self.waypoints is None:
             self.waypoints = lane.waypoints
+            self.publish()
 
     def traffic_cb(self, msg):
         self.waypoint_on_red_light = msg.data
@@ -78,13 +80,12 @@ class WaypointUpdater(object):
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
         for i in range(wp1, wp2 + 1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            dist += self.distance_euclid(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
 
-    def distance(self, p1, p2):
+    def distance_euclid(self, p1, p2):
         x, y, z = p1.x - p2.x, p1.y - p2.y, p1.z - p2.z
         return math.sqrt(x * x + y * y + z * z)
 
@@ -126,7 +127,7 @@ class WaypointUpdater(object):
         last = waypoints[redlight_index]
 
         last.twist.twist.linear.x = 0.
-        total_dist = self.distance(first.pose.pose.position, last.pose.pose.position)
+        total_dist = self.distance_euclid(first.pose.pose.position, last.pose.pose.position)
         start_vel = first.twist.twist.linear.x
         # start from the waypoint before last and go backwards
         for index, wp in enumerate(waypoints):
@@ -134,7 +135,7 @@ class WaypointUpdater(object):
             if index > redlight_index:
                 vel = 0
             else:
-                dist = self.distance(wp.pose.pose.position, last.pose.pose.position)
+                dist = self.distance_euclid(wp.pose.pose.position, last.pose.pose.position)
                 dist = max(0, dist - STOP_DIST)
                 vel = math.sqrt(2 * MAX_DECEL * dist)
                 if vel < 1.:
