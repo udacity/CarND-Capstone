@@ -4,7 +4,7 @@ Facheng Li - 398505136@qq.com - Traffic Light Detection
 
 Annie Guan - tawbay@gmail.com - Traffic Light Classification
 
-Hahnsang Kim - hahnsang.kim@gmail.com - Twist Controller
+Hahnsang Kim - fido2478@gmail.com - Twist Controller
 
 Milutin Nikolic - ajsmilutin@gmail.com - Waypoint Updater
 
