@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import tf
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
@@ -38,14 +39,43 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
 
+        self.base_waypoints = []
+
         rospy.spin()
 
     def pose_cb(self, msg):
         # TODO: Implement
+        if len(self.base_waypoints) == 0:
+            print("didn't get base waypoints yet")
+            return
+        car_x = msg.pose.position.x
+        car_y = msg.pose.position.y
+        quaternion = (msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w)
+        car_yaw = tf.transformations.euler_from_quaternion(quaternion)[2]
+        #print("Car is at %f, %f and facing %f" % (car_x, car_y, car_yaw))
+        min_distance = float("inf")
+        min_distance_waypoint = 0
+        for i in range(0, len(self.base_waypoints)):
+            waypoint = self.base_waypoints[i]
+            waypoint_x = waypoint.pose.pose.position.x
+            waypoint_y = waypoint.pose.pose.position.y
+            distance = math.sqrt((car_x-waypoint_x)**2 + (car_y-waypoint_y)**2)
+            if distance < min_distance:
+                min_distance = distance
+                min_distance_waypoint = i
+        #print("Closest waypoint is %d (%f)" % (min_distance_waypoint, min_distance))
+
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = self.base_waypoints[min_distance_waypoint+1:min_distance_waypoint+LOOKAHEAD_WPS+1]
+        self.final_waypoints_pub.publish(lane)
         pass
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
+        print("got %d waypoints" % len(waypoints.waypoints))
+        self.base_waypoints = waypoints.waypoints
         pass
 
     def traffic_cb(self, msg):
