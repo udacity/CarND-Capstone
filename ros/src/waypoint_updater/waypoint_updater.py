@@ -93,9 +93,8 @@ class WaypointUpdater(object):
         # simply take the code from the path planning module and re-implement it here
         closest_len = 100000
         closest_waypoint = 0
-        dl = lambda a, b: math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
         for index, waypoint in enumerate(self.waypoints):
-            dist = dl(pose.position, waypoint.pose.pose.position)
+            dist = self.distance_euclid(pose.position, waypoint.pose.pose.position)
             if (dist < closest_len):
                 closest_len = dist
                 closest_waypoint = index
