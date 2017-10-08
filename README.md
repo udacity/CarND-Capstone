@@ -144,15 +144,38 @@ A detector capable of locating traffic lights within an image is implemented. Th
 
 Two approaches were studied for the localization part:
 
-* Tensorflow's object detection API. It works very well even with the out-of-the-box models, which detect traffic lights among other objects, but processing times are too slow for real time detection. A custom trained model can solve performance problems, but there is the risk that the Tensorflow version installed in Carla is not compatible with the object detection API.
+1. Tensorflow's object detection API. It works very well even with the out-of-the-box models, which detect traffic lights among other objects, but processing times are too slow for real time detection. A custom trained model can solve performance problems, but there is the risk that the Tensorflow version installed in Carla is not compatible with the object detection API.
 
-* Use of the traffic light's 3D coordinates, camera parameters and current car pose to calculate the 2D coordinates of the traffic light within a picture. This was the main approach suggested by Udacity, according to the initial code templates, but it [proved to be more complicated than expected](https://discussions.udacity.com/t/focal-length-wrong/358568). Through some manual tweaking, we managed to develop a good enough implementation for the simulator, but the real camera requires additional effort.
+2. When the project got released for CarND the first time, Udacity suggested a _Computer Vision_ approach to identify traffic lights within the images captured by the car’s camera. Assuming a _pinhole camera model_ (as pictured below, source: [docs.opencv.org](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html)) the goal is to project the position of a 3D-world object onto the 2D-image captured by the car’s camera.
 
-Once a detector is implemented, cropped pictures of traffic lights from both the simulator and the test site can be used to train a classifier. If the accuracy of the bounding boxes is good, the classifier can be pretty simple and fast. In fact, very simple models such a support vector machine or a small convolutional network were implemented, both showing accurate results.
+![Image: Pinhole Camera Model by docs.opencv.org](pinhole_camera_model.png?raw=true "Pinhole Camera Model by docs.opencv.org")
 
-Unfortunately, due to the problems described above, we switched to a whole picture approach, which needs a considerably more complex classifier, but eliminates the need of an object detector.
+To do so we get the position of the upcoming traffic light, which is given by the simulator or has to be defined for the test track on site. Together with the car’s position and orientation (_yaw_) we first calculate the [rotation-translation matrix](http://planning.cs.uiuc.edu/node99.html), which describes the camera motion around the static traffic light (with px being traffic light’s x-position; yaw and xt being the car’s rotation and translation):
+
+```
+px * cosyaw - py * sinyaw + xt,
+px * sinyaw + py * cosyaw + yt,
+pz + zt
+```
+Assuming a pinhole camera model without distortion we then apply a [perspective transformation](http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html) derived from following equations:
+
+![Image: Perspective Transformation](perspective_transform.png?raw=true "Perspective Transformation")
+
+Due to some issues with applying the provided focal lengths to the simulator (Unity engine), equations and values had to be tweaked manually, which was elaborated during a [discussion on the Udacity CarND forum](https://discussions.udacity.com/t/focal-length-wrong/358568/25).
+
+To cut out the whole traffic light we finally define a bounding box based on the real size of a traffic light, the Euclidean distance between both objects and the focal length (derived from [google’s paper on Traffic Light Mapping and Detection from 2011](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/37259.pdf))
+
+![Image: Identifying traffic light in simulator’s camera image](extracting_traffic_light.jpg?raw=true "Identifying traffic light in simulator’s camera image")
+
+Once a detector is implemented, cropped pictures of traffic lights from both the simulator and the test site can be used to train a classifier. If the accuracy of the bounding boxes is good, the classifier can be pretty simple and fast. In fact, very simple models such a _Support Vector Machine_ (SVM) or a small _Convolutional Neural Network_ (CNN) were implemented, both showing accurate results.
+
+Unfortunately, due to the problems described above, we switched to a whole picture approach, which needs a considerably more complex classifier, but eliminates the need of an object detector. For further experiments the _Support Vector Classifier_ (SVC) can be setup by renaming `tl_classifier_SVC.py` to `tl_classifier.py` and then activating `project_to_image_plane` function by setting _True_ the `extract_traffic_light` variable within `tl_detection.py` . 
 
 ##### Whole picture classification
+
+Contrary to the approaches discussed above the final version of the presented classifier does not require any transformation and localization of the actual traffic lights within the camera image. An involved _Convolutional Neural Network_ (CNN) was created and trained on camera images from the simulator as well as camera data provided by Udacity from the actual test site. The networks architecture was then improved and parameters were tuned extensively in order to achieve a degree of generalization that enables our classifier to predict red lights with equal accuracy, wether they were captured on site or within the simulator. 
+
+![Image: Results of whole picture approach on camera images from site](whole_picture_classification.png?raw=true "Results of whole picture approach on camera images from site")
 
 ### Waypoint loader
 The update frequency was removed and this node only publishes one message at the start to reduce the overhead to a minimum. The list of base waypoints forms an enclosed path along a track.
