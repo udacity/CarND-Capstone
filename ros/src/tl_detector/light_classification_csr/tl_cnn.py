@@ -6,8 +6,14 @@ import rospy
 from time import time
 from keras.models import model_from_json
 from keras.preprocessing.image import img_to_array
+from keras.backend.tensorflow_backend import set_session
 
 from styx_msgs.msg import TrafficLight
+
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.7
+config.gpu_options.allow_growth = True
+set_session(tf.Session(config=config))
 
 
 class TrafficLightModel(object):
