@@ -49,17 +49,19 @@ class WaypointUpdater(object):
 
     def loop(self):
 
+        # Set the desired processing rate to 10Hz
         rate = rospy.Rate(10)
 
         while not rospy.is_shutdown():
 
-            rate.sleep()
-
+            # If there is no waypoint or pose data, wait for some to come in
             if self.base_waypoints is None or self.current_pose is None:
-                continue  # just wait
+                # Sleep if necessary to maintain the desired processing rate
+                rate.sleep()
+                continue
 
+            # Find all of the waypoints ahead of the car
             waypoints_ahead = []
-
             for waypoint in self.base_waypoints:
 
                 if is_ahead(waypoint, self.current_pose):
@@ -82,6 +84,9 @@ class WaypointUpdater(object):
 
             if VERBOSE:
                 print_waypoint(waypoints_ahead[0], msg='Next waypoint: ')
+
+            # Sleep if necessary to maintain the desired processing rate
+            rate.sleep()
 
     def pose_callback(self, msg):
         """
