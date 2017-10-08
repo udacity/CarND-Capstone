@@ -15,7 +15,7 @@ import yaml
 import math
 
 MAX_DECEL = 0.05
-MAX_ACCEL = 0.8
+MAX_ACCEL = 0.5
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -140,10 +140,10 @@ class WaypointUpdater(object):
 
         self.velocity = rospy.get_param('velocity') * 1000. / (60. * 60.)
         ## calculate stopping distance based on allowed max velocity
-        # u = 0.7 = friction coefficient
+        # u = 0.35 = friction coefficient
         # t = 1.5 = brake time
         # g = 9.8 = force due to earth gravity
-        self.stopping_distance = (self.velocity * 1.5) + (self.velocity**2 / (2. * 0.7 * 9.8))
+        self.stopping_distance = (self.velocity * 1.5) + (self.velocity**2 / (2. * 0.35 * 9.8))
 
 
         ## get stop lines positions from paramenter
@@ -191,7 +191,7 @@ class WaypointUpdater(object):
             if self.next_pt == next_tl-1:
                 next_tl += 1
             olane.waypoints=self.wps[self.next_pt:next_tl-1][:]
-            self.decelerate(olane.waypoints, self.current_velocity * 0.8)  # deceleraate upto 80% of current velocity
+            self.decelerate(olane.waypoints, self.current_velocity * 0.7)  # deceleraate upto 70% of current velocity
             # Handle case where we are near the end of the track;
             # add points at the beginning of the track
             # if past_zero_pt > 0:
@@ -339,22 +339,60 @@ class WaypointUpdater(object):
         start = self.next_pt - 1
         if start < 0:
             start = 0
-        start_pos = self.wps[start]
+        #start_pos = self.wps[start]
+        start_pos = waypoints[0]
         vel = self.current_velocity
 
-        #rospy.loginfo("[accelerate] current velocity: %f", vel)
+        # #rospy.loginfo("[accelerate] current velocity: %f", vel)
         for wp in waypoints[:]:
             dist = self.distance(wp.pose.pose.position, start_pos.pose.pose.position)
-            vel = math.sqrt(vel**2 + (2 * MAX_ACCEL * dist))
+            vel = math.sqrt(vel**2 + (2. * MAX_ACCEL * dist))
             if vel < 1.0:
                 vel = 1.0
             wp.twist.twist.linear.x = vel
             if vel > self.velocity:
                 vel = self.velocity
-        
-        
+        ## JMT 
+        # coeff_v = self.JMT([vel, MAX_ACCEL, 1.0], [self.velocity, MAX_ACCEL, 1.0], 5.)
+        # fyv = np.poly1d(coeff_v)
+        # dist = 0
+        # for wp in waypoints[:]:
+        #     dist += self.distance(wp.pose.pose.position, start_pos.pose.pose.position)
+        #     R = np.roots([2*MAX_ACCEL*dist, 4*vel*dist, -4*dist**2])
+        #     T = R[R>0]
+        #     if T.size == 0:
+        #         T = 0
+        #     vfinal = fyv(T)
+        #     if vfinal > self.velocity:
+        #         vfinal = self.velocity
+        #     # elif vfinal < 1.:
+        #     #     vfinal = 1.
+        #     wp.twist.twist.linear.x = vfinal
         return waypoints
 
+    def JMT(self, start, end, T):
+        """
+        Calculates Jerk Minimizing Trajectory for start, end and T.
+        """
+        a_0, a_1, a_2 = start[0], start[1], start[2] / 2.0
+        c_0 = a_0 + a_1 * T + a_2 * T**2
+        c_1 = a_1 + 2* a_2 * T
+        c_2 = 2 * a_2
+        
+        A = np.array([
+                [  T**3,   T**4,    T**5],
+                [3*T**2, 4*T**3,  5*T**4],
+                [6*T,   12*T**2, 20*T**3],
+            ])
+        B = np.array([
+                end[0] - c_0,
+                end[1] - c_1,
+                end[2] - c_2
+            ])
+        a_3_4_5 = np.linalg.solve(A,B)
+        alphas = np.concatenate([np.array([a_0, a_1, a_2]), a_3_4_5])
+        # reverse coefficients to match order used by np.poly1d
+        return alphas[::-1]
 
     '''
     PoseStamped:
