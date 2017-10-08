@@ -60,37 +60,45 @@ class DBWNode(object):
         # TODO: Create `TwistController` object
         self.controller = Controller(vehicle_mass, fuel_capacity, brake_deadband, decel_limit, accel_limit, wheel_radius, wheel_base, steer_ratio, max_lat_accel, max_steer_angle)
 
-
-        # Class variables
-        self.twist       = None
-        self.velocity    = None
-        self.dbw_enabled = None
+        # Subscriber message data
+        self.target_twist     = None
+        self.current_velocity = None
+        self.dbw_enabled      = False
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_callback)
-        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_callback)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_callback )
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_status_callback)
 
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50)  # 50Hz
+        rate = rospy.Rate(10)  # 10Hz
         while not rospy.is_shutdown():
 
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
+            if ((self.current_velocity is not None) and (self.target_twist is not None)):
 
-            # todo these are just placeholders
-            throttle, brake, steer = 0, 0, 0
+                # Extract the relevant message data from the subscribed topics
+                proposed_linear_velocity = self.target_twist.linear.x
+                proposed_angular_velocity = self.target_twist.angular.z
 
-            # Publish only if driving by wire is enabled
-            if self.dbw_enabled:
-                self.publish(throttle, brake, steer)
+                current_linear_velocity = self.current_velocity.linear.x
+
+                # TODO: Get predicted throttle, brake, and steering using `twist_controller`
+                # You should only publish the control commands if dbw is enabled
+                # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
+                #                                                     <proposed angular velocity>,
+                #                                                     <current linear velocity>,
+                #                                                     <dbw status>,
+                #                                                     <any other argument you need>)
+                throttle, brake, steer = self.controller.control(proposed_linear_velocity,
+                                                                proposed_angular_velocity,
+                                                                current_linear_velocity,
+                                                                self.dbw_enabled)
+
+                # Publish only if driving by wire is enabled
+                if self.dbw_enabled:
+                    self.publish(throttle, brake, steer)
 
             rate.sleep()
 
@@ -117,7 +125,7 @@ class DBWNode(object):
         """
         Update current velocity with latest information received.
         """
-        self.velocity = msg.twist
+        self.current_velocity = msg.twist
 
     def dbw_status_callback(self, msg):
         """
@@ -129,7 +137,7 @@ class DBWNode(object):
         """
         Update twist with the latest information received.
         """
-        self.twist = msg.twist
+        self.target_twist = msg.twist
 
         if VERBOSE:
             self._print_twist(self.twist)
