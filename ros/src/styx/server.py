@@ -11,7 +11,9 @@ from conf import conf
 
 sio = socketio.Server()
 app = Flask(__name__)
-msgs = []
+msgs = {}
+count = 0
+skip = 11
 
 dbw_enable = False
 
@@ -21,7 +23,7 @@ def connect(sid, environ):
 
 def send(topic, data):
     s = 1
-    msgs.append((topic, data))
+    msgs[topic] = data
     #sio.emit(topic, data=json.dumps(data), skip_sid=True)
 
 bridge = Bridge(conf, send)
@@ -34,7 +36,7 @@ def telemetry(sid, data):
         bridge.publish_dbw_status(dbw_enable)
     bridge.publish_odometry(data)
     for i in range(len(msgs)):
-        topic, data = msgs.pop(0)
+        topic, data = msgs.popitem()
         sio.emit(topic, data=data, skip_sid=True)
 
 @sio.on('control')
@@ -55,8 +57,11 @@ def trafficlights(sid, data):
 
 @sio.on('image')
 def image(sid, data):
-    bridge.publish_camera(data)
-
+    global count
+    count += 1
+    if count%(skip+1)==0:
+        bridge.publish_camera(data)
+    
 if __name__ == '__main__':
 
     # wrap Flask application with engineio's middleware

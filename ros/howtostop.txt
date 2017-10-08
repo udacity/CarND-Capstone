@@ -1,0 +1,3 @@
+rostopic echo /traffic_waypoint
+rostopic echo /next_wp
+rostopic pub /traffic_waypoint std_msgs/Int32 <wp> 
