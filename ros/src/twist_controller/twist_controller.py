@@ -14,11 +14,12 @@ class Controller(object):
     def __init__(self, *args, **kwargs):
         # TODO: Implement
         self.throttle_pid = PID(kwargs['throttle_gains'])
-        self.yaw_control = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
-                                         kwargs['min_speed'], kwargs['max_lat_accel'],
-                                         kwargs['max_steer_angle'],
-                                         kwargs['steering_gains']
-                                         )
+        self.steering_pid = PID(kwargs['steering_gains'])
+        # self.yaw_control = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
+        #                                  kwargs['min_speed'], kwargs['max_lat_accel'],
+        #                                  kwargs['max_steer_angle'],
+        #                                  kwargs['steering_gains']
+        #                                  )
         self.last_t = None
         #self.filter = LowPassFilter(0.2,0.1)
 
@@ -47,16 +48,10 @@ class Controller(object):
         else:
             brake = 0.0
 
-        # # Special case for stopping
-        # if abs(target_v.x) < 0.1:
-        #     brake = 12.0
-
-        steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
-        rospy.loginfo('target_w.z: {}, steer: {}'.format(target_w.z, steer))
-        # if(target_v.x <= 1.0):
-        #     brake = 6.0
-        #     throttle = 0.0
-        #     #steer = 0.0
+        # steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
+        # rospy.loginfo('target_w.z: {}, steer: {}'.format(target_w.z, steer))
+        error_yaw = target_w.z
+        steer = self.steering_pid.step(error_yaw, dt)
 
         #steer = self.filter.filt(steer)
         self.last_t = time.time()
