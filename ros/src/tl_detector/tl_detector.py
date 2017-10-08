@@ -344,7 +344,6 @@ class TLDetector(object):
                 mindist = dsq
         return mini
 
-
     # TODO TODO You need to complete this routine yourself.
     # This routine takes an x,y,z location (the location of
     # a traffic signal, for instance) and should return the x,y
@@ -369,6 +368,10 @@ class TLDetector(object):
         # the simulator.  Someone suggested that for the
         # simulator, fx = fy = 2000 might be approximately
         # true, but you may need to experiment.
+
+        # NEW NOTE: Udacity for unknown reasons has removed
+        # these values from the config file for the simulator.
+        # Calling these will cause an error
         fx = self.config['camera_info']['focal_length_x']
         fy = self.config['camera_info']['focal_length_y']
         image_width = self.config['camera_info']['image_width']
@@ -422,7 +425,10 @@ class TLDetector(object):
         # TODO Note that you have to write most of project_to_image_plane
         # yourself, only a skeleton is provided.
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        # New Note: Udacity for reasons best known to itself
+        # has broken the project_to_image_plane function.  Don't call,
+        # until you have studied the function.
+        # x, y = self.project_to_image_plane(light.pose.pose.position)
 
         # TODO Use light location to zoom in on traffic light in image
 
