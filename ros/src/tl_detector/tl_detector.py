@@ -81,7 +81,7 @@ class TLDetector(object):
         self.resize_shape = 64, 64  # camera images are resized to this shape for classification
         self.light_classifier = TrafficLightClassifier(input_shape=self.resize_shape, learning_rate=1e-4)
         self.session = tensorflow.Session()
-        checkpoint_path = '/home/student/Downloads/classifier_pretrained_weights/TLC_epoch_19.ckpt'
+        checkpoint_path = '/home/student/Downloads/BUFFER/TLC_epoch_18.ckpt'
         tensorflow.train.Saver().restore(self.session, checkpoint_path)  # restore pre-trained weights
 
         rospy.spin()
@@ -193,28 +193,15 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        # TODO [Andrea] refactor this function
         if not self.has_image:
             self.prev_light_loc = None
             return False
 
-        image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        image = cv2.resize(image, self.resize_shape[::-1])
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x = np.float32(image) - np.mean(image)
-        x /= x.max()
-        x = np.expand_dims(x, 0)  # add dummy batch dimension
+        light_state = self.light_classifier.get_classification(self.session, cv_image)
 
-        pred = self.session.run(self.light_classifier.inference,
-                                feed_dict={self.light_classifier.x: x, self.light_classifier.keep_prob: 1.})
-        pred_idx = np.argmax(pred, axis=1)  # from onehot to labels
-
-        labels = ['NO SEMAPHORE', 'RED', 'YELLOW', 'GREEN']
-        print(labels[pred_idx])
-
-        #TODO: Get classification
-
-        return 0  # todo self.light_classifier.get_classification(cv_image)
+        return light_state
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
