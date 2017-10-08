@@ -14,7 +14,7 @@ import yaml
 
 import math
 
-MAX_DECEL = 4.0
+MAX_DECEL = 5.0
 MAX_ACCEL = 1.0
 
 '''
@@ -283,7 +283,7 @@ class WaypointUpdater(object):
         '''
         In this stop the car will reduce speed to stop at tl
         '''
-        if self.distance_to_tl > 3 and self.red_tl == True: 
+        if self.distance_to_tl > 6 and self.red_tl == True: 
             
             self.go_to_stop_state_pub.publish(True)
             olane = Lane()
@@ -842,7 +842,7 @@ class WaypointUpdater(object):
         
         if self.red_tl_prev == self.red_tl == False:
             self.tl_count += 1
-            if self.tl_count < 2:
+            if self.tl_count < 3:
                 self.red_tl = True
             else:
                 self.red_tl = False
