@@ -8,9 +8,6 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 # import Udacity (empty) traffic light classifier
 from light_classification.tl_classifier import TLClassifier
-# import Calvenn's traffic light classifier
-from light_classification_ct.tl_classifier import TLClassifierCT
-from light_classification_csr.tl_classifier import TLClassifierCSR
 # tf is related to ROS transforms, not to TensorFlow
 import tf
 import cv2
@@ -171,6 +168,9 @@ class TLDetector(object):
 
         # Call Calvenn's code
         if self.algorithm == 1:
+            # import Calvenn's traffic light classifier
+            from light_classification_ct.tl_classifier import TLClassifierCT
+
             self.light_classifier = TLClassifierCT()
             # Which frames to process.  For instance, 
             # skip_factor = 5 means process every 5th frame
@@ -179,6 +179,8 @@ class TLDetector(object):
             # 200 meters away
             self.max_tl_distance = 200
         elif self.algorithm == 2:
+            from light_classification_csr.tl_classifier import TLClassifierCSR
+
             self.light_classifier = TLClassifierCSR()
             # Which frames to process.  For instance,
             # skip_factor = 5 means process every 5th frame
@@ -344,7 +346,6 @@ class TLDetector(object):
                 mindist = dsq
         return mini
 
-
     # TODO TODO You need to complete this routine yourself.
     # This routine takes an x,y,z location (the location of
     # a traffic signal, for instance) and should return the x,y
@@ -369,6 +370,10 @@ class TLDetector(object):
         # the simulator.  Someone suggested that for the
         # simulator, fx = fy = 2000 might be approximately
         # true, but you may need to experiment.
+
+        # NEW NOTE: Udacity for unknown reasons has removed
+        # these values from the config file for the simulator.
+        # Calling these will cause an error
         fx = self.config['camera_info']['focal_length_x']
         fy = self.config['camera_info']['focal_length_y']
         image_width = self.config['camera_info']['image_width']
@@ -422,7 +427,10 @@ class TLDetector(object):
         # TODO Note that you have to write most of project_to_image_plane
         # yourself, only a skeleton is provided.
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        # New Note: Udacity for reasons best known to itself
+        # has broken the project_to_image_plane function.  Don't call,
+        # until you have studied the function.
+        # x, y = self.project_to_image_plane(light.pose.pose.position)
 
         # TODO Use light location to zoom in on traffic light in image
 
