@@ -5,23 +5,27 @@ import cv2
 import yaml
 import os
 import math
+import tensorflow
+import numpy as np
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from light_classification.tl_classifier import TLClassifier
+from light_classification.traffic_light_classifier import TrafficLightClassifier
 from tl_helper import create_dir_if_nonexistent
 from os.path import expanduser, join, exists
 from kdtree import KDTree
 from waypoint_helper import is_ahead
 from waypoint_helper import get_simple_distance_from_waypoint
 
+
 STATE_COUNT_THRESHOLD = 3
 TL_NEARNESS_THRESHOLD = 150
-VERBOSE = True
+VERBOSE = False
 PREFER_GROUND_TRUTH = True
+
 
 class TLDetector(object):
     def __init__(self):
@@ -53,7 +57,6 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -73,6 +76,13 @@ class TLDetector(object):
         self.datafile = open(self.dump_images_dir + "/lightsData.csv", "w+")
 
         self.lightState = None
+
+        # Classification stuff
+        self.resize_shape = 64, 64  # camera images are resized to this shape for classification
+        self.light_classifier = TrafficLightClassifier(input_shape=self.resize_shape, learning_rate=1e-4)
+        self.session = tensorflow.Session()
+        checkpoint_path = '/home/student/Downloads/classifier_pretrained_weights/TLC_epoch_19.ckpt'
+        tensorflow.train.Saver().restore(self.session, checkpoint_path)  # restore pre-trained weights
 
         rospy.spin()
 
@@ -182,15 +192,28 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
+        # TODO [Andrea] refactor this function
+        if not self.has_image:
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        image = cv2.resize(image, self.resize_shape[::-1])
+
+        x = np.float32(image) - np.mean(image)
+        x /= x.max()
+        x = np.expand_dims(x, 0)  # add dummy batch dimension
+
+        pred = self.session.run(self.light_classifier.inference,
+                                feed_dict={self.light_classifier.x: x, self.light_classifier.keep_prob: 1.})
+        pred_idx = np.argmax(pred, axis=1)  # from onehot to labels
+
+        labels = ['NO SEMAPHORE', 'RED', 'YELLOW', 'GREEN']
+        print(labels[pred_idx])
 
         #TODO: Get classification
 
-        return self.light_classifier.get_classification(cv_image)
+        return 0  # todo self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -254,9 +277,9 @@ class TLDetector(object):
                 if light.state is not None:
                     state = light.state
 
-            if (state == -1):
+            if True: # (state == -1):
                 # this is where we classify the light
-                state = self.get_light_state(light)
+                state_inferred = self.get_light_state(light)
 
             # If the traffic light is close, let us know
             if (light_distance < TL_NEARNESS_THRESHOLD):
