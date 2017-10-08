@@ -72,17 +72,17 @@ class TLDetector(object):
 
         # Used to find the closest waypoint
         self.kdtree = None
-        #data file to store the image name and light state in the image.
+        # Data file to store the image name and light state in the image.
         self.datafile = open(self.dump_images_dir + "/lightsData.csv", "w+")
 
         self.lightState = None
 
-        # Classification stuff
-        self.resize_shape = 64, 64  # camera images are resized to this shape for classification
-        self.light_classifier = TrafficLightClassifier(input_shape=self.resize_shape, learning_rate=1e-4)
+        # Create tensorflow session
         self.session = tensorflow.Session()
-        checkpoint_path = '/home/student/Downloads/BUFFER/TLC_epoch_18.ckpt'
-        tensorflow.train.Saver().restore(self.session, checkpoint_path)  # restore pre-trained weights
+
+        # Import classifier and restore pre-trained weights
+        self.light_classifier = TrafficLightClassifier(input_shape=[64, 64], learning_rate=1e-4)
+        tensorflow.train.Saver().restore(self.session, TrafficLightClassifier.checkpoint_path)
 
         rospy.spin()
 
