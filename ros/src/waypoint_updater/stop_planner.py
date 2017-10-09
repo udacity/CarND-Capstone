@@ -132,7 +132,8 @@ class StopPlanner(object):
                 end[1] - c_1,
                 end[2] - c_2
             ])
-        a_3_4_5 = np.linalg.solve(A,B)
+        #a_3_4_5 = np.linalg.solve(A,B)
+        a_3_4_5 = np.linalg.lstsq(A,B)[0]
         alphas = np.concatenate([np.array([a_0, a_1, a_2]), a_3_4_5])
         # reverse coefficients to match order used by np.poly1d
         return alphas[::-1]

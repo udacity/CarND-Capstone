@@ -130,7 +130,7 @@ class WaypointUpdater(object):
         self.red_tl = True
         self.red_tl_prev = True
         self.tl_count = 0
-        self.stopped = False
+        self.stopped = True
         self.started = False    
 
         self.pose_set = False
@@ -283,7 +283,7 @@ class WaypointUpdater(object):
         '''
         In this stop the car will reduce speed to stop at tl
         '''
-        if self.distance_to_tl > 3: # and self.red_tl == True: 
+        if self.distance_to_tl > 5: # and self.red_tl == True: 
             
             #self.go_to_stop_state_pub.publish(True)
             olane = Lane()
@@ -359,23 +359,32 @@ class WaypointUpdater(object):
             current_velocity = 1.
         else:
             current_velocity = self.current_velocity
-        T = 2. * dist_to_tl / current_velocity
+        # T = 2. * dist_to_tl / current_velocity
         dt = 0.03
-        if T < dt:
-            T = dt
-        if T > 1.5:
-            T = 1.5
-        n = T / dt
-        if n > LOOKAHEAD_WPS:
-            n = LOOKAHEAD_WPS
-        elif n < 1.:
-            n = 1
+        # if T < dt:
+        #     T = dt
+        # if T > 1.5:
+        #     T = 1.5
+        # n = T / dt
+        # if n > LOOKAHEAD_WPS:
+        #     n = LOOKAHEAD_WPS
+        # elif n < 1.:
+        #     n = 1
 
-        s_x = np.linspace(0, T, n)
+        # s_x = np.linspace(0, T, n)
 
         
         if self.stopped == True:
             rospy.logwarn("current velocity = 0.")
+            T = np.roots([0.5*MAX_ACCEL, self.current_velocity, -self.distance_to_tl])
+            T = T[T>0][0]
+            # print("T: %f" % T)
+            n = T / dt
+            if n > LOOKAHEAD_WPS:
+                n = LOOKAHEAD_WPS
+                s_x = np.linspace(0, n*dt, n)
+            else:
+                s_x = np.linspace(0, T, n)
             coeff = self.stopPlanner.JMT([s, 0.5, MAX_ACCEL], [ss, 0.0, 0.0], T)
             fy = np.poly1d(coeff)
             sss = fy(s_x)
@@ -399,19 +408,20 @@ class WaypointUpdater(object):
             #vvv[vvv < 1.0] = 0.0
             #vvv[0] = 2.0
             #vvv[1] = 2.0
-            print(sss)
-            print(vvv)
-            print(pitch)
+            # print(sss)
+            # print(vvv)
+            # print(pitch)
         else:
-            T = np.roots([0.5*MAX_DECEL, self.current_velocity, self.distance_to_tl])
-            T = T[T>0]
+            T = np.roots([0.5*MAX_DECEL, self.current_velocity, -self.distance_to_tl])
+            T = T[T>0][0]
+            # print("T: %f" % T)
             n = T / dt
             if n > LOOKAHEAD_WPS:
                 n = LOOKAHEAD_WPS
                 s_x = np.linspace(0, n*dt, n)
             else:
                 s_x = np.linspace(0, T, n)
-
+            # print(s, self.current_velocity, MAX_DECEL, ss)
             coeff = self.stopPlanner.JMT([s, self.current_velocity, -MAX_DECEL], [ss, 0.0, 0.0], T)
             fy = np.poly1d(coeff)
             sss = fy(s_x)
@@ -508,7 +518,7 @@ class WaypointUpdater(object):
         (endroll, endpitch, end_yaw) = tf.transformations.euler_from_quaternion([end_q.x, end_q.y, end_q.z, end_q.w])
         
         s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
-        T = 3.0
+        
 
         #rospy.loginfo("tl_distance: %d, s: % %f" % self.tl_distance, s)
         if self.current_velocity < 1.:
@@ -516,12 +526,26 @@ class WaypointUpdater(object):
         else:
             start_velocity = self.current_velocity
         ss = s + self.stopPlanner.distance(self.wps, next_pt, end_pt)
+
+        T = 3.0
+        dt = 0.03
+        T = np.roots([0.5*MAX_ACCEL, self.current_velocity, -(ss - s)])
+        T = T[T>0][0]
+        # print("T: %f" % T)
+        n = T / dt
+        if n > LOOKAHEAD_WPS:
+            n = LOOKAHEAD_WPS
+            s_x = np.linspace(0, n*dt, n)
+        else:
+            s_x = np.linspace(0, T, n)
+
         coeff = self.stopPlanner.JMT([s, start_velocity, MAX_ACCEL], [ss, self.velocity, MAX_ACCEL], T)
         vcoeff = self.stopPlanner.JMT([start_velocity, MAX_ACCEL, 1.0], [self.velocity, MAX_ACCEL, 1.0], T)
         fy = np.poly1d(coeff)
         fyv = np.poly1d(vcoeff)
-        n = T / 0.03
-        s_x = np.linspace(0, T, n)
+        # n = T / 0.03
+        # s_x = np.linspace(0, T, n)
+        
         sss = fy(s_x)
         vvv = fyv(s_x)
         vvv[vvv>self.velocity] = self.velocity
