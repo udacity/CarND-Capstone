@@ -2,14 +2,14 @@
 import math
 import rospy
 from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
+from geometry_msgs.msg import PoseStamped, Pose, Point
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
-from math import inf
+#from math import inf
 import numpy as np
 import cv2
 import yaml
@@ -176,6 +176,10 @@ class TLDetector(object):
         A = np.matrix([[fx, 0,  image_width / 2.0],
                        [0,  fy, image_height / 2.0],
                        [0,  0,  1]])
+
+        #Guy TODO: remover after rot and trans are correctly aquired
+        return (0,0)
+
         points = cv2.projectPoints([[point_in_world.x, point_in_world.y, point_in_world.z]],
                           rot, trans, A, np.float64([]))
         x = points[0][0]
@@ -199,7 +203,11 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        x, y = self.project_to_image_plane(light.pose.pose.position)
+        pt = Point()
+        pt.x = light[0]
+        pt.y = light[1]
+        pt.z = 0
+        x, y = self.project_to_image_plane(pt)
 
         # TODO: Figure out an appropriate crop size.
         crop_width_x = 100
@@ -263,6 +271,8 @@ class TLDetector(object):
 
         lt_idx = stop_line_pos_wp.index(light_wp)
         light = stop_line_positions[lt_idx]
+        
+        #rospy.loginfo(light)
 
         # Checking distance to light
         distance_light = self.distance_light(light, self.waypoints.waypoints[self.last_car_position].pose.pose.position)
