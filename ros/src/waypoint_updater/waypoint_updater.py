@@ -14,7 +14,7 @@ import yaml
 
 import math
 
-MAX_DECEL = 5.0
+MAX_DECEL = 2.0
 MAX_ACCEL = 1.0
 
 '''
@@ -183,7 +183,7 @@ class WaypointUpdater(object):
         In this state the car will start to slow its velocity when aproaching to the tl
         '''
         if self.distance_to_tl > self.stopping_distance:
-            self.go_to_stop_state_pub.publish(False)
+            #self.go_to_stop_state_pub.publish(False)
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
@@ -244,7 +244,7 @@ class WaypointUpdater(object):
         In this state the car will move at full speed
         '''
         if self.distance_to_tl > 100:
-            self.go_to_stop_state_pub.publish(False)
+            #self.go_to_stop_state_pub.publish(False)
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
@@ -283,16 +283,16 @@ class WaypointUpdater(object):
         '''
         In this stop the car will reduce speed to stop at tl
         '''
-        if self.distance_to_tl > 6 and self.red_tl == True: 
+        if self.distance_to_tl > 3: # and self.red_tl == True: 
             
-            self.go_to_stop_state_pub.publish(True)
+            #self.go_to_stop_state_pub.publish(True)
             olane = Lane()
             olane.header.frame_id = '/world'
             olane.header.stamp = rospy.Time(0)
             next_tl = self.get_next_tl(self.next_pt)
-            if self.next_pt == next_tl-1:
+            if self.next_pt == next_tl:
                 next_tl += 1
-            waypoints=self.wps[self.next_pt:next_tl-1][:]
+            #waypoints=self.wps[self.next_pt:next_tl][:]
             waypoints=self.decelerate(self.next_pt, next_tl)
             olane.waypoints = waypoints
             self.decel_wps = waypoints
@@ -324,7 +324,13 @@ class WaypointUpdater(object):
         the velocity of the car when apporaching a tl
         '''
         if len(self.decel_wps) > 10:
-            return self.decel_wps[1:]
+            if self.stopped == False:
+                rospy.loginfo("decel_wps NOT removing element !!! stopped: %s", self.stopped)
+                #print(self.decel_wps)
+                return self.decel_wps[1:]
+            # else:
+            #     rospy.loginfo("decel_wps removing element !!! stopped: %s", self.stopped)
+            #     return self.decel_wps[1:]
 
         # last = waypoints[-1]
         # last.twist.twist.linear.x = target_velocity
@@ -343,11 +349,12 @@ class WaypointUpdater(object):
         (endroll, endpitch, end_yaw) = tf.transformations.euler_from_quaternion([end_q.x, end_q.y, end_q.z, end_q.w])
         
         s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
-        T = 2.0
+       
 
         #rospy.loginfo("tl_distance: %d, s: % %f" % self.tl_distance, s)
         dist_to_tl = self.stopPlanner.distance(self.wps, next_pt, next_tl) 
         ss = s + dist_to_tl
+        
         if self.current_velocity == 0:
             current_velocity = 1.
         else:
@@ -364,21 +371,69 @@ class WaypointUpdater(object):
         elif n < 1.:
             n = 1
 
-        coeff = self.stopPlanner.JMT([s, self.current_velocity, -MAX_DECEL], [ss, 0.0, 0.0], T)
-        vcoeff = self.stopPlanner.JMT([self.current_velocity, -MAX_DECEL, 1.0], [0.0, 0.0, 0.0], T)
-        fy = np.poly1d(coeff)
-        fyv = np.poly1d(vcoeff)
         s_x = np.linspace(0, T, n)
-        sss = fy(s_x)
-        vvv = fyv(s_x)
-        vvv[vvv > self.velocity] = self.velocity
-        vvv[vvv < 1.0] = 0.0
-        final_path = []
-        for i in range(len(sss)):
+
+        
+        if self.stopped == True:
+            rospy.logwarn("current velocity = 0.")
+            coeff = self.stopPlanner.JMT([s, 0.5, MAX_ACCEL], [ss, 0.0, 0.0], T)
+            fy = np.poly1d(coeff)
+            sss = fy(s_x)
+            final_path = []
             d = 0. ## we dont want to change lanes
-            px, py = self.stopPlanner.getXY(sss[i], d, self.stopPlanner.map_s, self.wps)
-            final_path.append([px, py])
-        final_path = np.array(final_path)
+            
+            for i in range(len(sss)):
+                px, py = self.stopPlanner.getXY(sss[i], d, self.stopPlanner.map_s, self.wps)
+                final_path.append([px, py])
+                #vvv.append(abs(sss[i]-sss[i+1])/ dt)
+            #px, py = self.stopPlanner.getXY(sss[-1], d, self.stopPlanner.map_s, self.wps)
+            #final_path.append([px, py])
+            final_path = np.array(final_path)
+            #vvv[1] = 1.0
+            #vvv = np.array(vvv)
+
+            vcoeff = self.stopPlanner.JMT([0.5, MAX_ACCEL, 1.0], [0.0, 0.0, 0.0], T)
+            fyv = np.poly1d(vcoeff)
+            vvv = fyv(s_x)
+            vvv[vvv > self.velocity] = self.velocity
+            #vvv[vvv < 1.0] = 0.0
+            #vvv[0] = 2.0
+            #vvv[1] = 2.0
+            print(sss)
+            print(vvv)
+            print(pitch)
+        else:
+            T = np.roots([0.5*MAX_DECEL, self.current_velocity, self.distance_to_tl])
+            T = T[T>0]
+            n = T / dt
+            if n > LOOKAHEAD_WPS:
+                n = LOOKAHEAD_WPS
+                s_x = np.linspace(0, n*dt, n)
+            else:
+                s_x = np.linspace(0, T, n)
+
+            coeff = self.stopPlanner.JMT([s, self.current_velocity, -MAX_DECEL], [ss, 0.0, 0.0], T)
+            fy = np.poly1d(coeff)
+            sss = fy(s_x)
+            final_path = []
+            d = 0. ## we dont want to change lanes
+            #vvv = [self.current_velocity]
+            for i in range(len(sss)):
+                px, py = self.stopPlanner.getXY(sss[i], d, self.stopPlanner.map_s, self.wps)
+                final_path.append([px, py])
+                #vvv.append(abs(sss[i]-sss[i+1])/ dt)
+            #px, py = self.stopPlanner.getXY(sss[-1], d, self.stopPlanner.map_s, self.wps)
+            #final_path.append([px, py])
+            final_path = np.array(final_path)
+            #vvv = np.array(vvv) 
+            vcoeff = self.stopPlanner.JMT([self.current_velocity,  -MAX_DECEL, 1.0], [0.0, 0.0, 0.0], T)
+            fyv = np.poly1d(vcoeff)
+            vvv = fyv(s_x)
+            vvv[vvv > self.velocity] = self.velocity
+            vvv[vvv < 1.0] = 0.0
+            #print(vvv)
+            
+        
         o2lane = Lane()
         o2lane.header.frame_id = '/world'
         o2lane.header.stamp = rospy.Time(0)
@@ -397,12 +452,8 @@ class WaypointUpdater(object):
                 yw = yw + 2 * np.pi
             q = tf.transformations.quaternion_from_euler(0.,0.,yw)
             p.pose.pose.orientation = Quaternion(*q)
-            v = vvv[i]
-            p.twist.twist.linear.x = float(v)
+            p.twist.twist.linear.x = vvv[i]
             waypoints.append(p)
-        
-        
-        
         
         return waypoints
 
@@ -457,18 +508,24 @@ class WaypointUpdater(object):
         (endroll, endpitch, end_yaw) = tf.transformations.euler_from_quaternion([end_q.x, end_q.y, end_q.z, end_q.w])
         
         s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
-        T = 6.0
+        T = 3.0
 
         #rospy.loginfo("tl_distance: %d, s: % %f" % self.tl_distance, s)
+        if self.current_velocity < 1.:
+            start_velocity = 1.
+        else:
+            start_velocity = self.current_velocity
         ss = s + self.stopPlanner.distance(self.wps, next_pt, end_pt)
-        coeff = self.stopPlanner.JMT([s, self.current_velocity, MAX_ACCEL], [ss, self.velocity, MAX_ACCEL], T)
-        vcoeff = self.stopPlanner.JMT([self.current_velocity, MAX_ACCEL, 1.0], [self.velocity, MAX_ACCEL, 1.0], T)
+        coeff = self.stopPlanner.JMT([s, start_velocity, MAX_ACCEL], [ss, self.velocity, MAX_ACCEL], T)
+        vcoeff = self.stopPlanner.JMT([start_velocity, MAX_ACCEL, 1.0], [self.velocity, MAX_ACCEL, 1.0], T)
         fy = np.poly1d(coeff)
         fyv = np.poly1d(vcoeff)
         n = T / 0.03
         s_x = np.linspace(0, T, n)
         sss = fy(s_x)
         vvv = fyv(s_x)
+        vvv[vvv>self.velocity] = self.velocity
+        vvv[vvv<1.] = 1.0
         final_path = []
         for i in range(len(sss)):
             d = 0. ## we dont want to change lanes
@@ -493,10 +550,7 @@ class WaypointUpdater(object):
                 yw = yw + 2 * np.pi
             q = tf.transformations.quaternion_from_euler(0.,0.,yw)
             p.pose.pose.orientation = Quaternion(*q)
-            v = vvv[i]
-            if v > self.velocity:
-                v = self.velocity
-            p.twist.twist.linear.x = float(v)
+            p.twist.twist.linear.x = vvv[i]
             waypoints.append(p)
             
         return waypoints
@@ -842,7 +896,7 @@ class WaypointUpdater(object):
         
         if self.red_tl_prev == self.red_tl == False:
             self.tl_count += 1
-            if self.tl_count < 3:
+            if self.tl_count < 5:
                 self.red_tl = True
             else:
                 self.red_tl = False
