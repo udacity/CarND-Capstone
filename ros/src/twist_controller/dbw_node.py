@@ -137,7 +137,7 @@ class DBWNode(object):
         seq = msg.header.seq
         (x, y, yaw) = twist_to_xyy(msg)
         # rospy.loginfo("twist_cmd_cb %d", seq)
-        # print("twist linear: [%f, %f, %f]" % (x, y, yaw))
+        #print("twist linear: [%f, %f, %f]" % (x, y, yaw))
         self.twist_yaw_filter.filt(yaw)
         # if self.red_tl == True:
         #     vtwist = self.twist_velocity_filter.filt(0.1)
@@ -147,9 +147,9 @@ class DBWNode(object):
         e = vtwist - self.velocity_filter.get()
         # feed pid controller with a dt of 0.033
         self.throttle = self.pidv.step(e, 0.03)
-        # if self.throttle < -5.0:
-        #     self.pidv.reset()
-        # self.throttle = self.pidv.step(e, 0.03)
+        if self.throttle < -5.0:
+            self.pidv.reset()
+        self.throttle = self.pidv.step(e, 0.03)
         if msg.header.seq%5 == 0:
             ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs
             # rospy.loginfo("tcc %d %f %f  %f %f", seq, ts, x, yaw, self.twist_yaw_filter.get())
@@ -240,7 +240,7 @@ class DBWNode(object):
 
                 # throttle is 0.35, which runs the car at about 40 mph.
                 # throttle of 0.98 will run the car at about 115 mph.
-                rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
+                # rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
                 self.publish(throttle, brake, steer)
             else:
                 self.pidv.reset()

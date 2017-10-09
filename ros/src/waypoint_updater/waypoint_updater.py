@@ -283,7 +283,7 @@ class WaypointUpdater(object):
         '''
         In this stop the car will reduce speed to stop at tl
         '''
-        if self.distance_to_tl > 5: # and self.red_tl == True: 
+        if self.distance_to_tl > 6: # and self.red_tl == True: 
             
             #self.go_to_stop_state_pub.publish(True)
             olane = Lane()
@@ -361,22 +361,10 @@ class WaypointUpdater(object):
             current_velocity = self.current_velocity
         # T = 2. * dist_to_tl / current_velocity
         dt = 0.03
-        # if T < dt:
-        #     T = dt
-        # if T > 1.5:
-        #     T = 1.5
-        # n = T / dt
-        # if n > LOOKAHEAD_WPS:
-        #     n = LOOKAHEAD_WPS
-        # elif n < 1.:
-        #     n = 1
-
-        # s_x = np.linspace(0, T, n)
-
-        
+                
         if self.stopped == True:
-            rospy.logwarn("current velocity = 0.")
-            T = np.roots([0.5*MAX_ACCEL, self.current_velocity, -self.distance_to_tl])
+            #rospy.logwarn("current velocity = 0.")
+            T = np.roots([0.5*MAX_ACCEL, 0.5, -(self.distance_to_tl-6)])
             T = T[T>0][0]
             # print("T: %f" % T)
             n = T / dt
@@ -405,7 +393,7 @@ class WaypointUpdater(object):
             fyv = np.poly1d(vcoeff)
             vvv = fyv(s_x)
             vvv[vvv > self.velocity] = self.velocity
-            #vvv[vvv < 1.0] = 0.0
+            vvv[vvv < 0.] = 0.0
             #vvv[0] = 2.0
             #vvv[1] = 2.0
             # print(sss)
@@ -477,38 +465,6 @@ class WaypointUpdater(object):
         if len(self.accel_wps) > 10:
             return self.accel_wps[1:]
         
-        # start = self.next_pt - 1
-        # if start < 0:
-        #     start = 0
-        # #start_pos = self.wps[start]
-        # start_pos = waypoints[0]
-        # vel = self.current_velocity
-
-        # # #rospy.loginfo("[accelerate] current velocity: %f", vel)
-        # for wp in waypoints[:]:
-        #     dist = self.distance(wp.pose.pose.position, start_pos.pose.pose.position)
-        #     vel = math.sqrt(vel**2 + (2. * MAX_ACCEL * dist))
-        #     if vel < 1.0:
-        #         vel = 1.0
-        #     wp.twist.twist.linear.x = vel
-        #     if vel > self.velocity:
-        #         vel = self.velocity
-        ## JMT 
-        # coeff_v = self.JMT([vel, MAX_ACCEL, 1.0], [self.velocity, MAX_ACCEL, 1.0], 5.)
-        # fyv = np.poly1d(coeff_v)
-        # dist = 0
-        # for wp in waypoints[:]:
-        #     dist += self.distance(wp.pose.pose.position, start_pos.pose.pose.position)
-        #     R = np.roots([2*MAX_ACCEL*dist, 4*vel*dist, -4*dist**2])
-        #     T = R[R>0]
-        #     if T.size == 0:
-        #         T = 0
-        #     vfinal = fyv(T)
-        #     if vfinal > self.velocity:
-        #         vfinal = self.velocity
-        #     # elif vfinal < 1.:
-        #     #     vfinal = 1.
-        #     wp.twist.twist.linear.x = vfinal
         ## JMT FULL
         xyz = self.wps[next_pt].pose.pose.position
         q = self.wps[next_pt].pose.pose.orientation
@@ -517,9 +473,9 @@ class WaypointUpdater(object):
         (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
         (endroll, endpitch, end_yaw) = tf.transformations.euler_from_quaternion([end_q.x, end_q.y, end_q.z, end_q.w])
         
+        ## convert to frenet coordinates
         s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
         
-
         #rospy.loginfo("tl_distance: %d, s: % %f" % self.tl_distance, s)
         if self.current_velocity < 1.:
             start_velocity = 1.
@@ -529,7 +485,7 @@ class WaypointUpdater(object):
 
         T = 3.0
         dt = 0.03
-        T = np.roots([0.5*MAX_ACCEL, self.current_velocity, -(ss - s)])
+        T = np.roots([0.5*MAX_ACCEL, start_velocity, -(ss - s)])
         T = T[T>0][0]
         # print("T: %f" % T)
         n = T / dt
@@ -579,29 +535,7 @@ class WaypointUpdater(object):
             
         return waypoints
 
-    # def JMT(self, start, end, T):
-    #     """
-    #     Calculates Jerk Minimizing Trajectory for start, end and T.
-    #     """
-    #     a_0, a_1, a_2 = start[0], start[1], start[2] / 2.0
-    #     c_0 = a_0 + a_1 * T + a_2 * T**2
-    #     c_1 = a_1 + 2* a_2 * T
-    #     c_2 = 2 * a_2
-        
-    #     A = np.array([
-    #             [  T**3,   T**4,    T**5],
-    #             [3*T**2, 4*T**3,  5*T**4],
-    #             [6*T,   12*T**2, 20*T**3],
-    #         ])
-    #     B = np.array([
-    #             end[0] - c_0,
-    #             end[1] - c_1,
-    #             end[2] - c_2
-    #         ])
-    #     a_3_4_5 = np.linalg.solve(A,B)
-    #     alphas = np.concatenate([np.array([a_0, a_1, a_2]), a_3_4_5])
-    #     # reverse coefficients to match order used by np.poly1d
-    #     return alphas[::-1]
+   
 
     '''
     PoseStamped:
