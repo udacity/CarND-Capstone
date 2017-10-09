@@ -87,8 +87,9 @@ class DBWNode(object):
         self.twist_velocity_filter = LowPassFilter(.96, .9)
         self.steer_filter = LowPassFilter(.2, .90)
         #self.p_v = [1.187355162, 0.044831144, 0.00295747] # v1.3
-        self.p_v = [1.325735147117472, 0.06556341512981727, 0.013549012506233077]  # v1.4
+        #self.p_v = [1.325735147117472, 0.06556341512981727, 0.013549012506233077]  # v1.4
         #self.p_v = [1.9285529383307387, 0.0007904838169666957, 0.019058015342866958]
+        self.p_v = [1.181681729, 0.084559526, 0.021058816]
         self.pidv = pid.PID(self.p_v[0], self.p_v[1], self.p_v[2])
         self.throttle = 0.
         min_speed = .01
@@ -147,7 +148,7 @@ class DBWNode(object):
         e = vtwist - self.velocity_filter.get()
         # feed pid controller with a dt of 0.033
         self.throttle = self.pidv.step(e, 0.03)
-        if self.throttle < -5.0:
+        if self.throttle < -3.0:
             self.pidv.reset()
         self.throttle = self.pidv.step(e, 0.03)
         if msg.header.seq%5 == 0:

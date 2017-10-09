@@ -325,8 +325,6 @@ class WaypointUpdater(object):
         '''
         if len(self.decel_wps) > 10:
             if self.stopped == False:
-                rospy.loginfo("decel_wps NOT removing element !!! stopped: %s", self.stopped)
-                #print(self.decel_wps)
                 return self.decel_wps[1:]
             # else:
             #     rospy.loginfo("decel_wps removing element !!! stopped: %s", self.stopped)
