@@ -4,3 +4,15 @@ build
 devel
 
 profile.tmp
+
+# pycharm
+.idea
+
+#vscode
+.vscode
+
+# bag files
+.bag
+
+# zip files
+.zip
