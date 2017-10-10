@@ -1,9 +1,19 @@
-This is the project repo for the Autonomous Wizards team from the *inaugural* (July 7th - October 16th, 2017) cohort of the Udacity Self Driving Car Engineer Nanodegree final & capstone project for said Nanodegree, alternately titled "System Integration" & "Programming a Real Self Driving Car".  For more information about the project, see the project introduction [here--note: **massive** "paywall", you have to be registered for the 3rd Term of said Nanodegree, cost is $2400, and passing the prior two terms / 10 projects](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
+This is the project repo for the Autonomous Wizards team from the *inaugural* (July 7th - October 16th, 2017) cohort of the Udacity Self Driving Car Engineer Nanodegree final & capstone project for said Nanodegree, alternately titled "System Integration" & "Programming a Real Self Driving Car".  For more information about the project, see the project introduction [here--note: **massive** "paywall", you have to be registered for the 3rd Term of said Nanodegree, total cost for said activity being $2400, plus having passed the prior two terms / 10 projects](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 A video showing a complete run of the virtual track in the simulator by our current--as of October 10th, 2017--version of our repo can be found here, 
 at this [link to YouTube video--or just \<ctrl\>click (to open in a new tab) on thumbail below, same link](https://youtu.be/zUsNETAbcLU) 
 
 [![Autonomous Wizards lap in Carla-Simulator](video/Screenshot%202017-10-10%2010:00:31.png)](https://youtu.be/zUsNETAbcLU) 
+
+Introducing Team Autonomous Wizards (Members in alphabetical order):
+
+Juan Carlos Ortiz ortizjuan2@gmail.com 
+Chuck S. chuck_s_@outlook.com 
+Ezra J. Schroeder ezra.schroeder@gmail.com 
+Christian Sousa neocsr@gmail.com 
+Calvenn Tsuu calvenn.tsuu@gmail.com 
+
+
 
 
 ### Native Installation
@@ -45,7 +55,9 @@ git clone https://github.com/cs4nd13/CarND-Capstone
 
 2. Install python dependencies (Please note: if you do not have ROS installed / experience w/ ROS 
 it may interfere w/ your [e.g. conda] python distributions & environments, which is why Udacity uses 
-a specific preconfigured Virtual Machine for the Capstone project).  
+a specific preconfigured Virtual Machine for the Capstone project). Also, please note that the setup 
+here (particularly in item 3, below) are different than for the original Udacity repo for this project.
+C.f. the changelog.txt file maintained by Chuck. 
 ```bash
 cd CarND-Capstone
 pip install -r requirements.txt
