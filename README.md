@@ -8,9 +8,13 @@ at this [link to YouTube video--or just \<ctrl\>click (to open in a new tab) on 
 Introducing Team Autonomous Wizards (Members in alphabetical order):
 
 Juan Carlos Ortiz ortizjuan2@gmail.com 
+
 Chuck S. chuck_s_@outlook.com 
+
 Ezra J. Schroeder ezra.schroeder@gmail.com 
+
 Christian Sousa neocsr@gmail.com 
+
 Calvenn Tsuu calvenn.tsuu@gmail.com 
 
 
