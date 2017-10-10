@@ -9,7 +9,7 @@ at this [link to YouTube video](https://youtu.be/zUsNETAbcLU)
 
 [![Autonomous Wizards lap in Carla-Simulator](https://img.youtube.com/vi/zUsNETAbcLU/0.jpg)](https://youtu.be/zUsNETAbcLU) 
 
-
+<a href="https://youtu.be/zUsNETAbcLU" target="_blank">example</a> 
 
 
 ### Native Installation
