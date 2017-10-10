@@ -11,6 +11,7 @@ at this [link to YouTube video](https://youtu.be/zUsNETAbcLU)
 
 <a href="https://youtu.be/zUsNETAbcLU" target="_blank">example</a> 
 
+[open in another tab hopefully](https://youtu.be/zUsNETAbcLU){:target="_blank"}
 
 ### Native Installation
 
