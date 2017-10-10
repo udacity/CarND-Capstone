@@ -279,35 +279,29 @@ class WaypointUpdater(object):
                 (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
                 s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
                 
-                final_path = []
-                ss = s + 0.1
-                for i in range(30):
-                    px, py = self.stopPlanner.getXY(ss, d, self.stopPlanner.map_s, self.wps)
-                    final_path.append([px, py])
-                    ss += 0.1
+                x = xyz.x + self.current_velocity*math.cos(yaw)*0.03
+                y = xyz.y + self.current_velocity*math.sin(yaw)*0.03
+                
 
                 o2lane = Lane()
                 o2lane.header.frame_id = '/world'
                 o2lane.header.stamp = rospy.Time(0)
                 cur_x = xyz.x
                 cur_y = xyz.y
-                waypoints = []
-                for i in range(len(final_path)):
-                    p = Waypoint()
-                    p.pose.pose.position.x = final_path[i][0]
-                    p.pose.pose.position.y = final_path[i][1]
-                    p.pose.pose.position.z = 0.
-                    yw = math.atan2(final_path[i][1] - cur_y, final_path[i][0] - cur_x)
-                    cur_x = final_path[i][0]
-                    cur_y = final_path[i][1]
-                    if yw < 0:
-                        yw = yw + 2 * np.pi
-                    q = tf.transformations.quaternion_from_euler(0.,0.,yw)
-                    p.pose.pose.orientation = Quaternion(*q)
-                    p.twist.twist.linear.x = 0.0
-                    waypoints.append(p)
+                p = Waypoint()
+                p.pose.pose.position.x = x
+                p.pose.pose.position.y = y
+                p.pose.pose.position.z = 0.
+                yw = math.atan2(y - xyz.y, x - xyz.x)
+                if yw < 0:
+                    yw = yw + 2 * np.pi
+                q = tf.transformations.quaternion_from_euler(0.,0.,yaw)
+                p.pose.pose.orientation = Quaternion(*q)
+                p.twist.twist.linear.x = 0.0
+                waypoints = [p]
                 
                 o2lane.waypoints = waypoints
+                #o2lane.waypoints = []
 
                 self.go_to_stop_state_pub.publish(True)
                 #self.final_waypoints_pub.publish(Lane())
