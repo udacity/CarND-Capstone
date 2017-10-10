@@ -13,6 +13,10 @@ at this [link to YouTube video](https://youtu.be/zUsNETAbcLU)
 
 [open in another tab hopefully](https://youtu.be/zUsNETAbcLU){:target="_blank"}
 
+<p><a href="www.google.com" target="_blank">google_link</a></p>
+
+
+
 ### Native Installation
 
 * Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop).
