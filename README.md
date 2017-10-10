@@ -15,42 +15,13 @@ at this [link to YouTube video](https://youtu.be/zUsNETAbcLU)
 
 <p><a href="www.google.com" target="_blank">google_link</a></p>
 
+
+
+
 ####################another idea
 
-<h1 id="heading-1">Heading 1</h1>
 
-<h2 id="heading-2">Heading 2</h2>
-
-<h3 id="heading-3">Heading 3</h3>
-
-<p>Welcome to the <a href="/">kramdown Online Editor</a>. We hope you <strong>really</strong> enjoy using this.</p>
-
-<p>Just type some <a href="http://en.wikipedia.org/wiki/Markdown">markdown</a>
-on the left and see it on the right. <em>Simple as that.</em></p>
-
-<blockquote>
-  <p>Quote goes here.</p>
-</blockquote>
-
-<p>A list:</p>
-
-<ul>
-  <li>One</li>
-  <li>Two</li>
-  <li>Three</li>
-</ul>
-
-<p>Some inline code <code>to_html</code> and a preformatted code block:</p>
-
-<pre><code>Kramdown::Document.new( 'Hello Markdown!' ).to_html
-</code></pre>
-
-
-
-
-
-
-
+<p><a href="https://youtu.be/zUsNETAbcLU" target="_blank">open in another tab hopefully</a></p>
 
 
 ### experimentation ends here 
