@@ -5,6 +5,13 @@ at this [link to YouTube video](https://youtu.be/zUsNETAbcLU)
 
 [![Autonomous Wizards lap in Carla-Simulator](video/Screenshot%202017-10-10%2010:00:31.png)](https://youtu.be/zUsNETAbcLU) 
 
+
+
+
+
+
+####################another idea
+
 [![Everything Is AWESOME](https://img.youtube.com/vi/StTqXEQ2l-Y/0.jpg)](https://www.youtube.com/watch?v=StTqXEQ2l-Y "Everything Is AWESOME" 
 
 [![Autonomous Wizards lap in Carla-Simulator](https://img.youtube.com/vi/zUsNETAbcLU/0.jpg)](https://youtu.be/zUsNETAbcLU) 
@@ -14,11 +21,6 @@ at this [link to YouTube video](https://youtu.be/zUsNETAbcLU)
 [open in another tab hopefully](https://youtu.be/zUsNETAbcLU){:target="_blank"}
 
 <p><a href="www.google.com" target="_blank">google_link</a></p>
-
-
-
-
-####################another idea
 
 
 <p><a href="https://youtu.be/zUsNETAbcLU" target="_blank">open in another tab hopefully</a></p>
