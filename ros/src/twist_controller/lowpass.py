@@ -6,6 +6,10 @@ class LowPassFilter(object):
 
         self.last_val = 0.
         self.ready = False
+    
+    def reset(self):
+        self.last_val = 0.
+        self.ready = False
 
     def get(self):
         return self.last_val
