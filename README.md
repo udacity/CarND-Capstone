@@ -27,7 +27,25 @@ docker build . -t capstone
 
 Run the docker file
 ```bash
-docker run -p 127.0.0.1:4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
+docker run -p 127.0.0.1:4567:4567 -v $PWD:/capstone -v $PWD/log:/root/.ros/log --rm -it capstone
+```
+
+Inside docker container
+```bash
+catkin_make
+source devel/setup.sh
+roslaunch launch/styx.launch
+```
+
+Connect to docker container in other terminal for debug purpose
+```
+docker exec -it <docker-container-id> bash
+```
+
+Then for example: to check ROS topic list
+```
+source devel/setup.sh
+rostopic list
 ```
 
 ### Usage
