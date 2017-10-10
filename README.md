@@ -3,6 +3,8 @@ This is the project repo for the Autonomous Wizards team (from the *inaugural* c
 A video showing a complete run of the virtual track in the simulator by our current--as of October 10th, 2017--version of our repo can be found here, 
 at this [link to YouTube video](https://youtu.be/zUsNETAbcLU) 
 
+[![Autonomous Wizards lap in Carla-Simulator](video/Screenshot%202017-10-10%2010:00:31.png)](https://youtu.be/zUsNETAbcLU) 
+
 [![Everything Is AWESOME](https://img.youtube.com/vi/StTqXEQ2l-Y/0.jpg)](https://www.youtube.com/watch?v=StTqXEQ2l-Y "Everything Is AWESOME" 
 
 [![Autonomous Wizards lap in Carla-Simulator](https://img.youtube.com/vi/zUsNETAbcLU/0.jpg)](https://youtu.be/zUsNETAbcLU) 
