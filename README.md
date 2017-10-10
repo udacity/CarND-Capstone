@@ -1,32 +1,10 @@
 This is the project repo for the Autonomous Wizards team (from the *inaugural* cohort of the Self Driving Car Engineer Nanodegree) final project of the Udacity Self-Driving Car Nanodegree Capstone Project: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 A video showing a complete run of the virtual track in the simulator by our current--as of October 10th, 2017--version of our repo can be found here, 
-at this [link to YouTube video](https://youtu.be/zUsNETAbcLU) 
+at this [link to YouTube video--or just click on thumbail below, same link](https://youtu.be/zUsNETAbcLU) 
 
 [![Autonomous Wizards lap in Carla-Simulator](video/Screenshot%202017-10-10%2010:00:31.png)](https://youtu.be/zUsNETAbcLU) 
 
-
-
-
-
-
-####################another idea
-
-[![Everything Is AWESOME](https://img.youtube.com/vi/StTqXEQ2l-Y/0.jpg)](https://www.youtube.com/watch?v=StTqXEQ2l-Y "Everything Is AWESOME" 
-
-[![Autonomous Wizards lap in Carla-Simulator](https://img.youtube.com/vi/zUsNETAbcLU/0.jpg)](https://youtu.be/zUsNETAbcLU) 
-
-<a href="https://youtu.be/zUsNETAbcLU" target="_blank">example</a> 
-
-[open in another tab hopefully](https://youtu.be/zUsNETAbcLU){:target="_blank"}
-
-<p><a href="www.google.com" target="_blank">google_link</a></p>
-
-
-<p><a href="https://youtu.be/zUsNETAbcLU" target="_blank">open in another tab hopefully</a></p>
-
-
-### experimentation ends here 
 
 ### Native Installation
 
