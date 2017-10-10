@@ -89,7 +89,10 @@ class DBWNode(object):
         #self.p_v = [1.187355162, 0.044831144, 0.00295747] # v1.3
         #self.p_v = [1.325735147117472, 0.06556341512981727, 0.013549012506233077]  # v1.4
         #self.p_v = [1.9285529383307387, 0.0007904838169666957, 0.019058015342866958]
-        self.p_v = [1.181681729, 0.084559526, 0.021058816]
+        #self.p_v = [1.181681729, 0.084559526, 0.021058816] v.1.5
+        #self.p_v = [1.0671285679286078, 0.0011578159618311297, 0.011254946679196659] ## noise 0, 1.
+        #self.p_v = [0.9999999999, 0.0, 0.0] ## noise 0
+        self.p_v = [0.923685948, 0.004035275, -0.000129007]  ## noise 0.05
         self.pidv = pid.PID(self.p_v[0], self.p_v[1], self.p_v[2])
         self.throttle = 0.
         min_speed = .01
@@ -98,6 +101,7 @@ class DBWNode(object):
         self.yaw_controller = YawController(wheel_base, 1.2*steer_ratio, min_speed, 8*max_lat_accel, max_steer_angle)
         # contol if the car is going to stop
         self.go_to_stop = False
+        
 
         self.loop()
 
@@ -149,6 +153,7 @@ class DBWNode(object):
         # feed pid controller with a dt of 0.033
         self.throttle = self.pidv.step(e, 0.03)
         if self.throttle < -3.0:
+            rospy.logerr("Resetting PID !!!")
             self.pidv.reset()
         self.throttle = self.pidv.step(e, 0.03)
         if msg.header.seq%5 == 0:
@@ -226,9 +231,10 @@ class DBWNode(object):
                         throttle = self.throttle + self.brake_deadband
                         if throttle > 1. : throttle = 1.
                 else:
+                
                     v = self.velocity_filter.get()
                     t = 1.5  # time to brake
-                    u = 0.35  # friction coeficcient
+                    u = 0.70  # friction coeficcient
                     g = 9.8  # gravity force 
                     D = (v * t) + (v**2 / (2. * u * 9.8))
                     # calculate work needed to stop
@@ -236,12 +242,14 @@ class DBWNode(object):
                     # caculate the force
                     F = w / D
                     brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
-                    brake *= 10
-                    # rospy.loginfo("throttle: %f brake: %f steering angle: %f " % (throttle, brake , steer))
+                    brake *= 100.
+                    #rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
+                
+                
 
                 # throttle is 0.35, which runs the car at about 40 mph.
                 # throttle of 0.98 will run the car at about 115 mph.
-                # rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
+                #rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
                 self.publish(throttle, brake, steer)
             else:
                 self.pidv.reset()
