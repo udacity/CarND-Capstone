@@ -54,7 +54,7 @@ docker run -p 127.0.0.1:4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm
 
 1. Clone the project repository
 ```bash
-git clone https://github.com/cs4nd13/CarND-Capstone 
+git clone https://github.com/seneca-wolf/CarND-Capstone 
 ```
 
 2. Install python dependencies (Please note: if you do not have ROS installed / experience w/ ROS 
