@@ -31,6 +31,8 @@ that we have created in the `__init__` function.
 
 '''
 
+RATE = 50.  # 50Hz
+
 class DBWNode(object):
     def __init__(self):
         rospy.init_node('dbw_node')
@@ -54,7 +56,7 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # creating controller with base constants
-        self.controller = Controller(vehicle_mass, fuel_capacity,
+        self.controller = Controller(RATE, vehicle_mass, fuel_capacity,
                                      brake_deadband, decel_limit,
                                      accel_limit, wheel_radius,
                                      wheel_base, steer_ratio, 0., max_lat_accel, max_steer_angle)
@@ -87,14 +89,14 @@ class DBWNode(object):
         rospy.loginfo('DBW is turned {}'.format('ON' if self.dbw_enabled else 'OFF'))
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(RATE)
         while not rospy.is_shutdown():
             if self.dbw_enabled:
                 now = rospy.get_rostime()
                 if self.prev_timestamp:
                     step = (now - self.prev_timestamp).to_sec()
                 else:
-                    step = 1. / 50  # 50 Hz rate
+                    step = 1. / RATE
                 self.prev_timestamp = now
                 control = self.controller.control(self.target_linear, self.target_angular, self.current_velocity, step)
                 self.publish(*control)
