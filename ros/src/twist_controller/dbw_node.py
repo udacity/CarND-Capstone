@@ -58,21 +58,34 @@ class DBWNode(object):
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
 
-        self.speed = 0
         self.turn = 0
+
+        self.velocity = 0
+        self.desired_velocity = 0
 
         self.loop()
 
     def twist_cb(self, twist):
-        self.speed = twist.twist.linear.x
+        self.desired_velocity = twist.twist.linear.x
         self.turn = twist.twist.angular.z * 10
 
+    def velocity_cb(self, twist):
+        self.velocity = twist.twist.linear.x
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            self.publish(self.speed, 0, self.turn)
+            throttle = 0
+            brake = 0
+            speed_difference = self.desired_velocity - self.velocity
+            if speed_difference > 0:
+                throttle = 1
+            if speed_difference < 0:
+                brake = 100
+            #print("speed %f, desired %f, commands %d %d" % (self.velocity, self.desired_velocity, throttle, brake))
+            self.publish(throttle, brake, self.turn)
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
             # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
@@ -98,7 +111,7 @@ class DBWNode(object):
 
         bcmd = BrakeCmd()
         bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
