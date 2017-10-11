@@ -17,7 +17,9 @@ Christian Sousa neocsr@gmail.com
 
 Calvenn Tsuu calvenn.tsuu@gmail.com 
 
+### Documenting code 
 
+![alt text](ezra_linear_algebra_2.jpeg)
 
 
 ### Native Installation
