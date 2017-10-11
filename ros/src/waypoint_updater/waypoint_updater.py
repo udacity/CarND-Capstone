@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-import datetime
+import datetime # only used to show some functionality of timestamps in ROS 
 import tf.transformations
 from geometry_msgs.msg import PoseStamped, Point, Quaternion, TwistStamped
 from std_msgs.msg import Int32, Float32, Bool
@@ -36,14 +36,16 @@ LOOKAHEAD_WPS = 240 # Number of waypoints we will publish.
 # tested at speeds up to 115 mph
 
 
-# takes geometry_msgs/Point
-def point_dist_sq(a, b):
+# takes geometry_msgs/Point # http://docs.ros.org/api/geometry_msgs/html/msg/Point.html 
+# returns float 
+def point_dist_sq(a, b): 
     dx = a.x-b.x
     dy = a.y-b.y
     dz = a.z-b.z
     return dx*dx+dy*dy+dz*dz
 
 # takes geometry_msgs/Point
+# returns float 
 def point_dist(a, b):
     return math.sqrt(point_dist_sq(a, b))
 
@@ -55,7 +57,8 @@ def waypoint_to_point(wp):
 
 # takes x and y position (floats)
 # returns geometry_msgs/Pose
-def point_to_pose(x, y):
+def point_to_pose(x, y): # Note: this function demonstrates some nice functionality: how to construct a geometry_msgs/Pose 
+                         # but it is never used in this project, or at least not in this file. 
     pt = Point()
     pt.x = x
     pt.y = y
@@ -63,7 +66,7 @@ def point_to_pose(x, y):
     pose.position = pt
     return pose
 
-# takes styx_msgs/PoseStamp
+# takes styx_msgs/PoseStamp --> actually, geometry_msgs/PoseStamped https://goo.gl/T5ZXAf 
 # returns geometry_msgs/Point
 def pose_to_point(pose):
     point = pose.pose.position
@@ -74,6 +77,8 @@ def pose_to_point(pose):
 def waypoints_to_vec(a, b):
     return (b.x-a.x, b.y-a.y)
 
+# takes two tuples
+# returns a float 
 def dot_prod(a, b):
     return a[0]*b[0]+a[1]*b[1]
 
@@ -81,15 +86,15 @@ def dot_prod(a, b):
 # returns float ratio of distance that b,
 # projected onto line ac, is between
 # a and c (ratio is 0. if b is at a, and
-# 1. if b is at c
+# 1. if b is at c) 
 def line_ratio(a, b, c):
     ac = waypoints_to_vec(a, c)
     ab = waypoints_to_vec(a, b)
     bc = waypoints_to_vec(b, c)
-    da = dot_prod(ab, ac)
+    da = dot_prod(ab, ac) # == |a b_hat| * |a c| where b_hat is projection of b onto a c. 
     # dc = dot_prod(bc, ac)
-    ac_dist = point_dist(a, c)
-    return da/ac_dist
+    ac_dist = point_dist(a, c) # == |a c| 
+    return da/ac_dist # == |a b_hat| * |a c| / |a c| == |a b_hat| # c.f. http://bit.ly/2yg2inj 
 
 
 
@@ -756,8 +761,11 @@ class WaypointUpdater(object):
 
    
 
-    '''
-    PoseStamped:
+    ''' 
+    # while the system is running 
+    $ rosmsg show PoseStamped
+    
+    [geometry_msgs/PoseStamped]:
     std_msgs/Header header
       uint32 seq
       time stamp
@@ -851,7 +859,7 @@ class WaypointUpdater(object):
    
 
 
-
+    # takes geometry_msg/PoseStamped messages http://bit.ly/2wNXAtB # or see above <ctrl>-f 'PoseStamped' (sans quotes) 
     def pose_cb(self, msg):
         # TODO: Implement
         # rospy.loginfo("Pose %d %s %s", msg.header.seq, msg.header.stamp, msg.header.frame_id)
@@ -867,8 +875,8 @@ class WaypointUpdater(object):
 
         self.current_pose = msg.pose
 
-        if len(self.wps) == 0:
-            return
+        if len(self.wps) == 0:   
+            return               
         seq = msg.header.seq
         if seq%1 != 0:
             return
@@ -889,8 +897,8 @@ class WaypointUpdater(object):
 
         (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
         ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs
-        dtime = datetime.datetime.fromtimestamp(ts)
-        dts = dtime.strftime("%H:%M:%S.%f")
+        dtime = datetime.datetime.fromtimestamp(ts) # only used to show some functionality of timestamps in ROS 
+        dts = dtime.strftime("%H:%M:%S.%f")         # only used to show some functionality of timestamps in ROS 
         # near_pt is only used for testing
         # near_pt = self.nearest_waypoint(msg)
         next_pt = self.next_waypoint(msg)
@@ -953,8 +961,9 @@ class WaypointUpdater(object):
         # rospy.loginfo("Waypoints %d\n%s", len(waypoints.waypoints), waypoints.waypoints[0])
         # rospy.loginfo("Waypoints\n%s", waypoints.header)
 
-        # TODO: Implement
-        if len(waypoints.waypoints) == len(self.wps):
+        # TODO: Implement                             # note: this callback method effectively only 'called' once as otherwise it returns.
+        if len(waypoints.waypoints) == len(self.wps): # could possibly [?] improve / implement the same functionality by *unsubscribing* & / or using a 'latched' topic
+                                                      # more here: http://bit.ly/2i7paQc & here: http://bit.ly/2i4utzG latch=False by default on publishers 
             # rospy.loginfo("Waypoints: same as before")
             return
         
