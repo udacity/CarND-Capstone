@@ -54,7 +54,7 @@ class WaypointUpdater(object):
         self.redlight_wp_index = None
 
         ## rate to publish to final_waypoints
-        self.publish_rate = 40 # doesnt make sense if >= 40, which is /current_pose rate
+        self.publish_rate = 2 # doesnt make sense if >= 40, which is /current_pose rate
 
 
         # publish waypoints in a loop with explicit rate
@@ -197,7 +197,7 @@ class WaypointUpdater(object):
             light_wp = base_waypoints[self.redlight_wp_index]
             distance = self.distance(light_wp, self.car_pose)
             # stops in x distance 
-            if self.ahead_of(light_wp, self.car_pose) and distance <= 35: 
+            if self.ahead_of(light_wp, self.car_pose) and distance <= 33: 
                 return True
             else:
                 return False

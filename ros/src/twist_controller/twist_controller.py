@@ -24,7 +24,7 @@ class Controller(object):
 	self.min_speed = 0
 
 	self.speed_controller = PID(0.5, 0.02, 0.2, 							self.decel_limit,self.accel_limit)
-	self.steering_controller = PID(5, 0.05, 1, -0.5, 0.5)
+	self.steering_controller = PID(5, 0.05, 1, -self.max_steer_angle, 							self.max_steer_angle)
 
 	self.tau = 0.2
 	self.ts = 0.1
@@ -70,4 +70,4 @@ class Controller(object):
 	predictive_steer = self.yaw_controller.get_steering(target_linear_vel, 					target_angular_vel, current_linear_vel)
 	steer = corrective_steer + predictive_steer
 
-        return throttle, brake, corrective_steer
+        return throttle, brake, steer
