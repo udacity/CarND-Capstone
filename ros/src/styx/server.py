@@ -51,9 +51,21 @@ def telemetry(sid, data):
     bridge.publish_odometry(data)
     global msgs
     # send all 3 messages at once.  If throttle isn't
-    # last, simulator sometimes takes its foot off the throttle
+    # last, simulator sometimes takes its foot off the throttle.
+    # If brake isn't last, simulator consistently ignores brake!
     if len(msgs) >= 3:
-        for key in ['steer', 'brake', 'throttle']:
+        # throttle is last
+        throttle_key_list = ['steer', 'brake', 'throttle']
+        # brake is last
+        brake_key_list = ['steer', 'throttle', 'brake']
+        brake_value = float(msgs['brake']['brake'])
+        # if desired brake value is non-zero, use the brake_key_list
+        if brake_value == 0.:
+            key_list = throttle_key_list
+        else:
+            key_list = brake_key_list
+
+        for key in key_list:
             if not key in msgs: 
                 print(key,"not defined")
                 continue
