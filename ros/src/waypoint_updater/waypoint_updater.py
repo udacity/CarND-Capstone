@@ -77,6 +77,8 @@ def pose_to_point(pose):
 def waypoints_to_vec(a, b):
     return (b.x-a.x, b.y-a.y)
 
+# takes two tuples
+# returns a float 
 def dot_prod(a, b):
     return a[0]*b[0]+a[1]*b[1]
 
@@ -92,7 +94,7 @@ def line_ratio(a, b, c):
     da = dot_prod(ab, ac) # == |a b_hat| * |a c| where b_hat is projection of b onto a c. 
     # dc = dot_prod(bc, ac)
     ac_dist = point_dist(a, c) # == |a c| 
-    return da/ac_dist # == |a b_hat| * |a c| / |a c| == |a b_hat| 
+    return da/ac_dist # == |a b_hat| * |a c| / |a c| == |a b_hat| # c.f. http://bit.ly/2yg2inj 
 
 
 
@@ -759,8 +761,11 @@ class WaypointUpdater(object):
 
    
 
-    '''
-    PoseStamped:
+    ''' 
+    # while the system is running 
+    $ rosmsg show PoseStamped
+    
+    [geometry_msgs/PoseStamped]:
     std_msgs/Header header
       uint32 seq
       time stamp
@@ -854,7 +859,7 @@ class WaypointUpdater(object):
    
 
 
-
+    # takes geometry_msg/PoseStamped messages http://bit.ly/2wNXAtB # or see above <ctrl>-f 'PoseStamped' (sans quotes) 
     def pose_cb(self, msg):
         # TODO: Implement
         # rospy.loginfo("Pose %d %s %s", msg.header.seq, msg.header.stamp, msg.header.frame_id)
@@ -870,8 +875,8 @@ class WaypointUpdater(object):
 
         self.current_pose = msg.pose
 
-        if len(self.wps) == 0:
-            return
+        if len(self.wps) == 0:   
+            return               
         seq = msg.header.seq
         if seq%1 != 0:
             return
@@ -956,8 +961,9 @@ class WaypointUpdater(object):
         # rospy.loginfo("Waypoints %d\n%s", len(waypoints.waypoints), waypoints.waypoints[0])
         # rospy.loginfo("Waypoints\n%s", waypoints.header)
 
-        # TODO: Implement
-        if len(waypoints.waypoints) == len(self.wps):
+        # TODO: Implement                             # note: this callback method effectively only 'called' once as otherwise it returns.
+        if len(waypoints.waypoints) == len(self.wps): # could possibly [?] improve / implement the same functionality by *unsubscribing* & / or using a 'latched' topic
+                                                      # more here: http://bit.ly/2i7paQc & here: http://bit.ly/2i4utzG latch=False by default on publishers 
             # rospy.loginfo("Waypoints: same as before")
             return
         
