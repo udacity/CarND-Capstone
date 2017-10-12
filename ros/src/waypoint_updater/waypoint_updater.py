@@ -706,11 +706,15 @@ class WaypointUpdater(object):
             start_velocity = self.current_velocity
         ss = s + self.stopPlanner.distance(self.wps, next_pt, end_pt)
 
-        T = 3.0
         dt = 0.03
-        T = np.roots([0.5*MAX_ACCEL, start_velocity, -(ss - s)])
-        T = T[T>0][0]
+
+        # T = 3.0
+        # T = np.roots([0.5*MAX_ACCEL, start_velocity, -(ss - s)])
+        # T = T[T>0][0]
         # print("T: %f" % T)
+
+        T = (self.velocity - start_velocity) / MAX_ACCEL
+
         n = T / dt
         if n > LOOKAHEAD_WPS:
             n = LOOKAHEAD_WPS
