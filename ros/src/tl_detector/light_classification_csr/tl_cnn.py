@@ -22,15 +22,15 @@ class TrafficLightModel(object):
 
         input_shape = (150, 150, 3)
         model = Sequential()
-        model.add(Conv2D(32, 3, 3, input_shape=input_shape))
+        model.add(Conv2D(32, (3, 3), input_shape=input_shape))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
-        model.add(Conv2D(32, 3, 3))
+        model.add(Conv2D(32, (3, 3)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
-        model.add(Conv2D(64, 3, 3))
+        model.add(Conv2D(64, (3, 3)))
         model.add(Activation('relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
@@ -65,7 +65,7 @@ class TrafficLightModel(object):
 
     def __init__(self):
         # Load Model
-        fname = './light_classification_csr/model_keras_v1.2.0_8840_16_100'
+        fname = './light_classification_csr/model_16_100_1506872681554117'
         file = open(fname + '.json', 'r')
         json_string = file.read()
         file.close()
@@ -89,7 +89,7 @@ class TrafficLightModel(object):
         resized = cv2.resize(image, (150, 150))
 
         # Normalized numpy array with shape (150, 150, 3)
-        x = img_to_array(resized, dim_ordering='tf') / 255.
+        x = img_to_array(resized, data_format='channels_last') / 255.
 
         # Numpy array with shape (1, 150, 150, 3)
         x = x.reshape((1,) + x.shape)
