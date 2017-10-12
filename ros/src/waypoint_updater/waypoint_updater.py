@@ -918,7 +918,7 @@ class WaypointUpdater(object):
             pass
         
         next_tl = self.get_next_tl(next_pt)
-        rospy.loginfo('next traffic light: %d', next_tl)
+        # rospy.loginfo('next traffic light: %d', next_tl)
         if next_tl == -1:
             return
         self.distance_to_tl = self.stopPlanner.distance(self.wps, next_pt, next_tl)
@@ -1021,7 +1021,7 @@ class WaypointUpdater(object):
             # items: x, y, waypoint id
             pos.append(nearest)
 
-        rospy.loginfo(self.stop_lines)
+        # rospy.loginfo(self.stop_lines)
 
         ''' 
         Code below is to see how yaw can be computed from
