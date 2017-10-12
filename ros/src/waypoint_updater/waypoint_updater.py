@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+import tf
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -29,24 +30,29 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.current_pose = None
+        self.waypoints = None
 
-        rospy.spin()
+        self.speed_limit = rospy.get_param("~speed_limit")
+
+        rate = rospy.Rate(5)
+        while not rospy.is_shutdown():
+            self.publish_next_waypoints()
+            rate.sleep()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.current_pose = msg.pose
 
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+    def waypoints_cb(self, msg):
+        self.waypoints = msg.waypoints
+        self.base_waypoints_sub.unregister()
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -69,6 +75,58 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    def publish_next_waypoints(self):
+        waypoints = []
+
+        if self.current_pose and self.waypoints:
+            waypoint_begin_index = self.get_next_waypoint_index()
+            waypoint_end_index = waypoint_begin_index + LOOKAHEAD_WPS
+
+            if waypoint_end_index > len(self.waypoints):
+                waypoint_end_index = len(self.waypoints)
+
+            for i in range(waypoint_begin_index, waypoint_end_index):
+                self.set_waypoint_velocity(self.waypoints, i, self.speed_limit)
+                waypoints.append(self.waypoints[i])
+
+        output = Lane()
+        output.waypoints = waypoints
+
+        self.final_waypoints_pub.publish(output)
+
+    def get_nearest_waypoint_index(self):
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
+        nearest_dist = 99999
+        nearest_waypoint_index = 0
+        next_waypoint_index = 0
+
+        dist = dl(self.waypoints[nearest_waypoint_index].pose.pose.position, self.current_pose.position)
+
+        while dist < nearest_dist and nearest_waypoint_index < len(self.waypoints):
+            nearest_dist = dist
+            nearest_waypoint_index = next_waypoint_index
+            dist = dl(self.waypoints[nearest_waypoint_index+1].pose.pose.position, self.current_pose.position)
+            next_waypoint_index += 1
+
+        return nearest_waypoint_index
+
+    def get_next_waypoint_index(self):
+        next_waypoint_index = self.get_nearest_waypoint_index()
+
+        quaternion = (
+            self.current_pose.orientation.x,
+            self.current_pose.orientation.y,
+            self.current_pose.orientation.z,
+            self.current_pose.orientation.w,
+        )
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+
+        if (euler[2] > (math.pi/4)):
+            next_waypoint_index += 1
+
+        return next_waypoint_index
 
 
 if __name__ == '__main__':
