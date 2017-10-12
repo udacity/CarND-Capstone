@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-import datetime # only used to show some functionality of timestamps in ROS 
+import datetime # only used to demonstrate some functionality of timestamps in ROS, i.e. not 'necessary' for project code to run i don't think -- EJS 10.10.2017 
 import tf.transformations
 from geometry_msgs.msg import PoseStamped, Point, Quaternion, TwistStamped
 from std_msgs.msg import Int32, Float32, Bool
@@ -875,10 +875,10 @@ class WaypointUpdater(object):
 
         self.current_pose = msg.pose
 
-        if len(self.wps) == 0:   
+        if len(self.wps) == 0:   # if the base waypoints haven't been received, no point in processing 
             return               
         seq = msg.header.seq
-        if seq%1 != 0:
+        if seq%1 != 0:          # this used to say something like if seq%5 != 0: return but now it is essentially cruft, i think. -- EJS 10.10.2017. 
             return
         q = msg.pose.orientation
         xyz = msg.pose.position
@@ -895,10 +895,10 @@ class WaypointUpdater(object):
                 self.stopped = False
             #rospy.loginfo("stopped: %s displacement: %f", self.stopped, displacement)
 
-        (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
-        ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs
-        dtime = datetime.datetime.fromtimestamp(ts) # only used to show some functionality of timestamps in ROS 
-        dts = dtime.strftime("%H:%M:%S.%f")         # only used to show some functionality of timestamps in ROS 
+        (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w]) # could also say, _, _, yaw = as roll & yaw are never used -- EJS 10.10.2017
+        ts = msg.header.stamp.secs + 1.e-9*msg.header.stamp.nsecs # only used to show some functionality of timestamps in ROS 
+        dtime = datetime.datetime.fromtimestamp(ts)               # only used to show some functionality of timestamps in ROS 
+        dts = dtime.strftime("%H:%M:%S.%f")                       # only used to show some functionality of timestamps in ROS -- EJS 10.10.2017 
         # near_pt is only used for testing
         # near_pt = self.nearest_waypoint(msg)
         next_pt = self.next_waypoint(msg)
