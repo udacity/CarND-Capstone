@@ -277,50 +277,10 @@ class WaypointUpdater(object):
         In this state the car will stop or remain stop at tl
         '''
         if self.red_tl == True:
-
-            if self.stopped == False:
-
-                xyz = self.current_pose.position
-                q = self.current_pose.orientation
-                (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
-                s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
-                
-                x = xyz.x + self.current_velocity*math.cos(yaw)*0.03
-                y = xyz.y + self.current_velocity*math.sin(yaw)*0.03
-                
-
-                o2lane = Lane()
-                o2lane.header.frame_id = '/world'
-                o2lane.header.stamp = rospy.Time(0)
-                cur_x = xyz.x
-                cur_y = xyz.y
-                p = Waypoint()
-                p.pose.pose.position.x = x
-                p.pose.pose.position.y = y
-                p.pose.pose.position.z = 0.
-                yw = math.atan2(y - xyz.y, x - xyz.x)
-                if yw < 0:
-                    yw = yw + 2 * np.pi
-                q = tf.transformations.quaternion_from_euler(0.,0.,yaw)
-                p.pose.pose.orientation = Quaternion(*q)
-                p.twist.twist.linear.x = 0.0
-                waypoints = [p]
-                
-                o2lane.waypoints = waypoints
-                #o2lane.waypoints = []
-
-                self.go_to_stop_state_pub.publish(True)
-                #self.final_waypoints_pub.publish(Lane())
-                self.final_waypoints_pub.publish(o2lane)
-                self.next_waypoint_pub.publish(self.next_pt)
-            else:
-                self.go_to_stop_state_pub.publish(True)
-                self.final_waypoints_pub.publish(Lane())
-                
-                self.next_waypoint_pub.publish(self.next_pt)
-
+            self.go_to_stop_state_pub.publish(True)
+            self.final_waypoints_pub.publish(Lane())
+            self.next_waypoint_pub.publish(self.next_pt)
             return True
-        # rospy.loginfo("[stopped_cb] moving to stop line, Traffic Ligh : %s", self.red_tl)
         self.decel_wps = []
         return False
     
@@ -347,7 +307,6 @@ class WaypointUpdater(object):
             # if past_zero_pt > 0:
             #     olane.waypoints.extend(self.wps[:past_zero_pt])
             # rospy.loginfo('[go_to_stop] velocity: %f', olane.waypoints[0].twist.twist.linear.x)
-            
             self.final_waypoints_pub.publish(olane)
             self.next_waypoint_pub.publish(self.next_pt)
             return True
@@ -372,18 +331,6 @@ class WaypointUpdater(object):
         if len(self.decel_wps) > 10:
             if self.stopped == False:
                 return self.decel_wps[1:]
-            # else:
-            #     rospy.loginfo("decel_wps removing element !!! stopped: %s", self.stopped)
-            #     return self.decel_wps[1:]
-
-        # last = waypoints[-1]
-        # last.twist.twist.linear.x = target_velocity
-        # for wp in waypoints[:-1][::-1]:
-        #     dist = self.distance(wp.pose.pose.position, last.pose.pose.position)
-        #     vel = math.sqrt(2 * MAX_DECEL * dist)
-        #     if vel < 1.:
-        #         vel = 0.
-        #     wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
         
         xyz = self.wps[next_pt].pose.pose.position
         q = self.wps[next_pt].pose.pose.orientation
@@ -394,9 +341,6 @@ class WaypointUpdater(object):
         
         s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)
        
-
-        #rospy.loginfo("tl_distance: %d, s: % %f" % self.tl_distance, s)
-        #dist_to_tl = self.stopPlanner.distance(self.wps, next_pt, next_tl) 
         ss = s + self.distance_to_tl
         
         if self.current_velocity == 0:
@@ -405,7 +349,7 @@ class WaypointUpdater(object):
             current_velocity = self.current_velocity
         # T = 2. * dist_to_tl / current_velocity
         dt = 0.03
-                
+                      
         if self.stopped == True:
             #rospy.logwarn("current velocity = 0.")
             #T = np.roots([0.5*MAX_ACCEL, 0.5, -(self.distance_to_tl)])
@@ -431,20 +375,14 @@ class WaypointUpdater(object):
             #px, py = self.stopPlanner.getXY(sss[-1], d, self.stopPlanner.map_s, self.wps)
             #final_path.append([px, py])
             final_path = np.array(final_path)
-            #vvv[1] = 1.0
-            #vvv = np.array(vvv)
-
             vcoeff = self.stopPlanner.JMT([1.0, MAX_ACCEL, 1.0], [0.0, 0.0, 0.0], T)
             fyv = np.poly1d(vcoeff)
             vvv = fyv(s_x)
             vvv[vvv > self.velocity] = self.velocity
-            #vvv[vvv < 1.] = 1.0
             vvv[vvv < 0.] = 0.0
-            #vvv[0] = 1.0
-            #vvv[1] = 2.0
-            # print(sss)
-            # print(vvv)
-            # print(pitch)
+            yawcoeff = self.stopPlanner.JMT([yaw, 0.017453, 1.0], [end_yaw, 0.017453, 1.0], T)
+            fyyaw = np.poly1d(yawcoeff)
+            yyy = fyyaw(s_x)
         else:
             #T = np.roots([0.5*MAX_DECEL, self.current_velocity, -(self.distance_to_tl)])
             #T = T[T>0][0]
@@ -470,14 +408,13 @@ class WaypointUpdater(object):
             #px, py = self.stopPlanner.getXY(sss[-1], d, self.stopPlanner.map_s, self.wps)
             #final_path.append([px, py])
             final_path = np.array(final_path)
-            #vvv = np.array(vvv) 
             vcoeff = self.stopPlanner.JMT([self.current_velocity,  -MAX_DECEL, 1.0], [0.0, 0.0, 0.0], T)
             fyv = np.poly1d(vcoeff)
             vvv = fyv(s_x)
             vvv[vvv > self.velocity] = self.velocity
-            #vvv[vvv < 1.0] = 0.0
-            #print(vvv)
-            
+            yawcoeff = self.stopPlanner.JMT([yaw, 0.017453, 1.0], [end_yaw, 0.017453, 1.0], T)
+            fyyaw = np.poly1d(yawcoeff)
+            yyy = fyyaw(s_x)
         
         o2lane = Lane()
         o2lane.header.frame_id = '/world'
@@ -493,9 +430,9 @@ class WaypointUpdater(object):
             yw = math.atan2(final_path[i][1] - cur_y, final_path[i][0] - cur_x)
             cur_x = final_path[i][0]
             cur_y = final_path[i][1]
-            if yw < 0:
-                yw = yw + 2 * np.pi
-            q = tf.transformations.quaternion_from_euler(0.,0.,yw)
+            # if yw < 0:
+            #     yw = yw + 2 * np.pi
+            q = tf.transformations.quaternion_from_euler(0.,0.,yyy[i])
             p.pose.pose.orientation = Quaternion(*q)
             p.twist.twist.linear.x = vvv[i]
             waypoints.append(p)
@@ -591,101 +528,6 @@ class WaypointUpdater(object):
         return waypoints
 
 
-
-
-    # def decelerate_stop(self, next_pt, next_tl, target_velocity=0.):
-    #     '''
-    #     Copy of the function used in waypoing loader to reduce 
-    #     the velocity of the car when apporaching a tl
-    #     '''
-
-    #     if len(self.decel_wps) > 10:
-    #         return self.decel_wps[1:]
-            
-
-    #     xyz = self.current_pose.position
-    #     q = self.current_pose.orientation
-    #     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
-    #     s, d = self.stopPlanner.getFrenet(xyz.x, xyz.y, yaw, self.wps)    
-        
-    #     # # xyz = self.wps[next_pt].pose.pose.position
-    #     # # q = self.wps[next_pt].pose.pose.orientation
-    #     end_xyz = self.wps[next_tl].pose.pose.position
-    #     end_q = self.wps[next_tl].pose.pose.orientation
-    #     # # (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])
-    #     (endroll, endpitch, end_yaw) = tf.transformations.euler_from_quaternion([end_q.x, end_q.y, end_q.z, end_q.w])
-        
-    #     ss, dd = self.stopPlanner.getFrenet(end_xyz.x, end_xyz.y, end_yaw, self.wps)
-
-       
-
-    #     #rospy.loginfo("tl_distance: %d, s: % %f" % self.tl_distance, s)
-    #     dist_to_tl = ss - s 
-                
-    #     dt = 0.03
-
-    #     a = (self.current_velocity**2 / dist_to_tl) -  (self.current_velocity**2 / (2.*dist_to_tl))
-        
-    
-    #     #T = np.roots([0.5*MAX_DECEL, self.current_velocity, -(distance_to_tl-self.stopped_cb)])
-    #     #T = T[T>0][0]
-    #     #T = self.current_velocity / MAX_DECEL
-    #     T = self.current_velocity / a
-    #     # print("T: %f" % T)
-    #     n = T / dt
-    #     if n > LOOKAHEAD_WPS:
-    #         n = LOOKAHEAD_WPS
-    #         s_x = np.linspace(0, n*dt, n)
-    #     else:
-    #         s_x = np.linspace(0, T, n)
-    #     # print(s, self.current_velocity, MAX_DECEL, ss)
-    #     coeff = self.stopPlanner.JMT([s, self.current_velocity, -a], [ss, 0.0, 0.0], T)
-    #     fy = np.poly1d(coeff)
-    #     sss = fy(s_x)
-    #     final_path = []
-        
-    #     #vvv = [self.current_velocity]
-    #     for i in range(len(sss)):
-    #         px, py = self.stopPlanner.getXY(sss[i], d, self.stopPlanner.map_s, self.wps)
-    #         final_path.append([px, py])
-    #         #vvv.append(abs(sss[i]-sss[i+1])/ dt)
-    #     #px, py = self.stopPlanner.getXY(sss[-1], d, self.stopPlanner.map_s, self.wps)
-    #     #final_path.append([px, py])
-    #     final_path = np.array(final_path)
-    #     #vvv = np.array(vvv) 
-    #     vcoeff = self.stopPlanner.JMT([self.current_velocity,  -a, 1.0], [0.0, 0.0, 0.0], T)
-    #     fyv = np.poly1d(vcoeff)
-    #     vvv = fyv(s_x)
-    #     vvv[vvv > self.velocity] = self.velocity
-    #     vvv[vvv < 1.0] = 0.0
-    #     #print(vvv)
-        
-    
-    #     o2lane = Lane()
-    #     o2lane.header.frame_id = '/world'
-    #     o2lane.header.stamp = rospy.Time(0)
-    #     cur_x = xyz.x
-    #     cur_y = xyz.y
-    #     waypoints = []
-    #     for i in range(len(final_path)):
-    #         p = Waypoint()
-    #         p.pose.pose.position.x = final_path[i][0]
-    #         p.pose.pose.position.y = final_path[i][1]
-    #         p.pose.pose.position.z = 0.
-    #         yw = math.atan2(final_path[i][1] - cur_y, final_path[i][0] - cur_x)
-    #         cur_x = final_path[i][0]
-    #         cur_y = final_path[i][1]
-    #         if yw < 0:
-    #             yw = yw + 2 * np.pi
-    #         q = tf.transformations.quaternion_from_euler(0.,0.,yw)
-    #         p.pose.pose.orientation = Quaternion(*q)
-    #         p.twist.twist.linear.x = vvv[i]
-    #         waypoints.append(p)
-        
-    #     return waypoints
-
-
-
     def accelerate(self, next_pt, end_pt):
         '''
         Used by start_moving state but is not working yet
@@ -712,11 +554,6 @@ class WaypointUpdater(object):
         ss = s + self.stopPlanner.distance(self.wps, next_pt, end_pt)
 
         dt = 0.03
-
-        # T = 3.0
-        # T = np.roots([0.5*MAX_ACCEL, start_velocity, -(ss - s)])
-        # T = T[T>0][0]
-        # print("T: %f" % T)
 
         T = (self.velocity - start_velocity) / MAX_ACCEL
 
