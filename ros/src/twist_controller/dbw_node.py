@@ -91,8 +91,9 @@ class DBWNode(object):
         #self.p_v = [1.9285529383307387, 0.0007904838169666957, 0.019058015342866958]
         #self.p_v = [1.181681729, 0.084559526, 0.021058816] v.1.5
         #self.p_v = [1.0671285679286078, 0.0011578159618311297, 0.011254946679196659] ## noise 0, 1.
-        #self.p_v = [0.9999999999, 0.0, 0.0] ## noise 0
-        self.p_v = [0.923685948, 0.004035275, -0.000129007]  ## noise 0.05
+        self.p_v = [0.9999999999, 0.0, 0.0] ## noise 0
+        #self.p_v = [0.923685948, 0.004035275, -0.000129007]  ## noise 0.05
+        #self.p_v = [2.8144929000000034, 0.3190704767458041, 0.04469070609966564] # new values based on new brake system
         self.pidv = pid.PID(self.p_v[0], self.p_v[1], self.p_v[2])
         self.throttle = 0.
         min_speed = .01
@@ -222,18 +223,38 @@ class DBWNode(object):
                             throttle = 1.0
                         else: 
                             throttle = 0.
-                            brake = 1.0 * 1000
+                            #brake = 1.0 * 10
+                            v = self.velocity_filter.get()
+                            t = 0.03  # time to brake
+                            u = 0.70  # friction coeficcient
+                            g = 9.8  # gravity force 
+                            D = (v * t) + (v**2 / (2. * u * 9.8))
+                            # calculate work needed to stop
+                            w = 0.5 * self.vehicle_mass * (v**2 - (v-t)**2)
+                            # caculate the force
+                            F = w / D
+                            brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
                     elif self.throttle < 0:
                         throttle = 0
-                        brake = (abs(self.throttle) + self.brake_deadband) * 1000
+                        #brake = (abs(self.throttle) + self.brake_deadband) #* 10
                         #if brake > 1.: brake = 1. * 1000 
+                        v = self.velocity_filter.get()
+                        t = 0.03  # time to brake
+                        u = 0.70  # friction coeficcient
+                        g = 9.8  # gravity force 
+                        D = (v * t) + (v**2 / (2. * u * 9.8))
+                        # calculate work needed to stop
+                        w = 0.5 * self.vehicle_mass * (v**2 - (v-t)**2)
+                        # caculate the force
+                        F = w / D
+                        brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
                     else:
                         throttle = self.throttle + self.brake_deadband
                         if throttle > 1. : throttle = 1.
                 else:
                 
                     v = self.velocity_filter.get()
-                    t = 1.5  # time to brake
+                    t = 4.0  # time to brake
                     u = 0.70  # friction coeficcient
                     g = 9.8  # gravity force 
                     D = (v * t) + (v**2 / (2. * u * 9.8))
@@ -242,14 +263,14 @@ class DBWNode(object):
                     # caculate the force
                     F = w / D
                     brake = (2 * u * F * self.wheel_radius) + self.brake_deadband
-                    brake *= 100.
-                    #rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
+                    #brake *= 10.
+                    rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
                 
                 
 
                 # throttle is 0.35, which runs the car at about 40 mph.
                 # throttle of 0.98 will run the car at about 115 mph.
-                #rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
+                rospy.loginfo("[%f] throttle: %f brake: %f steering angle: %f " % (self.throttle, throttle, brake , steer))
                 self.publish(throttle, brake, steer)
             else:
                 self.pidv.reset()
