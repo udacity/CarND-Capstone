@@ -174,7 +174,7 @@ class TLDetector(object):
             self.light_classifier = TLClassifierCT()
             # Which frames to process.  For instance, 
             # skip_factor = 5 means process every 5th frame
-            self.light_classifier.skip_factor = 1
+            self.light_classifier.skip_factor = 5
             # Don't process image if next light is more than
             # 200 meters away
             self.max_tl_distance = 200
@@ -184,7 +184,7 @@ class TLDetector(object):
             self.light_classifier = TLClassifierCSR()
             # Which frames to process.  For instance,
             # skip_factor = 5 means process every 5th frame
-            self.light_classifier.skip_factor = 1
+            self.light_classifier.skip_factor = 5
             # Don't process image if next light is more than
             # 200 meters away
             self.max_tl_distance = 200
