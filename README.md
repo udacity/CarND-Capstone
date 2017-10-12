@@ -32,9 +32,8 @@ Run the docker file
 
 Inside docker container
 ```bash
-catkin_make
-source devel/setup.sh
-roslaunch launch/styx.launch
+udacity_make
+udacity_run
 ```
 
 Connect to docker container in other terminal for debug purpose
@@ -44,6 +43,7 @@ Connect to docker container in other terminal for debug purpose
 
 Then for example: to check ROS topic list
 ```
+cd ros
 source devel/setup.sh
 rostopic list
 ```
