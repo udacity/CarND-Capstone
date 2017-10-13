@@ -116,23 +116,9 @@ class DBWNode(object):
 
         bcmd = BrakeCmd()
         bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
-
-
-
-    def draw(self, control):
-        if 0 <= self.iteration < 10000:
-            self.iteration += 1
-        if 1000 <= self.iteration < 10000:
-            rospy.loginfo(str(self.iteration))
-            self.values.append(control)
-        elif self.iteration == 10000:
-            import matplotlib.pyplot as plt
-            plt.plot(self.values)
-            plt.show()
-            self.iteration = -1
 
 
 if __name__ == '__main__':
