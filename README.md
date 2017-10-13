@@ -22,28 +22,28 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 Build the docker container
 ```bash
-docker build . -t capstone
+./build-docker-image.sh
 ```
 
 Run the docker file
 ```bash
-docker run -p 127.0.0.1:4567:4567 -v $PWD:/capstone -v $PWD/log:/root/.ros/log --rm -it capstone
+./run.sh
 ```
 
 Inside docker container
 ```bash
-catkin_make
-source devel/setup.sh
-roslaunch launch/styx.launch
+udacity_make
+udacity_run
 ```
 
 Connect to docker container in other terminal for debug purpose
 ```
-docker exec -it <docker-container-id> bash
+./run.sh
 ```
 
 Then for example: to check ROS topic list
 ```
+cd ros
 source devel/setup.sh
 rostopic list
 ```
