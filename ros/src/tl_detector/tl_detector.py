@@ -142,23 +142,23 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
         """
 
-        if (self.waypoints is not None and self.kdtree is None):
-            if (VERBOSE):
-                print ("tl_detector: g_cl_wp: initializing kdtree")
-            points=[]
-            i=0
-            for waypoint in self.waypoints:
+        if self.waypoints is not None and self.kdtree is None:
+            if VERBOSE:
+                print ('tl_detector: g_cl_wp: initializing kdtree')
+            points = []
+
+            for i, waypoint in enumerate(self.waypoints):
                 points.append((float(waypoint.pose.pose.position.x),
                                float(waypoint.pose.pose.position.y),
-                               int(i)))
-                i += 1
+                               i))
+
             self.kdtree = KDTree(points)
 
-        if (self.kdtree is not None):
+        if self.kdtree is not None:
             current_position = (pose.position.x, pose.position.y)
             closest = self.kdtree.closest_point(current_position)
-            if (VERBOSE):
-                print ("tl_detector: g_cl_wp: closest point to {} is {}".format(current_position, closest))
+            if VERBOSE:
+                print ('tl_detector: g_cl_wp: closest point to {} is {}'.format(current_position, closest))
             return closest[2]
 
         return 0
@@ -196,18 +196,18 @@ class TLDetector(object):
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
+        if self.pose:
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
-        if (VERBOSE):
+        if VERBOSE:
             print ("tl_detector: p_tl: There are {} traffic lights to analyze.".format(len(self.lights)))
 
         min_distance = float("Infinity")
         for current_light in self.lights:
 
             # Check to see whether the traffic light is ahead of the car
-            if (is_ahead(current_light, self.pose.pose)):
+            if is_ahead(current_light, self.pose.pose):
 
                 # Get the simplified Euclidean distance (no sqrt) between it and the car
                 light_distance = get_simple_distance_from_waypoint(current_light, self.pose.pose)
@@ -223,7 +223,7 @@ class TLDetector(object):
             # Calculate the actual distance the of the light.
             light_distance = math.sqrt(min_distance)
 
-            if (VERBOSE):
+            if VERBOSE:
                 print ("tl_detector: p_tl: closest light to {} is at {} (Distance: {}).".format(
                     (self.pose.pose.position.x, self.pose.pose.position.y),
                     (light.pose.pose.position.x, light.pose.pose.position.y),
@@ -235,13 +235,13 @@ class TLDetector(object):
 
             # Determine the state of the light
             state = -1
-            if (PREFER_GROUND_TRUTH):
+            if PREFER_GROUND_TRUTH:
 
-                if (VERBOSE):
+                if VERBOSE:
                     print ("tl_detector: p_tl: Ground truth light color: {}".format(self._light_color(light.state)))
 
                 # TODO: [brahm] Determine what light.state is when not available (e.g. not in the simulator)
-                if (light.state is not None):
+                if light.state is not None:
                     state = light.state
 
             if (state == -1):
@@ -250,7 +250,7 @@ class TLDetector(object):
 
             # If the traffic light is close, let us know
             if (light_distance < TL_NEARNESS_THRESHOLD):
-                if (VERBOSE):
+                if VERBOSE:
                     print ("tl_detector: p_tl: light is close: {} meters away.".format(light_distance))
 
             return light_wp, state
