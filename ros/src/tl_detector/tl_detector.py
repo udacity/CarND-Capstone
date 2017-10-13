@@ -13,10 +13,10 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 from tl_helper import create_dir_if_nonexistent
 from os.path import expanduser, join, exists
-
+from kdtree import KDTree
 
 STATE_COUNT_THRESHOLD = 3
-
+VERBOSE = True
 
 class TLDetector(object):
     def __init__(self):
@@ -62,6 +62,9 @@ class TLDetector(object):
         self.dump_images_counter = len(os.listdir(self.dump_images_dir))
         self.last_dump_tstamp = rospy.get_time()
 
+        # Used to find the closest waypoint
+        self.kdtree = None
+
         rospy.spin()
 
     def collect_images_callback(self, msg):
@@ -89,7 +92,7 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -132,9 +135,28 @@ class TLDetector(object):
 
         Returns:
             int: index of the closest waypoint in self.waypoints
-
         """
+
         #TODO implement
+        if (self.waypoints is not None and self.kdtree is None):
+            if (VERBOSE):
+                print ("initializing kdtree")
+            points=[]
+            i=0
+            for waypoint in self.waypoints:
+                points.append((float(waypoint.pose.pose.position.x),
+                               float(waypoint.pose.pose.position.y),
+                               int(i)))
+                i += 1
+            self.kdtree = KDTree(points)
+
+        if (self.kdtree is not None):
+            current_position = (pose.position.x, pose.position.y)
+            closest = self.kdtree.closest_point(current_position)
+            if (VERBOSE):
+                print ("closest point to {} is {}".format(current_position, closest))
+            return closest[2]
+
         return 0
 
     def get_light_state(self, light):
