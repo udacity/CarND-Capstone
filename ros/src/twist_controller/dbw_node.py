@@ -47,6 +47,7 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        max_throttle_percent = rospy.get_param('~max_throttle_percent', .1)
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -59,7 +60,7 @@ class DBWNode(object):
         self.controller = Controller(RATE, vehicle_mass, fuel_capacity,
                                      brake_deadband, decel_limit,
                                      accel_limit, wheel_radius,
-                                     wheel_base, steer_ratio, 0., max_lat_accel, max_steer_angle)
+                                     wheel_base, steer_ratio, 0., max_lat_accel, max_steer_angle, max_throttle_percent)
 
         self.dbw_enabled = False
 
@@ -73,8 +74,6 @@ class DBWNode(object):
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
-        self.iteration = 0
-        self.values = []
         self.loop()
 
     def current_velocity_cb(self, twist):
@@ -98,8 +97,8 @@ class DBWNode(object):
                 else:
                     step = 1. / RATE
                 self.prev_timestamp = now
-                control = self.controller.control(self.target_linear, self.target_angular, self.current_velocity, step)
-                self.publish(*control)
+                throttle, brake, steer = self.controller.control(self.target_linear, self.target_angular, self.current_velocity, step)
+                self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -116,7 +115,7 @@ class DBWNode(object):
 
         bcmd = BrakeCmd()
         bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
