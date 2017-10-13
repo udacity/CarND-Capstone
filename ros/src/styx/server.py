@@ -9,6 +9,11 @@ from flask import Flask, render_template
 from bridge import Bridge
 from conf import conf
 
+# this would help for lag problem in the simulator
+# if the lag is still huge, please check the cpu load monitoring and
+# make sure the resource is sufficient for running ros node and simulator both.
+eventlet.monkey_patch()
+
 sio = socketio.Server()
 app = Flask(__name__)
 # Changed to only send the latest message for each topic, rather
@@ -48,13 +53,11 @@ def obstacle(sid, data):
 
 @sio.on('lidar')
 def obstacle(sid, data):
-    #bridge.publish_lidar(data)
-    pass
+    bridge.publish_lidar(data)
 
 @sio.on('trafficlights')
 def trafficlights(sid, data):
-    #bridge.publish_traffic(data)
-    pass
+    bridge.publish_traffic(data)
 
 @sio.on('image')
 def image(sid, data):
