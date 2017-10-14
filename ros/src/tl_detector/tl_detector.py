@@ -170,14 +170,10 @@ class TLDetector(object):
         Assumes self.waypoints is already available
 
         """
-	distances = []
-	if self.waypoints is not None:
-	    
-            distances = [self.distance(self.get_light_coordinates(light),
-                                       self.get_waypoint_coordinates(wp)) 
-                        	       for wp in self.waypoints]
-        
-	return distances.index(min(distances))
+        distances = [self.distance(self.get_light_coordinates(light),
+                                   self.get_waypoint_coordinates(wp)) 
+                    for wp in self.waypoints]
+        return distances.index(min(distances))
 
 
 
