@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+    <!--DBW Node -->
+    <include file="$(find twist_controller)/launch/dbw.launch"/>
+
+    <!--Waypoint Loader -->
+    <include file="$(find waypoint_loader)/launch/waypoint_loader_site.launch"/>
+
+    <!--Waypoint Follower Node -->
+    <include file="$(find waypoint_follower)/launch/pure_pursuit.launch"/>
+
+    <!--Waypoint Updater Node -->
+    <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
+
+    <!--Traffic Light Locations and Camera Config -->
+    <param name="traffic_light_config" textfile="$(find tl_detector)/site_traffic_light_config.yaml" />
+
+    <!--Traffic Light Detector Node -->
+    <include file="$(find tl_detector)/launch/tl_detector_site.launch"/>
+
+    <!--Camera Calibration YAML -->
+    <param name="grasshopper_calibration_yaml" textfile="$(find styx)../../../data/grasshopper_calibration.yml" />
+
+    <!--Camera Info Publisher -->
+    <include file="$(find camera_info_publisher)/launch/camera_info_publisher.launch"/>
+</launch>

@@ -69,6 +69,10 @@ class TLDetector(object):
 
         # Used to find the closest waypoint
         self.kdtree = None
+        #data file to store the image name and light state in the image.
+        self.datafile = open(self.dump_images_dir + "/lightsData.csv", "w+")
+
+        self.lightState = None
 
         rospy.spin()
 
@@ -88,7 +92,10 @@ class TLDetector(object):
 
             # Dump image to dump directory
             cv2.imwrite(image_path, image_data)
-
+            
+            # write the state of the light and the image name to a csv file
+            print("Writing to datafile")
+            self.datafile.write('{:06d}.jpg'.format(self.dump_images_counter) + " , " +  self.lightState + "\n")  
             # Update counter and timestamp
             self.dump_images_counter += 1
             self.last_dump_tstamp = rospy.get_time()
@@ -113,6 +120,8 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
+
+        
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -219,7 +228,8 @@ class TLDetector(object):
 
         # If we found a light ahead of us
         if light:
-
+            self.lightState = self._light_color(light.state)
+            
             # Calculate the actual distance the of the light.
             light_distance = math.sqrt(min_distance)
 
