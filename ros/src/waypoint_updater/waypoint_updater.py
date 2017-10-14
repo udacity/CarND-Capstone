@@ -24,7 +24,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-
+DECELERATION_DISTANCE = 50.  # 50 meters
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -104,7 +104,7 @@ class WaypointUpdater(object):
                         x = light.pose.pose.position.x
                         y = light.pose.pose.position.y
                         distance = math.sqrt((car_x-x)**2 + (car_y-y)**2)
-                        if distance > 100:
+                        if distance > DECELERATION_DISTANCE:
                             #print("light at %f, %f is %f away, don't care" % (x, y, distance))
                             continue
                         waypoint = self.nearest_waypoint(x, y)
@@ -120,7 +120,7 @@ class WaypointUpdater(object):
                     #print("decel point is %d" % deceleration_point)
                     for i in range(deceleration_point, light):
                         distance = self.distance(self.base_waypoints, i, light)
-                        speed = full_speed * distance/100
+                        speed = full_speed * distance / DECELERATION_DISTANCE
                         self.base_waypoints[i].twist.twist.linear.x = max(speed, 1.0)
                         #print("speed at waypoint %d is %f" % (i, speed))
                     self.base_waypoints[light].twist.twist.linear.x = 0
