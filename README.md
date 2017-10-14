@@ -9,6 +9,16 @@ The project is a team work. We are (as in registration form),
 * Tim Tobey (timtobey@gmail.com)
 * Shahid Siddiqui (shahid.case2013@gmail.com)
 
+
+### Team
+The project is a team work. We are (as in registration form),
+
+- Priyanka Dwivedi (priyanka.kochhar3@gmail.com)
+- Li Ma (ma.li.cn@gmail.com)
+- Raghu Ramarao (raghu.ramarao@gmail.com)
+- Tim Tobey (timtobey@gmail.com)
+- Shahid Siddiqui (shahid.case2013@gmail.com)
+
 ### Installation 
 
 * Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop). 
@@ -63,14 +73,7 @@ cd CarND-Capstone/ros
 roslaunch launch/site.launch
 ```
 
-### Team
-The project is a team work. We are (as in registration form),
 
-- Priyanka Dwivedi (priyanka.kochhar3@gmail.com)
-- Li Ma (ma.li.cn@gmail.com)
-- Raghu Ramarao (raghu.ramarao@gmail.com)
-- Tim Tobey (timtobey@gmail.com)
-- Shahid Siddiqui (shahid.case2013@gmail.com)
 
 ### Result
 

@@ -8,7 +8,8 @@ class TLClassifier(object):
         if scenario == "sim":
             self.model = SimModel()
         else:
-            self.model = RealModel("light_classification/models/tl_model")
+            # self.model = RealModel("light_classification/models/tl_model")
+            self.model = RealModel("light_classification/models/frozen_inference_graph.pb")
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
