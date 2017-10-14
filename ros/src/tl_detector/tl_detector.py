@@ -232,6 +232,7 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
+
         x, y = self.project_to_image_plane(light.pose.pose.position)
 
         #Get classification
