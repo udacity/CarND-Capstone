@@ -17,6 +17,7 @@ yellow = misc.imread(random_file("../../data/camera_training/validation/yellow/"
 nolight = misc.imread(random_file("../../data/camera_training/validation/nolight/"))
 
 images = [green, red, yellow, nolight]
+# images = [misc.imresize(img, [800, 600]) for img in images]
 labels = ["green", "red", "yellow", "nolight"]
 
 for img, label in zip(images, labels):
