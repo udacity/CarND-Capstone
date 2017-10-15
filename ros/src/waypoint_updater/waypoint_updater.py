@@ -31,6 +31,8 @@ LOOKAHEAD_WPS = 200  # Number of waypoints we will publish in /final_waypoints.
 
 class WaypointUpdater(object):
     def __init__(self):
+        print('WAYPOINT UPDATER111111111111111111111111111111111111111111')
+
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_callback)
@@ -49,11 +51,12 @@ class WaypointUpdater(object):
 
     def loop(self):
 
+
         # Set the desired processing rate to 10Hz
         rate = rospy.Rate(10)
 
         while not rospy.is_shutdown():
-
+            print('Waypoint updater')
             # If there is no waypoint or pose data, wait for some to come in
             if self.base_waypoints is None or self.current_pose is None:
                 # Sleep if necessary to maintain the desired processing rate
@@ -85,6 +88,7 @@ class WaypointUpdater(object):
             if VERBOSE:
                 print_waypoint(waypoints_ahead[0], msg='Next waypoint: ')
 
+
             # Sleep if necessary to maintain the desired processing rate
             rate.sleep()
 
@@ -100,6 +104,7 @@ class WaypointUpdater(object):
         Store the list of all waypoints.
         Notice that publisher for `/base_waypoints` publishes only once.
         """
+        print('waypoint_updater: p_tl: BASE WAYPOINTS UPDATES')
         self.base_waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
