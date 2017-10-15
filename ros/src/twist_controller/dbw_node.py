@@ -101,30 +101,30 @@ class DBWNode(object):
             
 		throttle, brake, steer = self.controller.control(target_linear_vel, target_angular_vel, current_linear_vel, current_angular_vel, dbw_en, dt)
 
-		if throttle != self.prev_throttle:
+	'''	if throttle != self.prev_throttle:
 		    self.prev_throttle = throttle
 		    self.Flag = True
 		else:
 		    self.Flag = False
-
+	'''
 
             if self.dbw_enabled:
                 self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
-	if self.Flag is True:        
-	    tcmd = ThrottleCmd()
-            tcmd.enable = True
-            tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
-            tcmd.pedal_cmd = throttle
-            self.throttle_pub.publish(tcmd)
-	else:
-	    bcmd = BrakeCmd()
-            bcmd.enable = True
-            bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
-            bcmd.pedal_cmd = brake
-            self.brake_pub.publish(bcmd)	
+	#if self.Flag is True:        
+	tcmd = ThrottleCmd()
+        tcmd.enable = True
+        tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
+        tcmd.pedal_cmd = throttle
+        self.throttle_pub.publish(tcmd)
+	#else:
+	bcmd = BrakeCmd()
+        bcmd.enable = True
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd = brake
+        self.brake_pub.publish(bcmd)	
 	
 	scmd = SteeringCmd()
         scmd.enable = True
