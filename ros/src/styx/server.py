@@ -14,7 +14,7 @@ from conf import conf
 # make sure the resource is sufficient for running ros node and simulator both.
 eventlet.monkey_patch()
 
-sio = socketio.Server()
+sio = socketio.Server(async_mode='eventlet')
 app = Flask(__name__)
 # Changed to only send the latest message for each topic, rather
 # than queuing out of date messages. Based on
