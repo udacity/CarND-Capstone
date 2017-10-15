@@ -33,8 +33,7 @@ Then, we make the next subscriptions:
 
 * Subscribe to the TOPIC /current_pose, with a type of message PoseStamped and a callback function pose_cb
 * Subscribe to the TOPIC /base_waypoints, with a type of message Lane and a callback function waypoints_cb
-* FILL!!!!!!!
-* FILL!!!!!!
+* Subscribe to the TOPIC /traffic_waypoint, with a type of message Int32 and a callback function traffic_cb
 
 And we publish to the topic /final waypoints, with a type of message Lane and a parameter queue_size=1 (asyncronous publication).
 
@@ -55,12 +54,12 @@ In this functions, we set the waypoints variable.
 
 ##### traffic_cb() function
 
-FILL!!!!!!!
+Sets the class field waypoint_on_red_light and publishes if such is present
 
 
 ##### obstacle_cb() function
 
-FILL!!!!!!!
+At the moment of writing, no obstacle detection was in the project
 
 
 ##### get_waypoint_velocity() function
