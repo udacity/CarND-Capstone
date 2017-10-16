@@ -20,7 +20,7 @@ from waypoint_helper import get_simple_distance_from_waypoint
 
 STATE_COUNT_THRESHOLD = 3
 TL_NEARNESS_THRESHOLD = 150
-VERBOSE = True
+VERBOSE = False
 PREFER_GROUND_TRUTH = True
 
 class TLDetector(object):
@@ -62,7 +62,7 @@ class TLDetector(object):
         self.state_count = 0
 
         # Parameters for collecting frames from the camera
-        self.should_collect_data = True
+        self.should_collect_data = False
         self.dump_images_dir = create_dir_if_nonexistent(join(expanduser('~'), 'traffic_light_dataset', 'raw_images'))
         self.dump_images_counter = len(os.listdir(self.dump_images_dir))
         self.last_dump_tstamp = rospy.get_time()
