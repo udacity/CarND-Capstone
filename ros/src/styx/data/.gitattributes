@@ -1,0 +1,1 @@
+udacity_succesful_light_detection.bag filter=lfs diff=lfs merge=lfs -text
