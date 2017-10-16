@@ -1,6 +1,17 @@
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
-### Native Installation
+
+## Traffic light detection
+
+Click to see full video on YouTube:
+
+[![Traffic lights detection using SSD](imgs/loop_with_traffic_light.bag.gif)](http://www.youtube.com/watch?v=s6X17jY6JFA)
+
+Click to see full video on YouTube:
+
+[![Traffic lights detection using SSD](imgs/just_traffic_light.bag.gif)](http://www.youtube.com/watch?v=bHseqGJuWD0)
+
+## Native Installation
 
 * Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop).
 * If using a Virtual Machine to install Ubuntu, use the following configuration as minimum:
@@ -17,7 +28,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
   * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
 * Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases/tag/v1.2).
 
-### Docker Installation
+## Docker Installation
 [Install Docker](https://docs.docker.com/engine/installation/)
 
 Build the docker container
@@ -30,7 +41,7 @@ Run the docker file
 docker run -p 127.0.0.1:4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
 ```
 
-### Usage
+## Usage
 
 1. Clone the project repository
 ```bash
@@ -51,7 +62,7 @@ roslaunch launch/styx.launch
 ```
 4. Run the simulator
 
-### Real world testing
+## Real world testing
 1. Download [training bag](https://drive.google.com/file/d/0B2_h37bMVw3iYkdJTlRSUlJIamM/view?usp=sharing) that was recorded on the Udacity self-driving car (a bag demonstraing the correct predictions in autonomous mode can be found [here](https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc))
 2. Unzip the file
 ```bash
