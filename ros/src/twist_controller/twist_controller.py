@@ -30,7 +30,9 @@ class Controller(object):
 
         # Set up the PID controller
         # TODO: These need to be updated (Twiddle these?)
-        self.pid_vel = PID(0.8, 0.0001, 0.1, self.decel_limit, self.accel_limit)
+
+        self.pid_vel = PID(0.08,0.001, 0.5, self.decel_limit, self.accel_limit)
+        self.pid_vel.twiddle(0.2)
 
         self.yaw_control = YawController(self.wheel_base, self.steer_ratio, 0.0, self.max_lat_accel, self.max_steer_angle)
 
