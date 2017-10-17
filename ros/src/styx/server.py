@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+#from gevent import monkey
+#monkey.patch_all()
+
 import socketio
 import eventlet
 import eventlet.wsgi
@@ -12,9 +15,9 @@ from conf import conf
 # this would help for lag problem in the simulator
 # if the lag is still huge, please check the cpu load monitoring and
 # make sure the resource is sufficient for running ros node and simulator both.
-eventlet.monkey_patch()
+#eventlet.monkey_patch()
 
-sio = socketio.Server(async_mode='eventlet')
+sio = socketio.Server()
 app = Flask(__name__)
 # Changed to only send the latest message for each topic, rather
 # than queuing out of date messages. Based on
