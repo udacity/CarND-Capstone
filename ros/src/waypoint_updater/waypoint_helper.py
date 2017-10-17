@@ -60,5 +60,5 @@ def print_waypoint(waypoint, msg=''):
     wp_x = waypoint.pose.pose.position.x
     wp_y = waypoint.pose.pose.position.y
     wp_z = waypoint.pose.pose.position.z
-    
+
     rospy.loginfo(msg + ' x: {} y: {} z: {}'.format(wp_x, wp_y, wp_z))

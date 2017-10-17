@@ -86,8 +86,10 @@ class WaypointUpdater(object):
             self.final_waypoints_pub.publish(lane_message)
 
             if VERBOSE:
-                print_waypoint(waypoints_ahead[0], msg='Next waypoint: ')
-
+                if len(waypoints_ahead) > 0:
+                    print_waypoint(waypoints_ahead[0], msg='Next waypoint: ')
+                else:
+                    print('No waypoints_ahead!')
 
             # Sleep if necessary to maintain the desired processing rate
             rate.sleep()

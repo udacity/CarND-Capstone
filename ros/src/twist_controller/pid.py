@@ -20,8 +20,6 @@ class PID(object):
         self.d_error = 0
         self.best_error = 9999
 
-        
-
     def reset(self):
         self.int_val = 0.0
         self.last_int_val = 0.0
@@ -51,10 +49,8 @@ class PID(object):
 
         return p[0] * self.p_error + p[2] * self.d_error + p[1] * self.i_error;
 
-
-
     def twiddle(self, tol):
-        
+
         dp = [1,1,1]
         p = [self.kp, self.ki, self.kd]
         rospy.loginfo("Initial Error: " + str(self.best_error))
@@ -66,10 +62,10 @@ class PID(object):
 
         rospy.loginfo("beginning twiddle")
         rospy.loginfo("Starting dp = " + str(int(float(dp[0])))+ "  " + str(int(float(dp[1])))+ "  " +str(int(float(dp[2]))))
-        while sum(dp) > tol:            
+        while sum(dp) > tol:
             for i in range(len(p)):
                 p[i] += dp[i]
-                # in case we cannot get a better value, this will hold the original                
+                # in case we cannot get a better value, this will hold the original
                 error = self.total_error(p)
                 if error < self.best_error:
                     rospy.loginfo("error is less")
@@ -91,7 +87,7 @@ class PID(object):
                         rospy.loginfo("embedded else")
                         rospy.loginfo("error = " + str(float(error)))
                         p[i] += dp[i]
-                        dp[i] *= .09
+                        dp[i] *= 0.9
 
                 rospy.loginfo("dp = " + str(int(float(dp[0])))+ "  " + str(int(float(dp[1])))+ "  " +str(int(float(dp[2]))))
             rospy.loginfo("kp = " + str(dp[0]) + " ki = " + str(dp[1]) + " kd = " + str(dp[2]) )
