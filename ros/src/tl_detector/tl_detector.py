@@ -24,7 +24,7 @@ from waypoint_helper import get_simple_distance_from_waypoint
 STATE_COUNT_THRESHOLD = 3
 TL_NEARNESS_THRESHOLD = 150
 VERBOSE = False
-PREFER_GROUND_TRUTH = True
+PREFER_GROUND_TRUTH = False
 
 
 class TLDetector(object):
@@ -77,12 +77,13 @@ class TLDetector(object):
 
         self.lightState = None
 
-        # Create tensorflow session
-        self.session = tensorflow.Session()
+        if not PREFER_GROUND_TRUTH:
+            # Create tensorflow session
+            self.session = tensorflow.Session()
 
-        # Import classifier and restore pre-trained weights
-        self.light_classifier = TrafficLightClassifier(input_shape=[64, 64], learning_rate=1e-4)
-        tensorflow.train.Saver().restore(self.session, TrafficLightClassifier.checkpoint_path)
+            # Import classifier and restore pre-trained weights
+            self.light_classifier = TrafficLightClassifier(input_shape=[64, 64], learning_rate=1e-4)
+            tensorflow.train.Saver().restore(self.session, TrafficLightClassifier.checkpoint_path)
 
         rospy.spin()
 
@@ -265,7 +266,8 @@ class TLDetector(object):
                 if light.state is not None:
                     state = light.state
 
-            if True: # (state == -1):
+            #if True: # (state == -1):
+            if state == -1:
                 # this is where we classify the light
                 state_inferred = self.get_light_state(light)
 
