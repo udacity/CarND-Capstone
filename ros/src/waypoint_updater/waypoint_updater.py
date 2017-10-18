@@ -95,7 +95,7 @@ class WaypointUpdater(object):
             # Apply deceleration as necessary
             # TODO: [brahm] Check for traffic light and its state
             if self.tl_index > -1:
-                self.apply_deceleration(waypoints_ahead)
+                waypoints_ahead = self.apply_deceleration(waypoints_ahead, self.tl_index)
 
             # Create Lane message with list of waypoints ahead
             lane_message = compose_lane_message(self.frame_id, waypoints_ahead)
@@ -151,9 +151,30 @@ class WaypointUpdater(object):
             if self.base_waypoints is not None and self.tl_index > -1:
                 self.publish_next_tl_wp(self.base_waypoints[self.tl_index])
 
-    def apply_deceleration(self, waypoints):
+
+    def apply_deceleration(self, waypoints, tlindex):
         # TODO: [brahm] implement deceleration to waypoints
-        pass
+        """
+            This function takes in a set of waypoints and the index value of the traffic light waypoint.
+            The return of this method is an updated list of waypoints.
+        """
+        lastwp = waypoints[tlindex]
+        lastwp.twist.twist.linear.x = 0.0
+
+        # iterate the list of waypoints and set a velocity to slow us down
+        for waypoint in waypoints:
+            distance = self.get_distance_2_points(wayp.pose.pose.position, lastwp.pose.pose.position)
+            # add a bit of a buffer to the stop distance. 
+            distance = max(0, distance - 5)
+            target_vel = math.sqrt(2 *0.5 * distance )
+            # if we are below 1.0, just go ahead and stop
+            if target_vel < 1.0:
+                target_vel = 0
+            # update the individual waypoints
+            waypoint.twist.twist.linear.x = min(target_vel, waypoint.twist.twist.linear.x)
+
+        return waypoints
+
 
     def publish_car_path(self, waypoints):
         path = Marker()
@@ -205,6 +226,12 @@ class WaypointUpdater(object):
             dist += dl(waypoints[i%n].pose.pose.position, waypoints[(i+1)%n].pose.pose.position)
         return dist
 
+
+    def get_distance_2_points(self, wp1, wp2):
+        x = wp1.x - wp2.x
+        y = wp1.y - wp2.y
+        z = wp1.z - wp2.z
+        return math.sqrt(x*x + y*y + z*z)
 
 if __name__ == '__main__':
     try:
