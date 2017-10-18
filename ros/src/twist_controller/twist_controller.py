@@ -7,9 +7,9 @@ from lowpass import LowPassFilter
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
-KP = 2.049999999999998
-KI = 0.0940841104155
-KD = 0.158782882613904
+KP = 1.1
+KI = 0.01
+KD = 0.005
 MIN_SPEED = 1.0
 
 
@@ -21,7 +21,7 @@ class Controller(object):
                                             MIN_SPEED,
                                             kwargs['max_lat_accel'],
                                             kwargs['max_steer_angle'])
-        self.low_pass_filter = LowPassFilter(tau=20, ts=1.)
+        self.low_pass_filter = LowPassFilter(tau=0.5, ts=0.8)
 
         self.total_mass = kwargs['vehicle_mass'] + kwargs['fuel_capacity'] * GAS_DENSITY
         self.wheel_radius = kwargs['wheel_radius']
