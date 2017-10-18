@@ -59,6 +59,8 @@ class WaypointUpdater(object):
         self.next_waypoint_index = None
 
         self.speed_limit = rospy.get_param("~speed_limit")
+        # suggest to reuse this setting for speed limit
+        #self.speed_limit = kmph2mps(rospy.get_param('/waypoint_loader/velocity'))
 
         # let's try to run it a bit faster for more accurate control
         rate = rospy.Rate(10)
@@ -206,6 +208,9 @@ class WaypointUpdater(object):
         #    next_waypoint_index += 1
 
         return next_waypoint_index
+
+def kmph2mps(speed_kmph):
+    return (speed_kmph * 1000.) / (60. * 60.)
 
 
 if __name__ == '__main__':
