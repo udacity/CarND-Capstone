@@ -10,7 +10,7 @@ EPS  = np.finfo('float32').eps
 class TrafficLightClassifier:
 
     # Pretrained weights location
-    checkpoint_path = './light_classification/pretrained_weights/TLC.ckpt'
+    checkpoint_path = './light_classification/pretrained_weights/mixed/TLC.ckpt'
 
     def __init__(self, input_shape, learning_rate):
 
