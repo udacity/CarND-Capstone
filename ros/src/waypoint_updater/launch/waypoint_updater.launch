@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" />
+    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" respawn="true">
+        <param name="speed_limit" value="10.0" />
+    </node>
 </launch>

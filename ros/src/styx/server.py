@@ -12,7 +12,7 @@ from conf import conf
 # this would help for lag problem in the simulator
 # if the lag is still huge, please check the cpu load monitoring and
 # make sure the resource is sufficient for running ros node and simulator both.
-eventlet.monkey_patch()
+#eventlet.monkey_patch()
 
 sio = socketio.Server()
 app = Flask(__name__)
