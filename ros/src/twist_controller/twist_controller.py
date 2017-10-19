@@ -27,6 +27,7 @@ class Controller(object):
         self.wheel_radius = kwargs['wheel_radius']
         self.brake_deadband = kwargs['brake_deadband']
         self.max_throttle = kwargs['max_throttle']
+        self.prev_ts = None
 
         self.reset()
 
@@ -49,15 +50,17 @@ class Controller(object):
         accel = self.pid_controller.step(linear_velocity_diff, sample_time)
         accel = self.low_pass_filter.filt(accel)
 
-        if accel >= 0:
+        if accel >= 1:
             throttle = accel * self.max_throttle
             brake = 0.0
-        elif accel <= self.brake_deadband or target_linear_velocity < 1.0:
+            rospy.logwarn("accel: %d, throttle: %d, brake: %d, current velocity: %d", accel, throttle, brake, current_velocity)
+        elif accel <= self.brake_deadband: #or target_linear_velocity < 1.0:
             # the braking force F = ma
             # where m is the total mass and a is the control value
             # in which the control is the torque to be applied by the brake
             throttle = 0.0
-            brake = -accel * self.total_mass * self.wheel_radius
+            brake = abs(-accel) * self.total_mass * self.wheel_radius * abs(linear_velocity_diff * 20)
+            rospy.logwarn("accel: %d, throttle: %d, brake: %d, targtvel: %d, currvel: %d", accel, throttle, brake, target_linear_velocity, current_velocity)
         else:
             # in the brake deadband, just let the engine brake
             throttle = 0.0
