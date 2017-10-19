@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-#from gevent import monkey
-#monkey.patch_all()
-
 import socketio
 import eventlet
 import eventlet.wsgi
