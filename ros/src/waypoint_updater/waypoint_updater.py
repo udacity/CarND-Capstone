@@ -103,6 +103,7 @@ class WaypointUpdater(object):
                     waypoints_ahead = self.apply_deceleration(waypoints_ahead, relative_tl_index)
                 else:
                     # TODO: might need to do something for acceleration here, too.
+                    pass
             else:
                 # TODO: Implement proper acceleration from stop light
                 for waypoint in waypoints_ahead:
