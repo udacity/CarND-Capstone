@@ -33,7 +33,6 @@ LOOKAHEAD_WPS = 200  # Number of waypoints we will publish in /final_waypoints.
 
 class WaypointUpdater(object):
     def __init__(self):
-        print('WAYPOINT UPDATER111111111111111111111111111111111111111111')
 
         rospy.init_node('waypoint_updater')
 
@@ -59,7 +58,7 @@ class WaypointUpdater(object):
         self.base_waypoints = None  # list of all waypoints of the track
         self.num_base_waypoints = 0 # number of all waypoints of the track
 
-        self.tl_index       = -1    # Index of the next traffic light from /traffic_waypoint
+        self.red_tl_index       = -1    # Index of the next red traffic light from /traffic_waypoint
 
         self.loop()
 
@@ -69,7 +68,7 @@ class WaypointUpdater(object):
         rate = rospy.Rate(10)
 
         while not rospy.is_shutdown():
-            print('Waypoint updater')
+
             # If there is no waypoint or pose data, wait for some to come in
             if self.base_waypoints is None or self.current_pose is None:
                 # Sleep if necessary to maintain the desired processing rate
@@ -78,24 +77,36 @@ class WaypointUpdater(object):
 
             # Find all of the waypoints ahead of the car
             waypoints_ahead = []
-            for waypoint in self.base_waypoints:
+            for i, waypoint in enumerate(self.base_waypoints):
 
                 if is_ahead(waypoint, self.current_pose):
 
                     wp_distance = get_distance_from_waypoint(waypoint, self.current_pose)
 
-                    waypoints_ahead.append([waypoint, wp_distance])
+                    waypoints_ahead.append([waypoint, wp_distance, i])
 
             # Sort by distance s.t. the first one is the closest
             waypoints_ahead = sorted(waypoints_ahead, key=lambda x: x[1])
 
+            # Save the closest index
+            closest_index = waypoints_ahead[0][2]
+
             # Keep only the closest waypoints (also discard distances used to order waypoints)
             waypoints_ahead = [item[0] for item in waypoints_ahead[:LOOKAHEAD_WPS]]
 
-            # Apply deceleration as necessary
-            # TODO: [brahm] Check for traffic light and its state
-            if self.tl_index > -1:
-                waypoints_ahead = self.apply_deceleration(waypoints_ahead, self.tl_index)
+            # Apply deceleration if there's a traffic light nearby
+            if self.red_tl_index > -1:
+
+                relative_tl_index = self.red_tl_index - closest_index
+
+                if relative_tl_index < LOOKAHEAD_WPS:
+                    waypoints_ahead = self.apply_deceleration(waypoints_ahead, relative_tl_index)
+                else:
+                    # TODO: might need to do something for acceleration here, too.
+            else:
+                # TODO: Implement proper acceleration from stop light
+                for waypoint in waypoints_ahead:
+                    waypoint.twist.twist.linear.x = 20.0  # this is just a placeholder
 
             # Create Lane message with list of waypoints ahead
             lane_message = compose_lane_message(self.frame_id, waypoints_ahead)
@@ -135,43 +146,41 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # DONE: Callback for /traffic_waypoint message. Implement it later
 
-        if VERBOSE:
-            print ("traffic_cb: started.")
-
         # If we are not at the current traffic light waypoint index
-        if self.tl_index != msg.data:
+        if self.red_tl_index != msg.data:
 
             # Update the traffic light index
-            self.tl_index = msg.data
-
-            if VERBOSE:
-                print ("traffic_cb: changing tl_index: {}".format(self.tl_index))
+            self.red_tl_index = msg.data
 
             # Publish the actual traffic light waypoint for debugging purposes
-            if self.base_waypoints is not None and self.tl_index > -1:
-                self.publish_next_tl_wp(self.base_waypoints[self.tl_index])
+            if self.base_waypoints is not None and self.red_tl_index > -1:
+                self.publish_next_tl_wp(self.base_waypoints[self.red_tl_index])
 
 
-    def apply_deceleration(self, waypoints, tlindex):
-        # TODO: [brahm] implement deceleration to waypoints
+    def apply_deceleration(self, waypoints, tl_index):
         """
             This function takes in a set of waypoints and the index value of the traffic light waypoint.
             The return of this method is an updated list of waypoints.
         """
-        lastwp = waypoints[tlindex]
-        lastwp.twist.twist.linear.x = 0.0
+        rospy.logerr('waypoints length: {} tl_index: {}'.format(len(waypoints), tl_index))
+        if tl_index < len(waypoints):
 
-        # iterate the list of waypoints and set a velocity to slow us down
-        for waypoint in waypoints:
-            distance = self.get_distance_2_points(wayp.pose.pose.position, lastwp.pose.pose.position)
-            # add a bit of a buffer to the stop distance. 
-            distance = max(0, distance - 5)
-            target_vel = math.sqrt(2 *0.5 * distance )
-            # if we are below 1.0, just go ahead and stop
-            if target_vel < 1.0:
-                target_vel = 0
-            # update the individual waypoints
-            waypoint.twist.twist.linear.x = min(target_vel, waypoint.twist.twist.linear.x)
+            stopping_index = max(10, tl_index-25)
+
+            last_wp = waypoints[stopping_index]
+            last_wp.twist.twist.linear.x = 0.0
+
+            # iterate the list of waypoints and set a velocity to slow us down
+            for waypoint in waypoints[:stopping_index]:
+                distance = self.get_distance_2_points(waypoint.pose.pose.position, last_wp.pose.pose.position)
+                # add a bit of a buffer to the stop distance.
+                distance = max(0, distance - 5)
+                target_vel = math.sqrt(2 *0.5 * distance )
+                # if we are below 1.0, just go ahead and stop
+                if target_vel < 1.0:
+                    target_vel = 0
+                # update the individual waypoints
+                waypoint.twist.twist.linear.x = min(target_vel, waypoint.twist.twist.linear.x)
 
         return waypoints
 
