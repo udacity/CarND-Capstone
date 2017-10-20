@@ -38,7 +38,7 @@ class TLDetection(object):
         # load params
         self.model_path= os.path.join(MODELS_DIR,'ssd_mobilenet_v1_coco_11_06_2017','frozen_inference_graph.pb')
         self.detection_graph,self.image_tensor, self.detection_boxes,self.detection_scores,self.detection_classes = load_graph(self.model_path)
-        self.log_output = rospy.get_param("~tl_write_output")
+        self.log_output = True #rospy.get_param("~tl_write_output")
         rospy.loginfo("[TL Detection] -> Model loaded!")
         self.sess = tf.Session(graph=self.detection_graph) 
         rospy.loginfo("[TL Detection] -> Session created!")

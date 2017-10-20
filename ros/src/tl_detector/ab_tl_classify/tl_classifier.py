@@ -14,10 +14,10 @@ class TLClassifier(object):
         self.graph = tf.get_default_graph()
 
         # load params
-        self.classes = rospy.get_param("~tl_classes")
-        self.values = rospy.get_param("~tl_values")
-        self.weights_file = rospy.get_param("~tl_weights_file")
-        self.max_detections = rospy.get_param("~tl_max_detections")
+        self.classes = ['red', 'off', 'green', 'yellow', 'unknown'] #rospy.get_param("~tl_classes")
+        self.values = [0, 4, 2, 1, 4] #rospy.get_param("~tl_values")
+        self.weights_file = "./ab_tl_classify/include/weights/checkpoint-78-0.03.h5" #rospy.get_param("~tl_weights_file")
+        self.max_detections = 1 #rospy.get_param("~tl_max_detections")
 
         with self.graph.as_default():
             self.model = KaNet(len(self.classes), (None, None, 3), 1.0, 0)
