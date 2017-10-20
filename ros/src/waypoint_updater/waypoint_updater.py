@@ -57,10 +57,15 @@ class WaypointUpdater(object):
         self.waypoints = None
         self.traffic_index = -1
         self.next_waypoint_index = None
+        self.velocity = 0
 
         self.speed_limit = rospy.get_param("~speed_limit")
         # suggest to reuse this setting for speed limit
         #self.speed_limit = kmph2mps(rospy.get_param('/waypoint_loader/velocity'))
+
+        # modify number of look ahead waypoints based on speed limit
+        global LOOKAHEAD_WPS
+        LOOKAHEAD_WPS = int(self.speed_limit * 10)
 
         # let's try to run it a bit faster for more accurate control
         rate = rospy.Rate(10)
@@ -83,7 +88,6 @@ class WaypointUpdater(object):
                         self.traffic_index = self.light_points[i]
                     else:
                         self.traffic_index = -1
-
 
     def pose_cb(self, msg):
         self.current_pose = msg.pose
@@ -127,7 +131,7 @@ class WaypointUpdater(object):
             waypoint_begin_index = self.get_next_waypoint_index()
             waypoint_end_index = waypoint_begin_index + LOOKAHEAD_WPS
 
-            rospy.logwarn('traffic index %d, begin index: %d', self.traffic_index, waypoint_begin_index)
+            #rospy.logwarn('traffic index %d, begin index: %d', self.traffic_index, waypoint_begin_index)
 
             if waypoint_end_index > len(self.waypoints):
                 waypoint_end_index = len(self.waypoints)
@@ -140,16 +144,12 @@ class WaypointUpdater(object):
                 waypoint_end_index = self.traffic_index
 
                 # assign speed target according to location
-                if waypoint_end_index - waypoint_begin_index > 20:
-                    speed = 6.5
-                elif waypoint_end_index - waypoint_begin_index > 10:
-                    speed = 4.5
-                elif waypoint_end_index - waypoint_begin_index > 5:
-                    speed = 2
-                elif waypoint_end_index - waypoint_begin_index > 2:
-                    speed = 1
+                num_waypoints = waypoint_end_index - waypoint_begin_index
+                multiplier = self.speed_limit / LOOKAHEAD_WPS * 2
+                if num_waypoints < LOOKAHEAD_WPS:
+                    speed = num_waypoints * multiplier
                 else:
-                    speed = 0
+                    speed = self.speed_limit
 
                     #vDot = self.velocity.linear.x / (waypoint_end_index - waypoint_begin_index)
                     #rospy.logwarn('vDot %f', vDot)
@@ -163,7 +163,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(output)
 
     def get_nearest_waypoint_index(self):
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
 
         nearest_dist = 99999
         nearest_waypoint_index = 0
