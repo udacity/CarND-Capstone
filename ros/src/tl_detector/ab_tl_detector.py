@@ -21,6 +21,7 @@ from waypoint_helper import get_simple_distance_from_waypoint
 
 from ab_tl_classify.tl_classifier import TLClassifier
 from ab_tl_detect.tl_detection import TLDetection
+import PIL
 
 STATE_COUNT_THRESHOLD = 3
 TL_NEARNESS_THRESHOLD = 150
