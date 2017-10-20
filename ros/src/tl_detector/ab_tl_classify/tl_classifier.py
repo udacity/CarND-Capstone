@@ -16,7 +16,9 @@ class TLClassifier(object):
         # load params
         self.classes = ['red', 'off', 'green', 'yellow', 'unknown'] #rospy.get_param("~tl_classes")
         self.values = [0, 4, 2, 1, 4] #rospy.get_param("~tl_values")
-        self.weights_file = "./ab_tl_classify/include/weights/checkpoint-78-0.03.h5" #rospy.get_param("~tl_weights_file")
+
+#        self.weights_file = "./ab_tl_classify/include/weights/checkpoint-78-0.03.h5" #rospy.get_param("~tl_weights_file")
+        self.weights_file = "./ab_tl_classify/include/weights/checkpoint-59-0.04.h5"
         self.max_detections = 1 #rospy.get_param("~tl_max_detections")
 
         with self.graph.as_default():
