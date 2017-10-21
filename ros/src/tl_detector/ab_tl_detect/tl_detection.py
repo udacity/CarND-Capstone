@@ -40,7 +40,8 @@ class TLDetection(object):
         self.detection_graph,self.image_tensor, self.detection_boxes,self.detection_scores,self.detection_classes = load_graph(self.model_path)
         self.log_output = True #rospy.get_param("~tl_write_output")
         rospy.loginfo("[TL Detection] -> Model loaded!")
-        self.sess = tf.Session(graph=self.detection_graph) 
+        self.sess = tf.Session(graph=self.detection_graph)
+        self.img_count = 0
         rospy.loginfo("[TL Detection] -> Session created!")
 
     def to_image_coords(self,boxes, height, width):
@@ -115,7 +116,14 @@ class TLDetection(object):
         
         box_coords = self.to_image_coords(boxes, height, width)
         cropped_images = []
-        
+
+        if (self.log_output):
+            if not os.path.exists("./output/"):
+                os.mkdir("/home/student/output/")
+                fname = "/home/student/output/{}.png".format(self.img_count)
+                image.save(fname)
+
+        cnt = 0
         for box in box_coords:
             top,left,bottom,right = box
             traffic_light = image.crop(
@@ -129,9 +137,10 @@ class TLDetection(object):
 
             if (self.log_output):
                 if not os.path.exists("./output/"):
-                    os.mkdir("./output/")
+                    os.mkdir("/home/student/output/")
 
-                fname = "./output/{}.png".format(rospy.Time.now())
+                fname = "/home/student/output/{}_{}.png".format(self.img_count, cnt)
+                cnt = cnt + 1
                 traffic_light.save(fname)
                 rospy.loginfo("[TLDetection] -> Traffic light saved: " + fname)
 

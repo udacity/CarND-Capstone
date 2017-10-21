@@ -220,6 +220,7 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         image = PIL.Image.fromarray(cv_image)
+
         # Detect traffic lights
         traffic_lights = self.traffic_light_detector.detect_traffic_lights(image)
 
