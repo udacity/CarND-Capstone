@@ -120,9 +120,9 @@ class TLDetection(object):
         if (self.log_output):
             if not os.path.exists("./output/"):
                 os.mkdir("/home/student/output/")
-                fname = "/home/student/output/{}.png".format(self.img_count)
-                image.save(fname)
-                self.img_count = self.img_count + 1
+            fname = "/home/student/output/{}.png".format(self.img_count)
+            image.save(fname)
+            self.img_count = self.img_count + 1
 
         cnt = 0
         for box in box_coords:
