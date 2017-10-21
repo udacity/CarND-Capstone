@@ -53,11 +53,11 @@ class Controller(object):
         if accel > 0.0:
             throttle = accel * self.max_throttle
             brake = 0.0
-            rospy.logwarn("accel: %.3f, throttle: %.3f, brake: %.3f, current velocity: %.3f", accel, throttle, brake, current_velocity)
+            #rospy.logwarn("accel: %.3f, throttle: %.3f, brake: %.3f, current velocity: %.3f", accel, throttle, brake, current_velocity)
         elif abs(accel) >= self.brake_deadband:
             throttle = 0.0
             brake = self.acceleration_to_torque(abs(accel))
-            rospy.logwarn("accel: %.3f, throttle: %.3f, brake: %.3f, targtvel: %.3f, currvel: %.3f", accel, throttle, brake, target_linear_velocity, current_velocity)
+            #rospy.logwarn("accel: %.3f, throttle: %.3f, brake: %.3f, targtvel: %.3f, currvel: %.3f", accel, throttle, brake, target_linear_velocity, current_velocity)
         else:
             # in the brake deadband, just let the engine brake
             throttle = 0.0
