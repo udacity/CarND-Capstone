@@ -1,15 +1,22 @@
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 
-## Traffic light detection
+```
+Team Member submission instructions (non Team Lead and individual submissions)
+The submission should include:
 
-Click to see full video on YouTube:
+All code for your project, submitted via a zipped file or through Github. Please use the same directory structure as the project repo, ensuring that all files are included.
+A README file in .txt, .md, or .pdf format. This README should contain the names and Udacity account emails of your team members. For additional resources on creating READMEs or using Markdown, see here and here.
+Important: Please leave the Notes to reviewer blank when uploading your submission.
+```
 
-[![Traffic lights detection using SSD](imgs/loop_with_traffic_light.bag.gif)](http://www.youtube.com/watch?v=s6X17jY6JFA)
+## "Running out of fuel" Team members
 
-Click to see full video on YouTube:
-
-[![Traffic lights detection using SSD](imgs/just_traffic_light.bag.gif)](http://www.youtube.com/watch?v=bHseqGJuWD0)
+- Lucas Gago gagolucasm@hotmail.com [Team leader]
+- Karol Majek karolmajek@gmail.com
+- Aoi Nakanishi aoi.nakanishi@gmail.com
+- Hristo Vrigazov hvrigazov@gmail.com
+- Pachi Cartelle pachicartelle@gmail.com
 
 ## Native Installation
 
@@ -43,36 +50,42 @@ docker run -p 127.0.0.1:4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm
 
 ## Usage
 
-1. Clone the project repository
-```bash
-git clone https://github.com/udacity/CarND-Capstone.git
-```
+1. Install python dependencies
 
-2. Install python dependencies
 ```bash
-cd CarND-Capstone
+./ros_entrypoint.sh
+cd capstone
 pip install -r requirements.txt
 ```
-3. Make and run styx
+
+2. Make and run styx
+
 ```bash
 cd ros
 catkin_make
 source devel/setup.sh
 roslaunch launch/styx.launch
 ```
-4. Run the simulator
+
+3. Run the simulator
 
 ## Real world testing
+
 1. Download [training bag](https://drive.google.com/file/d/0B2_h37bMVw3iYkdJTlRSUlJIamM/view?usp=sharing) that was recorded on the Udacity self-driving car (a bag demonstraing the correct predictions in autonomous mode can be found [here](https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc))
+
 2. Unzip the file
+
 ```bash
 unzip traffic_light_bag_files.zip
 ```
+
 3. Play the bag file
+
 ```bash
 rosbag play -l traffic_light_bag_files/loop_with_traffic_light.bag
 ```
 4. Launch your project in site mode
+
 ```bash
 cd CarND-Capstone/ros
 roslaunch launch/site.launch
