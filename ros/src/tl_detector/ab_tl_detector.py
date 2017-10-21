@@ -54,7 +54,7 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
-        self.sensor_dist = rospy.get_param("~tl_sensor_dist")
+        self.sensor_dist = 100
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
