@@ -1,11 +1,9 @@
-import math
 import rospy
 from pid import PID
 from yaw_controller import YawController
 from lowpass import LowPassFilter
 
 GAS_DENSITY = 2.858
-ONE_MPH = 0.44704
 
 KP = 1.1
 KI = 0.01
@@ -26,19 +24,15 @@ class Controller(object):
         self.total_mass = kwargs['vehicle_mass'] + kwargs['fuel_capacity'] * GAS_DENSITY
         self.wheel_radius = kwargs['wheel_radius']
         self.brake_deadband = kwargs['brake_deadband']
+        self.decel_limit = kwargs['decel_limit']
         self.max_throttle = kwargs['max_throttle']
-        self.prev_ts = None
 
         self.reset()
 
     def reset(self):
         self.pid_controller.reset()
-        self.prev_ts = rospy.get_rostime()
 
-    def control(self, current_velocity, twist):
-        now = rospy.get_rostime()
-        sample_time = (now - self.prev_ts).to_sec()
-
+    def control(self, current_velocity, twist, diff_time):
         target_linear_velocity = twist.linear.x
         target_angular_velocity = twist.angular.z
 
@@ -47,25 +41,33 @@ class Controller(object):
                                                    current_velocity)
 
         linear_velocity_diff = target_linear_velocity - current_velocity
-        accel = self.pid_controller.step(linear_velocity_diff, sample_time)
+        accel = self.pid_controller.step(linear_velocity_diff, diff_time)
         accel = self.low_pass_filter.filt(accel)
 
-        if accel >= 1:
+        # if target velocity is almost 0, keep full brake
+        if target_linear_velocity < 0.1:
+            throttle = 0.0
+            brake = self.acceleration_to_torque(abs(self.decel_limit))
+            return throttle, brake, steer
+
+        if accel > 0.0:
             throttle = accel * self.max_throttle
             brake = 0.0
-            rospy.logwarn("accel: %d, throttle: %d, brake: %d, current velocity: %d", accel, throttle, brake, current_velocity)
-        elif accel <= self.brake_deadband: #or target_linear_velocity < 1.0:
-            # the braking force F = ma
-            # where m is the total mass and a is the control value
-            # in which the control is the torque to be applied by the brake
+            rospy.logwarn("accel: %.3f, throttle: %.3f, brake: %.3f, current velocity: %.3f", accel, throttle, brake, current_velocity)
+        elif abs(accel) >= self.brake_deadband:
             throttle = 0.0
-            brake = abs(-accel) * self.total_mass * self.wheel_radius * abs(linear_velocity_diff * 20)
-            rospy.logwarn("accel: %d, throttle: %d, brake: %d, targtvel: %d, currvel: %d", accel, throttle, brake, target_linear_velocity, current_velocity)
+            brake = self.acceleration_to_torque(abs(accel))
+            rospy.logwarn("accel: %.3f, throttle: %.3f, brake: %.3f, targtvel: %.3f, currvel: %.3f", accel, throttle, brake, target_linear_velocity, current_velocity)
         else:
             # in the brake deadband, just let the engine brake
             throttle = 0.0
             brake = 0.0
 
-        self.prev_ts = now
-
         return throttle, brake, steer
+
+    def acceleration_to_torque(self, acceleration):
+        # compute brake torque in Nm
+        # the braking force F = ma
+        # where m is the total mass and a is the control value
+        # in which the control is the torque to be applied by the brake
+        return acceleration * self.total_mass * self.wheel_radius
