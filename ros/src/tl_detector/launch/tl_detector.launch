@@ -1,4 +1,10 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
+    <node pkg="tl_detector" type="ab_tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
+    <rosparam param="tl_classes">['red', 'off', 'green', 'yellow', 'unknown']</rosparam>
+    <rosparam param="tl_values">[0, 4, 2, 1, 4]</rosparam>
+    <rosparam param="tl_weights_file">./ab_tl_classify/include/weights/checkpoint-78-0.03.h5</rosparam>
+    <rosparam param="tl_sensor_dist">100</rosparam>
+    <rosparam param="tl_max_detections">1</rosparam>
+    <rosparam param="tl_write_output">True</rosparam>
 </launch>

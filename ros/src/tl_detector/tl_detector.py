@@ -1,17 +1,31 @@
 #!/usr/bin/env python
 import rospy
+import tf
+import cv2
+import yaml
+import os
+import math
+import tensorflow
+import numpy as np
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from light_classification.tl_classifier import TLClassifier
-import tf
-import cv2
-import yaml
+from light_classification.traffic_light_classifier import TrafficLightClassifier
+from tl_helper import create_dir_if_nonexistent
+from os.path import expanduser, join, exists
+from kdtree import KDTree
+from waypoint_helper import is_ahead
+from waypoint_helper import get_simple_distance_from_waypoint
+
 
 STATE_COUNT_THRESHOLD = 3
+TL_NEARNESS_THRESHOLD = 150
+VERBOSE = False
+PREFER_GROUND_TRUTH = False
+
 
 class TLDetector(object):
     def __init__(self):
@@ -35,13 +49,14 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
+        rospy.Subscriber('/image_color', Image, self.collect_images_callback)
+
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -49,13 +64,58 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+        # Parameters for collecting frames from the camera
+        self.should_collect_data = False
+        self.dump_images_dir = create_dir_if_nonexistent(join(expanduser('~'), 'traffic_light_dataset', 'raw_images'))
+        self.dump_images_counter = len(os.listdir(self.dump_images_dir))
+        self.last_dump_tstamp = rospy.get_time()
+
+        # Used to find the closest waypoint
+        self.kdtree = None
+        # Data file to store the image name and light state in the image.
+        self.datafile = open(self.dump_images_dir + "/lightsData.csv", "w+")
+
+        self.lightState = None
+
+        if not PREFER_GROUND_TRUTH:
+            # Create tensorflow session
+            self.session = tensorflow.Session()
+
+            # Import classifier and restore pre-trained weights
+            self.light_classifier = TrafficLightClassifier(input_shape=[64, 64], learning_rate=1e-4)
+            tensorflow.train.Saver().restore(self.session, TrafficLightClassifier.checkpoint_path)
+
         rospy.spin()
+
+    def collect_images_callback(self, msg):
+        """
+        Save camera images (currently once per second)
+        """
+        def should_collect_camera_image():
+            return self.should_collect_data and (rospy.get_time() - self.last_dump_tstamp > 1)
+
+        if should_collect_camera_image():
+
+            # Convert image message to actual numpy data
+            image_data = self.bridge.imgmsg_to_cv2(msg)
+            image_data = cv2.cvtColor(image_data, cv2.COLOR_RGB2BGR)  # opencv uses BGR convention
+            image_path = join(self.dump_images_dir, '{:06d}.jpg'.format(self.dump_images_counter))
+
+            # Dump image to dump directory
+            cv2.imwrite(image_path, image_data)
+            
+            # write the state of the light and the image name to a csv file
+            print("Writing to datafile")
+            self.datafile.write('{:06d}.jpg'.format(self.dump_images_counter) + " , " +  self.lightState + "\n")  
+            # Update counter and timestamp
+            self.dump_images_counter += 1
+            self.last_dump_tstamp = rospy.get_time()
 
     def pose_cb(self, msg):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -71,6 +131,8 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
+
+        
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -98,9 +160,28 @@ class TLDetector(object):
 
         Returns:
             int: index of the closest waypoint in self.waypoints
-
         """
-        #TODO implement
+
+        if self.waypoints is not None and self.kdtree is None:
+            if VERBOSE:
+                print ('tl_detector: g_cl_wp: initializing kdtree')
+            points = []
+
+            for i, waypoint in enumerate(self.waypoints):
+                points.append((float(waypoint.pose.pose.position.x),
+                               float(waypoint.pose.pose.position.y),
+                               i))
+
+            self.kdtree = KDTree(points)
+
+        if self.kdtree is not None:
+            current_position = (pose.position.x, pose.position.y)
+            closest = self.kdtree.closest_point(current_position)
+            if VERBOSE:
+
+                print ('tl_detector: g_cl_wp: closest point to {} is {}'.format(current_position, closest))
+            return closest[2]
+
         return 0
 
     def get_light_state(self, light):
@@ -113,21 +194,22 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
+        if not self.has_image:
             self.prev_light_loc = None
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        light_state = self.light_classifier.get_classification(self.session, cv_image)
+
+        return light_state
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
+            int: index of waypoint closest to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
@@ -135,16 +217,80 @@ class TLDetector(object):
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
+        if self.pose:
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
+        if VERBOSE:
+            print ("tl_detector: p_tl: There are {} traffic lights to analyze.".format(len(self.lights)))
 
+        min_distance = float("Infinity")
+        for current_light in self.lights:
+
+            # Check to see whether the traffic light is ahead of the car
+            if is_ahead(current_light, self.pose.pose):
+
+                # Get the simplified Euclidean distance (no sqrt) between it and the car
+                light_distance = get_simple_distance_from_waypoint(current_light, self.pose.pose)
+
+                # If the light is closer, remember it
+                if (light_distance < min_distance):
+                    min_distance = light_distance
+                    light = current_light
+
+        # If we found a light ahead of us
         if light:
-            state = self.get_light_state(light)
+            self.lightState = self._light_color(light.state)
+            
+            # Calculate the actual distance the of the light.
+            light_distance = math.sqrt(min_distance)
+
+            if VERBOSE:
+                print ("tl_detector: p_tl: closest light to {} is at {} (Distance: {}).".format(
+                    (self.pose.pose.position.x, self.pose.pose.position.y),
+                    (light.pose.pose.position.x, light.pose.pose.position.y),
+                    light_distance))
+
+            # Look up the closest waypoint to it
+            # TODO: [brahm] Can we assume self.kdtree is initialized?
+            light_wp = self.get_closest_waypoint(light.pose.pose)
+
+            # Determine the state of the light
+            state = -1
+            if PREFER_GROUND_TRUTH:
+
+                if VERBOSE:
+                    print ("tl_detector: p_tl: Ground truth light color: {}".format(self._light_color(light.state)))
+
+                # TODO: [brahm] Determine what light.state is when not available (e.g. not in the simulator)
+                if light.state is not None:
+                    state = light.state
+
+            #if True: # (state == -1):
+            if state == -1:
+                # this is where we classify the light
+                state_inferred = self.get_light_state(light)
+
+            # If the traffic light is close, let us know
+            if (light_distance < TL_NEARNESS_THRESHOLD):
+                if VERBOSE:
+                    print ("tl_detector: p_tl: light is close: {} meters away.".format(light_distance))
+
             return light_wp, state
+
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
+
+    # Helper 
+    def _light_color(self, state):
+        if (state == TrafficLight.RED):
+            return "RED"
+        elif (state == TrafficLight.YELLOW):
+            return "YELLOW"
+        elif (state == TrafficLight.GREEN):
+            return "GREEN"
+        else:
+            return "UNKNOWN"
 
 if __name__ == '__main__':
     try:
