@@ -79,7 +79,7 @@ class TLCollector(object):
         self.light_classes = ["red", "yellow", "green", "unknown"]
         self.session_tag = TLCollector.create_session_tag()
         self.create_save_paths()
-        self.img_num = 1
+        self.img_num = 0
         self.cam_throttle = Throttle(rate=8)
         self.regulator = Regulator(max_per_class=5)
 
@@ -139,7 +139,7 @@ class TLCollector(object):
 
     def get_closest_light(self):
 
-        best_distance = 99999
+        best_distance = float('inf')
         best_light = None
         yaw = self.convert_to_radians(self.pose.pose)
         car_position = self.pose.pose.position
