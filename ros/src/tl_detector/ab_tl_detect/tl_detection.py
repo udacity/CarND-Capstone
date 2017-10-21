@@ -131,8 +131,10 @@ class TLDetection(object):
                 if not os.path.exists("./output/"):
                     os.mkdir("./output/")
 
-                traffic_light.save("./output/{}.png".format(rospy.Time.now()))
-            
+                fname = "./output/{}.png".format(rospy.Time.now())
+                traffic_light.save(fname)
+                rospy.loginfo("[TLDetection] -> Traffic light saved: " + fname)
+
             cropped_images.append(traffic_light)
         
         rospy.loginfo("[TLDetection] -> Traffic light(s) detected: " + str(len(cropped_images)) 
