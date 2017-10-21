@@ -25,4 +25,4 @@ Click to see full video on YouTube:
 
 On data from Warsaw, Poland: [Click to see full video on YouTube]
 
-[![Traffic lights detection using SSD](http://img.youtube.com/vi/OtL1RT9uCRc/0.jpg)]((http://www.youtube.com/watch?v=OtL1RT9uCRc)
+[![Traffic lights detection using SSD](http://img.youtube.com/vi/OtL1RT9uCRc/0.jpg)](http://www.youtube.com/watch?v=OtL1RT9uCRc)
