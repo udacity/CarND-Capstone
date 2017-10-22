@@ -10,7 +10,7 @@ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 
 '''
 You can use this file to test your DBW code against a bag recorded with a reference implementation.
-The bag can be found in `styx/data` folder.
+The bag can be found at https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc.
 
 This file will produce 3 csv files which you can process to figure out how your DBW node is
 performing on various commands.
