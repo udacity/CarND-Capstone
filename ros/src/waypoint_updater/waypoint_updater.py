@@ -108,7 +108,7 @@ class WaypointUpdater(object):
                     for i in range(deceleration_point, light):
                         distance = self.distance(self.base_waypoints, i, light)
                         speed = full_speed * distance / DECELERATION_DISTANCE
-                        self.base_waypoints[i].twist.twist.linear.x = max(speed, 1.0)
+                        self.base_waypoints[i].twist.twist.linear.x = max(speed, .5)
                         #print("speed at waypoint %d is %f" % (i, speed))
                     self.base_waypoints[light].twist.twist.linear.x = 0
                     #print("speed at waypoint %d is %f" % (light, 0))
@@ -173,17 +173,6 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
-
-    def nearest_stop_line(self, waypoint):
-        nearest = 0
-        nearest_distance = 10000
-        for i in range(0, len(self.stop_lines)):
-            distance = abs(waypoint - self.stop_lines[i])
-            if distance < nearest_distance:
-                nearest_distance = distance
-                nearest = self.stop_lines[i]
-        #print("nearest stop line to %d is %d" % (waypoint, nearest))
-        return nearest
 
     def nearest_waypoint(self, x, y):
         min_distance = float("inf")
