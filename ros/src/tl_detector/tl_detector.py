@@ -11,6 +11,8 @@ import tf
 import cv2
 import yaml
 import time
+import math
+import numpy as np
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -69,8 +71,8 @@ class TLDetector(object):
     def pose_cb(self, msg):
         self.pose = msg
 
-    def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+    def waypoints_cb(self, msg):
+        self.waypoints = msg.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -113,6 +115,9 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
+    def eucl_dist(self, a, b):
+        return math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -124,7 +129,15 @@ class TLDetector(object):
 
         """
         # TODO implement
-        return 0
+
+        distances = []
+
+        for wp in self.waypoints:
+            dist = self.eucl_dist(pose.position, wp.pose.pose.position)
+            distances.append(dist)
+
+        index = np.argmin(distances)
+        return index
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -163,6 +176,8 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         # TODO find the closest visible traffic light (if one exists)
+
+
 
         if light:
             state = self.get_light_state(light)
