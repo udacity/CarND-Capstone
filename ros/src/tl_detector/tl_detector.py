@@ -25,11 +25,7 @@ from utils import label_map_util
 from utils import visualization_utils as vis_util
 # import matplotlib.pyplot as plt
 
-
-
 rospy.init_node('tl_detector')
-
-
 
 PATH_TO_CKPT = rospy.get_param('~graph', '')
 PATH_TO_LABELS = rospy.get_param('~labels', '')

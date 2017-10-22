@@ -4,4 +4,4 @@ camera_info:
   image_width: 800
   image_height: 600
 stop_line_positions:
-    - [20.991, 22.837]
+    - [8.0, 16.2]
