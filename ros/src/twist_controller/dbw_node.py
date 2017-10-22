@@ -53,10 +53,26 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        self.current_velocity = self.twist_cmd = None
+        self.dbw_enabled = True
+
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
+        self.controller = Controller(vehicle_mass = vehicle_mass,
+                                     fuel_capacity = fuel_capacity,
+                                     brake_deadband = brake_deadband,
+                                     decel_limit = decel_limit,
+                                     accel_limit = accel_limit,
+                                     wheel_radius = wheel_radius,
+                                     wheel_base = wheel_base,
+                                     steer_ratio = steer_ratio,
+                                     max_lat_accel = max_lat_accel,
+                                     max_steer_angle = max_steer_angle)
 
         # TODO: Subscribe to all the topics you need to
+        rospy.Subscriber("/current_velocity", TwistStamped, self.current_velocity_callback)
+        rospy.Subscriber("/twist_cmd", TwistStamped, self.twist_cmd_callback)
+        rospy.Subscriber("/vehicle/dbw_enabled", Bool, self.dbw_enabled_callback)
 
         self.loop()
 
@@ -72,9 +88,15 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
+            if self.dbw_enabled == True:
+                throttle, brake, steering = self.controller.control(self.twist_cmd, self.current_velocity, self.dbw_enabled)
+                self.publish(throttle, brake, steering)
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
+        # print('throttle:{0}, brake:{1}, steer{2}'.format(throttle, brake, steer))
+
         tcmd = ThrottleCmd()
         tcmd.enable = True
         tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
@@ -92,6 +114,14 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+    def current_velocity_callback(self, msg):
+        self.current_velocity = msg
+
+    def twist_cmd_callback(self, msg):
+        self.twist_cmd = msg
+
+    def dbw_enabled_callback(self, msg):
+        self.dbw_enabled = msg.data
 
 if __name__ == '__main__':
     DBWNode()

@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
+    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node">
+        <param name="graph" value="$(find tl_detector)/graph/run15-5957/frozen_inference_graph.pb" />
+        <param name="labels" value="$(find tl_detector)/data/traffic_lights.pbtxt" />
+        <param name="classes" value="3" />
+    </node>
 </launch>
