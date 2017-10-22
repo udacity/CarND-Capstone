@@ -61,7 +61,7 @@ class TLClassifier(object):
                 [detection_boxes, detection_scores, detection_classes, num_detections],
                 feed_dict={image_tensor: image_np_expanded})
                 # your code
-                elapsed_time = time.time() - start_time
+                #elapsed_time = time.time() - start_time
                 #print("done")
                 #print(elapsed_time)
                 # Visualization of the results of a detection.
