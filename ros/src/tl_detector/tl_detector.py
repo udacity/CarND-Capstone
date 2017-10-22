@@ -215,16 +215,6 @@ class TLDetector(object):
                 min_distance_waypoint = i
         return min_distance_waypoint
 
-    def nearest_stop_line(self, waypoint, stop_lines):
-        nearest = 0
-        nearest_distance = 10000
-        for i in range(0, len(stop_lines)):
-            distance = abs(waypoint - stop_lines[i])
-            if distance < nearest_distance:
-                nearest_distance = distance
-                nearest = stop_lines[i]
-        return nearest
-
 if __name__ == '__main__':
     try:
         TLDetector()

@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import tarfile
+import rospy
 
 import tensorflow as tf
 import zipfile
@@ -22,7 +23,7 @@ class TLClassifier(object):
         self.detection_graph = tf.Graph()
         with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
-            with tf.gfile.GFile('fast.pb', 'rb') as fid:
+            with tf.gfile.GFile(rospy.get_param('~model'), 'rb') as fid:
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
@@ -54,15 +55,15 @@ class TLClassifier(object):
                 # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
                 image_np_expanded = np.expand_dims(image_np, axis=0)
                 # Actual detection.
-                print("doing detection")
-                start_time = time.time()
+                #print("doing detection")
+                #start_time = time.time()
                 (boxes, scores, classes, num) = sess.run(
                 [detection_boxes, detection_scores, detection_classes, num_detections],
                 feed_dict={image_tensor: image_np_expanded})
                 # your code
                 elapsed_time = time.time() - start_time
-                print("done")
-                print(elapsed_time)
+                #print("done")
+                #print(elapsed_time)
                 # Visualization of the results of a detection.
                 max_score_index = np.argmax(scores[0])
                 max_score = scores[0][max_score_index]
@@ -70,7 +71,7 @@ class TLClassifier(object):
                     predicted_light = category_index[classes[0][max_score_index]]
                 else:
                     predicted_light = category_index[4]
-                print("Predicted Light: {}".format(predicted_light))
+                #print("Predicted Light: {}".format(predicted_light))
 
                 if predicted_light == "red":
                     return TrafficLight.RED
