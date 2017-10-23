@@ -1,0 +1,2 @@
+alias udacity_make="(cd /udacity/ros && catkin_make)"
+alias udacity_run="(cd /udacity/ros && source devel/setup.sh && roslaunch launch/styx.launch)"
