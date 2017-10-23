@@ -89,6 +89,7 @@ class TLDetector(object):
         return slp_waypoints
 
     def waypoints_cb(self, msg):
+        rospy.logwarn("GOT WAYPOINTS MESSAGE")
         self.waypoints = msg.waypoints
         self.stop_line_waypoints = self.get_stop_line_waypoints()
 
@@ -146,13 +147,15 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
+        index = 0
         distances = []
+        if not self.waypoints is None:
+            for wp in self.waypoints:
+                dist = self.eucl_dist(pose.position, wp.pose.pose.position)
+                distances.append(dist)
 
-        for wp in self.waypoints:
-            dist = self.eucl_dist(pose.position, wp.pose.pose.position)
-            distances.append(dist)
+            index = np.argmin(distances)
 
-        index = np.argmin(distances)
         return index
 
     def get_light_state(self, light):
@@ -201,7 +204,7 @@ class TLDetector(object):
             state = self.get_light_state(light)
             return light_wp, state
 
-        self.waypoints = None
+        #self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 
