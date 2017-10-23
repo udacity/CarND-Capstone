@@ -65,7 +65,7 @@ class TrafficLightModel(object):
 
     def __init__(self):
         # Load Model
-        fname = './light_classification_csr/model_16_100_1506872681554117'
+        fname = './light_classification_csr/model_keras_v2.0.8_11195_16_100'
         file = open(fname + '.json', 'r')
         json_string = file.read()
         file.close()
@@ -105,7 +105,7 @@ class TrafficLightModel(object):
         end = time()
 
         rospy.loginfo('%s in %4.2fms' % (self.idx_to_string[pred_idx],
-                                         int((end - start) * 1000)))
+                                         (end - start) * 1000))
 
         # Debug
         cv2.rectangle(resized, (0, 0), (150, 10),
