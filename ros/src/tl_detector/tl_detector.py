@@ -32,6 +32,9 @@ class TLDetector(object):
         # Throttle the interval of the TL detection.
         self.min_interval = 0.25
         self.prev_time = time.time()
+        self.speed_limit = kmph2mps(rospy.get_param('/waypoint_loader/velocity'))
+
+        self.LOOKAHEAD_WPS = int(self.speed_limit * 10)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -57,6 +60,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.stop_line_waypoints = None
 
         rospy.spin()
 
@@ -71,8 +75,22 @@ class TLDetector(object):
     def pose_cb(self, msg):
         self.pose = msg
 
+    def get_stop_line_waypoints(self):
+        # List of positions that correspond to the line to stop in front of for a given intersection
+        stop_line_positions = self.config['stop_line_positions']
+        # get the closest waypoint to each stop_line_position
+        slp_waypoints = []
+        for slp in stop_line_positions:
+            slp_pose = Pose()
+            slp_pose.position.x = slp[0]
+            slp_pose.position.y = slp[1]
+            slp_waypoints.append(self.get_closest_waypoint(slp_pose))
+
+        return slp_waypoints
+
     def waypoints_cb(self, msg):
         self.waypoints = msg.waypoints
+        self.stop_line_waypoints = self.get_stop_line_waypoints()
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -128,8 +146,6 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        # TODO implement
-
         distances = []
 
         for wp in self.waypoints:
@@ -169,15 +185,17 @@ class TLDetector(object):
 
         """
         light = None
+        light_wp = -1
 
-        # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
         if self.pose:
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         # TODO find the closest visible traffic light (if one exists)
-
-
+        for i, slw in enumerate(self.stop_line_waypoints):
+            if car_position < slw < (car_position + self.LOOKAHEAD_WPS):
+                light = self.lights[i]
+                light_wp = i
+                break
 
         if light:
             state = self.get_light_state(light)
@@ -185,6 +203,10 @@ class TLDetector(object):
 
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
+
+
+def kmph2mps(speed_kmph):
+    return (speed_kmph * 1000.) / (60. * 60.)
 
 
 if __name__ == '__main__':
