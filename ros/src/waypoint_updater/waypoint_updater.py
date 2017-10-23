@@ -4,6 +4,7 @@ import tf
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint, TrafficLightArray
+from std_msgs.msg import Int32
 
 import math
 import yaml
@@ -35,7 +36,7 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.lights_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -48,9 +49,8 @@ class WaypointUpdater(object):
         self.deceleration_points = []
         self.base_waypoints = []
         self.reference_velocity = []
-        self.lights = []
         self.pose = None
-
+        self.red_light_stop_point = -1
         self.loop()
 
     # Main loop.  if pose and waypoints are both receved, compute final waypoints every 100ms.
@@ -97,22 +97,9 @@ class WaypointUpdater(object):
                 for waypoint in range(min_distance_waypoint, min_distance_waypoint + LOOKAHEAD_WPS):
                     self.base_waypoints[waypoint].twist.twist.linear.x = self.reference_velocity[waypoint]
 
-                # Search for any red or yellow lights less than 100m ahead of car, find stop lines
-                red_lights = []
-                for light in self.lights:
-                    if light.state == 0 or light.state == 1:
-                        x = light.pose.pose.position.x
-                        y = light.pose.pose.position.y
-                        distance = math.sqrt((car_x-x)**2 + (car_y-y)**2)
-                        if distance > DECELERATION_DISTANCE:
-                            #print("light at %f, %f is %f away, don't care" % (x, y, distance))
-                            continue
-                        waypoint = self.nearest_waypoint(x, y)
-                        if waypoint >= min_distance_waypoint:
-                            red_lights.append(self.nearest_stop_line(waypoint))
-
                 # Slow down gradually for any red lights ahead
-                for light in red_lights:
+                if self.red_light_stop_point != -1:
+                    light = self.red_light_stop_point
                     #print("will stop at waypoint %d" % light)
                     full_speed = self.reference_velocity[light]
                     #print("full speed is %f" % full_speed)
@@ -121,7 +108,7 @@ class WaypointUpdater(object):
                     for i in range(deceleration_point, light):
                         distance = self.distance(self.base_waypoints, i, light)
                         speed = full_speed * distance / DECELERATION_DISTANCE
-                        self.base_waypoints[i].twist.twist.linear.x = max(speed, 1.0)
+                        self.base_waypoints[i].twist.twist.linear.x = max(speed, .5)
                         #print("speed at waypoint %d is %f" % (i, speed))
                     self.base_waypoints[light].twist.twist.linear.x = 0
                     #print("speed at waypoint %d is %f" % (light, 0))
@@ -166,7 +153,7 @@ class WaypointUpdater(object):
 
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
+        self.red_light_stop_point = msg.data
         pass
 
     def obstacle_cb(self, msg):
@@ -186,17 +173,6 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
-
-    def nearest_stop_line(self, waypoint):
-        nearest = 0
-        nearest_distance = 10000
-        for i in range(0, len(self.stop_lines)):
-            distance = abs(waypoint - self.stop_lines[i])
-            if distance < nearest_distance:
-                nearest_distance = distance
-                nearest = self.stop_lines[i]
-        #print("nearest stop line to %d is %d" % (waypoint, nearest))
-        return nearest
 
     def nearest_waypoint(self, x, y):
         min_distance = float("inf")
