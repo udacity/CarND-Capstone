@@ -93,8 +93,10 @@ class WaypointUpdater(object):
                     #print("Closest waypoint is behind us, using the next one")
                     min_distance_waypoint = min_distance_waypoint+1
 
+                last_waypoint = min(len(self.base_waypoints) - 1, min_distance_waypoint + LOOKAHEAD_WPS)
+
                 # Set each waypoint back to its initial target velocity
-                for waypoint in range(min_distance_waypoint, min_distance_waypoint + LOOKAHEAD_WPS):
+                for waypoint in range(min_distance_waypoint, last_waypoint):
                     self.base_waypoints[waypoint].twist.twist.linear.x = self.reference_velocity[waypoint]
 
                 # Slow down gradually for any red lights ahead
@@ -113,11 +115,11 @@ class WaypointUpdater(object):
                     self.base_waypoints[light].twist.twist.linear.x = 0
                     #print("speed at waypoint %d is %f" % (light, 0))
 
-                # Publish LOOKAHEAD_WPS waypoints
+                # Publish at most LOOKAHEAD_WPS waypoints
                 lane = Lane()
                 lane.header.frame_id = '/world'
                 lane.header.stamp = rospy.Time(0)
-                lane.waypoints = self.base_waypoints[min_distance_waypoint:min_distance_waypoint+LOOKAHEAD_WPS]
+                lane.waypoints = self.base_waypoints[min_distance_waypoint:last_waypoint]
                 self.final_waypoints_pub.publish(lane)
         
             rate.sleep()
