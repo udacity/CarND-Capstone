@@ -89,8 +89,9 @@ class TLDetector(object):
         return slp_waypoints
 
     def waypoints_cb(self, msg):
-        self.waypoints = msg.waypoints
-        self.stop_line_waypoints = self.get_stop_line_waypoints()
+        if msg is not None and msg.waypoints is not None:
+            self.waypoints = msg.waypoints
+            self.stop_line_waypoints = self.get_stop_line_waypoints()
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -153,6 +154,7 @@ class TLDetector(object):
             distances.append(dist)
 
         index = np.argmin(distances)
+
         return index
 
     def get_light_state(self, light):
@@ -187,7 +189,7 @@ class TLDetector(object):
         light = None
         light_wp = -1
 
-        if self.pose:
+        if self.pose and self.waypoints is not None:
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         # TODO find the closest visible traffic light (if one exists)
@@ -201,7 +203,6 @@ class TLDetector(object):
             state = self.get_light_state(light)
             return light_wp, state
 
-        self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 
