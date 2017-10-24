@@ -32,8 +32,7 @@ class TLClassifier(object):
             return
 
         traffic_light_index = self.infer(image)
-        TLClassifier.convert_tl_id(traffic_light_index)
-        return TrafficLight.UNKNOWN
+        return TLClassifier.convert_tl_id(traffic_light_index)
 
     def create_detection_graph(self, model_path):
         self.detection_graph = tf.Graph()
