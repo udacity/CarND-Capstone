@@ -40,12 +40,13 @@ class WaypointUpdater(object):
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
         self.decel_limit = 0.8 * abs(rospy.get_param('/dbw_node/decel_limit'))
 
         ####################### to get traffic light ground truth, needs to be removed afterward ################################
-        self.traffic_light_sub = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_light_cb)
+        #self.traffic_light_sub = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_light_cb)
         ########################################################################################################################
 
         # find base waypoint index(s) before stop line positions
@@ -103,7 +104,9 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         # self.traffic_index = -1; # to get from traffic_cb
-        pass
+        if msg.data != self.traffic_index:
+            self.traffic_index = msg.data
+            rospy.logwarn('traffic waypont %d', self.traffic_index)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -131,13 +134,13 @@ class WaypointUpdater(object):
         if self.next_waypoint_index == -1 or rospy.is_shutdown():
             return
 
-        rospy.logwarn(
-            "current position (%.3f, %.3f), next waypoint: %d, traffic waypoint: %d", 
-            self.current_pose.position.x,
-            self.current_pose.position.y,
-            self.next_waypoint_index,
-            self.traffic_index
-        )
+        #rospy.logwarn(
+        #    "current position (%.3f, %.3f), next waypoint: %d, traffic waypoint: %d", 
+        #    self.current_pose.position.x,
+        #    self.current_pose.position.y,
+        #    self.next_waypoint_index,
+        #    self.traffic_index
+        #)
 
         waypoints = list(self.get_copied_waypoints(self.next_waypoint_index))
 
