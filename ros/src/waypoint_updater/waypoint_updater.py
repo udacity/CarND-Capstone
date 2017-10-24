@@ -99,6 +99,8 @@ class WaypointUpdater(object):
                 for waypoint in range(min_distance_waypoint, last_waypoint):
                     self.base_waypoints[waypoint].twist.twist.linear.x = self.reference_velocity[waypoint]
 
+                deceleration_point = -1
+
                 # Slow down gradually for any red lights ahead
                 if self.red_light_stop_point != -1:
                     light = self.red_light_stop_point
@@ -121,6 +123,10 @@ class WaypointUpdater(object):
                 lane.header.stamp = rospy.Time(0)
                 lane.waypoints = self.base_waypoints[min_distance_waypoint:last_waypoint]
                 self.final_waypoints_pub.publish(lane)
+
+                rospy.loginfo('waypoint_updater: %d waypoints (%d-%d), stop: %d slow: %d target speed: %f' %
+                    (len(lane.waypoints), min_distance_waypoint, last_waypoint, self.red_light_stop_point,
+                    deceleration_point, self.base_waypoints[min_distance_waypoint].twist.twist.linear.x))
         
             rate.sleep()
 
@@ -133,7 +139,7 @@ class WaypointUpdater(object):
     # Receive and process waypoints.  Also find nearest waypoint to each stop line,
     # and point to begin decelerating for each stop line
     def waypoints_cb(self, waypoints):
-        #print("got %d waypoints" % len(waypoints.waypoints))
+        rospy.loginfo('waypoint_updater: received %d waypoints' % (len(waypoints.waypoints)))
         self.base_waypoints = waypoints.waypoints
         # keep a copy of original speed limit for each waypoint
         for i in range(0, len(self.base_waypoints)):
@@ -141,6 +147,7 @@ class WaypointUpdater(object):
         # find stop line waypoints for each light
         stop_line_positions = self.traffic_light_config['stop_line_positions']
         #print("there are %d lights" % len(stop_line_positions))
+        rospy.loginfo('waypoint_updater: there are %d lights!' % (len(stop_line_positions)))
         for position in stop_line_positions:
             waypoint = self.nearest_waypoint(position[0], position[1])
             self.stop_lines.append(waypoint)
@@ -155,6 +162,8 @@ class WaypointUpdater(object):
 
 
     def traffic_cb(self, msg):
+        if self.red_light_stop_point != msg.data:
+            rospy.loginfo('waypoint_updater: red light at waypoint %d' % msg.data)
         self.red_light_stop_point = msg.data
         pass
 

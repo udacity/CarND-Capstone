@@ -75,6 +75,8 @@ class TLDetector(object):
                 light_wp = light_wp if state == TrafficLight.RED else -1
                 self.last_wp = light_wp
                 self.upcoming_red_light_pub.publish(Int32(light_wp))
+                if self.state_count == STATE_COUNT_THRESHOLD:
+                    rospy.loginfo('tl_detector: publishing red light at waypoint %d' % (light_wp))
             else:
                 self.upcoming_red_light_pub.publish(Int32(self.last_wp))
             self.state_count += 1

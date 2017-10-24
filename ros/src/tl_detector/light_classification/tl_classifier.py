@@ -56,12 +56,12 @@ class TLClassifier(object):
                 image_np_expanded = np.expand_dims(image_np, axis=0)
                 # Actual detection.
                 #print("doing detection")
-                #start_time = time.time()
+                start_time = time.time()
                 (boxes, scores, classes, num) = sess.run(
                 [detection_boxes, detection_scores, detection_classes, num_detections],
                 feed_dict={image_tensor: image_np_expanded})
                 # your code
-                #elapsed_time = time.time() - start_time
+                elapsed_time = time.time() - start_time
                 #print("done")
                 #print(elapsed_time)
                 # Visualization of the results of a detection.
@@ -72,6 +72,8 @@ class TLClassifier(object):
                 else:
                     predicted_light = category_index[4]
                 #print("Predicted Light: {}".format(predicted_light))
+
+                rospy.loginfo('tl_classifier: predicted %s light in %f seconds' % (predicted_light, elapsed_time))
 
                 if predicted_light == "red":
                     return TrafficLight.RED
