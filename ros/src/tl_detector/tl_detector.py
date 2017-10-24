@@ -111,9 +111,6 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
 
-        # Test the inference. Remove this when the rest of the pipeline is built.
-        self.infer_camera_image()
-
         light_wp, state = self.process_traffic_lights()
 
         '''
@@ -188,9 +185,13 @@ class TLDetector(object):
         """
         light = None
         light_wp = -1
+        car_position = -1
 
         if self.pose is not None and self.waypoints is not None:
             car_position = self.get_closest_waypoint(self.pose)
+
+        if car_position == -1:
+            return -1, TrafficLight.UNKNOWN
 
         # TODO find the closest visible traffic light (if one exists)
         for i, slw in enumerate(self.stop_line_waypoints):
