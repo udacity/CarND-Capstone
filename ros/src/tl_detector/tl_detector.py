@@ -89,7 +89,7 @@ class TLDetector(object):
         return slp_waypoints
 
     def waypoints_cb(self, msg):
-        if not(msg is None) and not (msg.waypoints is None):
+        if msg is not None and msg.waypoints is not None:
             self.waypoints = msg.waypoints
             self.stop_line_waypoints = self.get_stop_line_waypoints()
 
@@ -189,7 +189,7 @@ class TLDetector(object):
         light = None
         light_wp = -1
 
-        if self.pose and not(self.waypoints is None):
+        if self.pose and self.waypoints is not None:
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         # TODO find the closest visible traffic light (if one exists)
