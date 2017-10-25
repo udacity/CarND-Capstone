@@ -1,0 +1,280 @@
+Changelog
+
+Initial changes (2017-09-11 by cs4nd13)
+
+Note: this includes a number of performance fixes from
+Alexey Makurin, which are in:
+https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c88ec1c39d50
+
+I'll just mention "Makurin" below
+
+styx/bridge.py:
+Check if pose info is identical to previous pose; if it is,
+don't send it.  (On my machine, two thirds of the pose locations
+sent by the simulator are duplicates of the previous pose, so
+filtering out the dups reduces the number of poses sent by
+a factor of 3!)
+Modify steering, throttle and and brake callbacks so they don't
+send error messages if server has not yet been set.
+
+styx/launch/server.launch:
+Comment out launch of Udacity simulator, since I launch that 
+separately by hand (others may want to comment it back in,
+which is fine with me).
+
+styx/server.py:
+Makurin performance fix: convert "msgs" from a list (which would
+build up a backlog of commands on each topic) to a map
+(which retains only the latest command on each topic).
+
+twist_controller/dbw_node.py
+Lots of new stuff here.  In some place, I just added logging
+statements.  
+- In init, set up things that will be used later.  Of note:
+I use the provided YawController, but note that I pass it
+a steer_ratio 8 times larger than given by Udacity, and I
+set max_lat_accel 4 times larger.  The higher max_lat_accel
+is needed only if you want to drive at full throttle; if
+you use the default value, you won't be able to take sharp
+curves at high speed.
+- In twist_cmd_cb, take the twist_cmd messages (published by 
+waypoint_follower), and extract the yaw information (this 
+is waypoint_follower's suggestion of how the yaw should
+change in order to follow the waypoints).  Pass the yaw info
+through a low-pass filter.  
+- In dbw_enabled_cb, set a flag to correspond to the dbw_enabled
+status.  It is unclear how this status should be initialized,
+since the simulator sends dbw_enabled signals only AFTER the 
+simulator is connected, and ONLY WHEN the "Manual" button in the 
+simulator is toggled.  When the simulator is first connected,
+NO dbw_enabled signal is sent to let us know whether the
+simulator is currently in Manual mode or not.
+- In current_velocity_cb, calculate some diagnostic info that
+is no longer used (so this could probably all be deleted).
+- In loop, change the rate from 50 Hz to 10 Hz, per Makurin.
+Calculate the steering angle using the provided YawController.
+At the moment I use a hard-wired throttle value rather than
+controlling the speed correctly; on my machine, a throttle
+of 0.5 gives a speed of approx 40 mph.
+
+twist_controller/launch/dbw_sim.launch:
+Set output mode to "screen".  This will allow loginfo messages
+to be printed to the screen at runtime (Udacity docs claim that
+loginfo messages will also be printed to the screen in "log"
+mode, but this is not correct).
+
+waypoint_follower/src/pure_pursuit.cpp:
+Performance changes suggested by Makurin
+
+waypoint_loader/launch/waypoint_loader.launch
+Set output to "screen" mode.  Also, add a parameter,
+"yaw_is_in_degrees".  I notice that the provided data file
+(wp_yaw_const.txt) gives yaw values in degrees (you can tell
+because they are in the range 0 to 360).  But all the code
+provided by Udacity assumes that the yaws in this file are 
+given in radians.  This parameter will be used to notify
+waypoint_loader.py that it needs to do a degrees-to-radians
+conversion.  Long after making this fix, I did some tests and
+discovered that it doesn't really matter if the yaws are incorrect,
+in terms of how the system performs.  
+
+waypoint_loader/waypoint_loader.py:
+Check and use yaw_is_in_degrees parameter.  Remove unneeded call 
+to rospy.spin.  Make performance fix suggested by Makurin:
+change publication rate from 40 Hz to 1 Hz.  In fact, the waypoints
+only need to be published once; no need to keep sending the same
+10,000 waypoints, over and over, to waypoint_updater.  I understand
+from the Slack channel that this single change (40 Hz to 1 Hz) made a 
+huge difference in performance.
+
+waypoint_updater/launch/waypoint_updater.launch:
+Set output mode to "screen".
+
+waypoint_updater/waypoint_updater.py:
+Lots of changes.  The main task of waypoint_updater is to
+store a copy of the waypoints, and then every time the pose
+changes, publish a list of the 200 waypoints that are just
+ahead of the car.  So in principle, every time we get a new
+pose, we need to search through all 10,000 waypoints to find
+the nearest one.  But in practice, the car doesn't move too
+far between pose messages, so we really only need to search
+waypoints near the waypoint found in the previous call.
+
+How to run:
+
+(These instructions are similar to, but slightly different from,
+the generic Udacity instructions in CarND-Capstone/README.md)
+
+Clone the repository 
+cd to the repository directory (CarND-Capstone)
+
+If you haven't already done so, pip install -r requirements.txt
+
+cd ros/src
+
+rm CMakefile.txt (if there is one)
+catkin_init_workspace
+
+(the previous two steps are not in the generic Udacity README.md
+file, but you need them for my version of the repository)
+
+cd ..
+
+(you should now be in the CarND-Capstone/ros directory)
+
+catkin_make
+
+If no errors, then
+
+source devel/setup.bash
+roslaunch launch/styx.launch
+
+Start your simulator (it will NOT start automatically), 
+and MAKE SURE to uncheck the "Manual" box!
+
+More changes (2017-09-11 by cs4nd13, tagged cs_v1.0)
+
+Modified dbw_node.py to remove the "steering angle" message.
+
+Changes (2017-09-20 by cs4nd13, tagged cs_v1.1)
+
+Merged in Udacity's latest changes.  Took Udacity's version
+(completely replacing my own) for waypoint_loader.py and
+waypoint_loader.launch, because Udacity fixed the problem
+in the wp_yaw_const.txt. 
+
+Modified dbw_node.py to remove the multiplier I had put on 
+steer_ratio, because Udacity has fixed dbw_sim.launch to
+have the correct value.
+
+Changes (2017-09-20 by cs4nd13, tagged cs_v1.2)
+
+Added some efficiency fixes that I've been working on.
+
+server.py: send a dbw_enabled message when the connections
+is first made, so that we know the initial status of dbw.
+Also: Experiments showed that on my machine, at least,
+the simulator's throttle was sporadically going to zero 
+(as shown by "control" messages, as well as by fluctuating 
+AccN values in the simulator).  The fix is to send the 
+simulator all 3 control messages at once, with throttle 
+as the third.
+
+styx server.launch: Send output to screen.
+
+dbw_node.py: Increase max_lat_accel into YawController so 
+that we can take curves better at high speed.  Also, 
+experiments showed that at high speed, the steering_ratio
+needs to be multiplied by 1.2.  This doesn't seem to cause
+any problems at low speed.
+
+pure_pursuit_core.cpp: Turn a warning into an error message, 
+so that it is more visible.
+
+waypoint_updater.py: At the end of the track, provide waypoints 
+from the beginning of the track to complete the loop.  Changed 
+some parameters to allow high-speed driving.
+
+Changes (2017-09-24 by ortizjuan2)
+
+dbw_node.py: fixed bug in setting DBWNode.dbw.  Added PID module
+to control car's velocity, based on velocity suggestions from
+the twist_cmd topic.
+
+Changes (2017-09-24 and 2017-09-25 by cs4nd13)
+
+tl_detector.py: Fixed process_traffic_lights to correctly
+handle the case where the car is past the last traffic light
+on the track; now looks ahead, past the loop, to the first
+traffic light.
+
+waypoint_updater.py: Added new topic, /tl_distance, which provides
+the distance to the next red light stop line, in meters.  If no red 
+light is detected ahead, then returns -1.0.  This topic is published
+at the same frequency as images are received from the car.
+
+Changes (2017-09-24 and 2017-09-27 by calvenn)
+
+tl_detector.py: Comment out line 477 state = light.state. 
+
+tl_cnn.py: add cv2.resize the input image size from 
+800x600 to 400x300.  Process image once for every 15 images 
+pass by and still can produce tl_distance. 
+
+waypoint_updater.py add dist filter if dist <50: 
+self.tl_distance_pub.publish(dist)
+
+Changes (2017-09-27 by cs4nd13)
+
+ros/launch/styx_fast_tl.launch: this is a launch file with 
+the traffic_light_algorithm parameter set to 0 so that the 
+simulator's traffic-light-state detection is used, instead of 
+an image processing algorithm, to determine the traffic light state
+
+tl_detector.py: Moved Calvenn's image processing algorithm out
+of this file into files in the sub-directory light_classification_ct.
+Imported that sub-directory.
+Added a parameter, self.algorithm, which determines which image-processing
+algorithm will be called.  So far there are only two choices: 0 means
+that the traffic-light-state information from the simulator will be
+used; 1 means that Calvenn's algorithm will be used.
+Added a parameter, self.max_tl_distance.  If the car is more than this
+distance from the next light, do not call the image-processing
+algorithm.
+Note that important parameters such as algorithm, max_tl_distance, and
+skip-frame count, are all set in tl_detector.py, in TLDetector.__init__ .
+The algorithm can also be set in the ROS parameter traffic_light_algorithm.
+
+light_classification_ct directory: Moved Calvenn's code and data here.
+tl_cnn.py: Changed file paths to point to the new locations of the data.  
+Moved frame-skipping logic from here to tl_classifier.py.
+tl_classifier.py: Moved Calvenn's code, formerly in tl_detector.py,
+to here.  Moved frame-skipping logic to here.
+
+waypoint_updater.py: Undid Calvenn's change, since the max_tl_distance
+logic in tl_detector.py handles this now.
+
+Changes (2017-09-29 by cs4nd13)
+
+Merged in latest changes from the Udacity upstream repository.  
+The main changes affecting us:
+
+Various unit-conversion bugs in waypoint_loader.py have been fixed.
+The units are a bit confusing, because the launch file gives the
+desired velocity in km per hour, the simulator displays velocity in 
+miles per hour, and internally the code uses meters per second.
+
+requirements.txt has been updated to require version 1.0.0 of
+tensorflow.  (Udacity's change actually has a typo, so I have
+incorporated a fix from a pull request that Udacity hasn't yet
+acted on).
+
+Changes (2017-09-29 by cs4nd13, merged 2017-10-02)
+
+Publish distance to next light, even if not red
+
+tl_detector.py: Modified value published in topic /traffic_waypoint.
+If wp (the published value) is > 0, then wp is the waypoint of the
+next red light.  If wp < 0, then abs(wp) is the waypoint of the next
+light, but the next light is not red (or its state is unknown).
+
+waypoint_updater.py: Modified value published in topic /tl_distance.
+If tld (the published value) is > 0, then tld is the distance in
+meters to the next light, and the next light is red.  If tld < 0,
+then abs(tld) is the distance to the next light, and the next
+light is not red (or its state is unknown).
+Changes (2017-10-01 by cs4nd13)
+
+Merged in Christian's changes:
+This classifier is activated when traffic_light_algorithm is set to 2.
+More details of this classifier can be found in the repo:
+https://github.com/neocsr/traffic-light-detection
+
+Created ros/launch/styx_csr.launch to launch using this algorithm.
+
+Changes (2017-10-02 by cs4nd13)
+
+Fixed bug in waypoint_updater.py.  Sometimes due to timing issues,
+the waypoint in /traffic_waypoint is behind, instead of in front of,
+the car's current position.  If this is the case, report tl_distance
+as 0.

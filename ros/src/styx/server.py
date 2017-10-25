@@ -14,6 +14,7 @@ app = Flask(__name__)
 msgs = []
 
 dbw_enable = False
+first_dbw = True
 
 @sio.on('connect')
 def connect(sid, environ):
@@ -29,9 +30,11 @@ bridge = Bridge(conf, send)
 @sio.on('telemetry')
 def telemetry(sid, data):
     global dbw_enable
-    if data["dbw_enable"] != dbw_enable:
+    global first_dbw
+    if first_dbw or data["dbw_enable"] != dbw_enable:
         dbw_enable = data["dbw_enable"]
         bridge.publish_dbw_status(dbw_enable)
+        first_dbw = False
     bridge.publish_odometry(data)
     for i in range(len(msgs)):
         topic, data = msgs.pop(0)
