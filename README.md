@@ -60,7 +60,18 @@ roslaunch launch/styx.launch
 
 
 # Architecture and Files
+Carla uses Robot Operating System ([ROS](http://www.ros.org/)) to integrate all main functionalities.
 
+The following images shows the main ROS architucture for the project:
+![architecture](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/final-project-ros-graph-v2.png)
+
+### Car/Simulator 
+
+### Perception
+
+### Planning
+
+### Control
 
 # Implementation Details
 
