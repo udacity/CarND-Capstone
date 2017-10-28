@@ -1,3 +1,74 @@
+# Introduction
+This project is done as a part of the Nanodegree *Self-Driving Car Engineer* provided by Udacity. The aim of this final project is the application of many parts of the entire nanodegree and the integration on a real self-driving car. After development and testing with the aid of a simulator, the car (Carla) has to cope independently a test track with intersections and traffic lights. The core points of the project are the detection of traffic lights and the integration of functionality for path planning and control in the car by means of the Robot Operating System (ROS) nodes.
+
+![image_screen](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/carla_sdc_1.jpg)
+
+
+# Outline
+1. Team Structure
+2. Project Setup
+3. Project Description 
+4. Architecture and Files
+5. Implementation Details
+6. Conclusion
+
+# Team Structure
+The project is implemented together in a team. 
+
+The following members are part of the international team - Chakra:
+- Soheil Jahanshahi (Team Lead)
+- Venkata Dikshit
+- Daniel Gattringer
+- Aneeq Mahmood
+- Jongchul Seon
+- Wilhelm Nagel
+
+# Project Setup
+
+### Development Setup
+The project will require the use of Ubuntu Linux (the operating system of Carla) and a new simulator. Follow the steps below to get set up:
+- Because ROS is used, Ubuntu Linux is needed to develop and test the project code.
+ - Ubuntu 14.04 with ROS Indigo
+ - Ubuntu 16.04 with ROS Kinetic
+ - Udacity provides an VM which has ROS and Dataspeed DBW already installed. This VM can be used with [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
+ - The system integration project uses a simulator, provided by udacity, which will interface with the ROS code and includes driving on crossroads with traffic lights. To improve the performance while using a VM, running the simulator directly on the host operating system with port forwarding to the guest operating system is recommended. 
+
+### Simulator
+- Udacity Term 3 [simulator](https://github.com/udacity/CarND-Capstone/releases) which contains the System Integration part.
+
+### Run the Project
+1. Clone the project repository
+```bash
+git clone https://github.com/solix/CarND-Capstone.git
+```
+
+2. Install python dependencies
+```bash
+cd CarND-Capstone
+pip install -r requirements.txt
+```
+3. Make and run styx
+```bash
+cd ros
+catkin_make
+source devel/setup.sh
+roslaunch launch/styx.launch
+```
+4. Run the simulator
+
+# Project Description 
+
+
+# Architecture and Files
+
+
+# Implementation Details
+
+# Conclusion
+
+
+---
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 ### Native Installation
