@@ -1,8 +1,11 @@
 # Introduction
 This project is done as a part of the Nanodegree *Self-Driving Car Engineer* provided by Udacity. The aim of this final project is the application of many parts of the entire nanodegree and the integration on a real self-driving car. After development and testing with the aid of a simulator, the car (Carla) has to cope independently a test track with intersections and traffic lights. The core points of the project are the detection of traffic lights and the integration of functionality for path planning and control in the car by means of the Robot Operating System (ROS) nodes.
 
+The self driving car Carla:
 ![image_screen](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/carla_sdc_1.jpg)
 
+Testing the system in the simulator:
+![sim_screen](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/screen_simulator.jpg)
 
 # Outline
 1. Team Structure
@@ -66,6 +69,13 @@ The following images shows the main ROS architucture for the project:
 ![architecture](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/final-project-ros-graph-v2.png)
 
 ### Car/Simulator 
+The real car (Carla) is an autonomous Lincoln MKZ, running on the udacity test site in Palo Alto, California.
+
+Carlas Hardware Specs:
+- 31.4 GiB Memory
+- Intel Core i7-6700K CPU @ 4 GHz x 8
+- TITAN X Graphics
+- 64-bit OS
 
 ### Perception
 
