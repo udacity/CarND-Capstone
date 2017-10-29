@@ -4,7 +4,7 @@ import copy
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, Float32
 
 import math
 import tf
@@ -118,6 +118,7 @@ class WaypointUpdater(object):
 
         self.last_pose = None
         self.next_waypoint_ahead = None
+        self.cte = 0.0
         self.next_stop_waypoint = None
 
         self.final_waypoints_pub = rospy.Publisher(
@@ -125,6 +126,8 @@ class WaypointUpdater(object):
 
         self.next_waypoint_ahead_pub = rospy.Publisher(
             'next_waypoint_ahead', Int32, queue_size=1)
+
+        self.cte_pub = rospy.Publisher('cte', Float32, queue_size=1)
 
         #rospy.spin()
         rate = rospy.Rate(SAMPLE_RATE)
@@ -217,6 +220,7 @@ class WaypointUpdater(object):
             self.yaw_from_quaternion(waypoint.pose.pose.orientation),
             self.last_pose.position.x,
             self.last_pose.position.y)
+        self.cte = y
         return (x > 0.0) # car is ahead of the waypoint
        
     def add_waypoint_index(self, i, n):
@@ -324,6 +328,7 @@ class WaypointUpdater(object):
         lane.waypoints = waypoints_ahead
 
         self.next_waypoint_ahead_pub.publish(next_waypoint_ahead)
+        self.cte_pub.publish(self.cte)
 
         self.final_waypoints_pub.publish(lane)
 
