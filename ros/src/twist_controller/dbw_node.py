@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float32
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
@@ -66,11 +66,13 @@ class DBWNode(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.enabled_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
+        rospy.Subscriber('/cte', Float32, self.cte_cb)
 
         self.dbw_enabled = False
         self.current_velocity = 0.0
         self.linear_velocity = 0.0
         self.angular_velocity = 0.0
+        self.cte = 0.0
         
         self.loop()
 
@@ -87,6 +89,9 @@ class DBWNode(object):
         self.linear_velocity = msg.twist.linear.x
         self.angular_velocity = msg.twist.angular.z
 
+    def cte_cb(self, msg):
+        self.cte = msg.data
+
     def loop(self):
         rate = rospy.Rate(SAMPLE_RATE)
         while not rospy.is_shutdown():
@@ -94,6 +99,7 @@ class DBWNode(object):
                 linear_velocity=self.linear_velocity,
                 angular_velocity=self.angular_velocity,
                 current_velocity=self.current_velocity,
+                cte=self.cte,
                 enabled=self.dbw_enabled
             )
             rospy.loginfo("Requested velocity: %s" % (self.linear_velocity))

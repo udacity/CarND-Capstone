@@ -48,9 +48,9 @@ class Controller(object):
             1
         )
         self.steer_pid = PID(
-            3.0,
-            .0,
-            10.0,
+            0.5,
+            0.0,
+            1.5,
             -params['max_steer_angle'],
             params['max_steer_angle']
         )
@@ -58,8 +58,9 @@ class Controller(object):
         # assume tank is full when computing total mass of car
         self.total_mass = self.vehicle_mass + self.fuel_capacity * GAS_DENSITY
 
-    def control(self, linear_velocity, angular_velocity, current_velocity,
+    def control(self, linear_velocity, angular_velocity, current_velocity, cte,
                 enabled = True):
+        rospy.loginfo("CTE %.3f", cte)
 
         velocity_diff = linear_velocity - current_velocity
 
@@ -90,7 +91,7 @@ class Controller(object):
                     throttle = self.throttle_filter.filt(throttle)
 
             if USE_STEER_PID:
-                steer = self.steer_pid.step(angular_velocity, time_interval)
+                steer = self.steer_pid.step(-cte, time_interval)
             else:
                 steer = self.yaw_controller.get_steering(
                     linear_velocity,
