@@ -2,7 +2,7 @@
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
-USE_STEER_PID = True
+USE_STEER_PID = False 
 
 from yaw_controller import YawController
 from lowpass import LowPassFilter
@@ -55,18 +55,22 @@ class Controller(object):
             params['max_steer_angle']
         )
 
+        self.avg_cte = 0.0
+        self.n_controls = 0
+
         # assume tank is full when computing total mass of car
         self.total_mass = self.vehicle_mass + self.fuel_capacity * GAS_DENSITY
 
     def control(self, linear_velocity, angular_velocity, current_velocity, cte,
                 enabled = True):
-        rospy.loginfo("CTE %.3f", cte)
+        #rospy.loginfo("CTE %.3f", cte)
 
         velocity_diff = linear_velocity - current_velocity
 
         target_velocity_diff = linear_velocity - self.prev_linear_velocity
 
         time_interval = 1.0 / self.sample_rate
+        self.n_controls += 1
 
         throttle = 0.0
         brake = 0.0
@@ -80,9 +84,10 @@ class Controller(object):
                 # Reset controllers
                 self.throttle_filter.reset()
                 self.throttle_pid.reset()
-                self.steer_filter.reset()
-                if USE_STEER_PID:
-                    self.steer_pid.reset()
+                # no need to reset streering controllers
+                ##self.steer_filter.reset()
+                ##if USE_STEER_PID:
+                ##    self.steer_pid.reset()
             else:
                 throttle = self.throttle_pid.step(velocity_diff, time_interval)
 
@@ -90,17 +95,24 @@ class Controller(object):
                 if self.filter_throttle:
                     throttle = self.throttle_filter.filt(throttle)
 
-            if USE_STEER_PID:
-                steer = self.steer_pid.step(-cte, time_interval)
-            else:
-                steer = self.yaw_controller.get_steering(
-                    linear_velocity,
-                    angular_velocity,
-                    current_velocity
-                )
-            # Pass the low-pass filter
-            if self.filter_steer:
-                steer = self.steer_filter.filt(steer)
+            # Use unfiltered average of pid and yaw controllers as final steer value  
+            ##if USE_STEER_PID:
+            steer1 = self.steer_pid.step(-cte, time_interval)
+            ##else:
+            steer2 = self.yaw_controller.get_steering(
+                linear_velocity,
+                angular_velocity,
+                current_velocity
+            )
+
+            ## Pass the low-pass filter
+            ##if self.filter_steer:
+            steer = (steer1 + steer2) / 2.0
+            ##    steer = self.steer_filter.filt(steer1)
+
+            self.avg_cte = ((self.n_controls-1)*self.avg_cte + cte)/self.n_controls
+            rospy.loginfo("Thr %.3f, Br %.3f, PID %.3f, YAW %.3f, CTE %.3f, AVG CTE %.3f",
+                throttle, brake, steer1, steer2, cte, self.avg_cte)
 
             # Update the previous target
             self.prev_linear_velocity = linear_velocity
