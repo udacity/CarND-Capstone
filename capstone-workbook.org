@@ -29,14 +29,14 @@ If you prefer to read the source code, you can still read them, but there may no
 
 * Plan and Schedule
 
-| Tas                                         | Owner           | Due   | Status     | Remarks |
-|---------------------------------------------+-----------------+-------+------------+---------|
-| Waypoint_Updater (initial)                  | Yu              | 11/1  | Draft      |         |
-| Traffic Light Detection & Classification    | Reddy & Patrick | 11/15 | Start 11/6 |         |
-| DBW to issue control                        | Eric? & ?       | 11/5  |            |         |
-| Waypoint_Updater (deceleration/acceleration | ? & Yu          | 11/20 |            |         |
-| Integration                                 |                 | 11/25 |            |         |
-| Verification and tuning                     |                 | 11/30 |            |         |
+| Tas                                         | Owner           | Due   | Status         | Remarks                     |
+|---------------------------------------------+-----------------+-------+----------------+-----------------------------|
+| Waypoint_Updater (initial)                  | Yu              | 11/1  | Verified 10/31 | Learning curve of ROS |
+| Traffic Light Detection & Classification    | Reddy & Patrick | 11/15 | Start 11/6     |                             |
+| DBW to issue control                        | Eric? & ?       | 11/5  |                |                             |
+| Waypoint_Updater (deceleration/acceleration | ? & Yu          | 11/20 |                |                             |
+| Integration                                 |                 | 11/25 |                |                             |
+| Verification and tuning                     |                 | 11/30 |                |                             |
 
 This is a rather rough schedule. It shows that it's already very tight for 11/30 to complete.
 
