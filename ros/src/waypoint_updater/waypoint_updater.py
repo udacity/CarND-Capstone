@@ -39,37 +39,39 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
 
         rospy.spin()
-
     def pose_cb(self, msg):
         # TODO: Implement
         pass
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+            # TODO: Implement
+            pass
+    
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
-
+            # TODO: Callback for /traffic_waypoint message. Implement
+            pass
+    
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
-        pass
+            # TODO: Callback for /obstacle_waypoint message. We will implement it later
+            pass
+    
 
     def get_waypoint_velocity(self, waypoint):
-        return waypoint.twist.twist.linear.x
-
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
-
-    def distance(self, waypoints, wp1, wp2):
-        dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
-        return dist
-
+            return waypoint.twist.twist.linear.x
+    
+        def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+            waypoints[waypoint].twist.twist.linear.x = velocity
+    
+        def distance(self, waypoints, wp1, wp2):
+            dist = 0
+            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+            for i in range(wp1, wp2+1):
+                dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+                wp1 = i
+            return dist
+    
+    
 
 if __name__ == '__main__':
     try:
