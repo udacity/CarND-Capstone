@@ -25,7 +25,7 @@ In this document, =<<to_local_coordinates>>= standards for the named source code
 In this design document, "my_car" refers to the car being controlled by the path planner.
 
 The full source code can be generated from this literate programming document: [[./capstone-workbook.org]]
-
+If you prefer to read the source code, you can still read them, but there may not be enough comments.
 
 * Questions/Problems
   1. In Waypoint_Updater, for output final_points, how to set the speed? Should we set both the linear and angular speed?
