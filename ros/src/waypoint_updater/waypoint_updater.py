@@ -21,7 +21,43 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 3 # 200 # Number of waypoints we will publish. You can change this number
+
+import tf                       # This is of ROS geometry, not of TensorFlow!
+def get_yaw(orientation):
+    """
+    Compute yaw from orientation, which is in Quaternion.
+    """
+    # orientation = msg.pose.orientation
+    euler = tf.transformations.euler_from_quaternion([
+        orientation.x,
+        orientation.y,
+        orientation.z,
+        orientation.w])
+    yaw = euler[2]
+    return yaw
+def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
+    """
+    compute the local coordinates for the global x, y coordinates values,
+    given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
+    Assume the rotation is radius
+    """
+    shift_x = x - local_origin_x
+    shift_y = y - local_origin_y
+
+    cos_rotation = math.cos(rotation)
+    sin_rotation = math.sin(rotation)
+
+    local_x = cos_rotation*shift_x + sin_rotation*shift_y
+    local_y = sin_rotation*shift_x + cos_rotation*shift_y
+
+    return local_x, local_y
+def publish_Lane(publisher, waypoints):
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = waypoints
+        publisher.publish(lane)
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -40,32 +76,15 @@ class WaypointUpdater(object):
 
         rospy.spin()
 
-    
-    def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
-        """
-        compute the local coordinates for the global x, y coordinates values,
-        given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
-        Assume the rotation is radius
-        """
-        shift_x = x - local_origin_x
-        shift_y = y - local_origin_y
-    
-        cos_rotation = cos(rotation)
-        sin_rotation = sin(rotation)
-    
-        local_x = cos_rotation*shift_x + sin_rotation*shift_y
-        local_y = sin_rotation*shift_x + cos_rotation*shift_y
-    
-        return local_x, local_y
     import math
     def pose_cb(self, msg):
         # WORKING: Implement
         #
-        if not self.base_waypoints_availble:
+        if not self.base_waypoints_available:
             pass
         # end of if not self.base_waypoints_availble
-        current_pose = msg.position
-        current_orientation = msg.orientation
+        current_pose = msg.pose.position
+        current_orientation = msg.pose.orientation
     
         # Compute the waypoints ahead of the current_pose
         waypoints_ahead = []
@@ -77,8 +96,8 @@ class WaypointUpdater(object):
     
         # waypoint_continued = True #TBD
     
-        for waypoint in self.base_waypoints:
-            w_pos = waypoint.pose.position
+        for waypoint in self.base_waypoints.waypoints:
+            w_pos = waypoint.pose.pose.position
             yaw = get_yaw(current_orientation)
             local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                     w_pos.x, w_pos.y)
@@ -89,11 +108,12 @@ class WaypointUpdater(object):
                 # waypoint_found = True # TBD
             else:
                 # waypoint_found = ?? # TBD
+                pass
             # end of if (0 < local_x)
             if (LOOKAHEAD_WPS <= waypoints_count):
                 break
             # end of if (LOOKAHEAD_WPS <= waypoints_count)
-        # end of for waypoint in self.base_waypoints
+        # end of for waypoint in self.base_waypoints.waypoints
     
         # sort the waypoints by local_x increasing
         sorted_waypoints = sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
@@ -105,15 +125,13 @@ class WaypointUpdater(object):
             final_waypoints.append(waypoint)
         # end of for waypoint, local_x, local_y
     
-        # publish to /final_waypoints
-        self.final_waypoints_pub.publish(final_waypoints)
+        # publish to /final_waypoints, need to package final_waypoints into Lane message
+        publish_Lane(self.final_waypoints_pub, final_waypoints)
 
     def waypoints_cb(self, waypoints):
             # DONE: Implement
             self.base_waypoints = waypoints
             self.base_waypoints_available = True
-            pass
-    
 
     def traffic_cb(self, msg):
             # TODO: Callback for /traffic_waypoint message. Implement
@@ -128,10 +146,10 @@ class WaypointUpdater(object):
     def get_waypoint_velocity(self, waypoint):
             return waypoint.twist.twist.linear.x
     
-        def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
             waypoints[waypoint].twist.twist.linear.x = velocity
     
-        def distance(self, waypoints, wp1, wp2):
+    def distance(self, waypoints, wp1, wp2):
             dist = 0
             dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
             for i in range(wp1, wp2+1):

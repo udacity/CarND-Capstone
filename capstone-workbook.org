@@ -50,17 +50,51 @@ This is a rather rough schedule. It shows that it's already very tight for 11/30
 
 ** Work-flow
 
-   To get started in executing and investigating for Waypoint Updateer:
+   To build Waypoint_Updater:
+
    #+NAME:
    #+BEGIN_SRC shell
      cd ros
      catkin_make
-     source devel/setup.sh
-     roslaunch launch/styx.launch
-     <launch the simulator>
    #+END_SRC
 
-   Then monitor the car's movement in the simulator.
+In a separate shell:
+#+NAME:
+#+BEGIN_SRC shell
+source devel/setup.sh
+rostopic echo /final_waypoints
+#+END_SRC
+expect to see the published final_waypoints.
+
+
+In a separate shell:
+#+NAME:
+#+BEGIN_SRC shell
+source devel/setup.sh
+roslaunch launch/styx.launch
+#+END_SRC
+
+In a separate shell, start the car simulator:
+
+#+NAME:
+#+BEGIN_SRC shell
+#!/bin/bash
+if [[ ! `pidof -s term3_sim.x86_64` ]]; then
+    /home/yubrshen/ai-study/sdc/term3/linux_sys_int/system_integration.x86_64
+fi
+#+END_SRC
+
+Note, one need to customize for the path for the simulator executable.
+
+   Eventually, after the working of dbw_node, we should see the car's movement in the simulator.
+
+** Experience sharing
+
+   It's quite time consuming to fix bugs, as there are a lots of print-outs in the shell for Waypoint_Updater, one has to
+scroll back to figure out what when wrong. Often, only one error would be reported, and one has to repeat the above work-flow for
+every iterations.
+
+If you know bettor work-flow or tools, please share.
 
 ** messages involved
 *** Message types
@@ -211,8 +245,8 @@ then the waypoint is front of my_car.
          shift_x = x - local_origin_x
          shift_y = y - local_origin_y
 
-         cos_rotation = cos(rotation)
-         sin_rotation = sin(rotation)
+         cos_rotation = math.cos(rotation)
+         sin_rotation = math.sin(rotation)
 
          local_x = cos_rotation*shift_x + sin_rotation*shift_y
          local_y = sin_rotation*shift_x + cos_rotation*shift_y
@@ -226,9 +260,9 @@ then the waypoint is front of my_car.
        The unit of the returned value is in radius?
        To check the documentation of transformations.euler_from_quaternion
 
- #+NAME:compute_yaw
+ #+NAME:get_yaw
  #+BEGIN_SRC python :noweb tangle :tangle
-   import Tensorflow as tf
+   import tf                       # This is of ROS geometry, not of TensorFlow!
    def get_yaw(orientation):
        """
        Compute yaw from orientation, which is in Quaternion.
@@ -258,8 +292,6 @@ then the waypoint is front of my_car.
           # DONE: Implement
           self.base_waypoints = waypoints
           self.base_waypoints_available = True
-          pass
-
 #+END_SRC
 
 *** subscribe and process /current_pose
@@ -274,17 +306,15 @@ then the waypoint is front of my_car.
 
 #+NAME:pose_cb
 #+BEGIN_SRC python :noweb tangle :tangle
-  <<get_yaw>>
-  <<to_local_coordinates>>
   import math
   def pose_cb(self, msg):
       # WORKING: Implement
       #
-      if not self.base_waypoints_availble:
+      if not self.base_waypoints_available:
           pass
       # end of if not self.base_waypoints_availble
-      current_pose = msg.position
-      current_orientation = msg.orientation
+      current_pose = msg.pose.position
+      current_orientation = msg.pose.orientation
 
       # Compute the waypoints ahead of the current_pose
       waypoints_ahead = []
@@ -296,8 +326,8 @@ then the waypoint is front of my_car.
 
       # waypoint_continued = True #TBD
 
-      for waypoint in self.base_waypoints:
-          w_pos = waypoint.pose.position
+      for waypoint in self.base_waypoints.waypoints:
+          w_pos = waypoint.pose.pose.position
           yaw = get_yaw(current_orientation)
           local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                   w_pos.x, w_pos.y)
@@ -308,11 +338,12 @@ then the waypoint is front of my_car.
               # waypoint_found = True # TBD
           else:
               # waypoint_found = ?? # TBD
+              pass
           # end of if (0 < local_x)
           if (LOOKAHEAD_WPS <= waypoints_count):
               break
           # end of if (LOOKAHEAD_WPS <= waypoints_count)
-      # end of for waypoint in self.base_waypoints
+      # end of for waypoint in self.base_waypoints.waypoints
 
       # sort the waypoints by local_x increasing
       sorted_waypoints = sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
@@ -324,8 +355,8 @@ then the waypoint is front of my_car.
           final_waypoints.append(waypoint)
       # end of for waypoint, local_x, local_y
 
-      # publish to /final_waypoints
-      self.final_waypoints_pub.publish(final_waypoints)
+      # publish to /final_waypoints, need to package final_waypoints into Lane message
+      publish_Lane(self.final_waypoints_pub, final_waypoints)
 #+END_SRC
 
 *** compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS
@@ -372,7 +403,11 @@ then the waypoint is front of my_car.
   TODO (for Yousuf and Aaron): Stopline location for each traffic light.
   '''
 
-  LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+  LOOKAHEAD_WPS = 3 # 200 # Number of waypoints we will publish. You can change this number
+
+  <<get_yaw>>
+  <<to_local_coordinates>>
+  <<publish_Lane>>
 
   class WaypointUpdater(object):
       def __init__(self):
@@ -431,26 +466,35 @@ def obstacle_cb(self, msg):
 
 * Support functions
 
+#+NAME:publish_Lane
+#+BEGIN_SRC python :noweb tangle :tangle
+def publish_Lane(publisher, waypoints):
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = waypoints
+        publisher.publish(lane)
+#+END_SRC
+
 #+NAME:support_functions
 #+BEGIN_SRC python :noweb tangle :tangle
-def get_waypoint_velocity(self, waypoint):
-        return waypoint.twist.twist.linear.x
+  def get_waypoint_velocity(self, waypoint):
+          return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+  def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+          waypoints[waypoint].twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, wp1, wp2):
-        dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
-        return dist
+  def distance(self, waypoints, wp1, wp2):
+          dist = 0
+          dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+          for i in range(wp1, wp2+1):
+              dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+              wp1 = i
+          return dist
 
 
 #+END_SRC
 
 * TODO TODO
 
-1. Try to run the implementation of publishing /final_waypoints to verify
-2. Review the design and the source code
+1. Start to design for DBW node
