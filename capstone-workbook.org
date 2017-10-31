@@ -53,7 +53,7 @@ The full source code can be generated from this literate programming document: [
 
 **** geometry_msgs/PoseStamped
 
-     #+BEGIN_QUOTE
+     #+BEGIN_EXAMPLE
      $ rosmsg info geometry_msgs/PoseStamped
      std_msgs/Header header
      uint32 seq
@@ -70,7 +70,7 @@ The full source code can be generated from this literate programming document: [
      float64 z
      float64 w
 
-     #+END_QUOTE
+     #+END_EXAMPLE
      Characterize the position and orientation of a waypoint, used in styx_msg/Lane for waypoints
 
      Example of access/manipulation in Python:
@@ -80,7 +80,7 @@ The full source code can be generated from this literate programming document: [
 **** styx_msgs/Lane
      List of waypoints, used to for /base_waypoints and /final_waypoints
 
-     #+BEGIN_QUOTE
+     #+BEGIN_EXAMPLE
      std_msgs/Header header
      uint32 seq
      time stamp
@@ -115,7 +115,7 @@ The full source code can be generated from this literate programming document: [
      float64 x
      float64 y
      float64 z
-     #+END_QUOTE
+     #+END_EXAMPLE
 
      Example of access/manipulation in Python:
 
@@ -436,7 +436,7 @@ def get_waypoint_velocity(self, waypoint):
 
 #+END_SRC
 
-* TODO
+* TODO TODO
 
 1. Try to run the implementation of publishing /final_waypoints to verify
-2.
+2. Review the design and the source code

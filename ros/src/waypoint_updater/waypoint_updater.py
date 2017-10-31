@@ -23,7 +23,6 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
-
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
@@ -37,14 +36,82 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.base_waypoints_available = False  # indicating the availability of base_waypoints
 
         rospy.spin()
+
+    
+    def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
+        """
+        compute the local coordinates for the global x, y coordinates values,
+        given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
+        Assume the rotation is radius
+        """
+        shift_x = x - local_origin_x
+        shift_y = y - local_origin_y
+    
+        cos_rotation = cos(rotation)
+        sin_rotation = sin(rotation)
+    
+        local_x = cos_rotation*shift_x + sin_rotation*shift_y
+        local_y = sin_rotation*shift_x + cos_rotation*shift_y
+    
+        return local_x, local_y
+    import math
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        # WORKING: Implement
+        #
+        if not self.base_waypoints_availble:
+            pass
+        # end of if not self.base_waypoints_availble
+        current_pose = msg.position
+        current_orientation = msg.orientation
+    
+        # Compute the waypoints ahead of the current_pose
+        waypoints_ahead = []
+        waypoints_count = 0
+    
+        # the waypoints should be continuous
+        # assume the base_waypoints are consecutive
+        # the waypoints ahead should be continuous once started
+    
+        # waypoint_continued = True #TBD
+    
+        for waypoint in self.base_waypoints:
+            w_pos = waypoint.pose.position
+            yaw = get_yaw(current_orientation)
+            local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+                                                    w_pos.x, w_pos.y)
+            if (0 < local_x) and (math.atan2(local_y, local_x) < math.pi/3):
+                # the angle from my_car's orientation is less than 60 degree
+                waypoints_count += 1
+                waypoints_ahead.append((waypoint, local_x, local_y))
+                # waypoint_found = True # TBD
+            else:
+                # waypoint_found = ?? # TBD
+            # end of if (0 < local_x)
+            if (LOOKAHEAD_WPS <= waypoints_count):
+                break
+            # end of if (LOOKAHEAD_WPS <= waypoints_count)
+        # end of for waypoint in self.base_waypoints
+    
+        # sort the waypoints by local_x increasing
+        sorted_waypoints = sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
+    
+        # determine the speed at each waypoint
+        final_waypoints = []
+        for waypoint, local_x, local_y in sorted_waypoints:
+            waypoint.twist.twist.linear.x = 10 # meter/s, temporary hack for now
+            final_waypoints.append(waypoint)
+        # end of for waypoint, local_x, local_y
+    
+        # publish to /final_waypoints
+        self.final_waypoints_pub.publish(final_waypoints)
 
     def waypoints_cb(self, waypoints):
-            # TODO: Implement
+            # DONE: Implement
+            self.base_waypoints = waypoints
+            self.base_waypoints_available = True
             pass
     
 
@@ -52,6 +119,7 @@ class WaypointUpdater(object):
             # TODO: Callback for /traffic_waypoint message. Implement
             pass
     
+
     def obstacle_cb(self, msg):
             # TODO: Callback for /obstacle_waypoint message. We will implement it later
             pass
