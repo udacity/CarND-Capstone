@@ -32,7 +32,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 
 RATE = 2    # updtae rate
-MAX_VEL = 3.
+MAX_VEL = 3.   # max velocity in mps
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -48,6 +48,11 @@ class WaypointUpdater(object):
         self.tree = None
         self.curr_velocity = None
         self.next_waypoint_index  = None
+        self.velocity =  rospy.get_param("~velocity", MAX_VEL) 
+        
+        if (self.velocity != MAX_VEL): #(if we get value from ros, convert it to meter per second)
+            self.velocity = self.velocity *1000 /3600 
+        
         
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         
