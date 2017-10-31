@@ -27,6 +27,20 @@ In this design document, "my_car" refers to the car being controlled by the path
 The full source code can be generated from this literate programming document: [[./capstone-workbook.org]]
 If you prefer to read the source code, you can still read them, but there may not be enough comments.
 
+* Plan and Schedule
+
+| Tas                                         | Owner           | Due   | Status     | Remarks |
+|---------------------------------------------+-----------------+-------+------------+---------|
+| Waypoint_Updater (initial)                  | Yu              | 11/1  | Draft      |         |
+| Traffic Light Detection & Classification    | Reddy & Patrick | 11/15 | Start 11/6 |         |
+| DBW to issue control                        | Eric? & ?       | 11/5  |            |         |
+| Waypoint_Updater (deceleration/acceleration | ? & Yu          | 11/20 |            |         |
+| Integration                                 |                 | 11/25 |            |         |
+| Verification and tuning                     |                 | 11/30 |            |         |
+
+This is a rather rough schedule. It shows that it's already very tight for 11/30 to complete.
+
+
 * Questions/Problems
   1. In Waypoint_Updater, for output final_points, how to set the speed? Should we set both the linear and angular speed?
      It seems that only need to set the linear.x, as it's in the my_car's local coordinates, there is only movement on the x-axis.
