@@ -35,8 +35,8 @@ If you prefer to read the source code, you can still read them, but there may no
 | Traffic Light Detection & Classification    | Reddy & Patrick | 11/15 | Start 11/6     |                             |
 | DBW to issue control                        | Eric? & ?       | 11/5  |                |                             |
 | Waypoint_Updater (deceleration/acceleration | ? & Yu          | 11/20 |                |                             |
-| Integration                                 |                 | 11/25 |                |                             |
-| Verification and tuning                     |                 | 11/30 |                |                             |
+| Integration                                 | Yu & ?          | 11/25 |                |                             |
+| Verification and tuning                     | ? & all         | 11/30 |                |                             |
 
 This is a rather rough schedule. It shows that it's already very tight for 11/30 to complete.
 
@@ -65,7 +65,6 @@ source devel/setup.sh
 rostopic echo /final_waypoints
 #+END_SRC
 expect to see the published final_waypoints.
-
 
 In a separate shell:
 #+NAME:

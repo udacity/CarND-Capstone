@@ -1,0 +1,31 @@
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE: \today
+
+#+TITLE: Workbook on Drive-by-Wire Node
+
+* Requirement understanding
+
+** Input
+ - Input: /current_velocity
+ - Input: /twist_cmd
+ - input: /vehicle/dbw_enabled
+
+/twist_cmd is the representation of the required the target linear and angular velocity.
+
+** Output
+ - Output: /vehicle/throttle_cmd
+ - Output: /vehicle/steering_cmd
+ - Output: /vehicle/brake_cmd
+
+* Quaternions
+
+* TODO TODO
+
+- Browse and absorb the related code
