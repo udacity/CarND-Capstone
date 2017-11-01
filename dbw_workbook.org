@@ -25,6 +25,9 @@
  - Output: /vehicle/steering_cmd
  - Output: /vehicle/brake_cmd
 
+The requirement is to output the above commands so that the vehicle can drive correctly on the track,
+based on its current speed, and the desired speed at the current waypoint, and the state of dbw_enabled.
+
 ** Message Types
 
 *** /current_velocity
@@ -42,6 +45,17 @@
     #+END_EXAMPLE
 
 *** /twist_cmd
+#+BEGIN_EXAMPLE
+  $ rostopic info /twist_cmd
+  Type: geometry_msgs/TwistStamped
+
+  Publishers:
+   ,* /pure_pursuit (http://yushen:45192/)
+
+  Subscribers: None
+
+#+END_EXAMPLE
+
 
 *** geometry_msgs/TwistStamped
 
@@ -75,17 +89,6 @@ Have both the linear and angular velocity in 3D.
 
   Publishers:
    ,* /styx_server (http://yushen:44449/)
-
-  Subscribers: None
-
-#+END_EXAMPLE
-
-#+BEGIN_EXAMPLE
-  $ rostopic info /twist_cmd
-  Type: geometry_msgs/TwistStamped
-
-  Publishers:
-   ,* /pure_pursuit (http://yushen:45192/)
 
   Subscribers: None
 
@@ -212,114 +215,218 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
 #+END_EXAMPLE
 
+
+* TwistController
+
+  This is the core of the control logic to produce control parameters to control the vehicle based
+  on the inputs of the current velocity, the desired velocity, and the state of dbw_enabled state.
+
+  The rest of the code just provides the communication and execution infrastructure.
+
+
 * Source Code Decomposition and Assembly
 
-  It's my practice of understanding source code and explain to myself and other readers.
+  It's my practice of understanding and building source code and explain to myself and other readers.
 
   I'd decompose the source code into code blocks and them assemble then in terms of such blocks.
   This helps me to focus on each block,
   while getting the whole picture of what the overall program is doing.
 
+** Top level assembly
+
+   This assembly shows the architecture of the source code.
+
 #+NAME:dbw_node
-#+BEGIN_SRC python :noweb tangle :tangle
-  #!/usr/bin/env python
-
-  import rospy
-  from std_msgs.msg import Bool
-  from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
-  from geometry_msgs.msg import TwistStamped
-  import math
-
-  from twist_controller import Controller
-
-  '''
-  You can build this node only after you have built (or partially built) the `waypoint_updater` node.
-
-  You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
-  You can subscribe to any other message that you find important or refer to the document for list
-  of messages subscribed to by the reference implementation of this node.
-
-  One thing to keep in mind while building this node and the `twist_controller` class is the status
-  of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
-  not be the case. This may cause your PID controller to accumulate error because the car could
-  temporarily be driven by a human instead of your controller.
-
-  We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
-  wheel_base) etc should not be altered in these files.
-
-  We have also provided some reference implementations for PID controller and other utility classes.
-  You are free to use them or build your own.
-
-  Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
-  that we have created in the `__init__` function.
-
-  '''
-
+#+BEGIN_SRC python :noweb tangle :tangle ./ros/src/twist_controller/dbw_node.py
+  <<preamble>>
   class DBWNode(object):
       def __init__(self):
           rospy.init_node('dbw_node')
 
-          vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
-          fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-          brake_deadband = rospy.get_param('~brake_deadband', .1)
-          decel_limit = rospy.get_param('~decel_limit', -5)
-          accel_limit = rospy.get_param('~accel_limit', 1.)
-          wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
-          wheel_base = rospy.get_param('~wheel_base', 2.8498)
-          steer_ratio = rospy.get_param('~steer_ratio', 14.8)
-          max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
-          max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+          <<vehicle_parametres>>
 
-          self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
-                                           SteeringCmd, queue_size=1)
-          self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
-                                              ThrottleCmd, queue_size=1)
-          self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
-                                           BrakeCmd, queue_size=1)
+          <<publishers>>
 
           # TODO: Create `TwistController` object
           # self.controller = TwistController(<Arguments you wish to provide>)
 
-          # TODO: Subscribe to all the topics you need to
+          # DONE: Subscribe to all the topics you need to
+          <<dbw_states>>
+          <<subscribe_to_get_update>>
+          <<callbacks>>
 
           self.loop()
 
       def loop(self):
           rate = rospy.Rate(50) # 50Hz
           while not rospy.is_shutdown():
-              # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-              # You should only publish the control commands if dbw is enabled
-              # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-              #                                                     <proposed angular velocity>,
-              #                                                     <current linear velocity>,
-              #                                                     <dbw status>,
-              #                                                     <any other argument you need>)
-              # if <dbw is enabled>:
-              #   self.publish(throttle, brake, steer)
+              <<control_logic>>
               rate.sleep()
 
       def publish(self, throttle, brake, steer):
-          tcmd = ThrottleCmd()
-          tcmd.enable = True
-          tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
-          tcmd.pedal_cmd = throttle
-          self.throttle_pub.publish(tcmd)
-
-          scmd = SteeringCmd()
-          scmd.enable = True
-          scmd.steering_wheel_angle_cmd = steer
-          self.steer_pub.publish(scmd)
-
-          bcmd = BrakeCmd()
-          bcmd.enable = True
-          bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
-          bcmd.pedal_cmd = brake
-          self.brake_pub.publish(bcmd)
-
+          <<publish>>
 
   if __name__ == '__main__':
       DBWNode()
 #+END_SRC
+
+** control_logic
+
+In the context of loop and executed once a rate period, to determine the commands and pubilsh commands to vehicle.
+
+#+NAME:control_logic
+#+BEGIN_SRC python :noweb tangle :tangle
+  # TODO: Get predicted throttle, brake, and steering using `twist_controller`
+  # You should only publish the control commands if dbw is enabled
+  throttle, brake, steering = self.controller.control(<proposed linear velocity>,
+                                                      <proposed angular velocity>,
+                                                      <current linear velocity>,
+                                                      <dbw status>,
+                                                      <any other argument you need>)
+  if self.dbw_enabled:
+    self.publish(throttle, brake, steer)
+
+#+END_SRC
+
+** subscribe_to_get_update
+
+In the context of __init__, subscribe to message to get needed updates.
+
+#+NAME:subscribe_to_get_update
+#+BEGIN_SRC python :noweb tangle :tangle
+  rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+  rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+  rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+#+END_SRC
+
+
+** dbw_states
+
+   In the context of __init__, declared the initial values of the states required for dbw control.
+
+#+NAME:dbw_states
+#+BEGIN_SRC python :noweb tangle :tangle
+  dbw_enabled = False
+  current_velocity = 0
+  desired_velocity = 0
+#+END_SRC
+
+** callbacks
+
+In the context of __init__, defines the callback functions for the subscription processing.
+
+#+NAME:callbacks
+#+BEGIN_SRC python :noweb tangle :tangle
+  def current_velocity_cb(self, msg):
+      self.current_velocity = msg.twist
+
+  def twist_cmd_cb(self, msg):
+      self.desired_velocity = msg.twist
+
+  def dbw_enabled_cb(self, msg):
+      self.dbw_enabled = msg.data
+#+END_SRC
+
+** publish
+
+   In the context of publish function, perform the message fabrications and the acts of publishing.
+
+#+NAME:publish
+#+BEGIN_SRC python :noweb tangle :tangle
+  tcmd = ThrottleCmd()
+  tcmd.enable = True
+  tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
+  tcmd.pedal_cmd = throttle
+  self.throttle_pub.publish(tcmd)
+
+  scmd = SteeringCmd()
+  scmd.enable = True
+  scmd.steering_wheel_angle_cmd = steer
+  self.steer_pub.publish(scmd)
+
+  bcmd = BrakeCmd()
+  bcmd.enable = True
+  bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+  bcmd.pedal_cmd = brake
+  self.brake_pub.publish(bcmd)
+#+END_SRC
+
+** publishers
+
+In the context of __init__, creates the needed publishers.
+
+#+NAME:publishers
+#+BEGIN_SRC python :noweb tangle :tangle
+  self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
+                                   SteeringCmd, queue_size=1)
+  self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
+                                      ThrottleCmd, queue_size=1)
+  self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
+                                   BrakeCmd, queue_size=1)
+
+
+#+END_SRC
+
+** vehicle_parameters
+
+In the context of __init__, retrieve parameters of vehicle with default provision.
+The parameters might be needed for vehicle commands.
+
+#+NAME:vehicle_parametres
+#+BEGIN_SRC python :noweb tangle :tangle
+  vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
+  fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
+  brake_deadband = rospy.get_param('~brake_deadband', .1)
+  decel_limit = rospy.get_param('~decel_limit', -5)
+  accel_limit = rospy.get_param('~accel_limit', 1.)
+  wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
+  wheel_base = rospy.get_param('~wheel_base', 2.8498)
+  steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+  max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
+  max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+
+#+END_SRC
+
+** preamble
+
+   header, imports, and comments.
+ #+NAME:preamble
+ #+BEGIN_SRC python :noweb tangle :tangle
+ #!/usr/bin/env python
+
+ import rospy
+ from std_msgs.msg import Bool
+ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
+ from geometry_msgs.msg import TwistStamped
+ import math
+
+ from twist_controller import Controller
+
+ '''
+ You can build this node only after you have built (or partially built) the `waypoint_updater` node.
+
+ You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
+ You can subscribe to any other message that you find important or refer to the document for list
+ of messages subscribed to by the reference implementation of this node.
+
+ One thing to keep in mind while building this node and the `twist_controller` class is the status
+ of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
+ not be the case. This may cause your PID controller to accumulate error because the car could
+ temporarily be driven by a human instead of your controller.
+
+ We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
+ wheel_base) etc should not be altered in these files.
+
+ We have also provided some reference implementations for PID controller and other utility classes.
+ You are free to use them or build your own.
+
+ Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
+ that we have created in the `__init__` function.
+
+ '''
+
+
+ #+END_SRC
 
 * Some other interesting message
 
@@ -369,6 +476,6 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
 * TODO TODO
 
-- Learn how to program dbw_mkz_msgs (ThrottleCmd, SteeringCmd, BrakeCmd)
 
+- Study how to design TwistController
 - Browse, annotate and absorb the related code

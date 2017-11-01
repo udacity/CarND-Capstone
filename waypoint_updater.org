@@ -1,0 +1,459 @@
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE: \today
+
+#+OPTIONS: ^:nil
+
+* Use Case: Waypoint Updater providing final_waypoints
+
+** Work-flow
+
+   To build Waypoint_Updater:
+
+   #+NAME:
+   #+BEGIN_SRC shell
+     cd ros
+     catkin_make
+   #+END_SRC
+
+In a separate shell:
+#+NAME:
+#+BEGIN_SRC shell
+source devel/setup.sh
+rostopic echo /final_waypoints
+#+END_SRC
+expect to see the published final_waypoints.
+
+In a separate shell:
+#+NAME:
+#+BEGIN_SRC shell
+source devel/setup.sh
+roslaunch launch/styx.launch
+#+END_SRC
+
+In a separate shell, start the car simulator:
+
+#+NAME:
+#+BEGIN_SRC shell
+#!/bin/bash
+if [[ ! `pidof -s term3_sim.x86_64` ]]; then
+    /home/yubrshen/ai-study/sdc/term3/linux_sys_int/system_integration.x86_64
+fi
+#+END_SRC
+
+Note, one need to customize for the path for the simulator executable.
+
+   Eventually, after the working of dbw_node, we should see the car's movement in the simulator.
+
+** Experience sharing
+
+   It's quite time consuming to fix bugs, as there are a lots of print-outs in the shell for Waypoint_Updater, one has to
+scroll back to figure out what when wrong. Often, only one error would be reported, and one has to repeat the above work-flow for
+every iterations.
+
+If you know bettor work-flow or tools, please share.
+
+** messages involved
+*** Message types
+
+**** geometry_msgs/PoseStamped
+
+     #+BEGIN_EXAMPLE
+     $ rosmsg info geometry_msgs/PoseStamped
+     std_msgs/Header header
+     uint32 seq
+     time stamp
+     string frame_id
+     geometry_msgs/Pose pose
+     geometry_msgs/Point position
+     float64 x
+     float64 y
+     float64 z
+     geometry_msgs/Quaternion orientation
+     float64 x
+     float64 y
+     float64 z
+     float64 w
+
+     #+END_EXAMPLE
+     Characterize the position and orientation of a waypoint, used in styx_msg/Lane for waypoints
+
+     Example of access/manipulation in Python:
+
+     See the example for styx_msgs/Lane.
+
+**** styx_msgs/Lane
+     List of waypoints, used to for /base_waypoints and /final_waypoints
+
+     #+BEGIN_EXAMPLE
+     std_msgs/Header header
+     uint32 seq
+     time stamp
+     string frame_id
+     styx_msgs/Waypoint[] waypoints
+     geometry_msgs/PoseStamped pose
+     std_msgs/Header header
+     uint32 seq
+     time stamp
+     string frame_id
+     geometry_msgs/Pose pose
+     geometry_msgs/Point position
+     float64 x
+     float64 y
+     float64 z
+     geometry_msgs/Quaternion orientation
+     float64 x
+     float64 y
+     float64 z
+     float64 w
+     geometry_msgs/TwistStamped twist
+     std_msgs/Header header
+     uint32 seq
+     time stamp
+     string frame_id
+     geometry_msgs/Twist twist
+     geometry_msgs/Vector3 linear
+     float64 x
+     float64 y
+     float64 z
+     geometry_msgs/Vector3 angular
+     float64 x
+     float64 y
+     float64 z
+     #+END_EXAMPLE
+
+     Example of access/manipulation in Python:
+
+     #+NAME:
+     #+BEGIN_SRC python :noweb yes :tangle :exports none
+       // my_lane_msg is of type styx_msgs/Lane
+       // The geometry_msgs/PoseStamped component:
+       my_lane_msg[0].pose
+       // The x coordinate of the position of the waypoint:
+       my_lane_msg[0].pose.position.x
+       // The w orientation at the position of the waypoint:
+       my_lane_msg[0].pose.orientation.w
+
+       // for the x direction linear velocity:
+       my_lane_msg[0].twist.twist.linear.x
+     #+END_SRC
+
+*** /base_waypoints : input
+
+    All the waypoints on the track.
+    Note, this is only published once, so it must be stored by the Waypoint_Updater.
+
+*** /current_pose : input
+
+    The current position of the car, with orientation.
+
+*** /final_waypoints : output
+
+    The positions to be for the car after the current position, with the specified speed in
+    the fields of twist.
+
+    We only need to set the speed for the linear.x dimension. It's based on the information: [[https://discussions.udacity.com/t/what-is-the-meaning-of-the-various-waypoint-fields/406030/2][waypoint field definitions]]
+
+    The angular speed on z dimension might be needed for turning? Not quite sure about it.
+
+** Design Sketch for producing final_wayponts
+
+   1. Subscribe for /base_points to get all the available waypoints
+      Note: need to store the base_points, as it's only published once.
+
+   2. Subscribe for /current_pose to trigger the generation of the final_waypoints (waypoints forward) up to LOOKAHEAD_WPS
+
+      Here is the algorithm to generate:
+      - only select those that are ahead of the current_pose
+
+      - determine the speed required for the selected waypoints
+
+      - published the computed waypoint forward to /final_waypoints
+
+   3. How to tell if a waypont is ahead of the my_car, given my_car's position.
+
+   Convert the waypoint's global coordinates to my_car's coordinates, waypoint_local_x, waypoint_local_y,
+   if 0 <= waypoint_local_x, and the angle between the local_x-axis (my_car's orientation)
+   and the line from the local coordinate origin (my_car's current position) to the waypoint's coordinates is not too large,
+   that is, it's not too much of side-way movement.
+then the waypoint is front of my_car.
+
+   Those eligible waypoints should be sorted increasing by waypoint_local_x value, for the same waypoint_local_x,
+   only choose the one with the smallest waypont_local_y.
+
+   I'm not clear whether it's OK to miss some waypoints along the path of my_car in the publishing the /final_points?
+   For example, there are waypoints on the track ahead of my_car, A, B, C, is it OK to just publish A, and C?  For example, for some reason, by program consider B is not a valid waypoint ahead.
+
+*** to convert a global coordinates to local coordinates:
+    It's based on the wiki:
+    https://en.wikipedia.org/wiki/Rotation_matrix
+
+    This implementation assumes the rotation has positive value from the global x-axis to the local x-axis
+    counter-clockwise.
+
+   #+NAME:to_local_coordinates
+   #+BEGIN_SRC python :noweb tangle :tangle
+     def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
+         """
+         compute the local coordinates for the global x, y coordinates values,
+         given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
+         Assume the rotation is radius
+         """
+         shift_x = x - local_origin_x
+         shift_y = y - local_origin_y
+
+         cos_rotation = math.cos(rotation)
+         sin_rotation = math.sin(rotation)
+
+         local_x = cos_rotation*shift_x + sin_rotation*shift_y
+         local_y = sin_rotation*shift_x + cos_rotation*shift_y
+
+         return local_x, local_y
+   #+END_SRC
+
+
+*** How to calculate my_car's yaw angle, given its orientation in quaternion:
+
+       The unit of the returned value is in radius?
+       To check the documentation of transformations.euler_from_quaternion
+
+ #+NAME:get_yaw
+ #+BEGIN_SRC python :noweb tangle :tangle
+   import tf                       # This is of ROS geometry, not of TensorFlow!
+   def get_yaw(orientation):
+       """
+       Compute yaw from orientation, which is in Quaternion.
+       """
+       # orientation = msg.pose.orientation
+       euler = tf.transformations.euler_from_quaternion([
+           orientation.x,
+           orientation.y,
+           orientation.z,
+           orientation.w])
+       yaw = euler[2]
+       return yaw
+ #+END_SRC
+
+** Code construction
+
+   This section provides the detailed design and construction of the code for Waypoint_Updater.
+
+*** subscribe and process /base_waypoints
+
+    - Subscribe to /base_waypoint has been done in the __init__
+    - implement the callback to store it and declare its availability.
+
+#+NAME:waypoints_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+  def waypoints_cb(self, waypoints):
+          # DONE: Implement
+          self.base_waypoints = waypoints
+          self.base_waypoints_available = True
+#+END_SRC
+
+*** subscribe and process /current_pose
+    - Subscribe to /current_pose is done in __init__
+    - implement the callback to trigger to pubilsh /final_waypoints.
+
+    Note, the generation for /final_waypoints may be conditional to the availability of the base_waypoints.
+
+    The callback may need other routine to compare between waypoints to determine if a waypoint is ahead of the current_pose within the LOOKAHEAD_WPS
+
+    also compute the desired velocity for the eligible waypoints.
+
+#+NAME:pose_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+  import math
+  def pose_cb(self, msg):
+      # WORKING: Implement
+      #
+      if not self.base_waypoints_available:
+          pass
+      # end of if not self.base_waypoints_availble
+      current_pose = msg.pose.position
+      current_orientation = msg.pose.orientation
+
+      # Compute the waypoints ahead of the current_pose
+      waypoints_ahead = []
+      waypoints_count = 0
+
+      # the waypoints should be continuous
+      # assume the base_waypoints are consecutive
+      # the waypoints ahead should be continuous once started
+
+      # waypoint_continued = True #TBD
+
+      for waypoint in self.base_waypoints.waypoints:
+          w_pos = waypoint.pose.pose.position
+          yaw = get_yaw(current_orientation)
+          local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+                                                  w_pos.x, w_pos.y)
+          if (0 < local_x) and (math.atan2(local_y, local_x) < math.pi/3):
+              # the angle from my_car's orientation is less than 60 degree
+              waypoints_count += 1
+              waypoints_ahead.append((waypoint, local_x, local_y))
+              # waypoint_found = True # TBD
+          else:
+              # waypoint_found = ?? # TBD
+              pass
+          # end of if (0 < local_x)
+          if (LOOKAHEAD_WPS <= waypoints_count):
+              break
+          # end of if (LOOKAHEAD_WPS <= waypoints_count)
+      # end of for waypoint in self.base_waypoints.waypoints
+
+      # sort the waypoints by local_x increasing
+      sorted_waypoints = sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
+
+      # determine the speed at each waypoint
+      final_waypoints = []
+      for waypoint, local_x, local_y in sorted_waypoints:
+          waypoint.twist.twist.linear.x = 10 # meter/s, temporary hack for now
+          final_waypoints.append(waypoint)
+      # end of for waypoint, local_x, local_y
+
+      # publish to /final_waypoints, need to package final_waypoints into Lane message
+      publish_Lane(self.final_waypoints_pub, final_waypoints)
+#+END_SRC
+
+*** compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS
+
+    Compare between two pose if one is ahead of the other within the range of LOOKAHEAD_WPS
+
+    This problem is solved by converting the waypoint to the local coordinates of my_car.
+
+*** select waypoints for /final_waypoints
+
+    A loop or list expression to generate the list of eligible waypoints for /final_waypoints.
+    It's implemented in the pose_cb.
+
+*** determine the velocity for waypoints
+
+    Compute the desired velocity for waypoints: for now, it's stab as constant. This is to be done (TBD).
+
+*** Waypoint_Uploader integration
+
+    This is the full source code for ./ros/src/waypoint_updater/waypoint_updater.py
+
+#+NAME:waypont_updater
+#+BEGIN_SRC python :noweb tangle :tangle ./ros/src/waypoint_updater/waypoint_updater.py
+  #!/usr/bin/env python
+
+  import rospy
+  from geometry_msgs.msg import PoseStamped
+  from styx_msgs.msg import Lane, Waypoint
+
+  import math
+
+  '''
+  This node will publish waypoints from the car's current position to some `x` distance ahead.
+
+  As mentioned in the doc, you should ideally first implement a version which does not care
+  about traffic lights or obstacles.
+
+  Once you have created dbw_node, you will update this node to use the status of traffic lights too.
+
+  Please note that our simulator also provides the exact location of traffic lights and their
+  current status in `/vehicle/traffic_lights` message. You can use this message to build this node
+  as well as to verify your TL classifier.
+
+  TODO (for Yousuf and Aaron): Stopline location for each traffic light.
+  '''
+
+  LOOKAHEAD_WPS = 3 # 200 # Number of waypoints we will publish. You can change this number
+
+  <<get_yaw>>
+  <<to_local_coordinates>>
+  <<publish_Lane>>
+
+  class WaypointUpdater(object):
+      def __init__(self):
+          rospy.init_node('waypoint_updater')
+
+          rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+          rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+
+          # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+
+
+          self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+
+          # TODO: Add other member variables you need below
+          self.base_waypoints_available = False  # indicating the availability of base_waypoints
+
+          rospy.spin()
+
+      <<pose_cb>>
+
+      <<waypoints_cb>>
+
+      <<traffic_cb>>
+
+      <<obstacle_cb>>
+
+      <<support_functions>>
+
+  if __name__ == '__main__':
+      try:
+          WaypointUpdater()
+      except rospy.ROSInterruptException:
+          rospy.logerr('Could not start waypoint updater node.')
+
+#+END_SRC
+
+    Putting the code together for Waypoint_Uploader
+
+* Other use cases
+
+#+NAME:traffic_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+def traffic_cb(self, msg):
+        # TODO: Callback for /traffic_waypoint message. Implement
+        pass
+
+#+END_SRC
+
+#+NAME:obstacle_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+def obstacle_cb(self, msg):
+        # TODO: Callback for /obstacle_waypoint message. We will implement it later
+        pass
+
+#+END_SRC
+
+* Support functions
+
+#+NAME:publish_Lane
+#+BEGIN_SRC python :noweb tangle :tangle
+def publish_Lane(publisher, waypoints):
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = waypoints
+        publisher.publish(lane)
+#+END_SRC
+
+#+NAME:support_functions
+#+BEGIN_SRC python :noweb tangle :tangle
+  def get_waypoint_velocity(self, waypoint):
+          return waypoint.twist.twist.linear.x
+
+  def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+          waypoints[waypoint].twist.twist.linear.x = velocity
+
+  def distance(self, waypoints, wp1, wp2):
+          dist = 0
+          dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+          for i in range(wp1, wp2+1):
+              dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+              wp1 = i
+          return dist
+
+
+#+END_SRC
