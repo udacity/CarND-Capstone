@@ -122,6 +122,9 @@ This is the type for /vehicle/dbw_enabled
 
     Where can I find more information on how to program dbw_mkz_msgs/ThrottleCmd?
 
+    In the provided source code of =dbw_node.py= there is a pubilsh method which encapsulates the code required to
+    prepare proper messages of ThrottleCmd, SteeringCmd, and BrakeCmd. Therefore, there is no more need to answer the above question.
+
     It seems that the pedal_cmd_type may have the value of the following:
     - CMD_NONE=0
     - CMD_PEDAL=1
