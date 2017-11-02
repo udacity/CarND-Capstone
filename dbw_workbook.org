@@ -252,12 +252,12 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
           # DONE: Create `TwistController` object
           self.controller = TwistController(
-              wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+              wheel_base, vehicle_mass, steer_ratio*8, min_speed, max_lat_accel, max_steer_angle)
+              # learn from the forum that the steer_ratio is too small from the Udacity default
 
           # DONE: Subscribe to all the topics you need to
           <<dbw_states>>
           <<subscribe_to_get_update>>
-          <<callbacks>>
 
           self.loop()
 
@@ -266,6 +266,8 @@ This is similar to ThrottleCmd, but with some additional/different fields.
           while not rospy.is_shutdown():
               <<control_logic>>
               rate.sleep()
+
+      <<callbacks>>
 
       def publish(self, throttle, brake, steer):
           <<publish>>
@@ -278,6 +280,28 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
 In the context of loop and executed once a rate period, to determine the commands and pubilsh commands to vehicle.
 
+#+NAME:control_logic
+#+BEGIN_SRC python :noweb tangle :tangle
+  # TODO: Get predicted throttle, brake, and steering using `twist_controller`
+  # You should only publish the control commands if dbw is enabled
+  if self.desired_velocity is None or self.current_velocity is None:
+    pass
+  else:
+    desired_linear_velocity = self.desired_velocity.linear.x
+    desired_angula_velocity = self.desired_velocity.angula.z
+    current_linear_velocity = self.current_velocity.linear.x
+
+    throttle, brake, steering = self.controller.control(
+      desired_linear_velocity, desired_angular_velocity, current_linear_velocity)
+    if self.dbw_enabled:
+      self.publish(throttle, brake, steer)
+    # end of self.dbw_enabled
+  # end of self.desired_velocity is None or self.current_velocity is None
+ #+END_SRC
+
+
+** twist_controller
+
 Based on the current velocity, and the desired velocity in both linear and angular, compute their delta, then use PID to control.
 
 There is a PID implementation, but the parameters of P, I, D needs to be determined. I'm guessing the parameters for now.
@@ -288,7 +312,6 @@ The lowpass filter is an average mechanism. I'm not where to use it. With the in
 the current and the desired velocity, or the output of the throttle, steering, and brake?
 I'm using to smooth the current linear velocity for now.
 
-** twist_controller
 
 #+NAME:twist_controller
 #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/twist_controller/twist_controller.py
@@ -301,11 +324,11 @@ I'm using to smooth the current linear velocity for now.
   ONE_MPH = 0.44704               # 1 miles/hour in meters/second
   MAX_SPEED_metersps = 35.0 * ONE_MPH  # MPH in meters/second
 
-  class Controller(object):
-      def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
+  class TwistController(object):
+      def __init__(self, wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
       #def __init__(self, *args, **kwargs):
           # TODO: Implement
-          self.throttle_controller = PID(2.7, 0.01, 0.02, mn=0.0, mx=1.0)fs
+          self.throttle_controller = PID(2.7, 0.01, 0.02, mn=0.0, mx=1.0)
           self.yaw_controller = YawController(
               wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
           self.lowpass_filter = LowPassFilter(0.7, 1.0)
@@ -327,7 +350,7 @@ I'm using to smooth the current linear velocity for now.
           error_linear_velocity = (desired_linear_velocity_modulated -
                                    current_linear_velocity)
           if error_linear_velocity < 0: # need to deceleration
-              brake = self.brake(error_linear_velocity)
+              brake = self.brake(error_linear_velocity, current_linear_velocity, vehicle_mass)
               throttle = 0
           else:
               elapsed_time = time.time() - self.prev_time
@@ -341,7 +364,7 @@ I'm using to smooth the current linear velocity for now.
           self.prev_time = time.time()
           return throttle, brake, steer
 
-      def brake(error_in_linear_velocity):
+      def brake(error_in_linear_velocity, current_linear_velocity, vehicle_mass):
           # might be more fine tuned, might consider vehicle's mass, and the current velocity, etc.
           # might use another PID.
           brake_v = -self.brake_coefficient * error_in_linear_velocity  # assume the brake_v should be positive
@@ -382,16 +405,6 @@ I'm using to smooth the current linear velocity for now.
    Also: before you do anything else, search the Slack channel for everything by Alexey Makurin. His set of simple parameter changes: https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c88ec1c39d5043 will improve the performance of your code immensely.
 
  #+END_EXAMPLE
- #+NAME:control_logic
- #+BEGIN_SRC python :noweb tangle :tangle
-   # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-   # You should only publish the control commands if dbw is enabled
-   throttle, brake, steering = self.controller.control(
-     desired_linear_velocity, desired_angular_velocity, current_linear_velocity)
-   if self.dbw_enabled:
-     self.publish(throttle, brake, steer)
-
- #+END_SRC
 
 ** subscribe_to_get_update
 
@@ -411,9 +424,9 @@ In the context of __init__, subscribe to message to get needed updates.
 
 #+NAME:dbw_states
 #+BEGIN_SRC python :noweb tangle :tangle
-  dbw_enabled = False
-  current_velocity = 0
-  desired_velocity = 0
+  self.dbw_enabled = False
+  self.current_velocity = None
+  self.desired_velocity = None
 #+END_SRC
 
 ** callbacks
@@ -489,6 +502,7 @@ The parameters might be needed for vehicle commands.
   steer_ratio = rospy.get_param('~steer_ratio', 14.8)
   max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
   max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+  min_speed = rospy.get_param('~min_speed', 0.0)  # added for yaw_controller taking default 0.0 for now
 
 #+END_SRC
 
@@ -505,7 +519,7 @@ The parameters might be needed for vehicle commands.
  from geometry_msgs.msg import TwistStamped
  import math
 
- from twist_controller import Controller
+ from twist_controller import TwistController
 
  '''
  You can build this node only after you have built (or partially built) the `waypoint_updater` node.

@@ -7,11 +7,11 @@ GAS_DENSITY = 2.858
 ONE_MPH = 0.44704               # 1 miles/hour in meters/second
 MAX_SPEED_metersps = 35.0 * ONE_MPH  # MPH in meters/second
 
-class Controller(object):
-    def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
+class TwistController(object):
+    def __init__(self, wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
     #def __init__(self, *args, **kwargs):
         # TODO: Implement
-        self.throttle_controller = PID(2.7, 0.01, 0.02, mn=0.0, mx=1.0)fs
+        self.throttle_controller = PID(2.7, 0.01, 0.02, mn=0.0, mx=1.0)
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
         self.lowpass_filter = LowPassFilter(0.7, 1.0)
@@ -33,7 +33,7 @@ class Controller(object):
         error_linear_velocity = (desired_linear_velocity_modulated -
                                  current_linear_velocity)
         if error_linear_velocity < 0: # need to deceleration
-            brake = self.brake(error_linear_velocity)
+            brake = self.brake(error_linear_velocity, current_linear_velocity, vehicle_mass)
             throttle = 0
         else:
             elapsed_time = time.time() - self.prev_time
@@ -47,7 +47,7 @@ class Controller(object):
         self.prev_time = time.time()
         return throttle, brake, steer
 
-    def brake(error_in_linear_velocity):
+    def brake(error_in_linear_velocity, current_linear_velocity, vehicle_mass):
         # might be more fine tuned, might consider vehicle's mass, and the current velocity, etc.
         # might use another PID.
         brake_v = -self.brake_coefficient * error_in_linear_velocity  # assume the brake_v should be positive
