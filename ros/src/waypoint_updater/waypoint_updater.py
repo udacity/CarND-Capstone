@@ -72,7 +72,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-        self.base_waypoints_available = False  # indicating the availability of base_waypoints
+        self.base_waypoints = None  # indicating the base_waypoints is not yet available
 
         rospy.spin()
 
@@ -80,8 +80,8 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         # WORKING: Implement
         #
-        if not self.base_waypoints_available:
-            pass
+        if self.base_waypoints is None:
+            return                  # no point of continue
         # end of if not self.base_waypoints_availble
         current_pose = msg.pose.position
         current_orientation = msg.pose.orientation
@@ -131,7 +131,6 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
             # DONE: Implement
             self.base_waypoints = waypoints
-            self.base_waypoints_available = True
 
     def traffic_cb(self, msg):
             # TODO: Callback for /traffic_waypoint message. Implement

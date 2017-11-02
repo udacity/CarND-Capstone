@@ -2,6 +2,7 @@ from pid import PID
 from yaw_controller import YawController
 from lowpass import LowPassFilter
 import time
+import rospy
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704               # 1 miles/hour in meters/second
@@ -34,6 +35,7 @@ class TwistController(object):
                                  current_linear_velocity)
         if error_linear_velocity < 0: # need to deceleration
             brake = self.brake(error_linear_velocity, current_linear_velocity, self.vehicle_mass)
+            rospy.loginfo('negative error, brake: %d' % brake)
             throttle = 0
         else:
             elapsed_time = time.time() - self.prev_time
