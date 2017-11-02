@@ -15,25 +15,24 @@ class TwistController(object):
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
         self.lowpass_filter = LowPassFilter(0.7, 1.0)
-        self.prev_time = None
-        self.brake_coefficient = 10.0
+        self.brake_coefficient = 10.0  # tentative guess
+        self.vehicle_mass = vehicle_mass
 
     def control(self, desired_linear_velocity, desired_angular_velocity, current_linear_velocity):
-    #def control(self, *args, **kwargs):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
         if self.prev_time is None:
             self.prev_time = time.time()
             return 0., 0., 0.
 
-        smoothed_current_linear_velocity = lowpass_filter.filt(desired_angular_velocity)
+        smoothed_current_linear_velocity = self.lowpass_filter.filt(desired_angular_velocity)
         desired_linear_velocity_modulated = min(
             MAX_SPEED_metersps, smoothed_current_linear_velocity)
 
         error_linear_velocity = (desired_linear_velocity_modulated -
                                  current_linear_velocity)
         if error_linear_velocity < 0: # need to deceleration
-            brake = self.brake(error_linear_velocity, current_linear_velocity, vehicle_mass)
+            brake = self.brake(error_linear_velocity, current_linear_velocity, self.vehicle_mass)
             throttle = 0
         else:
             elapsed_time = time.time() - self.prev_time
@@ -47,7 +46,7 @@ class TwistController(object):
         self.prev_time = time.time()
         return throttle, brake, steer
 
-    def brake(error_in_linear_velocity, current_linear_velocity, vehicle_mass):
+    def brake(self, error_in_linear_velocity, current_linear_velocity, vehicle_mass):
         # might be more fine tuned, might consider vehicle's mass, and the current velocity, etc.
         # might use another PID.
         brake_v = -self.brake_coefficient * error_in_linear_velocity  # assume the brake_v should be positive

@@ -82,13 +82,13 @@ class DBWNode(object):
               pass
             else:
               desired_linear_velocity = self.desired_velocity.linear.x
-              desired_angula_velocity = self.desired_velocity.angula.z
+              desired_angular_velocity = self.desired_velocity.angular.z
               current_linear_velocity = self.current_velocity.linear.x
             
               throttle, brake, steering = self.controller.control(
                 desired_linear_velocity, desired_angular_velocity, current_linear_velocity)
               if self.dbw_enabled:
-                self.publish(throttle, brake, steer)
+                self.publish(throttle, brake, steering)
               # end of self.dbw_enabled
             # end of self.desired_velocity is None or self.current_velocity is None
             rate.sleep()
