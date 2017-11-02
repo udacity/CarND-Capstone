@@ -354,6 +354,7 @@ I'm using to smooth the current linear velocity for now.
           else:
               elapsed_time = time.time() - self.prev_time
               throttle = self.throttle_controller.step(error_linear_velocity, elapsed_time)
+              rospy.loginfo('throttle from pid: %d' % throttle)
               throttle = max(min(throttle, 1.0), 0.0)
               brake = 0.
           # end of if error_linear_velocity < 0
