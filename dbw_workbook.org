@@ -250,8 +250,9 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
           <<publishers>>
 
-          # TODO: Create `TwistController` object
-          # self.controller = TwistController(<Arguments you wish to provide>)
+          # DONE: Create `TwistController` object
+          self.controller = TwistController(
+              wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
           # DONE: Subscribe to all the topics you need to
           <<dbw_states>>
@@ -277,19 +278,120 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
 In the context of loop and executed once a rate period, to determine the commands and pubilsh commands to vehicle.
 
-#+NAME:control_logic
-#+BEGIN_SRC python :noweb tangle :tangle
-  # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-  # You should only publish the control commands if dbw is enabled
-  throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-                                                      <proposed angular velocity>,
-                                                      <current linear velocity>,
-                                                      <dbw status>,
-                                                      <any other argument you need>)
-  if self.dbw_enabled:
-    self.publish(throttle, brake, steer)
+Based on the current velocity, and the desired velocity in both linear and angular, compute their delta, then use PID to control.
 
+There is a PID implementation, but the parameters of P, I, D needs to be determined. I'm guessing the parameters for now.
+
+For the steering, it seems that the implementation of YawController can be used as is.
+
+The lowpass filter is an average mechanism. I'm not where to use it. With the input of the inputs of
+the current and the desired velocity, or the output of the throttle, steering, and brake?
+I'm using to smooth the current linear velocity for now.
+
+** twist_controller
+
+#+NAME:twist_controller
+#+BEGIN_SRC python :noweb tangle :tangle ./ros/src/twist_controller/twist_controller.py
+  from pid import PID
+  from yaw_controller import YawController
+  from lowpass import LowPassFilter
+  import time
+
+  GAS_DENSITY = 2.858
+  ONE_MPH = 0.44704               # 1 miles/hour in meters/second
+  MAX_SPEED_metersps = 35.0 * ONE_MPH  # MPH in meters/second
+
+  class Controller(object):
+      def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
+      #def __init__(self, *args, **kwargs):
+          # TODO: Implement
+          self.throttle_controller = PID(2.7, 0.01, 0.02, mn=0.0, mx=1.0)fs
+          self.yaw_controller = YawController(
+              wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+          self.lowpass_filter = LowPassFilter(0.7, 1.0)
+          self.prev_time = None
+          self.brake_coefficient = 10.0
+
+      def control(self, desired_linear_velocity, desired_angular_velocity, current_linear_velocity):
+      #def control(self, *args, **kwargs):
+          # TODO: Change the arg, kwarg list to suit your needs
+          # Return throttle, brake, steer
+          if self.prev_time is None:
+              self.prev_time = time.time()
+              return 0., 0., 0.
+
+          smoothed_current_linear_velocity = lowpass_filter.filt(desired_angular_velocity)
+          desired_linear_velocity_modulated = min(
+              MAX_SPEED_metersps, smoothed_current_linear_velocity)
+
+          error_linear_velocity = (desired_linear_velocity_modulated -
+                                   current_linear_velocity)
+          if error_linear_velocity < 0: # need to deceleration
+              brake = self.brake(error_linear_velocity)
+              throttle = 0
+          else:
+              elapsed_time = time.time() - self.prev_time
+              throttle = self.throttle_controller.step(error_linear_velocity, elapsed_time)
+              throttle = max(min(throttle, 1.0), 0.0)
+              brake = 0.
+          # end of if error_linear_velocity < 0
+
+          steer = self.yaw_controller.get_steering(
+              desired_linear_velocity, desired_angular_velocity, smoothed_current_linear_velocity)
+          self.prev_time = time.time()
+          return throttle, brake, steer
+
+      def brake(error_in_linear_velocity):
+          # might be more fine tuned, might consider vehicle's mass, and the current velocity, etc.
+          # might use another PID.
+          brake_v = -self.brake_coefficient * error_in_linear_velocity  # assume the brake_v should be positive
+          return max(brake_v, 1.0)
 #+END_SRC
+
+*** Some more leads on twist controller design
+
+    Need to digest further the below info.
+
+ Based on communication from the Slack channel #system-integration:
+ #+BEGIN_EXAMPLE
+   C S [2 months ago]
+   @ddigges @wsteiner This worked for me: pass the yaw from twist_cmd through a low-pass filter and then into the provided YawController, except that when creating the YawController you need to multiply the provided steer_ratio by 8 or so.  And if you are want to go fast, you need to increase max_lat_accel accordingly.  In general, this gives a nice, non-nausea-inducing result.  The problem is that at high speeds, twist_cmd steers the way a racing car would, drifting into the inside lane in order to reduce lateral forces.  But it is, um, mostly ok at 40 mph.
+ #+END_EXAMPLE
+
+ Here is some discussion on the controller:
+
+ #+BEGIN_EXAMPLE
+   1, the unit transformation is automatically done by Udacity project default.
+   2, the difference between current velocity and designed velocity should be input to PID and will output throttle as percent.  This is project default solution.  I give up pid control since it is not easy to tune for carla.
+   3,  the brake default unit is Nm. you need calcuate it with: Brake torque = (vehicle_mass + fuel_capacity * GAS_DENSITY) * deceleration * wheel_radius
+
+   https://github.com/xfqbuaa/Cargo-CarND-Capstone
+ #+END_EXAMPLE
+ It seems that for steering, no PID needed, but need to "multiply the provided steer_ratio by 8 or so".
+
+ Here is another piece on the solution (https://discussions.udacity.com/t/solved-compute-cte-without-car-position/364383/6) :
+ #+BEGIN_EXAMPLE
+   That isn’t quite right. The CTE is the difference between the car’s actual position, and the position where the car should have been at that time. In other words, it is the distance between the car and the desired path. So to calculate the CTE, you need the car’s current position, and then you need to do a geometrical calculation to find the distance to the linear path interpolated along the waypoints.
+
+   However, I have had success using a completely different approach. The twist_cmd topic is generated by a fancy piece of software called pure_pursuit, which is in the waypoint_follower directory. pure_pursuit uses the current car position, and the waypoints, to calculate the yaw angle that the car needs to follow in order to get onto, and to stay on, the desired path (the waypoint path). This yaw angle is published in the twist_cmd topic. Then another piece of software, twist_controller/yaw_controller.py, converts the yaw angle to a steering setting that you can send to the vehicle. No need for you to compute the CTE yourself, nor to write a PID controller.
+
+   So you can do this in dbw_node.py: extract the yaw angle from twist_cmd, put it through a low-pass filter (because it may be a bit jittery), put that through yaw_controller, and publish the result (the steering value) in the “loop” section of dbw_node.py. But one thing to be aware of, that I learned through trial and error. When you set up YawController, you need to pass it several parameters that have been provided by Udacity. But the Udacity steer_ratio is too low; you need to multiply it by a factor of 8. But then it works pretty well.
+
+   Note that this is just for steering control; you need to follow a different process (probably with a PID controller) to control the velocity. For testing, however, you can just publish a constant throttle value; 0.5 makes the car go about 40 mph, at least on my machine.
+
+   Also: before you do anything else, search the Slack channel for everything by Alexey Makurin. His set of simple parameter changes: https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c88ec1c39d5043 will improve the performance of your code immensely.
+
+ #+END_EXAMPLE
+ #+NAME:control_logic
+ #+BEGIN_SRC python :noweb tangle :tangle
+   # TODO: Get predicted throttle, brake, and steering using `twist_controller`
+   # You should only publish the control commands if dbw is enabled
+   throttle, brake, steering = self.controller.control(
+     desired_linear_velocity, desired_angular_velocity, current_linear_velocity)
+   if self.dbw_enabled:
+     self.publish(throttle, brake, steer)
+
+ #+END_SRC
 
 ** subscribe_to_get_update
 
@@ -475,7 +577,7 @@ The parameters might be needed for vehicle commands.
 ** /traffic_waypoint
 
 
-* Quaternions
+* Questions
 
 * TODO TODO
 

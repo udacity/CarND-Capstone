@@ -46,12 +46,15 @@ and subsequent acceleration after getting green light.
 The traffic light detection should pubilsh message of traffic light (being red, greee, maybe yellow).
 
 For DBW_node, the key remaining piece is TwistController, producing the appropriate throttle, steering, brake values based on
-the current speed, the desired speed, and dbw_enabled status.
+the current speed, the desired speed, and dbw_enabled status. For the TwistController,
+there is a PID implementation, but the parameters of P, I, D needs to be determined.
 
 * Questions/Problems
   1. In Waypoint_Updater, for output final_points, how to set the speed? Should we set both the linear and angular speed?
      It seems that only need to set the linear.x, as it's in the my_car's local coordinates, there is only movement on the x-axis.
-     There is no movement on the angular z, not even possible on x, and y.
+     There is no movement on the angular z, not even possible on x, and y. It seems that we should also set the angular velocity on z-axis? but how?
+  2. How to tune the parameters of PID?
+  3. Where to use the lowpass filter, for the inputs to DBW_node or its outputs, or both? Maybe, just the current velocity, as it's the only value from the physical world that might have noise.
 
 * [[file:waypoint_updater.org][Waypoint_Updater]]
 
