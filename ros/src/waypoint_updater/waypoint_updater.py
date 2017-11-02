@@ -31,17 +31,6 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-
-        # TODO: Add other member variables you need below
-
         config_string = rospy.get_param("/traffic_light_config")
         self.traffic_light_config = yaml.load(config_string)
 
@@ -52,6 +41,16 @@ class WaypointUpdater(object):
         self.pose = None
         self.red_light_stop_point = -1
         self.loop()
+
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+
+        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+
 
     # Main loop.  if pose and waypoints are both receved, compute final waypoints every 100ms.
     # Gradually slow down and stop for any red lights.
@@ -126,7 +125,7 @@ class WaypointUpdater(object):
 
                 rospy.loginfo('waypoint_updater: %d waypoints (%d-%d), stop: %d slow: %d target speed: %f' %
                     (len(lane.waypoints), min_distance_waypoint, last_waypoint, self.red_light_stop_point,
-                    deceleration_point, self.base_waypoints[min_distance_waypoint].twist.twist.linear.x))
+                    deceleration_point, self.base_waypoints[min(len(self.base_waypoints) - 1, min_distance_waypoint)].twist.twist.linear.x))
         
             rate.sleep()
 
