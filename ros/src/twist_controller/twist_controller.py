@@ -17,6 +17,7 @@ class TwistController(object):
         self.lowpass_filter = LowPassFilter(0.7, 1.0)
         self.brake_coefficient = 10.0  # tentative guess
         self.vehicle_mass = vehicle_mass
+        self.prev_time = None
 
     def control(self, desired_linear_velocity, desired_angular_velocity, current_linear_velocity):
         # TODO: Change the arg, kwarg list to suit your needs
