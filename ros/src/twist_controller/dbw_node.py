@@ -60,7 +60,8 @@ class DBWNode(object):
 
         # DONE: Create `TwistController` object
         self.controller = TwistController(
-            wheel_base, vehicle_mass, steer_ratio*8, min_speed, max_lat_accel, max_steer_angle)
+            wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+            # remove *8
             # learn from the forum that the steer_ratio is too small from the Udacity default
 
         # DONE: Subscribe to all the topics you need to

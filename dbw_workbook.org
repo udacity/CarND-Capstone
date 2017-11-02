@@ -252,8 +252,7 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
           # DONE: Create `TwistController` object
           self.controller = TwistController(
-              wheel_base, vehicle_mass, steer_ratio*8, min_speed, max_lat_accel, max_steer_angle)
-              # learn from the forum that the steer_ratio is too small from the Udacity default
+              wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
           # DONE: Subscribe to all the topics you need to
           <<dbw_states>>
