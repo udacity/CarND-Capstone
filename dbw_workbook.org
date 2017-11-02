@@ -299,7 +299,6 @@ In the context of loop and executed once a rate period, to determine the command
   # end of self.desired_velocity is None or self.current_velocity is None
  #+END_SRC
 
-
 ** twist_controller
 
 Based on the current velocity, and the desired velocity in both linear and angular, compute their delta, then use PID to control.

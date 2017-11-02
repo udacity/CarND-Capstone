@@ -55,6 +55,7 @@ there is a PID implementation, but the parameters of P, I, D needs to be determi
      There is no movement on the angular z, not even possible on x, and y. It seems that we should also set the angular velocity on z-axis? but how?
   2. How to tune the parameters of PID?
   3. Where to use the lowpass filter, for the inputs to DBW_node or its outputs, or both? Maybe, just the current velocity, as it's the only value from the physical world that might have noise.
+  4. What's the physics formula to express the required brake force considering the mass of the vehicle, its current velocities?
 
 * [[file:waypoint_updater.org][Waypoint_Updater]]
 
