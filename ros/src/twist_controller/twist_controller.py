@@ -27,12 +27,10 @@ class TwistController(object):
             self.prev_time = time.time()
             return 0., 0., 0.
 
-        smoothed_current_linear_velocity = self.lowpass_filter.filt(desired_angular_velocity)
-        desired_linear_velocity_modulated = min(
-            MAX_SPEED_metersps, smoothed_current_linear_velocity)
+        desired_linear_velocity_modulated = min(MAX_SPEED_metersps, desired_linear_velocity)
+        smoothed_current_linear_velocity = self.lowpass_filter.filt(current_linear_velocity)
 
-        error_linear_velocity = (desired_linear_velocity_modulated -
-                                 current_linear_velocity)
+        error_linear_velocity = (desired_linear_velocity_modulated - smoothed_current_linear_velocity)
         if error_linear_velocity < 0: # need to deceleration
             brake = self.brake(error_linear_velocity, current_linear_velocity, self.vehicle_mass)
             rospy.loginfo('negative error, brake: %d' % brake)
@@ -46,7 +44,8 @@ class TwistController(object):
         # end of if error_linear_velocity < 0
 
         steer = self.yaw_controller.get_steering(
-            desired_linear_velocity, desired_angular_velocity, smoothed_current_linear_velocity)
+            desired_linear_velocity_modulated, desired_angular_velocity,
+            smoothed_current_linear_velocity)
         self.prev_time = time.time()
         return throttle, brake, steer
 
