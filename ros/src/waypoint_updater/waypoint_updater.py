@@ -107,7 +107,8 @@ class WaypointUpdater(object):
             yaw = get_yaw(current_orientation)
             local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                     w_pos.x, w_pos.y)
-            if (0 < local_x) and (math.atan2(local_y, local_x) < math.pi/3):
+            if (0 < local_x):
+                # and (math.atan2(local_y, local_x) < math.pi/3): # seems not needed
                 # the angle from my_car's orientation is less than 60 degree
                 waypoints_ahead.append((waypoint, local_x, local_y))
                 waypoints_count += 1
@@ -130,7 +131,8 @@ class WaypointUpdater(object):
         # end of for waypoint in self.base_waypoints.waypoints
     
         # sort the waypoints by local_x increasing
-        sorted_waypoints = sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
+        sorted_waypoints = waypoints_ahead # seems already in order
+        # sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
     
         # determine the speed at each waypoint
         final_waypoints = []
