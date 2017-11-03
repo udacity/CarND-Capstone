@@ -239,6 +239,11 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
    This assembly shows the architecture of the source code.
 
+   Experiment to try not using loop, but just control from twist_cmd_cb. It seems still working.
+   As long as the control logic does not take too long, it should work.
+
+   Also, experiment showed even using loop, the frequency can be reduced to 2Hz from 50Hz.
+   This will significantly reduce the CPU load.
 #+NAME:dbw_node
 #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/twist_controller/dbw_node.py
   <<preamble>>
@@ -258,10 +263,11 @@ This is similar to ThrottleCmd, but with some additional/different fields.
           <<dbw_states>>
           <<subscribe_to_get_update>>
 
-          self.loop()
+          #self.loop()
+          rospy.spin()
 
       def loop(self):
-          rate = rospy.Rate(50) # 50Hz
+          rate = rospy.Rate(2) # from 50Hz to 2Hz
           while not rospy.is_shutdown():
               <<control_logic>>
               rate.sleep()
@@ -438,6 +444,8 @@ In the context of __init__, subscribe to message to get needed updates.
 
 In the context of __init__, defines the callback functions for the subscription processing.
 
+Place the control logic in twist_cmd_cb to save CPU load.
+
 #+NAME:callbacks
 #+BEGIN_SRC python :noweb tangle :tangle
   def current_velocity_cb(self, msg):
@@ -445,6 +453,7 @@ In the context of __init__, defines the callback functions for the subscription 
 
   def twist_cmd_cb(self, msg):
       self.desired_velocity = msg.twist
+      <<control_logic>>
 
   def dbw_enabled_cb(self, msg):
       self.dbw_enabled = msg.data
