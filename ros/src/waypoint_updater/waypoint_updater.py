@@ -123,9 +123,14 @@ class WaypointUpdater(object):
                 lane.waypoints = self.base_waypoints[min_distance_waypoint:last_waypoint]
                 self.final_waypoints_pub.publish(lane)
 
+                target_speed = 0
+
+                if min_distance_waypoint < len(self.base_waypoints):
+                    target_speed = self.base_waypoints[min_distance_waypoint].twist.twist.linear.x
+
                 rospy.loginfo('waypoint_updater: %d waypoints (%d-%d), stop: %d slow: %d target speed: %f' %
                     (len(lane.waypoints), min_distance_waypoint, last_waypoint, self.red_light_stop_point,
-                    deceleration_point, self.base_waypoints[min(len(self.base_waypoints) - 1, min_distance_waypoint)].twist.twist.linear.x))
+                    deceleration_point, target_speed))
         
             rate.sleep()
 
