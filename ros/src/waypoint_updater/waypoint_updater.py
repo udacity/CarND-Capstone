@@ -40,7 +40,6 @@ class WaypointUpdater(object):
         self.reference_velocity = []
         self.pose = None
         self.red_light_stop_point = -1
-        self.loop()
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -51,6 +50,7 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
+        self.loop()
 
     # Main loop.  if pose and waypoints are both receved, compute final waypoints every 100ms.
     # Gradually slow down and stop for any red lights.
