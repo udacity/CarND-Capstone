@@ -22,6 +22,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_TIME_THRESHOLD = 5 # seconds
+NORMAL_SPEED = 10             # the normal speed of the car
 
 import tf                       # This is of ROS geometry, not of TensorFlow!
 def get_yaw(orientation):
@@ -77,6 +79,7 @@ class WaypointUpdater(object):
         rospy.spin()
 
     import math
+    
     def pose_cb(self, msg):
         # WORKING: Implement
         #
@@ -89,6 +92,9 @@ class WaypointUpdater(object):
         # Compute the waypoints ahead of the current_pose
         waypoints_ahead = []
         waypoints_count = 0
+        lookahead_dist = 0  # the accumulated distance of the looking ahead
+        lookahead_time = 0  # the lookahead time
+        prev_waypoint_pose = current_pose
     
         # the waypoints should be continuous
         # assume the base_waypoints are consecutive
@@ -103,14 +109,22 @@ class WaypointUpdater(object):
                                                     w_pos.x, w_pos.y)
             if (0 < local_x) and (math.atan2(local_y, local_x) < math.pi/3):
                 # the angle from my_car's orientation is less than 60 degree
-                waypoints_count += 1
                 waypoints_ahead.append((waypoint, local_x, local_y))
+                waypoints_count += 1
+                dist_between = math.sqrt((prev_waypoint_pose.x-w_pos.x)**2 +
+                                         (prev_waypoint_pose.y-w_pos.y)**2  +
+                                         (prev_waypoint_pose.z-w_pos.z)**2)
+                lookahead_dist += dist_between
+                lookahead_time = lookahead_dist / (NORMAL_SPEED)
+                prev_waypoint_pose = w_pos
                 # waypoint_found = True # TBD
             else:
                 # waypoint_found = ?? # TBD
                 pass
             # end of if (0 < local_x)
-            if (LOOKAHEAD_WPS <= waypoints_count):
+            if (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count):
+                rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
+                              % (waypoints_count, lookahead_time))
                 break
             # end of if (LOOKAHEAD_WPS <= waypoints_count)
         # end of for waypoint in self.base_waypoints.waypoints
@@ -121,7 +135,7 @@ class WaypointUpdater(object):
         # determine the speed at each waypoint
         final_waypoints = []
         for waypoint, local_x, local_y in sorted_waypoints:
-            waypoint.twist.twist.linear.x = 10 # meter/s, temporary hack for now
+            waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
             final_waypoints.append(waypoint)
         # end of for waypoint, local_x, local_y
     
@@ -155,8 +169,6 @@ class WaypointUpdater(object):
                 dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
                 wp1 = i
             return dist
-    
-    
 
 if __name__ == '__main__':
     try:

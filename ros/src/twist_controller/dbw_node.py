@@ -61,8 +61,6 @@ class DBWNode(object):
         # DONE: Create `TwistController` object
         self.controller = TwistController(
             wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-            # remove *8
-            # learn from the forum that the steer_ratio is too small from the Udacity default
 
         # DONE: Subscribe to all the topics you need to
         self.dbw_enabled = False
@@ -85,9 +83,11 @@ class DBWNode(object):
               desired_linear_velocity = self.desired_velocity.linear.x
               desired_angular_velocity = self.desired_velocity.angular.z
               current_linear_velocity = self.current_velocity.linear.x
+              current_angular_velocity = self.current_velocity.angular.z
             
               throttle, brake, steering = self.controller.control(
-                desired_linear_velocity, desired_angular_velocity, current_linear_velocity)
+                desired_linear_velocity, desired_angular_velocity,
+                current_linear_velocity, current_angular_velocity)
               if self.dbw_enabled:
                 self.publish(throttle, brake, steering)
               # end of self.dbw_enabled
