@@ -248,11 +248,11 @@ class GenerateDiagnostics():
     def initializeLightToWaypointMap(self):
         # find the closest waypoint to the given (x,y) of the triffic light
         dl = lambda a, b: math.sqrt((a.x-b[0])**2 + (a.y-b[1])**2)
-        for lidx in range(len(self.config['light_positions'])):
+        for lidx in range(len(self.config['stop_line_positions'])):
             dist = 100000.
             tlwp = 0
             for widx in range(len(self.waypoints)):
-                d1 = dl(self.waypoints[widx].pose.pose.position, self.config['light_positions'][lidx])
+                d1 = dl(self.waypoints[widx].pose.pose.position, self.config['stop_line_positions'][lidx])
                 if dist > d1:
                     tlwp = widx
                     dist = d1
