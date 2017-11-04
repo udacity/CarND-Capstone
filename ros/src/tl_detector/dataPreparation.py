@@ -1,10 +1,14 @@
+#Script to generate TF records for Object detection, takes yaml file as an input (Bosch data set)
+#Change YAML path in line #63
+#To run - python dataPreparation.py --output_path='./'
+
 import tensorflow as tf
 from object_detection.utils import dataset_util
 import cv2
 import yaml
 import numpy as np
 import os
-import pandas as pd
+import pandas as pdode 
 #from __future__ import print_function
 import matplotlib
 import matplotlib.pyplot as plt
