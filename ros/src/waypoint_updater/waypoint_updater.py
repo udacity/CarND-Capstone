@@ -91,14 +91,14 @@ class WaypointUpdater(object):
             if self.base_waypoints and self.pose:
                 current_pose = self.pose.pose.position
                 current_orientation = self.pose.pose.orientation
-    
+                
                 # Compute the waypoints ahead of the current_pose
                 waypoints_ahead = []
                 waypoints_count = 0
                 lookahead_dist = 0  # the accumulated distance of the looking ahead
                 lookahead_time = 0  # the lookahead time
                 prev_waypoint_pose = current_pose
-    
+                
                 for waypoint in self.base_waypoints.waypoints:
                     w_pos = waypoint.pose.pose.position
                     yaw = get_yaw(current_orientation)
@@ -122,18 +122,18 @@ class WaypointUpdater(object):
                         break
                     # end of if (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
                 # end of for waypoint in self.base_waypoints.waypoints
-    
+                
                 # sort the waypoints by local_x increasing
                 sorted_waypoints = waypoints_ahead # seems already in order
                 # sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
-    
+                
                 # determine the speed at each waypoint
                 final_waypoints = []
                 for waypoint, local_x, local_y in sorted_waypoints:
                     waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
                     final_waypoints.append(waypoint)
                 # end of for waypoint, local_x, local_y
-    
+                
                 # publish to /final_waypoints, need to package final_waypoints into Lane message
                 publish_Lane(self.final_waypoints_pub, final_waypoints)
                 self.pose = None        # indicating this message has been processed
