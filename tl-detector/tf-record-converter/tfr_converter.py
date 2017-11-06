@@ -61,10 +61,36 @@ def convert_xml_to_sample(xml_path, subdir):
     return sample
 
 
-def split_samples(samples, rate=0.2):
+def split_samples(samples, rate=0.1):
+    labels = ["red", "yellow", "green"]
+    data_dict = {}
     np.random.shuffle(samples)
-    split_index = int(len(samples) * rate)
-    test_set, train_set = samples[:split_index], samples[split_index:]
+
+    test_set = []
+    train_set = []
+
+    for label in labels:
+        data_dict[label] = []
+
+    for sample in samples:
+        data_dict[sample.classes_text[0]].append(sample)
+
+    for label in labels:
+        local_samples = data_dict[label]
+        split_index = int(len(local_samples) * rate)
+        local_test_set, local_train_set = local_samples[:split_index], local_samples[split_index:]
+        test_set = test_set + local_test_set
+        train_set = train_set + local_train_set
+
+    # split_index = int(len(samples) * rate)
+    # test_set, train_set = samples[:split_index], samples[split_index:]
+    for label in labels:
+        count = 0
+        for sample in train_set:
+            if sample.classes_text[0] == label:
+                count += 1
+        print("Label {}: {}".format(label, count))
+
     return test_set, train_set
 
 

@@ -52,18 +52,19 @@ class TLClassifier(object):
             [self.score_tensor, self.class_tensor],
             feed_dict={self.image_tensor: image_np_expanded})
 
-        class_scores = [0, 0, 0, 0, 0]
-        for i in range(len(scores[0])):
-            score = scores[0][i]
-            if score > 0.7:
-                index = int(classes[0][i])
-                class_scores[index] += score
+        class_scores = [0, 0, 0, 0]
+        for j in range(len(scores)):
+            for i in range(len(scores[j])):
+                score = scores[j][i]
+                if score > 0.5:
+                    index = int(classes[j][i])
+                    class_scores[index] += score
+
         strongest_class = class_scores.index(max(class_scores))
 
         dt = "{:.2f}".format(time.time() - st)
-
-        if class_scores[strongest_class] > 1:
-            print("{} ({})".format(TLClassifier.get_light_name(strongest_class), dt))
+        if class_scores[strongest_class] > 0.75:
+            print("{} (score: {:.2f}, t: {})".format(TLClassifier.get_light_name(strongest_class), class_scores[strongest_class], dt))
             return strongest_class
         else:
             print("")
@@ -71,7 +72,7 @@ class TLClassifier(object):
 
     @staticmethod
     def get_light_name(id):
-        light_names = ["NONE", "RED", "YELLOW", "GREEN", "UNKNOWN"]
+        light_names = ["NONE", "RED", "YELLOW", "GREEN"]
         return light_names[id]
 
     @staticmethod

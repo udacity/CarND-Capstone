@@ -29,7 +29,7 @@ class TLScanner(object):
             return
 
         self.camera_image = msg
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
         self.light_classifier.infer(cv_image)
 
 

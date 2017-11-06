@@ -171,7 +171,7 @@ class TLDetector(object):
         return self.infer_camera_image()
 
     def infer_camera_image(self):
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
         return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
