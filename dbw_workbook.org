@@ -257,7 +257,7 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
           # DONE: Create `TwistController` object
           self.controller = TwistController(
-              wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+              self.wheel_base, self.vehicle_mass, self.steer_ratio, self.min_speed, self.max_lat_accel, self.max_steer_angle)
 
           # DONE: Subscribe to all the topics you need to
           <<dbw_states>>
@@ -506,18 +506,19 @@ The parameters might be needed for vehicle commands.
 
 #+NAME:vehicle_parametres
 #+BEGIN_SRC python :noweb tangle :tangle
-  vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
-  fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-  brake_deadband = rospy.get_param('~brake_deadband', .1)
-  decel_limit = rospy.get_param('~decel_limit', -5)
-  accel_limit = rospy.get_param('~accel_limit', 1.)
-  wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
-  wheel_base = rospy.get_param('~wheel_base', 2.8498)
-  steer_ratio = rospy.get_param('~steer_ratio', 14.8)
-  max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
-  max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
-  min_speed = rospy.get_param('~min_speed', 0.0)  # added for yaw_controller taking default 0.0 for now
-
+  self.vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
+  self.fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
+  self.brake_deadband = rospy.get_param('~brake_deadband', .1)
+  self.decel_limit = rospy.get_param('~decel_limit', -5)
+  self.accel_limit = rospy.get_param('~accel_limit', 1.)
+  self.wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
+  self.wheel_base = rospy.get_param('~wheel_base', 2.8498)
+  self.steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+  self.max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
+  self.max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+  self.min_speed = rospy.get_param('~min_speed', 4.*0.44704)
+  self.max_throttle_percentage = rospy.get_param('~max_throttle_percentage', 0.1)
+  self.max_braking_percentage = rospy.get_param('~max_braking_percentage', -0.1)
 #+END_SRC
 
 ** preamble
