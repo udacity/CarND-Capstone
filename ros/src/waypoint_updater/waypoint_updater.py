@@ -65,7 +65,8 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
-        self.loop_freq = 2      # the frequency to process /current_pose
+        self.loop_freq = rospy.get_param('~loop_freq', 2)
+        # the frequency to process vehicle messages
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)

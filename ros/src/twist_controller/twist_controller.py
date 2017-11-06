@@ -12,7 +12,7 @@ class TwistController(object):
     def __init__(self, wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
     #def __init__(self, *args, **kwargs):
         # TODO: Implement
-        self.sample_time = 0.02
+        self.sample_time = 0.03  # based on observation the interval is always around 0.03 seconds
         self.throttle_controller = PID(2.7, 0.01, 0.02, mn=0.0, mx=1.0)
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
