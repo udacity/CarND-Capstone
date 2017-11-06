@@ -102,6 +102,38 @@ TODO
 
 # ROS Topics
 
+### Waypoints
+* /base_waypoints
+  * TODO
+* /obstacle_waypoints
+  * TODO
+* /traffic_waypoint
+  * TODO
+* /final_waypoints
+  * TODO
+
+### Vehicle Data/Status
+* /image_color
+  * TODO
+* /current_pose
+  * TODO
+* /current_velocity
+  * TODO
+* /vehicle/dbw_enabled
+  * TODO
+
+### Vehicle Control
+* /twist_cmd
+  * TODO
+
+### Controller -> Car/Simulator
+* /vehicle/brake_cmd
+  * TODO
+* /vehicle/steering_cmd
+  * TODO
+* /vehicle/trottle_cmd
+
+
 # Implementation Details
 
 ### Perception
