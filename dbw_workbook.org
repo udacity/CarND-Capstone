@@ -219,6 +219,31 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 #+END_EXAMPLE
 
 
+* Architecture discussion
+
+  Moving the processing of /current_pose message in Waypoint_Updater from a callback to a loop with 2Hz frequency made the car drive
+  much longer distance before veering off the road.
+
+  Did the same with the processing of curreent_velocity and desired_velocity in dbw_node, however make the car veer off to the right
+  at the same spot, the sharp left turn after the second traffic light. Increasing the frequency from 2 to 10, recover the better driving
+  as the time when only changing the processing of /current_pos message.
+
+  This shows that the alignment and synchronization of message processing is crucial.
+
+  The message should be processed as soon as possible but should not block the processing of the messages.
+
+  It would be interesting to test if the frequency 10 can be further reduced.
+
+  loop_frequency for dbw_node tested:
+  - 15, seems better than 10, slightly, the best so far
+  - 10, good
+  - 7,  as good as 10, but not as good as 15
+  - 5, better than 3, worse than 10
+  -
+  - 3, no good
+  - 2, no good
+
+
 * TwistController
 
   This is the core of the control logic to produce control parameters to control the vehicle based
