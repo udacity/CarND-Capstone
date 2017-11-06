@@ -44,7 +44,7 @@ class WaypointUpdater(object):
         self.tree = None                                            # tree struct for coordinates
         self.curr_velocity = None                                   # current velocity    
         self.next_waypoint_index  = None                            # Index of the first waypoint in front of the car
-        self.velocity =  rospy.get_param("~velocity", MAX_VEL)      # Max. velocity from gotten from ros parameters
+        self.velocity =  rospy.get_param("/waypoint_loader/velocity", MAX_VEL)      # Max. velocity from gotten from ros parameters
         
         # if we get value from ros, convert it from km/h to meter per second (mps)
         if (self.velocity != MAX_VEL): 
@@ -186,9 +186,9 @@ class WaypointUpdater(object):
         
         # This segment should be replaced with actual speed values, for now speed is set to max
         if self.curr_velocity <= 1:
-            speed = MAX_VEL
+            speed = self.velocity
         else:
-            speed  = MAX_VEL
+            speed  = self.velocity
         #########################
         
         # Set the velocity in x direction (car coordinate system) for the waypoints to follow
