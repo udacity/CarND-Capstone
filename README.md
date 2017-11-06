@@ -20,25 +20,25 @@ Testing the system in the simulator:
 The project is implemented together in a team. 
 
 The following members are part of the international team - Chakra:
-- Soheil Jahanshahi (Team Lead)
-- Venkata Dikshit
-- Daniel Gattringer
-- Aneeq Mahmood
-- Jongchul Seon
-- Wilhelm Nagel
+* Soheil Jahanshahi (Team Lead)
+* Venkata Dikshit
+* Daniel Gattringer
+* Aneeq Mahmood
+* Jongchul Seon
+* Wilhelm Nagel
 
 # Project Setup
 
 ### Development Setup
 The project will require the use of Ubuntu Linux (the operating system of Carla) and a new simulator. Follow the steps below to get set up:
-- Because ROS is used, Ubuntu Linux is needed to develop and test the project code.
- - Ubuntu 14.04 with ROS Indigo
- - Ubuntu 16.04 with ROS Kinetic
- - Udacity provides an VM which has ROS and Dataspeed DBW already installed. This VM can be used with [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
- - The system integration project uses a simulator, provided by udacity, which will interface with the ROS code and includes driving on crossroads with traffic lights. To improve the performance while using a VM, running the simulator directly on the host operating system with port forwarding to the guest operating system is recommended. 
+* Because ROS is used, Ubuntu Linux is needed to develop and test the project code.
+  * Ubuntu 14.04 with ROS Indigo
+  * Ubuntu 16.04 with ROS Kinetic
+  * Udacity provides an VM which has ROS and Dataspeed DBW already installed. This VM can be used with [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
+* The system integration project uses a simulator, provided by udacity, which will interface with the ROS code and includes driving on crossroads with traffic lights. To improve the performance while using a VM, running the simulator directly on the host operating system with port forwarding to the guest operating system is recommended. 
 
 ### Simulator
-- Udacity Term 3 [simulator](https://github.com/udacity/CarND-Capstone/releases) which contains the System Integration part.
+* Udacity Term 3 [simulator](https://github.com/udacity/CarND-Capstone/releases) which contains the System Integration part.
 
 ### Run the Project
 1. Clone the project repository
@@ -67,10 +67,10 @@ roslaunch launch/styx.launch
 The real car (Carla) is an autonomous Lincoln MKZ, running on the udacity test site in Palo Alto, California.
 
 Carlas Hardware Specs:
-- 31.4 GiB Memory
-- Intel Core i7-6700K CPU @ 4 GHz x 8
-- TITAN X Graphics
-- 64-bit OS
+* 31.4 GiB Memory
+* Intel Core i7-6700K CPU @ 4 GHz x 8
+* TITAN X Graphics
+* 64-bit OS
 
 # ROS Architecture and Nodes
 Carla uses Robot Operating System ([ROS](http://www.ros.org/)) to integrate all main functionalities.
@@ -91,14 +91,14 @@ TODO
 ![image_dbw](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/dbw-node-ros-graph.png)
 
 ### Additional Nodes
-- styx
- - This package contains a server for communicating with the simulator, and a bridge to translate and publish simulator messages to ROS topics.
-- styx_msgs
- - This package includes definitions of the custom ROS message types used in the project.
-- waypoint_loader
- - This package loads the static waypoint data and publishes to /base_waypoints.
-- waypoint_follower
- - This package contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic.
+* styx
+  * This package contains a server for communicating with the simulator, and a bridge to translate and publish simulator messages to ROS topics.
+* styx_msgs
+  * This package includes definitions of the custom ROS message types used in the project.
+* waypoint_loader
+  * This package loads the static waypoint data and publishes to /base_waypoints.
+* waypoint_follower
+  * This package contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic.
 
 # ROS Topics
 
