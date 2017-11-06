@@ -56,6 +56,10 @@ class Bridge(object):
         self.publishers = {e.name: rospy.Publisher(e.topic, TYPE[e.type], queue_size=1)
                            for e in conf.publishers}
 
+        while rospy.get_time() == 0:
+            rospy.spin()
+        self.prev_time = rospy.get_time()
+
     def create_light(self, x, y, z, yaw, state):
         light = TrafficLight()
 
@@ -91,6 +95,8 @@ class Bridge(object):
 
     def create_twist(self, velocity, angular):
         tw = TwistStamped()
+        tw.header.frame_id = '/world'
+        tw.header.stamp = rospy.get_rostime()
         tw.twist.linear.x = velocity
         tw.twist.angular.z = angular
         return tw
