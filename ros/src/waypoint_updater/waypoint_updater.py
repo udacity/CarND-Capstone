@@ -22,7 +22,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-LOOKAHEAD_TIME_THRESHOLD = 5 # seconds
+LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
 NORMAL_SPEED = 10             # the normal speed of the car
 
 import tf                       # This is of ROS geometry, not of TensorFlow!
@@ -65,8 +65,10 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.loop_freq = 2      # the frequency to process /current_pose
+
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -74,75 +76,79 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-        self.base_waypoints = None  # indicating the base_waypoints is not yet available
 
-        rospy.spin()
+        self.base_waypoints = None  # indicating the base_waypoints is not yet available
+        self.pose = None            # indicating that there is no message to process
+
+        self.loop()
+        #rospy.spin()
 
     import math
+    
+    def loop(self):
+        rate = rospy.Rate(self.loop_freq)
+        while not rospy.is_shutdown():
+            if self.base_waypoints and self.pose:
+                current_pose = self.pose.pose.position
+                current_orientation = self.pose.pose.orientation
+    
+                # Compute the waypoints ahead of the current_pose
+                waypoints_ahead = []
+                waypoints_count = 0
+                lookahead_dist = 0  # the accumulated distance of the looking ahead
+                lookahead_time = 0  # the lookahead time
+                prev_waypoint_pose = current_pose
+    
+                for waypoint in self.base_waypoints.waypoints:
+                    w_pos = waypoint.pose.pose.position
+                    yaw = get_yaw(current_orientation)
+                    local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+                                                            w_pos.x, w_pos.y)
+                    if (0 < local_x):
+                        # and (math.atan2(local_y, local_x) < math.pi/3): # seems not needed
+                        # the angle from my_car's orientation is less than 60 degree
+                        waypoints_ahead.append((waypoint, local_x, local_y))
+                        waypoints_count += 1
+                        dist_between = math.sqrt((prev_waypoint_pose.x-w_pos.x)**2 +
+                                                 (prev_waypoint_pose.y-w_pos.y)**2  +
+                                                 (prev_waypoint_pose.z-w_pos.z)**2)
+                        lookahead_dist += dist_between
+                        lookahead_time = lookahead_dist / (NORMAL_SPEED)
+                        prev_waypoint_pose = w_pos
+                    # end of if (0 < local_x)
+                    if (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count):
+                        rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
+                                      % (waypoints_count, lookahead_time))
+                        break
+                    # end of if (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
+                # end of for waypoint in self.base_waypoints.waypoints
+    
+                # sort the waypoints by local_x increasing
+                sorted_waypoints = waypoints_ahead # seems already in order
+                # sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
+    
+                # determine the speed at each waypoint
+                final_waypoints = []
+                for waypoint, local_x, local_y in sorted_waypoints:
+                    waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
+                    final_waypoints.append(waypoint)
+                # end of for waypoint, local_x, local_y
+    
+                # publish to /final_waypoints, need to package final_waypoints into Lane message
+                publish_Lane(self.final_waypoints_pub, final_waypoints)
+                self.pose = None        # indicating this message has been processed
+            # end of if self.base_waypoints and self.pose
+            rate.sleep()
+        # end of while not rospy.is_shutdow()
+
     
     def pose_cb(self, msg):
         # WORKING: Implement
         #
-        if self.base_waypoints is None:
-            return                  # no point of continue
-        # end of if not self.base_waypoints_availble
-        current_pose = msg.pose.position
-        current_orientation = msg.pose.orientation
-    
-        # Compute the waypoints ahead of the current_pose
-        waypoints_ahead = []
-        waypoints_count = 0
-        lookahead_dist = 0  # the accumulated distance of the looking ahead
-        lookahead_time = 0  # the lookahead time
-        prev_waypoint_pose = current_pose
-    
-        # the waypoints should be continuous
-        # assume the base_waypoints are consecutive
-        # the waypoints ahead should be continuous once started
-    
-        # waypoint_continued = True #TBD
-    
-        for waypoint in self.base_waypoints.waypoints:
-            w_pos = waypoint.pose.pose.position
-            yaw = get_yaw(current_orientation)
-            local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
-                                                    w_pos.x, w_pos.y)
-            if (0 < local_x):
-                # and (math.atan2(local_y, local_x) < math.pi/3): # seems not needed
-                # the angle from my_car's orientation is less than 60 degree
-                waypoints_ahead.append((waypoint, local_x, local_y))
-                waypoints_count += 1
-                dist_between = math.sqrt((prev_waypoint_pose.x-w_pos.x)**2 +
-                                         (prev_waypoint_pose.y-w_pos.y)**2  +
-                                         (prev_waypoint_pose.z-w_pos.z)**2)
-                lookahead_dist += dist_between
-                lookahead_time = lookahead_dist / (NORMAL_SPEED)
-                prev_waypoint_pose = w_pos
-                # waypoint_found = True # TBD
-            else:
-                # waypoint_found = ?? # TBD
-                pass
-            # end of if (0 < local_x)
-            if (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count):
-                rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
-                              % (waypoints_count, lookahead_time))
-                break
-            # end of if (LOOKAHEAD_WPS <= waypoints_count)
-        # end of for waypoint in self.base_waypoints.waypoints
-    
-        # sort the waypoints by local_x increasing
-        sorted_waypoints = waypoints_ahead # seems already in order
-        # sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
-    
-        # determine the speed at each waypoint
-        final_waypoints = []
-        for waypoint, local_x, local_y in sorted_waypoints:
-            waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
-            final_waypoints.append(waypoint)
-        # end of for waypoint, local_x, local_y
-    
-        # publish to /final_waypoints, need to package final_waypoints into Lane message
-        publish_Lane(self.final_waypoints_pub, final_waypoints)
+        if self.pose is None:       # ready to process message
+            self.pose = msg
+        # end of if self.pose is None
+        # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
 
     def waypoints_cb(self, waypoints):
             # DONE: Implement

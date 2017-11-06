@@ -12,10 +12,11 @@ class TwistController(object):
     def __init__(self, wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
     #def __init__(self, *args, **kwargs):
         # TODO: Implement
+        self.sample_time = 0.02
         self.throttle_controller = PID(2.7, 0.01, 0.02, mn=0.0, mx=1.0)
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-        self.lowpass_filter = LowPassFilter(0.7, 1.0)
+        self.lowpass_filter = LowPassFilter(0.5, self.sample_time)
         self.brake_coefficient = 10.0  # tentative guess
         self.vehicle_mass = vehicle_mass
         self.prev_time = None
@@ -34,12 +35,13 @@ class TwistController(object):
         error_linear_velocity = (desired_linear_velocity_modulated - smoothed_current_linear_velocity)
         if error_linear_velocity < 0: # need to deceleration
             brake = self.brake(error_linear_velocity, current_linear_velocity, self.vehicle_mass)
-            # rospy.loginfo('negative error, brake: %d' % brake)
+            rospy.loginfo('negative error, brake: %d' % brake)
             throttle = 0
         else:
             elapsed_time = time.time() - self.prev_time
+            rospy.loginfo('elapsed_time: %f' % elapsed_time)
             throttle = self.throttle_controller.step(error_linear_velocity, elapsed_time)
-            # rospy.loginfo('throttle from pid: %d' % throttle)
+            rospy.loginfo('throttle from pid: %d' % throttle)
             throttle = max(min(throttle, 1.0), 0.0)
             brake = 0.
         # end of if error_linear_velocity < 0
