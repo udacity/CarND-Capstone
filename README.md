@@ -11,9 +11,10 @@ Testing the system in the simulator:
 1. Team Structure
 2. Project Setup
 3. Project Description 
-4. Architecture and Files
-5. Implementation Details
-6. Conclusion
+4. ROS Architecture and Nodes
+5. ROS Topics
+6. Implementation Details
+7. Conclusion
 
 # Team Structure
 The project is implemented together in a team. 
@@ -62,12 +63,6 @@ roslaunch launch/styx.launch
 # Project Description 
 
 
-# Architecture and Files
-Carla uses Robot Operating System ([ROS](http://www.ros.org/)) to integrate all main functionalities.
-
-The following images shows the main ROS architucture for the project:
-![architecture](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/final-project-ros-graph-v2.png)
-
 ### Car/Simulator 
 The real car (Carla) is an autonomous Lincoln MKZ, running on the udacity test site in Palo Alto, California.
 
@@ -77,13 +72,45 @@ Carlas Hardware Specs:
 - TITAN X Graphics
 - 64-bit OS
 
+# ROS Architecture and Nodes
+Carla uses Robot Operating System ([ROS](http://www.ros.org/)) to integrate all main functionalities.
+
+The following images shows the main ROS architucture for the project:
+![architecture](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/final-project-ros-graph-v2.png)
+
+### Traffic Light Detection Node
+TODO
+![image_traffic_light_detection](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/tl-detector-ros-graph.png)
+
+### Waypoint Updater Node
+TODO
+![image_waypoint_updater](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/waypoint-updater-ros-graph.png)
+
+### DBW Node
+TODO
+![image_dbw](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/dbw-node-ros-graph.png)
+
+### Additional Nodes
+- styx
+ - This package contains a server for communicating with the simulator, and a bridge to translate and publish simulator messages to ROS topics.
+- styx_msgs
+ - This package includes definitions of the custom ROS message types used in the project.
+- waypoint_loader
+ - This package loads the static waypoint data and publishes to /base_waypoints.
+- waypoint_follower
+ - This package contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic.
+
+# ROS Topics
+
+# Implementation Details
+
 ### Perception
 
 ### Planning
 
 ### Control
 
-# Implementation Details
+
 
 # Conclusion
 
