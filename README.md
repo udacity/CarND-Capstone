@@ -91,7 +91,7 @@ This node takes the current position of the car from `/current_pose)`, and a lis
 ![image_waypoint_updater](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/waypoint-updater-ros-graph.png)
 
 ### DBW Node
-This node takes the current velocity of the car from `/current_velocity)`, the information if the control should manover the car or a safety driver does from `/vehicle/dbw_enabled`, and twist commands from `/twist_cmd` and finally publishes commands for Carla's drive-by-wire system to `/vehicle/throttle_cmd`, `/vehicle/brake_cmd` and `/vehicle/steering_cmd`. The twist commands are generated and published to `/twist_cmd` by the waypoint follower node, which uses the data from `/final_waypoints` to generate this commands.
+This node takes the current velocity of the car from `/current_velocity)`, the information if the control system should maneuver the car or a safety driver does from `/vehicle/dbw_enabled`, and twist commands from `/twist_cmd` and finally publishes commands for Carla's drive-by-wire system to `/vehicle/throttle_cmd`, `/vehicle/brake_cmd` and `/vehicle/steering_cmd`. The twist commands are generated and published to `/twist_cmd` by the waypoint follower node, which uses the data from `/final_waypoints` to generate this commands.
 
 ![image_dbw](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/dbw-node-ros-graph.png)
 
@@ -109,34 +109,35 @@ This node takes the current velocity of the car from `/current_velocity)`, the i
 
 ### Waypoints
 * /base_waypoints
-  * TODO
+  * Provides a message of custom type `styx_msgs/Lane` which contain waypoints as provided by a static .csv file.
 * /obstacle_waypoints
-  * TODO
+  * Not used at the moment
 * /traffic_waypoint
-  * TODO
+  * Provides a message which contains the **index** of the waypoint for nearest upcoming red light's stop line.
 * /final_waypoints
-  * TODO
+  * Provides a message of custom type `styx_msgs/Lane` which contain a subset of `/base_waypoints`. The first waypoint is the one in `/base_waypoints` which is closest to the car (in front of it).
 
 ### Vehicle Data/Status
 * /image_color
-  * TODO
+  * Provides an image stream from the car's camera. These images are used to determine the color of upcoming traffic lights
 * /current_pose
-  * TODO
+  * Provides messages of custom type `geometry_msgs/PoseStamped` which contain the current position of the vehicle, delivered by the simulator or the localization module of Carla.
 * /current_velocity
-  * TODO
+  * Provides messages which contain the current velocity of the vehicle, delivered by the simulator or localization module of Carla.
 * /vehicle/dbw_enabled
-  * TODO
+  * Provides the information if the control system should maneuver the car or a safety driver does. This information is available in both cases - using the simluator and using Carla.
 
 ### Vehicle Control
 * /twist_cmd
-  * TODO
+  * Provides a message which contains the vehicle linear and angular velocities. (TODO: of the next waypoint?)
 
 ### Controller -> Car/Simulator
 * /vehicle/brake_cmd
-  * TODO
+  * Published brake values are in units of torque `(N*m)`. The values for brake are computed by using the desired acceleration, the weight of the vehicle, and the wheel radius.
 * /vehicle/steering_cmd
-  * TODO
+  * TODO find out which values are published here.
 * /vehicle/trottle_cmd
+  * Published trottle values are in the range 0 to 1.
 
 
 # Implementation Details
