@@ -69,7 +69,7 @@ class WaypointUpdater(object):
         # the frequency to process vehicle messages
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
+        self.subscriber_waypoints = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -154,6 +154,10 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
             # DONE: Implement
             self.base_waypoints = waypoints
+            # process the waypoints here
+            # unsubscribe to the waypoint messages, no longer needed
+            self.subscriber_waypoints.unregister()
+            self.subscriber_waypoints = None
 
     def traffic_cb(self, msg):
             # TODO: Callback for /traffic_waypoint message. Implement
