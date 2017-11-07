@@ -81,15 +81,18 @@ The following images shows the main ROS architucture for the project:
 ![architecture](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/final-project-ros-graph-v2.png)
 
 ### Traffic Light Detection Node
-TODO
+This node takes the image stream from the car's camera from `/image_color`, the current position of the car from `/current_pose)`, and a list of waypoints around the track from `/base_waypoints` and finally publishes the locations to stop for red traffic lights to the `/traffic_waypoint`. Only the index of the waypoint, which is nearest to the stop line of a red light, is published. So the control system of the car knows where it has to stop and can brake smoothly.
+
 ![image_traffic_light_detection](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/tl-detector-ros-graph.png)
 
 ### Waypoint Updater Node
-TODO
+This node takes the current position of the car from `/current_pose)`, and a list of waypoints around the track from `/base_waypoints` and finally publishes the next waypoints the car should follow to `/final_waypoints`. The number of waypoints to look ahead is defined by `LOOKAHEAD_WPS`, which is configured to `50`(TODO: final number). Within the node, the next waypoints are selected, which are in front of the car and provided with target speeds to allow a smooth movement and a targeted braking and accelerations at traffic lights.
+
 ![image_waypoint_updater](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/waypoint-updater-ros-graph.png)
 
 ### DBW Node
-TODO
+This node takes the current velocity of the car from `/current_velocity)`, the information if the control should manover the car or a safety driver does from `/vehicle/dbw_enabled`, and twist commands from `/twist_cmd` and finally publishes commands for Carla's drive-by-wire system to `/vehicle/throttle_cmd`, `/vehicle/brake_cmd` and `/vehicle/steering_cmd`. The twist commands are generated and published to `/twist_cmd` by the waypoint follower node, which uses the data from `/final_waypoints` to generate this commands.
+
 ![image_dbw](https://github.com/solix/CarND-Capstone/blob/master/info_for_readme/dbw-node-ros-graph.png)
 
 ### Additional Nodes
