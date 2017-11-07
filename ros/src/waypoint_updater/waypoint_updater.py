@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import rospy
+
+import copy                     # for deepcopy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -17,6 +19,10 @@ Once you have created dbw_node, you will update this node to use the status of t
 Please note that our simulator also provides the exact location of traffic lights and their
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
+
+- 11/7 ::
+add self.last_closest_front_waypoint_index to record the index of last the closet waypoint in front of the vehicle.
+This would be the index to search next time, to save computing. (Beware of index wrapping in index increment arithmetic!)
 
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
@@ -60,6 +66,10 @@ def publish_Lane(publisher, waypoints):
         lane.header.stamp = rospy.Time(0)
         lane.waypoints = waypoints
         publisher.publish(lane)
+def distance_two_indices(waypoints, i, j):
+  a = waypoints[i].pose.pose.position
+  b = waypoints[j].pose.pose.position
+  return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -81,6 +91,8 @@ class WaypointUpdater(object):
         self.base_waypoints = None  # indicating the base_waypoints is not yet available
         self.pose = None            # indicating that there is no message to process
 
+        self.last_closest_front_waypoint_index = 0
+
         self.loop()
         #rospy.spin()
 
@@ -94,46 +106,41 @@ class WaypointUpdater(object):
                 current_orientation = self.pose.pose.orientation
                 
                 # Compute the waypoints ahead of the current_pose
-                waypoints_ahead = []
+                
+                local_x = -1
+                i = self.last_closest_front_waypoint_index
+                while (local_x < 0):
+                  waypoint = self.base_waypoints[i]
+                  w_pos = waypoint.pose.pose.position
+                  yaw = get_yaw(current_orientation)
+                  local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+                                                          w_pos.x, w_pos.y)
+                  i = (i + 1) % self.base_waypoints_length
+                # end of while (local_x < 0)
+                
+                # now i is the index of the closest waypoint in front
+                self.last_closest_front_waypoint_index = i
+                
                 waypoints_count = 0
                 lookahead_dist = 0  # the accumulated distance of the looking ahead
                 lookahead_time = 0  # the lookahead time
-                prev_waypoint_pose = current_pose
                 
-                for waypoint in self.base_waypoints.waypoints:
-                    w_pos = waypoint.pose.pose.position
-                    yaw = get_yaw(current_orientation)
-                    local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
-                                                            w_pos.x, w_pos.y)
-                    if (0 < local_x):
-                        # and (math.atan2(local_y, local_x) < math.pi/3): # seems not needed
-                        # the angle from my_car's orientation is less than 60 degree
-                        waypoints_ahead.append((waypoint, local_x, local_y))
-                        waypoints_count += 1
-                        dist_between = math.sqrt((prev_waypoint_pose.x-w_pos.x)**2 +
-                                                 (prev_waypoint_pose.y-w_pos.y)**2  +
-                                                 (prev_waypoint_pose.z-w_pos.z)**2)
-                        lookahead_dist += dist_between
-                        lookahead_time = lookahead_dist / (NORMAL_SPEED)
-                        prev_waypoint_pose = w_pos
-                    # end of if (0 < local_x)
-                    if (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count):
-                        rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
-                                      % (waypoints_count, lookahead_time))
-                        break
-                    # end of if (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
-                # end of for waypoint in self.base_waypoints.waypoints
-                
-                # sort the waypoints by local_x increasing
-                sorted_waypoints = waypoints_ahead # seems already in order
-                # sorted(waypoints_ahead, key=lambda x: x[1])  # sort by local_x
-                
-                # determine the speed at each waypoint
                 final_waypoints = []
-                for waypoint, local_x, local_y in sorted_waypoints:
-                    waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
-                    final_waypoints.append(waypoint)
-                # end of for waypoint, local_x, local_y
+                # modulize the code to be less dependent
+                j = self.last_closest_front_waypoint_index
+                while ((lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
+                       (waypoints_count < LOOKAHEAD_WPS)):
+                  waypoint = copy.deepcopy(self.base_waypoints[j])
+                  j = (j + 1) % self.base_waypoints_length
+                  waypoints_count += 1
+                  waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
+                  final_waypoints.append(waypoint)
+                  dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_length]
+                  lookahead_dist += dist_between
+                  lookahead_time = lookahead_dist / (NORMAL_SPEED)
+                # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
+                rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
+                              % (waypoints_count, lookahead_time))
                 
                 # publish to /final_waypoints, need to package final_waypoints into Lane message
                 publish_Lane(self.final_waypoints_pub, final_waypoints)
@@ -152,12 +159,33 @@ class WaypointUpdater(object):
         # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
 
     def waypoints_cb(self, waypoints):
-            # DONE: Implement
-            self.base_waypoints = waypoints
-            # process the waypoints here
-            # unsubscribe to the waypoint messages, no longer needed
-            self.subscriber_waypoints.unregister()
-            self.subscriber_waypoints = None
+      # DONE: Implement
+      if self.base_waypoints is None:
+        self.base_waypoints = waypoints.waypoints
+        self.base_waypoints_length = len(self.base_waypoints)
+        # process the waypoints here
+        self.dist_to_next = []
+        dist = (distance_two_indices(self.base_waypoints, 0, 1))
+        self.dist_to_next.append(dist)
+        self.longest_dist, self.shortest_dist = dist, dist
+        self.longest_dist_index, self.shortest_dist_index = 0, 0
+    
+        for i in range(1, len(self.base_waypoints)):
+          dist = (distance_two_indices(self.base_waypoints, i, (i+1) % self.base_waypoints_length))
+          self.dist_to_next.append(dist)
+          if dist < self.shortest_dist:
+            self.shortest_dist = dist
+            self.shortest_dist_index = i
+          # end of if dist < self.shortest_dist
+          if self.longest_dist < dist:
+            self.longest_dist = dist
+            self.longegst_dist_index = dist
+          # end of if self.longest_dist < dist
+    
+        # unsubscribe to the waypoint messages, no longer needed
+        self.subscriber_waypoints.unregister()
+        self.subscriber_waypoints = None
+      # end of if self.base_waypoints is None
 
     def traffic_cb(self, msg):
             # TODO: Callback for /traffic_waypoint message. Implement
