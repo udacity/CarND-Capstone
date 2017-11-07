@@ -24,10 +24,13 @@ as well as to verify your TL classifier.
 add self.last_closest_front_waypoint_index to record the index of last the closet waypoint in front of the vehicle.
 This would be the index to search next time, to save computing. (Beware of index wrapping in index increment arithmetic!)
 
+- 11/7 ::
+reduce LOOKAHEAD_WPS to 50 and do away from distance calculation to save computing effort.
+
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # 200 # Number of waypoints we will publish. You can change this number
 LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
 NORMAL_SPEED = 10             # the normal speed of the car
 
@@ -128,16 +131,18 @@ class WaypointUpdater(object):
                 final_waypoints = []
                 # modulize the code to be less dependent
                 j = self.last_closest_front_waypoint_index
-                while ((lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
+                # while ((lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
+                #        (waypoints_count < LOOKAHEAD_WPS)):
+                while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
                        (waypoints_count < LOOKAHEAD_WPS)):
                   waypoint = copy.deepcopy(self.base_waypoints[j])
                   j = (j + 1) % self.base_waypoints_length
                   waypoints_count += 1
                   waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
                   final_waypoints.append(waypoint)
-                  dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_length]
-                  lookahead_dist += dist_between
-                  lookahead_time = lookahead_dist / (NORMAL_SPEED)
+                  # dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_length]
+                  # lookahead_dist += dist_between
+                  # lookahead_time = lookahead_dist / (NORMAL_SPEED)
                 # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
                 rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
                               % (waypoints_count, lookahead_time))
@@ -164,23 +169,23 @@ class WaypointUpdater(object):
         self.base_waypoints = waypoints.waypoints
         self.base_waypoints_length = len(self.base_waypoints)
         # process the waypoints here
-        self.dist_to_next = []
-        dist = (distance_two_indices(self.base_waypoints, 0, 1))
-        self.dist_to_next.append(dist)
-        self.longest_dist, self.shortest_dist = dist, dist
-        self.longest_dist_index, self.shortest_dist_index = 0, 0
+        # self.dist_to_next = []
+        # dist = (distance_two_indices(self.base_waypoints, 0, 1))
+        # self.dist_to_next.append(dist)
+        # self.longest_dist, self.shortest_dist = dist, dist
+        # self.longest_dist_index, self.shortest_dist_index = 0, 0
     
-        for i in range(1, len(self.base_waypoints)):
-          dist = (distance_two_indices(self.base_waypoints, i, (i+1) % self.base_waypoints_length))
-          self.dist_to_next.append(dist)
-          if dist < self.shortest_dist:
-            self.shortest_dist = dist
-            self.shortest_dist_index = i
-          # end of if dist < self.shortest_dist
-          if self.longest_dist < dist:
-            self.longest_dist = dist
-            self.longegst_dist_index = dist
-          # end of if self.longest_dist < dist
+        # for i in range(1, len(self.base_waypoints)):
+        #   dist = (distance_two_indices(self.base_waypoints, i, (i+1) % self.base_waypoints_length))
+        #   self.dist_to_next.append(dist)
+        #   if dist < self.shortest_dist:
+        #     self.shortest_dist = dist
+        #     self.shortest_dist_index = i
+        #   # end of if dist < self.shortest_dist
+        #   if self.longest_dist < dist:
+        #     self.longest_dist = dist
+        #     self.longegst_dist_index = dist
+        #   # end of if self.longest_dist < dist
     
         # unsubscribe to the waypoint messages, no longer needed
         self.subscriber_waypoints.unregister()
