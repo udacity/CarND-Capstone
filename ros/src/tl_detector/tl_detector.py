@@ -103,7 +103,7 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        if not self.base_waypoints:
+        if not self.base_waypoints: 
             #rospy.logwarn('No self.waypoints \n\n')
             pass
         light_wp, state = self.process_traffic_lights()
@@ -114,12 +114,14 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-        if self.state != state:
+        if self.state != state:   # current state different than new state
             self.state_count = 0
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+            if state != TrafficLight.RED: # Not Red
+                light_wp = -light_wp                
+        
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
@@ -198,23 +200,26 @@ class TLDetector(object):
         '''        
         
         # get waypoint index closest to car
+        # this index can be behind the cr or head of the car
         if(self.pose):
             car_position_idx = self.get_closest_waypoint(self.pose)
+            
         
-        # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
-        
-        # get index of the closest stop line    
-        for stop_line in stop_line_positions:
-            pt = PoseStamped()
-            pt.pose.position.x = stop_line[0]
-            pt.pose.position.y = stop_line[1]
-            pt.pose.position.z = 0
-            idx = self.get_closest_waypoint(pt.pose)
-           
-           # Check if idx is ahead of us  and is closest
-            if (idx > car_position_idx-10) and (idx < stop_line_idx):
-                stop_line_idx = idx         # if yes, this is our closest stop line 
+            # List of positions that correspond to the line to stop in front of for a given intersection
+            stop_line_positions = self.config['stop_line_positions']
+            
+            # get index of the closest stop line    
+            for stop_line in stop_line_positions:
+                pt = PoseStamped()
+                pt.pose.position.x = stop_line[0]
+                pt.pose.position.y = stop_line[1]
+                pt.pose.position.z = 0
+                # get index of the closest line
+                idx = self.get_closest_waypoint(pt.pose)
+               
+               # Check if idx is ahead of us  and is closest
+                if (idx > car_position_idx) and (idx < stop_line_idx):
+                    stop_line_idx = idx         # if yes, this is our closest stop line 
         
         #rospy.logwarn('Stop line idx is %s ', stop_line_idx)  
         if stop_line_idx == float('inf') or stop_line_idx >= self.datasize:  
@@ -238,7 +243,7 @@ class TLDetector(object):
         light = self.lights[closest_light_index]
   
         if ((self.count%5) == 0):
-            rospy.logwarn('differ between car and stop  %f m', dl(self.base_waypoints[stop_line_idx].pose.pose.position, self.pose.position))
+            #rospy.logwarn('differ between car and stop  %f m', dl(self.base_waypoints[stop_line_idx].pose.pose.position, self.pose.position))
             rospy.logwarn('Light # %s coming in %f m \n\n\n', closest_light_index,dl(self.lights[closest_light_index].pose.pose.position,self.pose.position))
 
         self.count += 1
