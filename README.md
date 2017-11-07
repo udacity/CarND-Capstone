@@ -101,9 +101,9 @@ This node takes the current velocity of the car from `/current_velocity)`, the i
 * styx_msgs
   * This package includes definitions of the custom ROS message types used in the project.
 * waypoint_loader
-  * This package loads the static waypoint data and publishes to /base_waypoints.
+  * This package loads the static waypoint data and publishes to `/base_waypoints`.
 * waypoint_follower
-  * This package contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic.
+  * This package contains code from Autoware which subscribes to `/final_waypoints` and publishes target vehicle linear and angular velocities in the form of twist commands to the `/twist_cmd` topic.
 
 # ROS Topics
 
