@@ -13,6 +13,6 @@
         <param name="max_steer_angle" value="8." />
         <param name="max_throttle_percentage" value="0.025" />
         <param name="max_braking_percentage" value="-0.025" />
-        <param name="loop_freq" value="15" />
+        <param name="loop_freq" value="10" />
     </node>
 </launch>
