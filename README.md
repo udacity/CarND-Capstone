@@ -19,7 +19,7 @@ Testing the system in the simulator:
 # Team Structure
 The project is implemented together in a team. 
 
-The following members are part of the international team - Chakra:
+The following members are part of the international team named ***Chakra***:
 * **Team Lead**
   * Soheil Jahanshahi ([soheil.jahanshahi@gmail.com](mailto:soheil.jahanshahi@gmail.com))
 * **Team Members**
@@ -62,10 +62,14 @@ roslaunch launch/styx.launch
 ```
 4. Run the simulator
 
-# Project Description 
+# Project Description
+### Project Goals
+The goal of the project is that an autonomous car - in a simulator or as a real vehicle - can handle a given test track without the intervention of a safety driver. The vehicle shall follow a given path, comply with the speed limit, accelerate and steer in a comfort-oriented manner without exceeding the limits for acceleration and jerk, and finally stop at red traffic lights and continue at green traffic lights.
 
+### Simulator
+For development and testing, a simulator is used. This simulator developed and made available by Udacity is based on the open source game engine [Unity 3D](https://unity3d.com).
 
-### Car/Simulator 
+### The self-driving Car - *Carla* 
 *Carla* is an autonomous Lincoln MKZ, running on the udacity test site in Palo Alto, California.
 
 *Carlas* Hardware Specs:
