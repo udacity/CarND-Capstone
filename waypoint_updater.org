@@ -357,14 +357,14 @@ Then use that to generate the rest of the final_waypoints.
   # Compute the waypoints ahead of the current_pose
 
   local_x = -1
-  i = self.last_closest_front_waypoint_index
+  i = self.last_closest_front_waypoint_index - 1
   while (local_x < 0):
+    i = (i + 1) % self.base_waypoints_length
     waypoint = self.base_waypoints[i]
     w_pos = waypoint.pose.pose.position
     yaw = get_yaw(current_orientation)
     local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                             w_pos.x, w_pos.y)
-    i = (i + 1) % self.base_waypoints_length
   # end of while (local_x < 0)
 
   # now i is the index of the closest waypoint in front
