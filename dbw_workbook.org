@@ -290,8 +290,8 @@ This is similar to ThrottleCmd, but with some additional/different fields.
           <<dbw_states>>
           <<subscribe_to_get_update>>
 
-          self.loop()
-          #rospy.spin()
+          #self.loop()
+          rospy.spin()
 
       def loop(self):
           rate = rospy.Rate(self.loop_freq) # from 50Hz to 2Hz
@@ -480,14 +480,21 @@ Place the control logic in twist_cmd_cb to save CPU load.
 #+NAME:callbacks
 #+BEGIN_SRC python :noweb tangle :tangle
   def current_velocity_cb(self, msg):
-      if self.current_velocity is None:
-          self.current_velocity = msg.twist
-      # end of if self.current_velocity is None:
+    if self.current_velocity is None:
+        self.current_velocity = msg.twist
+    # end of if self.current_velocity is None:
+    # self.current_velocity = msg.twist
 
   def twist_cmd_cb(self, msg):
-      if self.desired_velocity is None:
-          self.desired_velocity = msg.twist
-      # end of if self.desired_velocity is None
+    self.desired_velocity = msg.twist
+    if self.current_velocity:
+      <<control_logic>>
+      self.current_velocity = None
+    # if self.current_velocity
+
+    # if self.desired_velocity is None:
+    #       self.desired_velocity = msg.twist
+    # # end of if self.desired_velocity is None
 
   def dbw_enabled_cb(self, msg):
       self.dbw_enabled = msg.data
