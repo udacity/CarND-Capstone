@@ -140,8 +140,8 @@ This node takes the current velocity of the car from `/current_velocity)`, the i
   * Published brake values are in units of torque `(N*m)`. The values for brake are computed by using the desired acceleration, the weight of the vehicle, and the wheel radius.
 * /vehicle/steering_cmd
   * TODO find out which values are published here.
-* /vehicle/trottle_cmd
-  * Published trottle values are in the range 0 to 1.
+* /vehicle/throttle_cmd
+  * Published throttle values are in the range 0 to 1.
 
 
 # Implementation Details
