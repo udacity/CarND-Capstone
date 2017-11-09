@@ -283,8 +283,16 @@ This is similar to ThrottleCmd, but with some additional/different fields.
           <<publishers>>
 
           # DONE: Create `TwistController` object
-          self.controller = TwistController(
-              self.wheel_base, self.vehicle_mass, self.steer_ratio, self.min_speed, self.max_lat_accel, self.max_steer_angle)
+
+          self.controller = TwistController(wheel_base=self.wheel_base,
+                                            vehicle_mass=self.vehicle_mass,
+                                            steer_ratio=self.steer_ratio,
+                                            min_speed=self.min_speed,
+                                            max_lat_accel=self.max_lat_accel,
+                                            max_steer_angle=self.max_steer_angle,
+                                            max_braking_percentage=self.max_braking_percentage,
+                                            max_throttle_percentage=self.max_throttle_percentage,
+                                            max_vel_mps=self.max_vel_mps)
 
           # DONE: Subscribe to all the topics you need to
           <<dbw_states>>
@@ -357,60 +365,76 @@ The message processing should be regulated, only process the most recent one.
   import rospy
 
   GAS_DENSITY = 2.858
-  ONE_MPH = 0.44704               # 1 miles/hour in meters/second
-  MAX_SPEED_metersps = 35.0 * ONE_MPH  # MPH in meters/second
+  # ONE_MPH = 0.44704               # 1 miles/hour in meters/second
 
   class TwistController(object):
-      def __init__(self, wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
-      #def __init__(self, *args, **kwargs):
+      def __init__(self, wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle,
+                   max_braking_percentage, max_throttle_percentage, max_vel_mps):
           # TODO: Implement
           self.sample_time = 0.03  # based on observation the interval is always around 0.03 seconds
-          self.throttle_controller = PID(2.7, 0.01, 0.02, mn=0.0, mx=1.0)
+          # self.throttle_controller = PID(2.0, 0.01, 0.02, mn=0.0, mx=1.0)
           self.yaw_controller = YawController(
               wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-          # self.lowpass_filter = LowPassFilter(0.5, self.sample_time)
+          self.lowpass_filter = LowPassFilter(0.15, self.sample_time)
+          # change the past component coefficient from 0.5 to 0.15 to be more responsive
           self.brake_coefficient = 10.0  # tentative guess
           self.vehicle_mass = vehicle_mass
           self.prev_time = None
+          self.steer_ratio = steer_ratio
+          self.max_braking_percentage = max_braking_percentage
+          self.max_throttle_percentage = max_throttle_percentage
+          self.max_vel_mps = max_vel_mps
 
       def control(self, desired_linear_velocity, desired_angular_velocity,
                   current_linear_velocity, current_angular_velocity):
           # TODO: Change the arg, kwarg list to suit your needs
           # Return throttle, brake, steer
-          if self.prev_time is None:
-              self.prev_time = time.time()
-              return 0., 0., 0.
+          # if self.prev_time is None:
+          #     self.prev_time = time.time()
+          #     return 0., 0., 0.
 
-          desired_linear_velocity_modulated = min(MAX_SPEED_metersps, desired_linear_velocity)
-          # smoothed_current_linear_velocity = self.lowpass_filter.filt(current_linear_velocity)
-
+          desired_linear_velocity_modulated = min(self.max_vel_mps, desired_linear_velocity)
+          throttle, brake = 0.0, 0.0
           error_linear_velocity = (desired_linear_velocity_modulated - current_linear_velocity)
-          if error_linear_velocity < 0: # need to deceleration
-              brake = self.brake(error_linear_velocity, current_linear_velocity, self.vehicle_mass)
-              rospy.loginfo('negative error, brake: %d' % brake)
-              throttle = 0
+          # according to the forum:
+          if desired_linear_velocity > current_linear_velocity:
+              if error_linear_velocity / desired_linear_velocity > 0.3:
+                  throttle = self.max_throttle_percentage
+              else:
+                  throttle = max(
+                      (error_linear_velocity / desired_linear_velocity)/0.3*self.max_throttle_percentage,
+                      self.max_throttle_percentage)
+              # end of if error_linear_velocity / desired_linear_velocity > 0.3
+          elif current_linear_velocity > 1:
+              brake = 3250*self.max_braking_percentage*-1
           else:
-              elapsed_time = time.time() - self.prev_time
-              rospy.loginfo('elapsed_time: %f' % elapsed_time)
-              throttle = self.throttle_controller.step(error_linear_velocity, elapsed_time)
-              rospy.loginfo('throttle from pid: %d' % throttle)
-              throttle = max(min(throttle, 1.0), 0.0)
-              brake = 0.
-          # end of if error_linear_velocity < 0
+              brake = 3250*0.01
+          # end of if desired_linear_velocity > current_linear_velocity
+
+          rospy.loginfo('throttle: %f; brake: %f' % (throttle, brake))
 
           error_angular_velocity = desired_angular_velocity - current_angular_velocity
 
-          steer = self.yaw_controller.get_steering(
+          desired_steer = self.yaw_controller.get_steering(
               desired_linear_velocity_modulated, desired_angular_velocity,
               current_linear_velocity)
-          self.prev_time = time.time()
+
+          current_steer = self.yaw_controller.get_steering(
+              desired_linear_velocity_modulated, current_angular_velocity,
+              current_linear_velocity)
+
+          steer = self.lowpass_filter.filt((desired_steer - current_steer)*self.steer_ratio)
+
+          rospy.loginfo('desired_steer: %f; current_steer: %f; steer: %f' % (desired_steer, current_steer, steer))
+
+          # self.prev_time = time.time()
           return throttle, brake, steer
 
-      def brake(self, error_in_linear_velocity, current_linear_velocity, vehicle_mass):
-          # might be more fine tuned, might consider vehicle's mass, and the current velocity, etc.
-          # might use another PID.
-          brake_v = -self.brake_coefficient * error_in_linear_velocity  # assume the brake_v should be positive
-          return max(brake_v, 1.0)
+      # def brake(self, error_in_linear_velocity, current_linear_velocity, vehicle_mass):
+      #     # might be more fine tuned, might consider vehicle's mass, and the current velocity, etc.
+      #     # might use another PID.
+      #     brake_v = -self.brake_coefficient * error_in_linear_velocity  # assume the brake_v should be positive
+      #     return max(brake_v, 1.0)
 #+END_SRC
 
 *** Some more leads on twist controller design
@@ -560,7 +584,7 @@ The parameters might be needed for vehicle commands.
   self.min_speed = rospy.get_param('~min_speed', 4.*0.44704)
   self.max_throttle_percentage = rospy.get_param('~max_throttle_percentage', 0.1)
   self.max_braking_percentage = rospy.get_param('~max_braking_percentage', -0.1)
-
+  self.max_vel_mps = rospy.get_param('waypoint_loader/velocity')*MPH_to_MPS
   self.loop_freq = rospy.get_param('~loop_freq', 2)
   # the frequency to process vehicle messages
 #+END_SRC
@@ -568,41 +592,42 @@ The parameters might be needed for vehicle commands.
 ** preamble
 
    header, imports, and comments.
- #+NAME:preamble
- #+BEGIN_SRC python :noweb tangle :tangle
- #!/usr/bin/env python
+#+NAME:preamble
+#+BEGIN_SRC python :noweb tangle :tangle
+  #!/usr/bin/env python
 
- import rospy
- from std_msgs.msg import Bool
- from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
- from geometry_msgs.msg import TwistStamped
- import math
+  import rospy
+  from std_msgs.msg import Bool
+  from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
+  from geometry_msgs.msg import TwistStamped
+  import math
 
- from twist_controller import TwistController
+  from twist_controller import TwistController
 
- '''
- You can build this node only after you have built (or partially built) the `waypoint_updater` node.
+  '''
+  You can build this node only after you have built (or partially built) the `waypoint_updater` node.
 
- You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
- You can subscribe to any other message that you find important or refer to the document for list
- of messages subscribed to by the reference implementation of this node.
+  You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
+  You can subscribe to any other message that you find important or refer to the document for list
+  of messages subscribed to by the reference implementation of this node.
 
- One thing to keep in mind while building this node and the `twist_controller` class is the status
- of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
- not be the case. This may cause your PID controller to accumulate error because the car could
- temporarily be driven by a human instead of your controller.
+  One thing to keep in mind while building this node and the `twist_controller` class is the status
+  of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
+  not be the case. This may cause your PID controller to accumulate error because the car could
+  temporarily be driven by a human instead of your controller.
 
- We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
- wheel_base) etc should not be altered in these files.
+  We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
+  wheel_base) etc should not be altered in these files.
 
- We have also provided some reference implementations for PID controller and other utility classes.
- You are free to use them or build your own.
+  We have also provided some reference implementations for PID controller and other utility classes.
+  You are free to use them or build your own.
 
- Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
- that we have created in the `__init__` function.
+  Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
+  that we have created in the `__init__` function.
 
- '''
+  '''
 
+  MPH_to_MPS = 1609.344/3600.0 # 1 mile = 1609.344 1 hour = 3600 seconds
 
  #+END_SRC
 
