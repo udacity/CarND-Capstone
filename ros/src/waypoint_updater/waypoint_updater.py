@@ -110,8 +110,7 @@ class WaypointUpdater(object):
     # Callback function to get the locations to stop for red traffic lights
     # Information provided by ros topic '/current_velocity'
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.traffic_index = msg.data
 
     # Callback function to get the position of obstacles
     # Information provided by ros topic '/obstacle_waypoint'
@@ -172,7 +171,6 @@ class WaypointUpdater(object):
                 #rospy.logwarn('Closest index is %s', self.next_waypoint_index )                
                 
                 # Get the values for velocities for the upcoming waypoints
-                self.traffic_index = 0 # !!!!!! TODO only for testing
                 value_waypoint_velocities = self.get_waypoint_velocities()
 
                 # Publish the next waypoints the car should follow
@@ -211,30 +209,14 @@ class WaypointUpdater(object):
         # Array for waypoint velocities
         waypoint_velocities = []
 
-        # No traffic light to stop for -> accelerate until speed limit is reached
-        if self.traffic_index == 0:
-            if self.curr_velocity < self.max_velocity: 
-                diff_velocity = (self.max_velocity - self.curr_velocity) / ACC_WPS_NUM
-            else:
-                diff_velocity = 0
-
-            new_velocity = self.curr_velocity
-
-            for i in range(LOOKAHEAD_WPS):
-                # Before reaching max_velocity
-                if i <= ACC_WPS_NUM:
-                    new_velocity += diff_velocity
-                    
-                    waypoint_velocities.append(new_velocity)
-                # After traffic sign
-                else:
-                    waypoint_velocities.append(self.max_velocity)
-
+        
         # Traffic light to stop at waypoint index traffic_index
-        else:
+        if self.traffic_index > 0:
+            # Calculate the difference between current speed and final target speed
             diff_index = self.traffic_index - self.next_waypoint_index
 
-            diff_velocity = self.curr_velocity / diff_index
+            # Calculate how much the velocity should be reduced per waypoint
+            diff_velocity = self.curr_velocity / (diff_index + 1)
 
             new_velocity = self.curr_velocity
 
@@ -250,30 +232,29 @@ class WaypointUpdater(object):
                 else:
                     waypoint_velocities.append(0)
 
+        # No traffic light to stop for -> accelerate until speed limit is reached
+        else:
+            # Check if current velocity is smaller than max_velocity
+            if self.curr_velocity <= self.max_velocity: 
+                # Calculate how much the velocity should be raised per waypoint
+                diff_velocity = (self.max_velocity - self.curr_velocity) / ACC_WPS_NUM
+            # If too fast -> reduce speed
+            else:
+                diff_velocity = self.curr_velocity - self.max_velocity
+
+            new_velocity = self.curr_velocity
+
+            for i in range(LOOKAHEAD_WPS):
+                # Before reaching max_velocity
+                if i <= ACC_WPS_NUM:
+                    new_velocity += diff_velocity
+                    
+                    waypoint_velocities.append(new_velocity)
+                # After traffic sign
+                else:
+                    waypoint_velocities.append(self.max_velocity)
+
         return waypoint_velocities
-
-
-    # Function to get the distance between two waypoints
-    # TODO: not used at the moment
-    def distance(self, waypoints, wp1, wp2):
-        dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
-        return dist
-
-    # Helper function to get car heading through tf package
-    # TODO: Not used at the moment 
-    def get_euler_yaw(self):
-        quaternion = (
-            self.curr_pose.orientation.x,
-            self.curr_pose.orientation.y,
-            self.curr_pose.orientation.z,
-            self.curr_pose.orientation.w)
-        euler = tf.transformations.euler_from_quaternion(quaternion)
-        return euler[2]    
- 
 
 if __name__ == '__main__':
     try:
