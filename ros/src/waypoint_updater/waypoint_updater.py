@@ -25,14 +25,28 @@ add self.last_closest_front_waypoint_index to record the index of last the close
 This would be the index to search next time, to save computing. (Beware of index wrapping in index increment arithmetic!)
 
 - 11/7 ::
-reduce LOOKAHEAD_WPS to 50 and do away from distance calculation to save computing effort.
+reduce LOOKAHEAD_WPS to 50 and do away from distance calculation to save computing effort. It seems that 50 is enough
+for normal driving.
+
+- 11/8 ::
+Need to consider to reduce the speed when there is significant turn.
+
+How to characterize the turn? I might use the local coordinate transformation.
+Relative to a waypoint A, From the next waypoint's coordinates, x, y in the local coordinate of A,
+one can compute the angle between A's x-axis, and the direction AB by atan2(y, x). The larger the angle,
+the sharper the turn at A would be, so the speed at the A should be reduced.
+
+I may just calculate just the first a few, say 5 from the closest waypoint in front to save computing effort.
 
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 30 # 200 # Number of waypoints we will publish. You can change this number
 LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
-NORMAL_SPEED = 10             # the normal speed of the car
+SAEF_TURNING_SPEED = 3.0       # meters/second
+NORMAL_SPEED = 30  # the normal speed of the car
+
+DANGER_TURNING_ANGLE = math.pi/4  # 30 degree
 
 import tf                       # This is of ROS geometry, not of TensorFlow!
 def get_yaw(orientation):
@@ -107,16 +121,16 @@ class WaypointUpdater(object):
             if self.base_waypoints and self.pose:
                 current_pose = self.pose.pose.position
                 current_orientation = self.pose.pose.orientation
+                yaw = get_yaw(current_orientation)
                 
                 # Compute the waypoints ahead of the current_pose
                 
                 local_x = -1
                 i = self.last_closest_front_waypoint_index - 1
-                while (local_x < 0):
+                while (local_x <= 0):
                   i = (i + 1) % self.base_waypoints_length
                   waypoint = self.base_waypoints[i]
                   w_pos = waypoint.pose.pose.position
-                  yaw = get_yaw(current_orientation)
                   local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                           w_pos.x, w_pos.y)
                 # end of while (local_x < 0)
@@ -129,20 +143,36 @@ class WaypointUpdater(object):
                 lookahead_time = 0  # the lookahead time
                 
                 final_waypoints = []
+                accumulated_turning = 0
                 # modulize the code to be less dependent
                 j = self.last_closest_front_waypoint_index
-                # while ((lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-                #        (waypoints_count < LOOKAHEAD_WPS)):
                 while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
                        (waypoints_count < LOOKAHEAD_WPS)):
                   waypoint = copy.deepcopy(self.base_waypoints[j])
                   j = (j + 1) % self.base_waypoints_length
                   waypoints_count += 1
-                  waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
+                  turning_angle = math.atan2(local_y, local_x)
+                  accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
+                  # average accumulated turning
+                
+                  estimated_vel = min(
+                      NORMAL_SPEED, SAEF_TURNING_SPEED +
+                      #(NORMAL_SPEED - SAEF_TURNING_SPEED)*math.exp(-3.5*abs(turning_angle)))
+                      (NORMAL_SPEED - SAEF_TURNING_SPEED)*math.exp(-3.9*abs(accumulated_turning)))
+                
+                  waypoint.twist.twist.linear.x = estimated_vel # meter/s
                   final_waypoints.append(waypoint)
+                
                   # dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_length]
                   # lookahead_dist += dist_between
-                  # lookahead_time = lookahead_dist / (NORMAL_SPEED)
+                  # lookahead_time = lookahead_dist / (estimated_vel)
+                
+                  # prepare for the next iteration for estimating the turning angle, velocity
+                  current_waypoint = waypoint.pose.pose.position
+                  w_pos = self.base_waypoints[j].pose.pose.position  # the next waypoint after current_waypoint
+                  yaw = yaw + turning_angle
+                  local_x, local_y = to_local_coordinates(current_waypoint.x, current_waypoint.y, yaw,
+                                                          w_pos.x, w_pos.y)
                 # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
                 rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
                               % (waypoints_count, lookahead_time))
