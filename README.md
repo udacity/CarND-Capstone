@@ -13,8 +13,9 @@ Testing the system in the simulator:
 3. Project Description 
 4. ROS Architecture and Nodes
 5. ROS Topics
-6. Implementation Details
-7. Conclusion
+6. ROS Message Types
+7. Implementation Details
+8. Conclusion
 
 # Team Structure
 The project is implemented together in a team. 
@@ -143,6 +144,39 @@ This node takes the current velocity of the car from `/current_velocity)`, the i
 * /vehicle/throttle_cmd
   * Published throttle values are in the range 0 to 1.
 
+# ROS Message Types
+
+In addition to the [standard ROS message types](http://wiki.ros.org/std_msgs) like Int32, the following custom messages were used:
+
+* Lane.msg
+```
+Header header
+Waypoint[] waypoints
+```
+
+* Waypoint.msg
+```
+geometry_msgs/PoseStamped pose
+geometry_msgs/TwistStamped twist
+```
+
+* TrafficLight.msg
+```
+Header header
+geometry_msgs/PoseStamped pose
+uint8 state
+
+uint8 UNKNOWN=4
+uint8 GREEN=2
+uint8 YELLOW=1
+uint8 RED=0
+```
+
+* TrafficLightArray.msg
+```
+Header header
+TrafficLight[] lights
+```
 
 # Implementation Details
 
