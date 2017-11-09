@@ -5,6 +5,8 @@ from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
 import math
+import numpy as np
+import tf
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -37,16 +39,52 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.pose = None
+        self.wps = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.pose = msg.pose
+        if self.wps:
+            self.publish_final_waypoints()
 
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+    def waypoints_cb(self, msg):
+        self.wps = msg.waypoints
+
+    def copy_waypoint(self, wp):
+        w = Waypoint()
+        w.pose.pose.position.x = wp.pose.pose.position.x
+        w.pose.pose.position.y = wp.pose.pose.position.y
+        w.pose.pose.position.z = wp.pose.pose.position.z
+        w.pose.pose.orientation.x = wp.pose.pose.orientation.x
+        w.pose.pose.orientation.y = wp.pose.pose.orientation.y
+        w.pose.pose.orientation.z = wp.pose.pose.orientation.z
+        w.pose.pose.orientation.w = wp.pose.pose.orientation.w
+        w.twist.twist.linear.x = wp.twist.twist.linear.x
+        w.twist.twist.linear.y = wp.twist.twist.linear.y
+        w.twist.twist.linear.z = wp.twist.twist.linear.z
+        w.twist.twist.angular.x = wp.twist.twist.angular.x
+        w.twist.twist.angular.y = wp.twist.twist.angular.y
+        w.twist.twist.angular.z = wp.twist.twist.angular.z
+        return w
+
+    def next_waypoint(self):
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        head = lambda a, b: math.atan2(a.y-b.y, a.x-b.x)
+        o = self.pose.orientation
+        _, _, theta = tf.transformations.euler_from_quaternion([o.x, o.y, o.z, o.w])
+        dist = [dl(w.pose.pose.position, self.pose.position) for w in self.wps]
+        min_wp = np.argmin(dist)
+        heading = head(self.wps[min_wp].pose.pose.position, self.pose.position)
+        if abs(heading - theta) > np.pi/4:
+            min_wp = (min_wp + 1) % len(self.wps)
+        return min_wp
+
+    def publish_final_waypoints(self):
+        next_wp = self.next_waypoint()
+        final_wps = [self.copy_waypoint(w) for w in self.wps[next_wp : next_wp+LOOKAHEAD_WPS]]
+        self.final_waypoints_pub.publish(Lane(None, final_wps))
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
