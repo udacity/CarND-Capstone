@@ -197,6 +197,8 @@ then the waypoint is front of my_car.
     This implementation assumes the rotation has positive value from the global x-axis to the local x-axis
     counter-clockwise.
 
+This following one works based on the experiment.
+
    #+NAME:to_local_coordinates
    #+BEGIN_SRC python :noweb tangle :tangle
      def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
@@ -211,10 +213,32 @@ then the waypoint is front of my_car.
          cos_rotation = math.cos(rotation)
          sin_rotation = math.sin(rotation)
 
-         local_x = cos_rotation*shift_x + sin_rotation*shift_y
-         local_y = sin_rotation*shift_x + cos_rotation*shift_y
-
+         local_x =  cos_rotation*shift_x + sin_rotation*shift_y
+         local_y = -sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
+         # assuming the orientation angle clockwise being positive
          return local_x, local_y
+   #+END_SRC
+
+Based experiment, the following does not work.
+
+#+NAME:to_local_coordinates_counter_clockwise_orientation
+   #+BEGIN_SRC python :noweb tangle :tangle
+  def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
+      """
+      compute the local coordinates for the global x, y coordinates values,
+      given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
+      Assume the rotation is radius
+      """
+      shift_x = x - local_origin_x
+      shift_y = y - local_origin_y
+
+      cos_rotation = math.cos(rotation)
+      sin_rotation = math.sin(rotation)
+
+      local_x = cos_rotation*shift_x - sin_rotation*shift_y
+      local_y = sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
+      # assuming the orientation angle counter-clockwise being positive
+      return local_x, local_y
    #+END_SRC
 
 
@@ -353,16 +377,16 @@ Then use that to generate the rest of the final_waypoints.
 #+BEGIN_SRC python :noweb tangle :tangle
   current_pose = self.pose.pose.position
   current_orientation = self.pose.pose.orientation
+  yaw = get_yaw(current_orientation)
 
   # Compute the waypoints ahead of the current_pose
 
   local_x = -1
   i = self.last_closest_front_waypoint_index - 1
-  while (local_x < 0):
+  while (local_x <= 0):
     i = (i + 1) % self.base_waypoints_length
     waypoint = self.base_waypoints[i]
     w_pos = waypoint.pose.pose.position
-    yaw = get_yaw(current_orientation)
     local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                             w_pos.x, w_pos.y)
   # end of while (local_x < 0)
@@ -375,20 +399,36 @@ Then use that to generate the rest of the final_waypoints.
   lookahead_time = 0  # the lookahead time
 
   final_waypoints = []
+  accumulated_turning = 0
   # modulize the code to be less dependent
   j = self.last_closest_front_waypoint_index
-  # while ((lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-  #        (waypoints_count < LOOKAHEAD_WPS)):
   while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
          (waypoints_count < LOOKAHEAD_WPS)):
     waypoint = copy.deepcopy(self.base_waypoints[j])
     j = (j + 1) % self.base_waypoints_length
     waypoints_count += 1
-    waypoint.twist.twist.linear.x = NORMAL_SPEED # meter/s, temporary hack for now
+    turning_angle = math.atan2(local_y, local_x)
+    accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
+    # average accumulated turning
+
+    estimated_vel = min(
+        self.max_vel_mps, SAEF_TURNING_SPEED +
+        #(self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.5*abs(turning_angle)))
+        (self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.9*abs(accumulated_turning)))
+
+    waypoint.twist.twist.linear.x = estimated_vel # meter/s
     final_waypoints.append(waypoint)
+
     # dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_length]
     # lookahead_dist += dist_between
-    # lookahead_time = lookahead_dist / (NORMAL_SPEED)
+    # lookahead_time = lookahead_dist / (estimated_vel)
+
+    # prepare for the next iteration for estimating the turning angle, velocity
+    current_waypoint = waypoint.pose.pose.position
+    w_pos = self.base_waypoints[j].pose.pose.position  # the next waypoint after current_waypoint
+    yaw = yaw + turning_angle
+    local_x, local_y = to_local_coordinates(current_waypoint.x, current_waypoint.y, yaw,
+                                            w_pos.x, w_pos.y)
   # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
   rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
                 % (waypoints_count, lookahead_time))
@@ -462,14 +502,28 @@ Then use that to generate the rest of the final_waypoints.
   This would be the index to search next time, to save computing. (Beware of index wrapping in index increment arithmetic!)
 
   - 11/7 ::
-  reduce LOOKAHEAD_WPS to 50 and do away from distance calculation to save computing effort.
+  reduce LOOKAHEAD_WPS to 50 and do away from distance calculation to save computing effort. It seems that 50 is enough
+  for normal driving.
+
+  - 11/8 ::
+  Need to consider to reduce the speed when there is significant turn.
+
+  How to characterize the turn? I might use the local coordinate transformation.
+  Relative to a waypoint A, From the next waypoint's coordinates, x, y in the local coordinate of A,
+  one can compute the angle between A's x-axis, and the direction AB by atan2(y, x). The larger the angle,
+  the sharper the turn at A would be, so the speed at the A should be reduced.
+
+  I may just calculate just the first a few, say 5 from the closest waypoint in front to save computing effort.
 
   TODO (for Yousuf and Aaron): Stopline location for each traffic light.
   '''
 
-  LOOKAHEAD_WPS = 50 # 200 # Number of waypoints we will publish. You can change this number
+  LOOKAHEAD_WPS = 30 # 200 # Number of waypoints we will publish. You can change this number
   LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
-  NORMAL_SPEED = 10             # the normal speed of the car
+  SAEF_TURNING_SPEED = 3.0       # meters/second
+
+  DANGER_TURNING_ANGLE = math.pi/4  # 30 degree
+  MPH_to_MPS = 1609.344/3600.0 # 1 mile = 1609.344 1 hour = 3600 seconds
 
   <<get_yaw>>
   <<to_local_coordinates>>
@@ -479,7 +533,8 @@ Then use that to generate the rest of the final_waypoints.
   class WaypointUpdater(object):
       def __init__(self):
           rospy.init_node('waypoint_updater')
-
+          self.max_vel_mps = rospy.get_param('waypoint_loader/velocity')*MPH_to_MPS
+          rospy.loginfo('max_vel_mps: %f' % self.max_vel_mps)
           self.loop_freq = rospy.get_param('~loop_freq', 2)
           # the frequency to process vehicle messages
 
