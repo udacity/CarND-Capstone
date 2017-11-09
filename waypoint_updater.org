@@ -411,12 +411,12 @@ Then use that to generate the rest of the final_waypoints.
     accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
     # average accumulated turning
 
-    estimated_vel = min(
-        self.max_vel_mps, SAEF_TURNING_SPEED +
-        #(self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.5*abs(turning_angle)))
-        (self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.9*abs(accumulated_turning)))
+    # estimated_vel = min(
+    #     self.max_vel_mps, SAEF_TURNING_SPEED +
+    #     #(self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.5*abs(turning_angle)))
+    #     (self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.9*abs(accumulated_turning)))
 
-    waypoint.twist.twist.linear.x = estimated_vel # meter/s
+    # waypoint.twist.twist.linear.x = estimated_vel # meter/s
     final_waypoints.append(waypoint)
 
     # dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_length]

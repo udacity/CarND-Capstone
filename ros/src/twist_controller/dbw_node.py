@@ -31,6 +31,7 @@ that we have created in the `__init__` function.
 
 '''
 
+MPH_to_MPS = 1609.344/3600.0 # 1 mile = 1609.344 1 hour = 3600 seconds
 
 class DBWNode(object):
     def __init__(self):
@@ -49,7 +50,7 @@ class DBWNode(object):
         self.min_speed = rospy.get_param('~min_speed', 4.*0.44704)
         self.max_throttle_percentage = rospy.get_param('~max_throttle_percentage', 0.1)
         self.max_braking_percentage = rospy.get_param('~max_braking_percentage', -0.1)
-        
+        self.max_vel_mps = rospy.get_param('waypoint_loader/velocity')*MPH_to_MPS
         self.loop_freq = rospy.get_param('~loop_freq', 2)
         # the frequency to process vehicle messages
 
@@ -65,8 +66,16 @@ class DBWNode(object):
         
 
         # DONE: Create `TwistController` object
-        self.controller = TwistController(
-            self.wheel_base, self.vehicle_mass, self.steer_ratio, self.min_speed, self.max_lat_accel, self.max_steer_angle)
+
+        self.controller = TwistController(wheel_base=self.wheel_base,
+                                          vehicle_mass=self.vehicle_mass,
+                                          steer_ratio=self.steer_ratio,
+                                          min_speed=self.min_speed,
+                                          max_lat_accel=self.max_lat_accel,
+                                          max_steer_angle=self.max_steer_angle,
+                                          max_braking_percentage=self.max_braking_percentage,
+                                          max_throttle_percentage=self.max_throttle_percentage,
+                                          max_vel_mps=self.max_vel_mps)
 
         # DONE: Subscribe to all the topics you need to
         self.dbw_enabled = False
