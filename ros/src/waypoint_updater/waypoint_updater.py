@@ -44,9 +44,9 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 30 # 200 # Number of waypoints we will publish. You can change this number
 LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
 SAEF_TURNING_SPEED = 3.0       # meters/second
-NORMAL_SPEED = 30  # the normal speed of the car
 
 DANGER_TURNING_ANGLE = math.pi/4  # 30 degree
+MPH_to_MPS = 1609.344/3600.0 # 1 mile = 1609.344 1 hour = 3600 seconds
 
 import tf                       # This is of ROS geometry, not of TensorFlow!
 def get_yaw(orientation):
@@ -73,9 +73,9 @@ def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
     cos_rotation = math.cos(rotation)
     sin_rotation = math.sin(rotation)
 
-    local_x = cos_rotation*shift_x + sin_rotation*shift_y
-    local_y = sin_rotation*shift_x + cos_rotation*shift_y
-
+    local_x =  cos_rotation*shift_x + sin_rotation*shift_y
+    local_y = -sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
+    # assuming the orientation angle clockwise being positive
     return local_x, local_y
 def publish_Lane(publisher, waypoints):
         lane = Lane()
@@ -91,7 +91,8 @@ def distance_two_indices(waypoints, i, j):
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-
+        self.max_vel_mps = rospy.get_param('waypoint_loader/velocity')*MPH_to_MPS
+        rospy.loginfo('max_vel_mps: %f' % self.max_vel_mps)
         self.loop_freq = rospy.get_param('~loop_freq', 2)
         # the frequency to process vehicle messages
 
@@ -156,9 +157,9 @@ class WaypointUpdater(object):
                   # average accumulated turning
                 
                   estimated_vel = min(
-                      NORMAL_SPEED, SAEF_TURNING_SPEED +
-                      #(NORMAL_SPEED - SAEF_TURNING_SPEED)*math.exp(-3.5*abs(turning_angle)))
-                      (NORMAL_SPEED - SAEF_TURNING_SPEED)*math.exp(-3.9*abs(accumulated_turning)))
+                      self.max_vel_mps, SAEF_TURNING_SPEED +
+                      #(self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.5*abs(turning_angle)))
+                      (self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.9*abs(accumulated_turning)))
                 
                   waypoint.twist.twist.linear.x = estimated_vel # meter/s
                   final_waypoints.append(waypoint)
