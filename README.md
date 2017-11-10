@@ -30,6 +30,11 @@ Run the docker file
 docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
 ```
 
+(if PowerShell use this instead)
+```powershell
+docker run -p 4567:4567 -v ${PWD}:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
+```
+
 ### Usage
 
 1. Clone the project repository
