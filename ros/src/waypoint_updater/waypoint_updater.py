@@ -3,9 +3,10 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+import std_msgs.msg
 
 import math
-import tf
+#import tf
 import numpy as np
 
 '''
@@ -34,56 +35,68 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.pose = None
+        self.waypoints = None
+        self.previous_initial_wp_index = None
 
-        rospy.spin()
+        self.loop()
 
-    def pose_cb(self, msg):
-        # TODO: Implement
-        self.pose = msg
-        ego_q = msg.orientation
-        ego_direction_3d = inverse(ego_q) * Quaternion(1,0,0,0) * ego_q
-        ego_vx = np.array([ego_direction_3d.x,ego_direction_3d,y])
-        ego_vy = np.array([[0,-1],[1,0]]) * ego_vx
+    def loop(self):
+        rate = rospy.Rate(5) # 5Hz
+        while not rospy.is_shutdown():
+            if self.pose is not None and self.waypoints is not None:
+                ego_theta = 2.*math.acos(self.pose.orientation.w)
+                ego_vx = np.dot(np.array([[math.cos(ego_theta),-math.sin(ego_theta)],
+                                          [math.sin(ego_theta), math.cos(ego_theta)]]), np.array([1,0]))
+                ego_vy = np.dot(np.array([[0,-1],[1,0]]), ego_vx)
+                #rospy.logerr(ego_theta)
 
-        try:
-            waypoints
+                # publish final_waypoints
+                min_distance = 1e9
+                initial_wp_index = 0
+                for k in xrange(len(self.waypoints)):
+                    i = k
+                    if self.previous_initial_wp_index is not None:
+                        i = (i + self.previous_initial_wp_index) % len(self.waypoints)
 
-            # publish final_waypoints
-            min_distance = 1e9
-            initial_wp_index = 0
-            for i in xrange(len(waypoints)):
-                    waypoint = waypoints[i].pose.pose.position
+                    waypoint = self.waypoints[i].pose.pose.position
                     np_waypoint = np.array([waypoint.x,waypoint.y])
-                    np_ego_pose = np.array([msg.position.x,msg.position.y])
+                    np_ego_pose = np.array([self.pose.position.x,self.pose.position.y])
                     np_diff = np_waypoint - np_ego_pose
                     distance = np.linalg.norm(np_diff)
-                    param = np.linalg.inv(np.concatenate((ego_vx,ego_vy),axis=0)) * np_diff
-
+                    param = np.dot(np.linalg.inv(np.vstack((ego_vx,ego_vy)).transpose()), np_diff)
                     # If the waypoint is in front of vehicle and also the closest one,
                     # update the index.
                     if(param[0] > 0 and distance < min_distance):
                         min_distance = distance
-                        initial_wp_index = i % len(waypoints)
+                        initial_wp_index = i % len(self.waypoints)
+                        if self.previous_initial_wp_index is not None:
+                            break
 
-            # publish
-            final_waypoints = []
-            for i in xrange(len(LOOKAHEAD_WPS)):
-                index = (initial_wp_index + i) % len(waypoints)
-                final_waypoints.append(waypoints[index])
-            final_waypoints_pub(final_waypoints)
+                # publish
+                final_waypoints = Lane()
+                final_waypoints.header = std_msgs.msg.Header()
+                final_waypoints.header.stamp = rospy.Time.now()
+                for i in xrange(LOOKAHEAD_WPS):
+                    index = (initial_wp_index + i) % len(self.waypoints)
+                    final_waypoints.waypoints.append(self.waypoints[index])
 
-        except NameError:
-            # do nothing
+                self.final_waypoints_pub.publish(final_waypoints)
+                self.previous_initial_wp_index = initial_wp_index
 
+            rate.sleep()
+
+    def pose_cb(self, msg):
+        # TODO: Implement
+        self.pose = msg.pose
         pass
 
-    def waypoints_cb(self, waypoints):
+    def waypoints_cb(self, msg):
         # TODO: Implement
-        self.waypoints = waypoints
+        self.waypoints = msg.waypoints
         pass
 
     def traffic_cb(self, msg):
