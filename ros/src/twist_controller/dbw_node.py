@@ -57,7 +57,7 @@ class DBWNode(object):
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
 
-        min_speed = 0.0
+        min_speed = 0.1
         yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
         self.controller = Controller(yaw_controller, accel_limit, decel_limit)
 

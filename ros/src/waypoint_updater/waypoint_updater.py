@@ -2,11 +2,14 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import Lane, Waypoint, TrafficLightArray, TrafficLight
+from std_msgs.msg import Int32
 
 import math
 import numpy as np
 import tf
+import yaml
+import matplotlib.pyplot as plt
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -35,22 +38,60 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_waypoint_cb)
+
+
+        # FIXME Only for debugging
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
+        traffic_light_config_string = rospy.get_param("/traffic_light_config")
+        self.traffic_light_config = yaml.load(traffic_light_config_string)
+        self.traffic_lights = None
+        self.traffic_lights_wps = None
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
         self.pose = None
         self.wps = None
+        self.traffic_wp = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
         self.pose = msg.pose
         if self.wps:
-            self.publish_final_waypoints()
+            next_wp = self.next_waypoint(self.pose)
+            # FIXME Only for debugging
+            if self.traffic_lights_wps:
+                closest_light = 0
+                for i in range(len(self.traffic_lights_wps)):
+                    if self.traffic_lights_wps[i] < next_wp\
+                            and next_wp <= self.traffic_lights_wps[i+1]:
+                        closest_light = i+1
+                if self.traffic_lights[closest_light].state == TrafficLight.RED:
+                    self.traffic_wp = self.traffic_lights_wps[closest_light]
+                else:
+                    self.traffic_wp = -1
+            self.publish_final_waypoints(next_wp)
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
+
+    def traffic_waypoint_cb(self, msg):
+        self.traffic_wp = msg
+
+    def traffic_lights_cb(self, msg):
+        self.traffic_lights = msg.lights
+        if self.wps and not self.traffic_lights_wps:
+            self.traffic_lights_wps = [self.next_waypoint(l.pose.pose) for l in self.traffic_lights]
+        # lights = np.array([[l.pose.pose.position.x, l.pose.pose.position.y] for l in self.traffic_lights])
+        # stops = np.array(self.traffic_light_config['stop_line_positions'])
+        # wps = np.array([[w.pose.pose.position.x, w.pose.pose.position.y] for w in self.wps])
+        # plt.plot(wps[:,0], wps[:,1], "b.")
+        # plt.plot(stops[:,0], stops[:,1], "ro")
+        # plt.plot(lights[:,0], lights[:,1], "go")
+        # plt.show()
+
 
     def copy_waypoint(self, wp):
         w = Waypoint()
@@ -69,21 +110,24 @@ class WaypointUpdater(object):
         w.twist.twist.angular.z = wp.twist.twist.angular.z
         return w
 
-    def next_waypoint(self):
+    def next_waypoint(self, pose):
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         head = lambda a, b: math.atan2(a.y-b.y, a.x-b.x)
-        o = self.pose.orientation
+        o = pose.orientation
         _, _, theta = tf.transformations.euler_from_quaternion([o.x, o.y, o.z, o.w])
-        dist = [dl(w.pose.pose.position, self.pose.position) for w in self.wps]
+        dist = [dl(w.pose.pose.position, pose.position) for w in self.wps]
         min_wp = np.argmin(dist)
-        heading = head(self.wps[min_wp].pose.pose.position, self.pose.position)
+        heading = head(self.wps[min_wp].pose.pose.position, pose.position)
         if abs(heading - theta) > np.pi/4:
             min_wp = (min_wp + 1) % len(self.wps)
         return min_wp
 
-    def publish_final_waypoints(self):
-        next_wp = self.next_waypoint()
-        final_wps = [self.copy_waypoint(w) for w in self.wps[next_wp : next_wp+LOOKAHEAD_WPS]]
+    def publish_final_waypoints(self, next_wp):
+        last_wp = next_wp + LOOKAHEAD_WPS
+        final_wps = [self.copy_waypoint(w) for w in self.wps[next_wp : last_wp]]
+        if self.traffic_wp and next_wp <= self.traffic_wp and self.traffic_wp <= last_wp:
+            for w in final_wps:
+                w.twist.twist.linear.x = 0
         self.final_waypoints_pub.publish(Lane(None, final_wps))
 
     def traffic_cb(self, msg):
