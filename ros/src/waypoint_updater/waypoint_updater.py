@@ -140,14 +140,13 @@ class WaypointUpdater(object):
                 # modulize the code to be less dependent
                 j = self.last_closest_front_waypoint_index
                 while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-                        not self.stopped and
                         (waypoints_count < LOOKAHEAD_WPS) and
                         (j < self.base_waypoints_num)):
                   waypoint = copy.deepcopy(self.base_waypoints[j])
                   j = (j + 1) # % self.base_waypoints_num
                   waypoints_count += 1
-                  turning_angle = math.atan2(local_y, local_x)
-                  accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
+                  # turning_angle = math.atan2(local_y, local_x)
+                  # accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
                   # average accumulated turning
                 
                   # estimated_vel = min(
@@ -163,19 +162,20 @@ class WaypointUpdater(object):
                   # lookahead_time = lookahead_dist / (estimated_vel)
                 
                   # prepare for the next iteration for estimating the turning angle, velocity
-                  current_waypoint = waypoint.pose.pose.position
-                  w_pos = self.base_waypoints[j].pose.pose.position  # the next waypoint after current_waypoint
-                  yaw = yaw + turning_angle
-                  local_x, local_y = to_local_coordinates(current_waypoint.x, current_waypoint.y, yaw,
-                                                          w_pos.x, w_pos.y)
+                  # if (j < self.base_waypoints_num):
+                  #     current_waypoint = waypoint.pose.pose.position
+                  #     w_pos = self.base_waypoints[j].pose.pose.position  # the next waypoint after current_waypoint
+                  #     yaw = yaw + turning_angle
+                  #     local_x, local_y = to_local_coordinates(current_waypoint.x, current_waypoint.y, yaw,
+                  #                                             w_pos.x, w_pos.y)
+                  # end of (j < self.base_waypoints_num)
                 # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
                 
                 rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
                               % (waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
                 
                 # publish to /final_waypoints, need to package final_waypoints into Lane message
-                if (0 < len(final_waypoints)):
-                    publish_Lane(self.final_waypoints_pub, final_waypoints)
+                publish_Lane(self.final_waypoints_pub, final_waypoints)
                 self.pose = None        # indicating this message has been processed
             # end of if self.base_waypoints and self.pose
             rate.sleep()
