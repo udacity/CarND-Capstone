@@ -4,20 +4,20 @@ import tensorflow as tf
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
-	model_path = "../trained_model/frozen_inference_graph.pb"
+	model_path = "~/CarND-Capstone/ros/src/trained_model/frozen_inference_graph.pb"
 	self.detection_graph = tf.Graph()
 
 	with self.detection_graph.as_default():
-    
-  		od_graph_def = tf.GraphDef()
+            
+            od_graph_def = tf.GraphDef()
 
-  	with tf.gfile.GFile(model_path, 'rb') as fid:
-        
-    		serialized_graph = fid.read()
+  	    with tf.gfile.GFile(model_path, 'rb') as fid:
+                
+                serialized_graph = fid.read()
     		od_graph_def.ParseFromString(serialized_graph)
     		tf.import_graph_def(od_graph_def, name='')
  	
-	self.session = tf.Session(graph=self.detection_graph)
+	    self.session = tf.Session(graph=self.detection_graph)
 	
         self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
         self.detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
