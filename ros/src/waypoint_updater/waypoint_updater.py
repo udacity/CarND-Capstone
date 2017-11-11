@@ -3,6 +3,8 @@
 import rospy
 
 import copy                     # for deepcopy
+import numpy as np              # for polyfit and poly1d
+
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -19,24 +21,6 @@ Once you have created dbw_node, you will update this node to use the status of t
 Please note that our simulator also provides the exact location of traffic lights and their
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
-
-- 11/7 ::
-add self.last_closest_front_waypoint_index to record the index of last the closet waypoint in front of the vehicle.
-This would be the index to search next time, to save computing. (Beware of index wrapping in index increment arithmetic!)
-
-- 11/7 ::
-reduce LOOKAHEAD_WPS to 50 and do away from distance calculation to save computing effort. It seems that 50 is enough
-for normal driving.
-
-- 11/8 ::
-Need to consider to reduce the speed when there is significant turn.
-
-How to characterize the turn? I might use the local coordinate transformation.
-Relative to a waypoint A, From the next waypoint's coordinates, x, y in the local coordinate of A,
-one can compute the angle between A's x-axis, and the direction AB by atan2(y, x). The larger the angle,
-the sharper the turn at A would be, so the speed at the A should be reduced.
-
-I may just calculate just the first a few, say 5 from the closest waypoint in front to save computing effort.
 
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
@@ -129,7 +113,7 @@ class WaypointUpdater(object):
                 local_x = -1
                 i = self.last_closest_front_waypoint_index - 1
                 while (local_x <= 0):
-                  i = (i + 1) % self.base_waypoints_length
+                  i = (i + 1) % self.base_waypoints_num
                   waypoint = self.base_waypoints[i]
                   w_pos = waypoint.pose.pose.position
                   local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
@@ -150,7 +134,7 @@ class WaypointUpdater(object):
                 while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
                        (waypoints_count < LOOKAHEAD_WPS)):
                   waypoint = copy.deepcopy(self.base_waypoints[j])
-                  j = (j + 1) % self.base_waypoints_length
+                  j = (j + 1) % self.base_waypoints_num
                   waypoints_count += 1
                   turning_angle = math.atan2(local_y, local_x)
                   accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
@@ -164,7 +148,7 @@ class WaypointUpdater(object):
                   # waypoint.twist.twist.linear.x = estimated_vel # meter/s
                   final_waypoints.append(waypoint)
                 
-                  # dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_length]
+                  # dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_num]
                   # lookahead_dist += dist_between
                   # lookahead_time = lookahead_dist / (estimated_vel)
                 
@@ -194,34 +178,104 @@ class WaypointUpdater(object):
         # end of if self.pose is None
         # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
 
-    def waypoints_cb(self, waypoints):
-      # DONE: Implement
-      if self.base_waypoints is None:
-        self.base_waypoints = waypoints.waypoints
-        self.base_waypoints_length = len(self.base_waypoints)
-        # process the waypoints here
-        # self.dist_to_next = []
-        # dist = (distance_two_indices(self.base_waypoints, 0, 1))
-        # self.dist_to_next.append(dist)
-        # self.longest_dist, self.shortest_dist = dist, dist
-        # self.longest_dist_index, self.shortest_dist_index = 0, 0
+    def constant_policy_f(self, velocity, bound):
+        xs = [-bound,   0.,       bound]
+        ys = [velocity, velocity, velocity]
+        return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 2))
+    def decleration_policy_f(self, ref_vel, bound):
+        xs = []
+        ys = []
     
-        # for i in range(1, len(self.base_waypoints)):
-        #   dist = (distance_two_indices(self.base_waypoints, i, (i+1) % self.base_waypoints_length))
-        #   self.dist_to_next.append(dist)
-        #   if dist < self.shortest_dist:
-        #     self.shortest_dist = dist
-        #     self.shortest_dist_index = i
-        #   # end of if dist < self.shortest_dist
-        #   if self.longest_dist < dist:
-        #     self.longest_dist = dist
-        #     self.longegst_dist_index = dist
-        #   # end of if self.longest_dist < dist
+        xs.append(-bound)
+        ys.append(-0.1)
     
-        # unsubscribe to the waypoint messages, no longer needed
-        self.subscriber_waypoints.unregister()
-        self.subscriber_waypoints = None
-      # end of if self.base_waypoints is None
+        xs.append(0.)
+        ys.append(-0.2)
+    
+        # 5 meters away
+        xs.append(5)
+        ys.append(MPH_to_MPS*.5)
+    
+        # 10 meters away
+        xs.append(10)
+        ys.append(MPH_to_MPS*5)
+    
+        # 16 meters away
+        xs.append(16)
+        ys.append(MPH_to_MPS*5)
+    
+        # 2 seconds away or 24 meters away, whichever longer
+        xs.append(max([ref_vel*2, 24]))
+        ys.append(max([ref_vel*.2, MPH_to_MPS*5]))
+    
+        # 4 seconds away or 45 meters away, whichever longer
+        xs.append(max([ref_vel*4, 45]))
+        ys.append(max([ref_vel*.3, MPH_to_MPS*6]))
+    
+        # 6 seconds away or 65 meters away, whichever longer
+        xs.append(max([ref_vel*6, 65]))
+        ys.append(max([ref_vel*.5, MPH_to_MPS*10]))
+    
+        # 8 seconds away, normal speed
+        xs.append(max([ref_vel*8, 85]))
+        ys.append(ref_vel)
+    
+        # at the beginning, normal speed
+        xs.append(bound)
+        ys.append(ref_vel)
+    
+        return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 3))
+    
+    def waypoints_cb(self, msg):
+        # DONE: Implement
+        waypoints = msg.waypoints
+        global LOOKAHEAD_WPS        # might update it
+        if self.base_waypoints is None:
+            # unsubscribe to the waypoint messages, no longer needed
+            self.subscriber_waypoints.unregister()
+            self.subscriber_waypoints = None
+    
+            self.base_waypoints_num = len(waypoints)
+            LOOKAHEAD_WPS = min(LOOKAHEAD_WPS, self.base_waypoints_num)
+    
+            # process the waypoints here
+            self.dist_to_here_from_start = []
+            self.base_waypoints = []
+            dist = 0
+            dist_so_far = 0
+            for i in range(self.base_waypoints_num):
+                dist_so_far += dist
+                self.dist_to_here_from_start.append(dist_so_far)
+    
+                # do a deep copy of the data, to keep the data from lose
+                # just to be safe, simply do shallow copy seems still working
+                # by self.base_waypoints = waypoints
+                self.base_waypoints.append(copy.deepcopy(waypoints[i]))
+                # distance to the next waypoint
+                if (i < self.base_waypoints_num-1):
+                    dist = (
+                        distance_two_indices(waypoints,  # the (i+1)_th element has not been copied yet
+                                             i, (i+1) % self.base_waypoints_num))
+                # end of if (i < self.base_waypoints_num-1)
+    
+            # end of for i in range(self.base_waypoints_num - 1)
+        # end of if self.base_waypoints is None
+    
+        # construct the velocity policy
+        self.cruise_policy = self.constant_policy_f(self.max_vel_mps, LOOKAHEAD_WPS)
+        self.stop_policy = self.constant_policy_f(-0.01, LOOKAHEAD_WPS)
+        self.deceleration_policy = self.decleration_policy_f(self.max_vel_mps,
+                                                             LOOKAHEAD_WPS)
+    
+        # set the deceleration when approaching the end of the track
+        total_length = self.dist_to_here_from_start[self.base_waypoints_num-1]
+        # the total distance from the start to finish
+        for i in range(LOOKAHEAD_WPS):
+            last_ith = self.base_waypoints_num - 1 - LOOKAHEAD_WPS+i
+            dist_to_the_end = (total_length - self.dist_to_here_from_start[last_ith])
+            expected_velocity = self.deceleration_policy(dist_to_the_end)
+            self.base_waypoints[last_ith].twist.twist.linear.x = expected_velocity
+        # end of for i in range(LOOKAHEAD_WPS)
 
     def traffic_cb(self, msg):
             # TODO: Callback for /traffic_waypoint message. Implement
