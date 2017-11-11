@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import sys                      # for redirect stderr
 import rospy
 
 import copy                     # for deepcopy
@@ -74,6 +74,10 @@ def distance_two_indices(waypoints, i, j):
 
 class WaypointUpdater(object):
     def __init__(self):
+        # f = open("~/.ros/log/stderr.log", "w+") # not working here
+        # self.original_stderr = sys.stderr
+        # sys.stderr = f
+        self.stopped = False
         rospy.init_node('waypoint_updater')
         self.max_vel_mps = rospy.get_param('waypoint_loader/velocity')*MPH_to_MPS
         rospy.loginfo('max_vel_mps: %f' % self.max_vel_mps)
@@ -112,13 +116,17 @@ class WaypointUpdater(object):
                 
                 local_x = -1
                 i = self.last_closest_front_waypoint_index - 1
-                while (local_x <= 0):
-                  i = (i + 1) % self.base_waypoints_num
+                while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
+                  i = (i + 1) # % self.base_waypoints_num
                   waypoint = self.base_waypoints[i]
                   w_pos = waypoint.pose.pose.position
                   local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                           w_pos.x, w_pos.y)
                 # end of while (local_x < 0)
+                
+                # if (i == self.last_closest_front_waypoint_index):  # no more progress
+                #    self.stopped = True
+                # end of if (i == self.last_closest_front_waypoint_index)
                 
                 # now i is the index of the closest waypoint in front
                 self.last_closest_front_waypoint_index = i
@@ -132,9 +140,11 @@ class WaypointUpdater(object):
                 # modulize the code to be less dependent
                 j = self.last_closest_front_waypoint_index
                 while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-                       (waypoints_count < LOOKAHEAD_WPS)):
+                        not self.stopped and
+                        (waypoints_count < LOOKAHEAD_WPS) and
+                        (j < self.base_waypoints_num)):
                   waypoint = copy.deepcopy(self.base_waypoints[j])
-                  j = (j + 1) % self.base_waypoints_num
+                  j = (j + 1) # % self.base_waypoints_num
                   waypoints_count += 1
                   turning_angle = math.atan2(local_y, local_x)
                   accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
@@ -148,7 +158,7 @@ class WaypointUpdater(object):
                   # waypoint.twist.twist.linear.x = estimated_vel # meter/s
                   final_waypoints.append(waypoint)
                 
-                  # dist_between = self.dist_to_next[(j - 1) % self.base_waypoints_num]
+                  # dist_between = self.dist_to_next[(j - 1) # % self.base_waypoints_num]
                   # lookahead_dist += dist_between
                   # lookahead_time = lookahead_dist / (estimated_vel)
                 
@@ -159,11 +169,13 @@ class WaypointUpdater(object):
                   local_x, local_y = to_local_coordinates(current_waypoint.x, current_waypoint.y, yaw,
                                                           w_pos.x, w_pos.y)
                 # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
-                rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d'
-                              % (waypoints_count, lookahead_time))
+                
+                rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
+                              % (waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
                 
                 # publish to /final_waypoints, need to package final_waypoints into Lane message
-                publish_Lane(self.final_waypoints_pub, final_waypoints)
+                if (0 < len(final_waypoints)):
+                    publish_Lane(self.final_waypoints_pub, final_waypoints)
                 self.pose = None        # indicating this message has been processed
             # end of if self.base_waypoints and self.pose
             rate.sleep()
