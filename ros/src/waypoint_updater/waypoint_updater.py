@@ -7,10 +7,11 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from geometry_msgs.msg import Quaternion
 
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32
+from std_msgs.msg import Int32, Float64
 
 import tf
 import math
+import numpy.polynomial.polynomial as poly
 from copy import deepcopy
 from scipy.spatial import KDTree
 
@@ -89,6 +90,8 @@ class WaypointUpdater(object):
         # Set the publisher to write messages to topic '/final_waypoints'
         # The next waypoints the car has to follow are published
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
+
+        self.cte_pub = rospy.Publisher('/cte', Float64, queue_size=1)
 
         # rospy.spin()
         self.loop_n_sleep()
@@ -175,6 +178,16 @@ class WaypointUpdater(object):
 
                 # Publish the next waypoints the car should follow
                 self.publish(self.next_waypoint_index, value_waypoint_velocities)
+                
+                ###############################################################
+                # calculate and publish cte for controller
+                cte = calculate_cte(self.base_waypoints, idx, 
+                                    self.curr_pose.position.x, 
+                                    self.curr_pose.position.y, 
+                                    self.curr_pose.orientation.w)
+                
+                self.cte_pub.publish(cte)
+                ###############################################################
         
             rate.sleep()
 
@@ -255,6 +268,72 @@ class WaypointUpdater(object):
                     waypoint_velocities.append(self.max_velocity)
 
         return waypoint_velocities
+
+
+def world_to_local(egoX, egoY, egoYaw, worldX, worldY):
+    '''
+    transform given world coordinate into local coordinate:
+    positive x points forward, positive y points left
+    @return local x, y and relative angle to world point 
+    '''
+    
+    # translate
+    dX = worldX - egoX
+    dY = worldY - egoY
+    
+    # rotate
+    localX = math.cos(-egoYaw) * dX + math.sin(-egoYaw) * dY
+    localY = -math.sin(-egoYaw) * dY + math.cos(-egoYaw) * dY
+    relAngle = math.atan2(localY, localX)
+    
+    return localX, localY, relAngle
+
+
+def waypoints_to_local(egoX, egoY, egoYaw, waypoints):
+    '''
+    transform given waypoints to local coords
+    '''
+    localX = []
+    localY = []
+    
+    for wp in waypoints:
+        x, y, _ = world_to_local(
+            egoX, egoY, egoYaw,
+            wp.pose.pose.position.x,
+            wp.pose.pose.position.y)
+        localX.append(x)
+        localY.append(y)
+        
+    return localX, localY
+
+
+def get_waypoints_around_current_pos(worldWaypoints, idx):
+    '''
+    return the previous and next waypoints for given idx
+    '''
+    
+    waypoints = []
+    waypointCount = len(worldWaypoints)
+    lookahead = 4
+    startIdx = (idx - lookahead + waypointCount) % waypointCount
+    for i in range(2 * lookahead + 1):
+        waypoints.append(worldWaypoints[(startIdx + i) % waypointCount])
+    
+    return waypoints
+
+
+def calculate_cte(worldWaypoints, waypointIdx, egoX, egoY, egoYaw):
+    
+    selectedWaypoints = get_waypoints_around_current_pos(
+        worldWaypoints, waypointIdx)
+
+    localX, localY = waypoints_to_local(egoX, egoY, egoYaw, selectedWaypoints)
+    
+    coefs = poly.polyfit(localX, localY, 3)
+    cte = poly.polyval(0.0, coefs)
+
+    return cte
+
 
 if __name__ == '__main__':
     try:
