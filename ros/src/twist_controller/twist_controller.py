@@ -11,7 +11,7 @@ class Controller(object):
         # TODO: Implement
         self.time = rospy.Time.now()
         self.acc_pid = PID(-1,-0.1,-0.5)
-        self.ang_pid = PID(-5,-0.5,-2.5)
+        self.ang_pid = PID(-2,-0.2,-1)
         pass
 
     def control(self, cmd_linear, cmd_angular, cur_linear, dbw_enabled):
