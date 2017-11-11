@@ -27,7 +27,6 @@ The following members are part of the international team named ***Chakra***:
   * Venkata Dikshit ([dikshit2632@gmail.com](mailto:dikshit2632@gmail.com))
   * Daniel Gattringer ([daniel@gattringer.biz](mailto:daniel@gattringer.biz))
   * Aneeq Mahmood ([aneeq.sdc@gmail.com](mailto:aneeq.sdc@gmail.com))
-  * Jongchul Seon ([jongchul.seon@gmail.com](mailto:jongchul.seon@gmail.com))
   * Wilhelm Nagel ([willi.nagel@gmail.com](mailto:willi.nagel@gmail.com))
 
 # Project Setup
