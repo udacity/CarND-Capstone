@@ -42,16 +42,26 @@ class TLClassifier(object):
         image_expanded = np.expand_dims(image, axis=0)
 	(boxes, scores, classes, num_det) = self.session.run(
               [delf.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
-              feed_dict={image_tensor: image_expanded})
+              feed_dict={self.image_tensor: image_expanded})
 	
 	boxes = np.squeeze(boxes),
         classes = np.squeeze(classes).astype(np.int32),
         scores = np.squeeze(scores)
 
 	# Print class based on best score
-	idx = np.argmax(scores)
-	rospy.loginfo("Maximum Score = %d"%(scores[idx]))
-	if scores[idx] >= 0.9:
-		rospy.loginfo("Traffic Light Color = %d"%(classes[idx]))
 
-        return TrafficLight.UNKNOWN
+	light_color = TrafficLight.UNKNOWN
+
+        for i in range(boxes.shape[0]):
+            if scores[i] >= 0.70:
+                rospy.loginfo("Traffic Light Color = %r"%(classes[i]))
+                if classes[i] == 1:
+                    light_color = TrafficLight.GREEN
+                elif classes[i] == 2:
+                    light_color = TrafficLight.RED
+                elif classes[i] == 3:
+                    light_color = TrafficLight.YELLOW
+                else:
+                    light_color = TrafficLight.UNKNOWN
+
+        return light_color
