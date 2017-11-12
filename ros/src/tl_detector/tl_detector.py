@@ -206,9 +206,6 @@ class TLDetector(object):
                     light_wp = i
                     light_id = self.idx_of_stop_line[k][1]
                     state = self.get_light_state(self.lights[light_id])
-                    if state == TrafficLight.RED:
-                        rospy.logerr("Red traffic light!")
-
                     return light_wp, state
 
         return -1, TrafficLight.UNKNOWN

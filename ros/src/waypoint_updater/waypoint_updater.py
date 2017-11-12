@@ -4,6 +4,8 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 import std_msgs.msg
+from std_msgs.msg import Int32
+from geometry_msgs.msg import TwistStamped
 
 import math
 #import tf
@@ -31,23 +33,26 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
         self.pose = None
         self.waypoints = None
         self.previous_initial_wp_index = None
+        self.traffic = None
+        self.current_velocity = None
 
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(5) # 5Hz
         while not rospy.is_shutdown():
-            if self.pose is not None and self.waypoints is not None:
+            if self.pose is not None and self.waypoints is not None and self.traffic is not None and self.current_velocity is not None:
                 ego_theta = 2.*math.acos(self.pose.orientation.w)
                 ego_vx = np.dot(np.array([[math.cos(ego_theta),-math.sin(ego_theta)],
                                           [math.sin(ego_theta), math.cos(ego_theta)]]), np.array([1,0]))
@@ -84,10 +89,32 @@ class WaypointUpdater(object):
                     index = (initial_wp_index + i) % len(self.waypoints)
                     final_waypoints.waypoints.append(self.waypoints[index])
 
-                self.final_waypoints_pub.publish(final_waypoints)
                 self.previous_initial_wp_index = initial_wp_index
 
+                max_velocity = 20/2.24
+                target_dv = 0.2
+                velocity = self.current_velocity.linear.x
+                is_stopping_for_red_traffic_light = False
+                # If red traffic light exist, decrease.
+                for i in xrange(LOOKAHEAD_WPS):
+                    if self.traffic != -1:# and velocity > target_velocity_for_red:
+                        velocity = min(max_velocity, target_dv * ((self.traffic - initial_wp_index - i) % len(self.waypoints)))
+                        is_stopping_for_red_traffic_light = True
+                    elif is_stopping_for_red_traffic_light:
+                        velocity = 0
+                    else:
+                        velocity = max_velocity
+                    self.set_waypoint_velocity(final_waypoints.waypoints, i, velocity)
+
+                self.final_waypoints_pub.publish(final_waypoints)
+                #rospy.logerr(initial_wp_index)
+                #rospy.logerr(self.traffic)
+                #rospy.logerr(velocity)
+
             rate.sleep()
+
+    def current_velocity_cb(self,msg):
+        self.current_velocity = msg.twist
 
     def pose_cb(self, msg):
         # TODO: Implement
@@ -101,7 +128,7 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        self.traffic = msg
+        self.traffic = msg.data
         pass
 
     def obstacle_cb(self, msg):
