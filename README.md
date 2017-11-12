@@ -67,3 +67,6 @@ cd CarND-Capstone/ros
 roslaunch launch/site.launch
 ```
 5. Confirm that traffic light detection works on real life images
+
+# Gitflow
+Created feature branch for work on traffic-light detection with tensorflow
