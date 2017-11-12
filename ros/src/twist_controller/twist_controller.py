@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import rospy
+#from lowpass import LowPassFilter
 from pid import PID
 
 
@@ -35,41 +36,46 @@ class TwistController(object):
         self.max_lat_accel = max_lat_accel
         self.max_steer_angle = max_steer_angle
         
-        # TODO: tune parameters for PIDs
-        # PID params previously defined in dbw_node for STEERING -> adapt to throttle/brake
-        self.pid_velocity = PID(0.35, 0.01, 0.0,    # p, i, d
-                                -5, 1.0)           # min, max
+        # TODO: tune parameters for PIDs and low pass filters
         
-        # PID params previously defined in dbw_node
-        self.pid_steering = PID(0.35, 0.01, 0.0,    # p, i, d
-                                -1.0, 1.0)           # min, max
+        # Using separate PIDs for throttle and brake so that their parameters
+        # can be tuned separately.
+        
+        # Output of throttle-PID covers acceleration in range of 0..1 m/s^2
+        self.throttle_pid = PID(0.35, 0.01, 0.0,    # p, i, d
+                                -5.0, 1.0)          # min, max
+        #self.throttle_low_pass = LowPassFilter(0.2, .1)
 
-
-    def control(self, cte, v_current, v_target, elapsed_time):
+        # Output of brake-PID covers deceleration in range of 0..-5 m/s^2
+        self.brake_pid = PID(0.35, 0.01, 0.0,    # p, i, d
+                             -5.0, 0.)           # min, max
+        #self.brake_low_pass = LowPassFilter(0.2, .1)
+        
+        
+    def control(self, v_current, v_target, elapsed_time):
         
         v_error = v_target - v_current
         
         throttle = 0.
         brake = 0.
 
-        adapt_speed = self.pid_velocity.step(v_error, elapsed_time)
-        if adapt_speed < 0. :
-            # TODO: do exact calculation based on max deceleration,
-            #   vehicle mass, wheel radius, ...
-            brake = adapt_speed
-        else:
-            # TODO: do exact calculation based on ...
-            throttle = adapt_speed
-
-        steering = self.pid_steering.step(cte, elapsed_time)
+        if v_error < 0. :
+            
+            self.throttle_pid.reset()
+            brake = self.brake_pid.step(-v_error, elapsed_time)
+            
+        else :
+            
+            self.brake_pid.reset()
+            throttle = self.throttle_pid.step(v_error, elapsed_time)
+            
+            # rospy.logwarn('v_error=%.3f, throttle=%.3f, brake=%.3f',
+            #               v_error, throttle, brake)
         
-        rospy.logwarn('cte=%.3f, v_error=%.3f, throttle=%.3f, brake=%.3f, steering=%.3f',
-                      cte, v_error, throttle, brake, steering)
-        
-        return throttle, brake, steering
+        return throttle, brake
     
     
     def reset(self):
 
-        self.pid_velocity.reset()
-        self.pid_steering.reset()
+        self.throttle_pid.reset()
+        self.brake_pid.reset()
