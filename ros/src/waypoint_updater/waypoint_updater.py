@@ -5,10 +5,13 @@ import rospy
 import copy                     # for deepcopy
 import numpy as np              # for polyfit and poly1d
 
-from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint
-
 import math
+
+from std_msgs.msg import Int32
+from geometry_msgs.msg import PoseStamped, TwistStamped
+from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import TrafficLightArray
+
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -88,7 +91,17 @@ class WaypointUpdater(object):
         self.subscriber_waypoints = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        self.traffic_waypoint = None
+        self.traffic_lights = None
 
+        self.obstacle_waypoint = None
+        self.current_velocity = None
+
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
+
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
+        rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -102,8 +115,6 @@ class WaypointUpdater(object):
         self.loop()
         #rospy.spin()
 
-    import math
-    
     def loop(self):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
@@ -137,14 +148,21 @@ class WaypointUpdater(object):
                 
                 final_waypoints = []
                 accumulated_turning = 0
+                dist_to_here_from_current = []
+                
                 # modulize the code to be less dependent
                 j = self.last_closest_front_waypoint_index
                 while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
                         (waypoints_count < LOOKAHEAD_WPS) and
                         (j < self.base_waypoints_num)):
                   waypoint = copy.deepcopy(self.base_waypoints[j])
+                  dist_to_here_from_current.append(
+                      self.dist_to_here_from_start[j]-
+                      self.dist_to_here_from_start[self.last_closest_front_waypoint_index])
+                
                   j = (j + 1) # % self.base_waypoints_num
                   waypoints_count += 1
+                
                   # turning_angle = math.atan2(local_y, local_x)
                   # accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
                   # average accumulated turning
@@ -255,6 +273,7 @@ class WaypointUpdater(object):
             self.base_waypoints = []
             dist = 0
             dist_so_far = 0
+            self.shortest_dist_to_next_waypoint = 0
             for i in range(self.base_waypoints_num):
                 dist_so_far += dist
                 self.dist_to_here_from_start.append(dist_so_far)
@@ -269,7 +288,9 @@ class WaypointUpdater(object):
                         distance_two_indices(waypoints,  # the (i+1)_th element has not been copied yet
                                              i, (i+1) % self.base_waypoints_num))
                 # end of if (i < self.base_waypoints_num-1)
-    
+                if (dist < self.shortest_dist_to_next_waypoint):
+                    self.shortest_dist_to_next_waypoint = dist
+                # end of if (dist < self.shortest_dist_to_next_waypoint)
             # end of for i in range(self.base_waypoints_num - 1)
         # end of if self.base_waypoints is None
     
@@ -290,14 +311,14 @@ class WaypointUpdater(object):
         # end of for i in range(LOOKAHEAD_WPS)
 
     def traffic_cb(self, msg):
-            # TODO: Callback for /traffic_waypoint message. Implement
-            pass
-    
+        self.traffic_waypoint = msg.data
+    def traffic_lights_cb(self, msg):
+        self.traffic_lights = msg.lights
+    def current_velocity_cb(self, msg):
+        self.current_velocity = msg.twist.linear.x
 
     def obstacle_cb(self, msg):
-            # TODO: Callback for /obstacle_waypoint message. We will implement it later
-            pass
-    
+        self.obstacle_waypoint = msg.data
 
     def get_waypoint_velocity(self, waypoint):
             return waypoint.twist.twist.linear.x
