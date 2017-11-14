@@ -5,6 +5,7 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
+from std_msgs.msg import Int32
 
 from twist_controller import Controller
 
@@ -65,6 +66,7 @@ class DBWNode(object):
         self.dbw_enabled = False
         self.current_velocity = None
         self.twist_cmd = None
+        self.target_velocity = None
 
         self.loop()
 
@@ -80,7 +82,6 @@ class DBWNode(object):
                                                                     self.dbw_enabled)
 
                 if self.dbw_enabled:
-                    #self.publish(throttle, brake, steer)
                     self.publish(throttle,brake,steering)
 
             rate.sleep()
