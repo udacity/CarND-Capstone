@@ -11,7 +11,7 @@ from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
 from styx_msgs.msg import TrafficLightArray
-
+from waypoint_lib.waypoint_tracker import WaypointTracker
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -75,30 +75,32 @@ def distance_two_indices(waypoints, i, j):
   b = waypoints[j].pose.pose.position
   return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
-class WaypointUpdater(object):
+class WaypointUpdater(WaypointTracker):
     def __init__(self):
         # f = open("~/.ros/log/stderr.log", "w+") # not working here
         # self.original_stderr = sys.stderr
         # sys.stderr = f
-        self.stopped = False
+        # self.stopped = False
         rospy.init_node('waypoint_updater')
         self.max_vel_mps = rospy.get_param('waypoint_loader/velocity')*MPH_to_MPS
         rospy.loginfo('max_vel_mps: %f' % self.max_vel_mps)
         self.loop_freq = rospy.get_param('~loop_freq', 2)
         # the frequency to process vehicle messages
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
-        self.subscriber_waypoints = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
+        WaypointTracker.__init__(self)
+
+        self.current_pose_sub = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
+        self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         self.traffic_waypoint = None
-        self.traffic_lights = None
 
         self.obstacle_waypoint = None
         self.current_velocity = None
 
+        # self.traffic_lights = None
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
+        # rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
 
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
@@ -107,14 +109,59 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
 
-        self.base_waypoints = None  # indicating the base_waypoints is not yet available
-        self.pose = None            # indicating that there is no message to process
-
-        self.last_closest_front_waypoint_index = 0
+        # self.base_waypoints = None  # indicating the base_waypoints is not yet available
+        # self.pose = None            # indicating that there is no message to process
 
         self.loop()
         #rospy.spin()
 
+    def constant_policy_f(self, velocity, bound):
+        xs = [-bound,   0.,       bound]
+        ys = [velocity, velocity, velocity]
+        return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 2))
+    def decleration_policy_f(self, ref_vel, bound):
+        xs = []
+        ys = []
+    
+        xs.append(-bound)
+        ys.append(-0.1)
+    
+        xs.append(0.)
+        ys.append(-0.2)
+    
+        # 5 meters away
+        xs.append(5)
+        ys.append(MPH_to_MPS*.5)
+    
+        # 10 meters away
+        xs.append(10)
+        ys.append(MPH_to_MPS*5)
+    
+        # 16 meters away
+        xs.append(16)
+        ys.append(MPH_to_MPS*5)
+    
+        # 2 seconds away or 24 meters away, whichever longer
+        xs.append(max([ref_vel*2, 24]))
+        ys.append(max([ref_vel*.2, MPH_to_MPS*5]))
+    
+        # 4 seconds away or 45 meters away, whichever longer
+        xs.append(max([ref_vel*4, 45]))
+        ys.append(max([ref_vel*.3, MPH_to_MPS*6]))
+    
+        # 6 seconds away or 65 meters away, whichever longer
+        xs.append(max([ref_vel*6, 65]))
+        ys.append(max([ref_vel*.5, MPH_to_MPS*10]))
+    
+        # 8 seconds away, normal speed
+        xs.append(max([ref_vel*8, 85]))
+        ys.append(ref_vel)
+    
+        # at the beginning, normal speed
+        xs.append(bound)
+        ys.append(ref_vel)
+    
+        return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 3))
     def loop(self):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
@@ -198,102 +245,11 @@ class WaypointUpdater(object):
             # end of if self.base_waypoints and self.pose
             rate.sleep()
         # end of while not rospy.is_shutdow()
-
+    def base_waypoints_cb(self, msg):
+        WaypointTracker.base_waypoints_process(self, msg)
     
-    def pose_cb(self, msg):
-        # WORKING: Implement
-        #
-        if self.pose is None:       # ready to process message
-            self.pose = msg
-        # end of if self.pose is None
-        # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
-
-    def constant_policy_f(self, velocity, bound):
-        xs = [-bound,   0.,       bound]
-        ys = [velocity, velocity, velocity]
-        return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 2))
-    def decleration_policy_f(self, ref_vel, bound):
-        xs = []
-        ys = []
-    
-        xs.append(-bound)
-        ys.append(-0.1)
-    
-        xs.append(0.)
-        ys.append(-0.2)
-    
-        # 5 meters away
-        xs.append(5)
-        ys.append(MPH_to_MPS*.5)
-    
-        # 10 meters away
-        xs.append(10)
-        ys.append(MPH_to_MPS*5)
-    
-        # 16 meters away
-        xs.append(16)
-        ys.append(MPH_to_MPS*5)
-    
-        # 2 seconds away or 24 meters away, whichever longer
-        xs.append(max([ref_vel*2, 24]))
-        ys.append(max([ref_vel*.2, MPH_to_MPS*5]))
-    
-        # 4 seconds away or 45 meters away, whichever longer
-        xs.append(max([ref_vel*4, 45]))
-        ys.append(max([ref_vel*.3, MPH_to_MPS*6]))
-    
-        # 6 seconds away or 65 meters away, whichever longer
-        xs.append(max([ref_vel*6, 65]))
-        ys.append(max([ref_vel*.5, MPH_to_MPS*10]))
-    
-        # 8 seconds away, normal speed
-        xs.append(max([ref_vel*8, 85]))
-        ys.append(ref_vel)
-    
-        # at the beginning, normal speed
-        xs.append(bound)
-        ys.append(ref_vel)
-    
-        return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 3))
-    
-    def waypoints_cb(self, msg):
-        # DONE: Implement
-        waypoints = msg.waypoints
         global LOOKAHEAD_WPS        # might update it
-        if self.base_waypoints is None:
-            # unsubscribe to the waypoint messages, no longer needed
-            self.subscriber_waypoints.unregister()
-            self.subscriber_waypoints = None
-    
-            self.base_waypoints_num = len(waypoints)
-            LOOKAHEAD_WPS = min(LOOKAHEAD_WPS, self.base_waypoints_num)
-    
-            # process the waypoints here
-            self.dist_to_here_from_start = []
-            self.base_waypoints = []
-            dist = 0
-            dist_so_far = 0
-            self.shortest_dist_to_next_waypoint = 0
-            for i in range(self.base_waypoints_num):
-                dist_so_far += dist
-                self.dist_to_here_from_start.append(dist_so_far)
-    
-                # do a deep copy of the data, to keep the data from lose
-                # just to be safe, simply do shallow copy seems still working
-                # by self.base_waypoints = waypoints
-                self.base_waypoints.append(copy.deepcopy(waypoints[i]))
-                # distance to the next waypoint
-                if (i < self.base_waypoints_num-1):
-                    dist = (
-                        distance_two_indices(waypoints,  # the (i+1)_th element has not been copied yet
-                                             i, (i+1) % self.base_waypoints_num))
-                # end of if (i < self.base_waypoints_num-1)
-                if (dist < self.shortest_dist_to_next_waypoint):
-                    self.shortest_dist_to_next_waypoint = dist
-                # end of if (dist < self.shortest_dist_to_next_waypoint)
-            # end of for i in range(self.base_waypoints_num - 1)
-        # end of if self.base_waypoints is None
-    
+        LOOKAHEAD_WPS = min(LOOKAHEAD_WPS, self.base_waypoints_num)
         # construct the velocity policy
         self.cruise_policy = self.constant_policy_f(self.max_vel_mps, LOOKAHEAD_WPS)
         self.stop_policy = self.constant_policy_f(-0.01, LOOKAHEAD_WPS)
@@ -309,14 +265,10 @@ class WaypointUpdater(object):
             expected_velocity = self.deceleration_policy(dist_to_the_end)
             self.base_waypoints[last_ith].twist.twist.linear.x = expected_velocity
         # end of for i in range(LOOKAHEAD_WPS)
-
     def traffic_cb(self, msg):
         self.traffic_waypoint = msg.data
-    def traffic_lights_cb(self, msg):
-        self.traffic_lights = msg.lights
     def current_velocity_cb(self, msg):
         self.current_velocity = msg.twist.linear.x
-
     def obstacle_cb(self, msg):
         self.obstacle_waypoint = msg.data
 
@@ -326,13 +278,6 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
             waypoints[waypoint].twist.twist.linear.x = velocity
     
-    def distance(self, waypoints, wp1, wp2):
-            dist = 0
-            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-            for i in range(wp1, wp2+1):
-                dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-                wp1 = i
-            return dist
 
 if __name__ == '__main__':
     try:
