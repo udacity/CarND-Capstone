@@ -91,25 +91,40 @@ class WaypointUpdater(object):
 
                 self.previous_initial_wp_index = initial_wp_index
 
-                max_velocity = 20/2.24
-                target_dv = 0.2
-                velocity = self.current_velocity.linear.x
-                is_stopping_for_red_traffic_light = False
-                # If red traffic light exist, decrease.
-                for i in xrange(LOOKAHEAD_WPS):
-                    if self.traffic != -1:# and velocity > target_velocity_for_red:
-                        velocity = min(max_velocity, target_dv * ((self.traffic - initial_wp_index - i) % len(self.waypoints)))
-                        is_stopping_for_red_traffic_light = True
-                    elif is_stopping_for_red_traffic_light:
-                        velocity = 0
-                    else:
-                        velocity = max_velocity
-                    self.set_waypoint_velocity(final_waypoints.waypoints, i, velocity)
+                v0 = 20/2.24    # m/s    max velocity
+
+                if self.traffic == -1:
+                    for i in xrange(LOOKAHEAD_WPS):
+                        self.set_waypoint_velocity(final_waypoints.waypoints, i, v0)
+                else:
+                    #                    t0
+                    #   v0 ----------------
+                    #                      \
+                    #                       \
+                    #                        \ a0
+                    #                         \
+                    #                          \
+                    #                           \___________ v=0
+                    #                           t1
+                    #     target velocity diagram
+                    #
+                    a0 = 2.5        # m/s^2  target acceleration
+                    margin = 10      # m      target margin before stop line
+                    r0 = self.distance(self.waypoints,initial_wp_index,self.traffic) - margin  # target position to stop
+                    t1 = 0.5*(2.*r0/v0 + v0/a0)
+                    t0 = 0.5*(2.*r0/v0 - v0/a0)
+
+                    for i in xrange(LOOKAHEAD_WPS):
+                        r = self.distance(self.waypoints,initial_wp_index,initial_wp_index+i)
+                        if r <= v0 * t0:
+                            v = v0
+                        elif v0*t0 < r and r <= r0:
+                            v = math.sqrt(2.*a0*v0*t0 + v0*v0 - 2.*a0*r)
+                        else:
+                            v = -1
+                        self.set_waypoint_velocity(final_waypoints.waypoints, i, v)
 
                 self.final_waypoints_pub.publish(final_waypoints)
-                #rospy.logerr(initial_wp_index)
-                #rospy.logerr(self.traffic)
-                #rospy.logerr(velocity)
 
             rate.sleep()
 

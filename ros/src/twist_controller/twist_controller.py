@@ -27,4 +27,4 @@ class Controller(object):
             self.acc_pid.reset()
             self.ang_pid.reset()
 
-        return max(acc,0), -1000. * min(acc,0), ang
+        return max(acc,0), -200. * min(acc,0), ang
