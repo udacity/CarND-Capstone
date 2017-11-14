@@ -26,7 +26,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -91,7 +91,9 @@ class WaypointUpdater(object):
 
                 self.previous_initial_wp_index = initial_wp_index
 
-                v0 = 20/2.24    # m/s    max velocity
+                v_limit = rospy.get_param('/waypoint_loader/velocity') / 3.6  # Speed limit given by ROS parameter
+                v_limit *= 0.9           # Set margin to not exceed speed limit.
+                v0 = min(25.0, v_limit)  # This program allows maximum spped of 25m/s.
 
                 if self.traffic == -1:
                     for i in xrange(LOOKAHEAD_WPS):
@@ -118,7 +120,7 @@ class WaypointUpdater(object):
                         r = self.distance(self.waypoints,initial_wp_index,initial_wp_index+i)
                         if r <= v0 * t0:
                             v = v0
-                        elif v0*t0 < r and r <= r0:
+                        elif v0*t0 < r and r < r0:
                             v = math.sqrt(2.*a0*v0*t0 + v0*v0 - 2.*a0*r)
                         else:
                             v = -1
