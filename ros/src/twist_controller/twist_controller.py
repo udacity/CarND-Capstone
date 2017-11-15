@@ -10,8 +10,8 @@ class Controller(object):
     def __init__(self, *args, **kwargs):
         # TODO: Implement
         self.time = rospy.Time.now()
-        self.acc_pid = PID(-1,-0.1,-0.5)
-        self.ang_pid = PID(-2,-0.2,-1)
+        self.acc_pid = PID(-1,-0.1,-0.2)
+        self.ang_pid = PID(-2,-0.2,-0.4)
         pass
 
     def control(self, cmd_linear, cmd_angular, cur_linear, dbw_enabled):
@@ -27,4 +27,4 @@ class Controller(object):
             self.acc_pid.reset()
             self.ang_pid.reset()
 
-        return max(acc,0), -min(acc,0), ang
+        return max(acc,0), -200. * min(acc,0), ang
