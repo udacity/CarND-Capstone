@@ -56,44 +56,35 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
                                          
-                                         
                          
-        # TODO: Create `TwistController` object insteaad of yaw controller
-        self.controller = YawController(wheel_base, steer_ratio, 
-                                        min_speed, max_lat_accel, 
-                                        max_steer_angle)		
+        # using YawController for steering and 
+        # TwistController for throttle/brake
+        self.controller_yaw = YawController(
+            wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)		
         self.controller_twist = TwistController(
-            vehicle_mass,
-            fuel_capacity,
-            brake_deadband,
-            decel_limit,
-            accel_limit,
-            wheel_radius,
-            wheel_base, 
-            steer_ratio,
-            max_lat_accel,
+            vehicle_mass, fuel_capacity, brake_deadband, decel_limit, 
+            accel_limit, wheel_radius, wheel_base, steer_ratio, max_lat_accel,
             max_steer_angle)        
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/current_velocity', TwistStamped, callback = self.current_velocity_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, callback = self.twist_cmd_cb)
-        # rospy.Subscriber('/vehicle/dbw_enabled', Bool, callback=self.dbw_enabled_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, callback=self.dbw_enabled_cb)
         #rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         #rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
-        rospy.Subscriber('/cte', Float64, 
-                         self.cte_cb, queue_size=1)
+        #rospy.Subscriber('/cte', Float64, self.cte_cb, queue_size=1)
 
-        # TODO: Subscribe to all the topics you need to
+        # TODO: members for storing content of subscriptions
         self.current_linear = 0.
         self.angular_velocity = 0.
         self.linear_velocity = 0.
         self.dbw_enabled = False
-        self.cte = None
+        #self.cte = None
         
         # ToDo   Need to define a twist controller for the below code to work in a cleaner fashion
         # for first try every thing included  here
-        self.pid = PID(0.35,0.01,0.0,0.0,1.0)
-        self.low_pass_filter = LowPassFilter(0.2,.1)
+        #self.pid = PID(0.35,0.01,0.0,0.0,1.0)
+        self.low_pass_filter = LowPassFilter(0.2,.1) # low pass for steering
         ####
        
        
@@ -132,9 +123,9 @@ class DBWNode(object):
         self.pose = [msg.pose.position.x, msg.pose.position.y]
         #pass
 
-    def cte_cb(self, msg):
-        self.cte = float(msg.data)
-        #rospy.logwarn('DBWNode::cte_cb: %.3f', self.cte)
+    # def cte_cb(self, msg):
+    #     self.cte = float(msg.data)
+    #     #rospy.logwarn('DBWNode::cte_cb: %.3f', self.cte)
 
     def loop(self):
 
@@ -155,30 +146,33 @@ class DBWNode(object):
             #rospy.logwarn('Entering the publisher now  %s, %s',steer, self.dbw_enabled)        
             #if self.dbw_enabled:
             
-            steer = self.controller.get_steering(self.linear_velocity, self.angular_velocity, self.current_linear)
+            steer = self.controller_yaw.get_steering(
+                self.linear_velocity, 
+                self.angular_velocity, 
+                self.current_linear)
+            steer = self.low_pass_filter.filt(steer)          
                         
-            cte_v = self.linear_velocity - self.current_linear
 
             current_time = rospy.get_time()
             self.elapsed_time = current_time - self.previous_time  
             self.previous_time = current_time            
 
+
             ###################################################################
             #rospy.logwarn('Entering the publisher now  %f',self.elapsed_time)
-            step_err = self.pid.step (cte_v, self.elapsed_time)
-            
-            steer = self.low_pass_filter.filt(steer)          
-            self.publish(step_err, 0, steer)
+            #cte_v = self.linear_velocity - self.current_linear
+            #throttle = self.pid.step (cte_v, self.elapsed_time)
+            #self.publish(throttle, 0, steer)
             #rospy.logwarn('throttle=%.3f, steer=%.3f', step_err, steer)
             ###################################################################
 
             ###################################################################
             # if not self.cte is None:
-            #     throttle, brake, steering = self.controller_twist.control(
-            #         self.cte, self.current_linear, self.linear_velocity,
-            #         self.elapsed_time)
-            #      
-            #     self.publish(throttle, brake, -steering)
+            throttle, brake = self.controller_twist.control(
+                self.current_linear, self.linear_velocity,
+                self.elapsed_time)
+                  
+            self.publish(throttle, brake, steer)
             #else:
             #    rospy.logwarn('DBWNode::loop: no cte available yet!')
             ###################################################################
