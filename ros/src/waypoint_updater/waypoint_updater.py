@@ -28,6 +28,9 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 ACC_WPS_NUM = 10 # Number of waypoints used for acceleration
+SAFETY_DISTANCE_FOR_BRAKING = 30 # Distance in m to brake before the traffic light
+
+PRINT_DEBUG = False # Print rospy.logwarn for debugging if True
 
 RATE = 2    # update rate
 MAX_VEL = 3.   # max velocity in mps
@@ -91,6 +94,8 @@ class WaypointUpdater(object):
         # The next waypoints the car has to follow are published
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
+        # Set the publisher to write messages to topic '/cte'
+        # The control unit uses this information
         self.cte_pub = rospy.Publisher('/cte', Float64, queue_size=1)
 
         # rospy.spin()
@@ -143,8 +148,7 @@ class WaypointUpdater(object):
         
         # Run as long as ros node is not shut down
         while not rospy.is_shutdown():
-              #rospy.logwarn('Entering the publisher now')
-          
+            # Check if data is available
             if self.base_waypoints and self.curr_pose:
                 #rospy.logwarn('Entering the publisher now')
                 
@@ -178,14 +182,14 @@ class WaypointUpdater(object):
 
                 # Publish the next waypoints the car should follow
                 self.publish(self.next_waypoint_index, value_waypoint_velocities)
-                
+
                 ###############################################################
                 # calculate and publish cte for controller
-                cte = calculate_cte(self.base_waypoints, idx, 
+                cte = self.calculate_cte(self.base_waypoints, idx, 
                                     self.curr_pose.position.x, 
                                     self.curr_pose.position.y, 
                                     self.curr_pose.orientation.w)
-                
+
                 self.cte_pub.publish(cte)
                 ###############################################################
         
@@ -212,127 +216,223 @@ class WaypointUpdater(object):
         # Set waypoints in waypoint message
         final_waypoints_msg.waypoints = self.final_waypoints
         
-        #rospy.logwarn('publishing points')
-            # Publish results
-        
         # Publish the waypoints the car should follow to ros topic '/final_waypoints'
         self.final_waypoints_pub.publish(final_waypoints_msg)
 
-    def get_waypoint_velocities(self):
+    
+    # Decelerate evenly and stop at the stop line
+    def brake_till_traffic_waypoint(self):
+        # Array for waypoint velocities
+        waypoint_velocities = []
+        
+        # Calculate the difference between current speed and final target speed
+        diff_index = self.traffic_index - self.next_waypoint_index
+
+        # Calculate how much the velocity should be reduced per waypoint
+        diff_velocity = self.curr_velocity / (abs(diff_index + 1))
+
+        new_velocity = self.curr_velocity
+
+        for i in range(LOOKAHEAD_WPS):
+            # Before traffic sign
+            if i <= diff_index:
+                new_velocity -= diff_velocity
+                # If targe velocity is really small -> set to zero
+                if new_velocity < 0.1:
+                    new_velocity = 0
+                
+                waypoint_velocities.append(new_velocity)
+            # After traffic sign -> set all to zero
+            else:
+                waypoint_velocities.append(0)
+
+        if PRINT_DEBUG:
+            rospy.logwarn('Current v: %f mph, First target v: %f mph.', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694)
+
+        return waypoint_velocities   
+
+    
+    # Set the target velocity for all waypoints within LOOKAHEAD_WPS to zero
+    def set_velocity_to_zero(self):
         # Array for waypoint velocities
         waypoint_velocities = []
 
-        
-        # Traffic light to stop at waypoint index traffic_index
-        if self.traffic_index > 0:
-            # Calculate the difference between current speed and final target speed
-            diff_index = self.traffic_index - self.next_waypoint_index
+        for i in range(LOOKAHEAD_WPS):
+                waypoint_velocities.append(0)
 
-            # Calculate how much the velocity should be reduced per waypoint
-            diff_velocity = self.curr_velocity / (diff_index + 1)
+        if PRINT_DEBUG:
+            rospy.logwarn('Current v: %f mph, First target v: %f mph.', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694)
 
-            new_velocity = self.curr_velocity
+        return waypoint_velocities
 
-            for i in range(LOOKAHEAD_WPS):
-                # Before traffic sign
-                if i <= diff_index:
-                    new_velocity -= diff_velocity
-                    if new_velocity < 0.1:
-                        new_velocity = 0
-                    
-                    waypoint_velocities.append(new_velocity)
-                # After traffic sign
-                else:
-                    waypoint_velocities.append(0)
+    # Accelerate evenly up to the allowed speed limit
+    def speed_up_to_max(self):
+        # Array for waypoint velocities
+        waypoint_velocities = []
 
-        # No traffic light to stop for -> accelerate until speed limit is reached
+        # Check if current velocity is smaller than max_velocity
+        if self.curr_velocity <= self.max_velocity: 
+            # Calculate how much the velocity should be raised per waypoint
+            diff_velocity = (self.max_velocity - self.curr_velocity) / ACC_WPS_NUM
+        # If too fast -> reduce speed
         else:
-            # Check if current velocity is smaller than max_velocity
-            if self.curr_velocity <= self.max_velocity: 
-                # Calculate how much the velocity should be raised per waypoint
-                diff_velocity = (self.max_velocity - self.curr_velocity) / ACC_WPS_NUM
-            # If too fast -> reduce speed
+            diff_velocity = self.curr_velocity - self.max_velocity
+
+        new_velocity = self.curr_velocity
+
+        for i in range(LOOKAHEAD_WPS):
+            # Before reaching max_velocity
+            if i <= ACC_WPS_NUM:
+                new_velocity += diff_velocity
+                
+                waypoint_velocities.append(new_velocity)
+            # After reaching the speed limit
             else:
-                diff_velocity = self.curr_velocity - self.max_velocity
+                waypoint_velocities.append(self.max_velocity)
 
-            new_velocity = self.curr_velocity
+        if PRINT_DEBUG:
+            rospy.logwarn('Current v: %f mph, First target v: %f mph.', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694)
 
-            for i in range(LOOKAHEAD_WPS):
-                # Before reaching max_velocity
-                if i <= ACC_WPS_NUM:
-                    new_velocity += diff_velocity
-                    
-                    waypoint_velocities.append(new_velocity)
-                # After traffic sign
-                else:
-                    waypoint_velocities.append(self.max_velocity)
+        return waypoint_velocities
+
+    # Move slowly to the stop line
+    def move_slowly_to_waypoint(self):
+        # Array for waypoint velocities
+        waypoint_velocities = []
+
+        # Calculate the difference between current speed and final target speed
+        diff_index = self.traffic_index - self.next_waypoint_index
+
+        for i in range(LOOKAHEAD_WPS):
+            # Before traffic sign
+            if i <= diff_index: 
+                waypoint_velocities.append(1)
+            # After traffic sign
+            else:
+                waypoint_velocities.append(0)
+
+        if PRINT_DEBUG:
+            rospy.logwarn('Current v: %f mph, First target v: %f mph.', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694)
 
         return waypoint_velocities
 
 
-def world_to_local(egoX, egoY, egoYaw, worldX, worldY):
-    '''
-    transform given world coordinate into local coordinate:
-    positive x points forward, positive y points left
-    @return local x, y and relative angle to world point 
-    '''
-    
-    # translate
-    dX = worldX - egoX
-    dY = worldY - egoY
-    
-    # rotate
-    localX = math.cos(-egoYaw) * dX + math.sin(-egoYaw) * dY
-    localY = -math.sin(-egoYaw) * dY + math.cos(-egoYaw) * dY
-    relAngle = math.atan2(localY, localX)
-    
-    return localX, localY, relAngle
-
-
-def waypoints_to_local(egoX, egoY, egoYaw, waypoints):
-    '''
-    transform given waypoints to local coords
-    '''
-    localX = []
-    localY = []
-    
-    for wp in waypoints:
-        x, y, _ = world_to_local(
-            egoX, egoY, egoYaw,
-            wp.pose.pose.position.x,
-            wp.pose.pose.position.y)
-        localX.append(x)
-        localY.append(y)
+    # Get the target velocities for all waypoint within LOOKAHEAD_WPS
+    def get_waypoint_velocities(self):
+        # Array for waypoint velocities
+        waypoint_velocities = []
         
-    return localX, localY
+        # Check if necessary data is available
+        if(self.traffic_index and self.base_waypoints and self.next_waypoint_index and self.traffic_index):
+            # A red traffic light is in front of the car
+            # Calculate the distance between the waypoint directly in front of the the car 
+            # and the waypoint which the car should stop for the red traffic light
+            if(self.traffic_index > 0):
+                distance_to_traffic_waypoint = self.distance_between_waypoints(self.base_waypoints, self.next_waypoint_index, self.traffic_index)
+            else:
+                distance_to_traffic_waypoint = 999 # TODO: Find better solution
+
+            if PRINT_DEBUG:
+                rospy.logwarn('Distance between next waypoint %d and traffic_waypoint %d: %f m.', self.next_waypoint_index, self.traffic_index, distance_to_traffic_waypoint)
+
+            # No traffic light within safety distance -> speed up to speed limit
+            if(distance_to_traffic_waypoint > SAFETY_DISTANCE_FOR_BRAKING):
+                if PRINT_DEBUG:
+                    rospy.logwarn('No traffic light within %d m -> Speed up.', SAFETY_DISTANCE_FOR_BRAKING)
+                waypoint_velocities = self.speed_up_to_max()  
+
+            # There is a traffic light within the safety distance
+            # Decide what to do
+            else:
+                # The car is really slow but has not reached the stop line
+                # Move slowly to the stop line
+                # TODO: Find better solution
+                if distance_to_traffic_waypoint > 5 and self.curr_velocity < 2:
+                    if PRINT_DEBUG:
+                        rospy.logwarn('Move slowly to stopping point!')
+                    waypoint_velocities = self.move_slowly_to_waypoint()
+                # Brake to stop at the stop line
+                else:
+                    if PRINT_DEBUG:
+                        rospy.logwarn('Brake for traffic light!')
+                    waypoint_velocities = self.brake_till_traffic_waypoint()
+
+        # Necessary data is missing
+        else:
+            if PRINT_DEBUG:
+                rospy.logwarn('Data missing')
+            waypoint_velocities = self.set_velocity_to_zero()
+            
+        return waypoint_velocities
+
+    # Get the distance between two waypoint out of a list of waypoints
+    def distance_between_waypoints(self, waypoints, wp1, wp2):
+        dist = 0
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
+        for i in range(wp1, wp2+1):
+            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            wp1 = i
+        return dist
+
+    def world_to_local(self, egoX, egoY, egoYaw, worldX, worldY):
+        '''
+        transform given world coordinate into local coordinate:
+        positive x points forward, positive y points left
+        return local x, y and relative angle to world point 
+        '''
+      
+        # translate
+        dX = worldX - egoX
+        dY = worldY - egoY
+
+        # rotate
+        localX = math.cos(-egoYaw) * dX + math.sin(-egoYaw) * dY
+        localY = -math.sin(-egoYaw) * dY + math.cos(-egoYaw) * dY
+        relAngle = math.atan2(localY, localX)
+
+        return localX, localY, relAngle
 
 
-def get_waypoints_around_current_pos(worldWaypoints, idx):
-    '''
-    return the previous and next waypoints for given idx
-    '''
-    
-    waypoints = []
-    waypointCount = len(worldWaypoints)
-    lookahead = 4
-    startIdx = (idx - lookahead + waypointCount) % waypointCount
-    for i in range(2 * lookahead + 1):
-        waypoints.append(worldWaypoints[(startIdx + i) % waypointCount])
-    
-    return waypoints
+    def waypoints_to_local(self, egoX, egoY, egoYaw, waypoints):
+        '''
+        transform given waypoints to local coords
+        '''
+        localX = []
+        localY = []
+
+        for wp in waypoints:
+            x, y, _ = self.world_to_local(
+                        egoX, egoY, egoYaw,
+                        wp.pose.pose.position.x,
+                        wp.pose.pose.position.y)
+            localX.append(x)
+            localY.append(y)
+           
+        return localX, localY
 
 
-def calculate_cte(worldWaypoints, waypointIdx, egoX, egoY, egoYaw):
-    
-    selectedWaypoints = get_waypoints_around_current_pos(
-        worldWaypoints, waypointIdx)
+    def get_waypoints_around_current_pos(self, worldWaypoints, idx):
+        '''
+        return the previous and next waypoints for given idx
+        '''
+        waypoints = []
+        waypointCount = len(worldWaypoints)
+        lookahead = 4
+        startIdx = (idx - lookahead + waypointCount) % waypointCount
+        for i in range(2 * lookahead + 1):
+            waypoints.append(worldWaypoints[(startIdx + i) % waypointCount])
 
-    localX, localY = waypoints_to_local(egoX, egoY, egoYaw, selectedWaypoints)
-    
-    coefs = poly.polyfit(localX, localY, 3)
-    cte = poly.polyval(0.0, coefs)
+        return waypoints
 
-    return cte
+
+    def calculate_cte(self, worldWaypoints, waypointIdx, egoX, egoY, egoYaw):
+        selectedWaypoints = self.get_waypoints_around_current_pos(worldWaypoints, waypointIdx)
+        localX, localY = self.waypoints_to_local(egoX, egoY, egoYaw, selectedWaypoints)
+
+        coefs = poly.polyfit(localX, localY, 3)
+        cte = poly.polyval(0.0, coefs)
+
+        return cte
 
 
 if __name__ == '__main__':
