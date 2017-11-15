@@ -47,9 +47,8 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-	self.path = '../training/Simulator'
 
-        self.light_classifier = TLClassifier(self.path)
+        self.light_classifier = TLClassifier('/capstone/ros/src/styx/../../../training/Simulator')
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -208,6 +207,7 @@ class TLDetector(object):
                     light_wp = i
                     light_id = self.idx_of_stop_line[k][1]
                     state = self.get_light_state(self.lights[light_id])
+		    print("state:",state)
                     return light_wp, state
 
         return -1, TrafficLight.UNKNOWN
