@@ -92,19 +92,18 @@ class DBWNode(object):
         self.low_pass_filter = LowPassFilter(0.2,.1)
        
         # Time between two control loops
-        self.elapsed_time = 0.    # why was it set to [],  its not a list but a scalar
-        self.previous_time = 0.  
-		
-		#create a reset fall back solution
+        self.elapsed_time = 0.
+        self.previous_time = 0.
+        
+        #create a reset fall back solution
         self.dbw_reset()
-
         
         #declare everything above loop        
         self.loop()
   
 
     ### Begin: Callback and helper functions for subsribers to ROS topics
-	
+    
     def dbw_reset(self):
         self.controller_twist.reset()   #reset the controllers
         # Reseting all the variables of the class
@@ -135,12 +134,7 @@ class DBWNode(object):
     # Information provided by ros topic '/vehicle/dbw_enabled'
     def dbw_enabled_cb(self, msg):
         # Reset the controllers if safety driver takes control  
-        # TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        # TODO check what is necessary if control comes back
-      #  if self.dbw_enabled == False and msg.data == True:
-            # Reset the controllers
-       #     self.controller_twist.reset()
-        
+        # transition from autonomous to safety driver is handled in loop()
         self.dbw_enabled = msg.data
 
     ### End: Callback functions for subsribers to ROS topics
@@ -161,22 +155,22 @@ class DBWNode(object):
                 self.linear_velocity, 
                 self.angular_velocity, 
                 self.current_linear)
-                			# Apply low pass to steering data
+                # Apply low pass to steering data
                 steer = self.low_pass_filter.filt(steer)
-                			# Update timing information
+                # Update timing information
                 current_time = rospy.get_time()
                 self.elapsed_time = current_time - self.previous_time
                 self.previous_time = current_time
                 
-                			# Get throttle/brake data from the control system
+                # Get throttle/brake data from the control system
                 throttle, brake = self.controller_twist.control(
                 self.current_linear, self.linear_velocity,
                 self.elapsed_time)
-			# Calculate the final braking torque which has to be published
+                # Calculate the final braking torque which has to be published
                 brake_torque = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * brake * self.wheel_radius
-					  
-				# Only publish the commands for throttle, brake and steering
-				# if the control system is enabled
+                
+                # Only publish the commands for throttle, brake and steering
+                # if the control system is enabled
                 self.publish(throttle, brake_torque, steer)
             else:
                 self.dbw_reset()
