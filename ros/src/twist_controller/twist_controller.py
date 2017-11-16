@@ -1,17 +1,15 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
 
 import rospy
 #from lowpass import LowPassFilter
 from pid import PID
 
-
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
+PRINT_DEBUG = False # Print rospy.logwarn for debugging if True
 
-class TwistController(object):
-
-    
+class TwistController(object):  
     def __init__(
         self,
         vehicle_mass,
@@ -43,39 +41,43 @@ class TwistController(object):
         
         # Output of throttle-PID covers acceleration in range of 0..1 m/s^2
         self.throttle_pid = PID(0.35, 0.01, 0.0,    # p, i, d
-                                -5.0, 1.0)          # min, max
+                                0.0, self.accel_limit)          # min, max
         #self.throttle_low_pass = LowPassFilter(0.2, .1)
 
         # Output of brake-PID covers deceleration in range of 0..-5 m/s^2
         self.brake_pid = PID(0.35, 0.01, 0.0,    # p, i, d
-                             -5.0, 0.)           # min, max
+                                0.0, -self.decel_limit)          # min, max
         #self.brake_low_pass = LowPassFilter(0.2, .1)
         
         
+    # Function for controlling speed
     def control(self, v_current, v_target, elapsed_time):
-        
+        # Calculate the error
         v_error = v_target - v_current
         
         throttle = 0.
         brake = 0.
 
-        if v_error < 0. :
-            
+        # Decide if acceleration or deceleration is needed to get to target speed
+        if v_error < 0.0:
+            # Brake
             self.throttle_pid.reset()
             brake = self.brake_pid.step(-v_error, elapsed_time)
-            
+            if PRINT_DEBUG:
+                rospy.logwarn('BRAKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         else :
-            
+            # Speed up
             self.brake_pid.reset()
             throttle = self.throttle_pid.step(v_error, elapsed_time)
-            
-            # rospy.logwarn('v_error=%.3f, throttle=%.3f, brake=%.3f',
-            #               v_error, throttle, brake)
+            if PRINT_DEBUG:
+                rospy.logwarn('SPEEDING UP_________________________________')
+        
+        if PRINT_DEBUG:    
+            rospy.logwarn('Control Info: v_error=%.3f, throttle=%.3f, brake=%.3f', v_error, throttle, brake)
         
         return throttle, brake
     
-    
+    # Function to reset the controllers
     def reset(self):
-
         self.throttle_pid.reset()
         self.brake_pid.reset()

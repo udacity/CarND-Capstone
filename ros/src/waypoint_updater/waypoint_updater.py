@@ -7,7 +7,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from geometry_msgs.msg import Quaternion
 
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32, Float64
+from std_msgs.msg import Int32
 
 import tf
 import math
@@ -27,7 +27,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
-ACC_WPS_NUM = 10 # Number of waypoints used for acceleration
+ACC_WPS_NUM = 4 # Number of waypoints used for acceleration
 SAFETY_DISTANCE_FOR_BRAKING = 30 # Distance in m to brake before the traffic light
 
 PRINT_DEBUG = False # Print rospy.logwarn for debugging if True
@@ -93,10 +93,6 @@ class WaypointUpdater(object):
         # Set the publisher to write messages to topic '/final_waypoints'
         # The next waypoints the car has to follow are published
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
-
-        # Set the publisher to write messages to topic '/cte'
-        # The control unit uses this information
-        self.cte_pub = rospy.Publisher('/cte', Float64, queue_size=1)
 
         # rospy.spin()
         self.loop_n_sleep()
@@ -182,16 +178,6 @@ class WaypointUpdater(object):
 
                 # Publish the next waypoints the car should follow
                 self.publish(self.next_waypoint_index, value_waypoint_velocities)
-
-                ###############################################################
-                # calculate and publish cte for controller
-                cte = self.calculate_cte(self.base_waypoints, idx, 
-                                    self.curr_pose.position.x, 
-                                    self.curr_pose.position.y, 
-                                    self.curr_pose.orientation.w)
-
-                self.cte_pub.publish(cte)
-                ###############################################################
         
             rate.sleep()
 
@@ -247,7 +233,7 @@ class WaypointUpdater(object):
                 waypoint_velocities.append(0)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Current v: %f mph, First target v: %f mph.', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694)
+            rospy.logwarn('Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities   
 
@@ -261,7 +247,7 @@ class WaypointUpdater(object):
                 waypoint_velocities.append(0)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Current v: %f mph, First target v: %f mph.', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694)
+            rospy.logwarn('Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities
 
@@ -282,16 +268,19 @@ class WaypointUpdater(object):
 
         for i in range(LOOKAHEAD_WPS):
             # Before reaching max_velocity
-            if i <= ACC_WPS_NUM:
+            if i < ACC_WPS_NUM:
                 new_velocity += diff_velocity
                 
+                if new_velocity > self.max_velocity:
+                    new_velocity = self.max_velocity
+
                 waypoint_velocities.append(new_velocity)
             # After reaching the speed limit
             else:
                 waypoint_velocities.append(self.max_velocity)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Current v: %f mph, First target v: %f mph.', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694)
+            rospy.logwarn('Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities
 
@@ -312,7 +301,7 @@ class WaypointUpdater(object):
                 waypoint_velocities.append(0)
 
         if PRINT_DEBUG:
-            rospy.logwarn('Current v: %f mph, First target v: %f mph.', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694)
+            rospy.logwarn('Current v: %.2f mph, target v: %.2f:%.2f:%.2f:%.2f:%.2f (mph).', self.curr_velocity * 2.23694, waypoint_velocities[0] * 2.23694, waypoint_velocities[1] * 2.23694, waypoint_velocities[2] * 2.23694, waypoint_velocities[3] * 2.23694, waypoint_velocities[4] * 2.23694)
 
         return waypoint_velocities
 
@@ -373,66 +362,6 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
-
-    def world_to_local(self, egoX, egoY, egoYaw, worldX, worldY):
-        '''
-        transform given world coordinate into local coordinate:
-        positive x points forward, positive y points left
-        return local x, y and relative angle to world point 
-        '''
-      
-        # translate
-        dX = worldX - egoX
-        dY = worldY - egoY
-
-        # rotate
-        localX = math.cos(-egoYaw) * dX + math.sin(-egoYaw) * dY
-        localY = -math.sin(-egoYaw) * dY + math.cos(-egoYaw) * dY
-        relAngle = math.atan2(localY, localX)
-
-        return localX, localY, relAngle
-
-
-    def waypoints_to_local(self, egoX, egoY, egoYaw, waypoints):
-        '''
-        transform given waypoints to local coords
-        '''
-        localX = []
-        localY = []
-
-        for wp in waypoints:
-            x, y, _ = self.world_to_local(
-                        egoX, egoY, egoYaw,
-                        wp.pose.pose.position.x,
-                        wp.pose.pose.position.y)
-            localX.append(x)
-            localY.append(y)
-           
-        return localX, localY
-
-
-    def get_waypoints_around_current_pos(self, worldWaypoints, idx):
-        '''
-        return the previous and next waypoints for given idx
-        '''
-        waypoints = []
-        waypointCount = len(worldWaypoints)
-        lookahead = 4
-        startIdx = (idx - lookahead + waypointCount) % waypointCount
-        for i in range(2 * lookahead + 1):
-            waypoints.append(worldWaypoints[(startIdx + i) % waypointCount])
-
-        return waypoints
-
-
-    def calculate_cte(self, worldWaypoints, waypointIdx, egoX, egoY, egoYaw):
-        selectedWaypoints = self.get_waypoints_around_current_pos(worldWaypoints, waypointIdx)
-        localX, localY = self.waypoints_to_local(egoX, egoY, egoYaw, selectedWaypoints)
-
-        coefs = poly.polyfit(localX, localY, 3)
-        cte = poly.polyval(0.0, coefs)
-
-        return cte
 
 
 if __name__ == '__main__':
