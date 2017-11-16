@@ -92,14 +92,29 @@ class DBWNode(object):
         self.low_pass_filter = LowPassFilter(0.2,.1)
        
         # Time between two control loops
-        self.elapsed_time = []
+        self.elapsed_time = 0.    # why was it set to [],  its not a list but a scalar
         self.previous_time = 0.  
+		
+		#create a reset fall back solution
+        self.dbw_reset()
+
         
         #declare everything above loop        
         self.loop()
   
 
-    ### Begin: Callback functions for subsribers to ROS topics
+    ### Begin: Callback and helper functions for subsribers to ROS topics
+	
+    def dbw_reset(self):
+        self.controller_twist.reset()   #reset the controllers
+        # Reseting all the variables of the class
+        self.current_linear = 0.
+        self.elapsed_time = 0.
+        self.dbw_enabled = False
+        # set previous time to now so that we can caculate elapsed time for PID when available
+        self.previous_time = rospy.get_time()
+        self.angular_velocity = 0.
+        self.linear_velocity = 0.
  
     # Callback function to set the current velocity of the car
     # Information provided by ros topic '/current_velocity'
@@ -122,9 +137,9 @@ class DBWNode(object):
         # Reset the controllers if safety driver takes control  
         # TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # TODO check what is necessary if control comes back
-        if self.dbw_enabled == False and msg.data == True:
+      #  if self.dbw_enabled == False and msg.data == True:
             # Reset the controllers
-            self.controller_twist.reset()
+       #     self.controller_twist.reset()
         
         self.dbw_enabled = msg.data
 
@@ -135,36 +150,36 @@ class DBWNode(object):
         # TODO !!!!!!!!!!!!!!!!!!
         # TODO set to 50Hz for final solution
         # TODO set to 5Hz for testing issues
-        rate = rospy.Rate(50)
+        rate = rospy.Rate(5)
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering
             # Only publish the control commands if dbw is enabled
-            
+            rospy.logwarn('DBW is %s \n\n\n', self.dbw_enabled)
+            if self.dbw_enabled:
             # Get steering data from the control system
-            steer = self.controller_yaw.get_steering(
+                steer = self.controller_yaw.get_steering(
                 self.linear_velocity, 
                 self.angular_velocity, 
                 self.current_linear)
-            # Apply low pass to steering data
-            steer = self.low_pass_filter.filt(steer)
-                        
-            # Update timing information
-            current_time = rospy.get_time()
-            self.elapsed_time = current_time - self.previous_time
-            self.previous_time = current_time
-
-            # Get throttle/brake data from the control system
-            throttle, brake = self.controller_twist.control(
+                			# Apply low pass to steering data
+                steer = self.low_pass_filter.filt(steer)
+                			# Update timing information
+                current_time = rospy.get_time()
+                self.elapsed_time = current_time - self.previous_time
+                self.previous_time = current_time
+                
+                			# Get throttle/brake data from the control system
+                throttle, brake = self.controller_twist.control(
                 self.current_linear, self.linear_velocity,
                 self.elapsed_time)
-
-            # Calculate the final braking torque which has to be published
-            brake_torque = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * brake * self.wheel_radius
-                  
-            # Only publish the commands for throttle, brake and steering
-            # if the control system is enabled
-            if self.dbw_enabled:
+			# Calculate the final braking torque which has to be published
+                brake_torque = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * brake * self.wheel_radius
+					  
+				# Only publish the commands for throttle, brake and steering
+				# if the control system is enabled
                 self.publish(throttle, brake_torque, steer)
+            else:
+                self.dbw_reset()
             
             rate.sleep()
 
