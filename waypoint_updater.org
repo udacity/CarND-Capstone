@@ -20,7 +20,7 @@
 A super-class for both WaypointTracker and TLDetector
 
 #+NAME:waypoint-tracker
-#+BEGIN_SRC python :noweb tangle :tangle ./ros/src/waypoint_lib/waypoint_tracker.py
+#+BEGIN_SRC python :noweb tangle :tangle ./ros/src/waypoint_lib/src/waypoint_lib/waypoint_tracker.py
   import copy
   import math
 
