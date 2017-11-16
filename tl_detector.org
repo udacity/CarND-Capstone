@@ -15,39 +15,43 @@
 
 * Source Code
 
-Here we construct the source code from top to bottom.
+** Top level
 
-#+NAME:tl_dectector
-#+BEGIN_SRC python :noweb tangle :tangle
-  #!/usr/bin/env python
-  <<imports>>
-  STATE_COUNT_THRESHOLD = 3
+ Here we construct the source code from top to bottom.
 
-  class TLDetector(object):
-      def __init__(self):
-          rospy.init_node('tl_detector')
-          <<attributes-initialization>>
-          <<subscribers>>
-          config_string = rospy.get_param("/traffic_light_config")
-          self.config = yaml.load(config_string)
-          self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
-          <<traffic_image_processing_initialization>>
-          <<traffic_light_initialization>>
-          rospy.spin()
-      <<waypoints_cb>>
-      <<pose_cb>>
-      <<traffic_cb>>
-      <<image_cb>>
-      <<get_closest_waypoint>>
-      <<get_light_state>>
-      <<process_traffic_lights>>
+ #+NAME:tl_dectector
+ #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/tl_detector/tl_detector.py
+   #!/usr/bin/env python
+   <<imports>>
+   STATE_COUNT_THRESHOLD = 3
 
-  if __name__ == '__main__':
-      try:
-          TLDetector()
-      except rospy.ROSInterruptException:
-          rospy.logerr('Could not start traffic node.')
-#+END_SRC
+   class TLDetector(WaypointTracker):
+       def __init__(self):
+           WaypointTracker.__init__(self)
+
+           rospy.init_node('tl_detector')
+           <<attributes-initialization>>
+           <<subscribers>>
+           config_string = rospy.get_param("/traffic_light_config")
+           self.config = yaml.load(config_string)
+           self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+           <<traffic_image_processing_initialization>>
+           <<traffic_light_initialization>>
+           rospy.spin()
+       <<base_waypoints_cb>>
+       <<current_pose_cb>>
+       <<traffic_cb>>
+       <<image_cb>>
+       <<get_closest_waypoint>>
+       <<get_light_state>>
+       <<process_traffic_lights>>
+
+   if __name__ == '__main__':
+       try:
+           TLDetector()
+       except rospy.ROSInterruptException:
+           rospy.logerr('Could not start traffic node.')
+ #+END_SRC
 
 ** imports
 
@@ -60,7 +64,10 @@ Here we construct the source code from top to bottom.
   from styx_msgs.msg import Lane
   from sensor_msgs.msg import Image
   from cv_bridge import CvBridge
+
   from light_classification.tl_classifier import TLClassifier
+  from waypoint_lib.waypoint_tracker import WaypointTracker
+
   import tf
   import cv2
   import yaml
@@ -82,8 +89,8 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 
 #+NAME:subscribers
 #+BEGIN_SRC python :noweb tangle :tangle
-  sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-  sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+  self.current_pose_sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
+  self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
 
   '''
   /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -118,20 +125,19 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 
 #+END_SRC
 
-** waypoints_cb
+** base_waypoints_cb
 
-#+NAME:waypoints_cb
+#+NAME:base_waypoints_cb
 #+BEGIN_SRC python :noweb tangle :tangle
-def waypoints_cb(self, waypoints):
-    self.waypoints = waypoints
-
+  def base_waypoints_cb(self, msg):
+      WaypointTracker.base_waypoints_process(self, msg)
 #+END_SRC
 
-** pose_cb
+** current_pose_cb
 
-#+NAME:pose_cb
+#+NAME:current_pose_cb
 #+BEGIN_SRC python :noweb tangle :tangle
-def pose_cb(self, msg):
+def current_pose_cb(self, msg):
     self.pose = msg
 
 #+END_SRC

@@ -1,7 +1,7 @@
 import copy
 import math
 
-class WaypointTracker():
+class WaypointTracker(object):
     def __init__(self):
         self.base_waypoints = None
         self.pose = None

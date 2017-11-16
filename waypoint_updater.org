@@ -24,7 +24,7 @@ A super-class for both WaypointTracker and TLDetector
   import copy
   import math
 
-  class WaypointTracker():
+  class WaypointTracker(object):
       def __init__(self):
           self.base_waypoints = None
           self.pose = None
@@ -44,10 +44,9 @@ A super-class for both WaypointTracker and TLDetector
 
     - Subscribe to /base_waypoint has been done in the __init__
     - implement the callback to store it and declare its availability.
-    - compute the distance between the waypoints stored into an array self.distance_next ::
-    the i_th element is the distance from the i_th waypoint to the (i+1)_th waypoint.
-    - also record the longest and shortest distance to neighbor, and the indices
-    - record the last closest waypoint in front in terms of index, in order to save the effort to find the next
+    - compute the distance from the start of the base_waypoints to a base_waypoint stored into an array self.dist_to_here_from_start::
+    the i_th element is the distance from the 0_th waypoint to the (i)_th waypoint.
+    - also record the shortest distance to neighbor
     - 11/13 ::
                add back the computation of self.shortest_dist_to_next_waypoint
     in order to optimize the computation of the waypoint index of the traffic lights.
@@ -92,7 +91,6 @@ A super-class for both WaypointTracker and TLDetector
 #+END_SRC
 
 ** current_pose_cb
-*** pose_cb: process /current_pose
     - Subscribe to /current_pose is done in __init__
 
     - 11/6 ::
