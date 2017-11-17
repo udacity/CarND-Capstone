@@ -144,13 +144,20 @@ starting from the start to the i_th node, and j_th node.
 #+NAME:distance
 #+BEGIN_SRC python :noweb tangle :tangle
   def distance(self, waypoints, wp1, wp2):
-          dist = 0
-          dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-          for i in range(wp1, wp2+1):
-              dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-              wp1 = i
-          return dist
+      # dist = 0
+      # dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+      # for i in range(wp1, wp2+1):
+      #     dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+      #     wp1 = i
 
+      if (wp1 < wp2):
+          start, end = wp1, wp2
+      else:
+          start, end = wp2, wp1
+      # end of if (wp1 < wp2)
+
+      dist = self.dist_to_here_from_start[end] - self.dist_to_here_from_start[start]
+      return dist
 #+END_SRC
 
 ** to convert a global coordinates to local coordinates:
@@ -467,7 +474,6 @@ then the waypoint is front of my_car.
 
   TODO (for Yousuf and Aaron): Stopline location for each traffic light.
   '''
-
   LOOKAHEAD_WPS = 30 # 200 # Number of waypoints we will publish. You can change this number
   LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
   SAEF_TURNING_SPEED = 3.0       # meters/second
@@ -477,6 +483,7 @@ then the waypoint is front of my_car.
 
   <<publish_Lane>>
   <<distance_two_indices>>
+  <<velocity-timing-constants>>
 
   class WaypointUpdater(WaypointTracker):
       def __init__(self):
@@ -502,7 +509,7 @@ then the waypoint is front of my_car.
           self.current_velocity = None
 
           # self.traffic_lights = None
-          rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+          rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_waypoint_cb)
           # rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
 
           rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
@@ -522,7 +529,7 @@ then the waypoint is front of my_car.
       <<deceleration-policy>>
       <<loop>>
       <<base_waypoints_cb>>
-      <<traffic_cb>>
+      <<traffic_waypoint_cb>>
       <<current_velocity_cb>>
       <<obstacle_cb>>
 
@@ -536,7 +543,8 @@ then the waypoint is front of my_car.
 
 #+END_SRC
 
-    Putting the code together for Waypoint_Uploader
+The following are the implementations.
+
 *** imports
 
 #+NAME:imports
@@ -582,8 +590,15 @@ then the waypoint is front of my_car.
       # end of for i in range(LOOKAHEAD_WPS)
 #+END_SRC
 
-
 *** velocity-policy
+
+    Velocity policies are functions that take input of the distance to a reference point,
+    in this context of vehicle control, it's the point where the car should reach
+    certain velocity, e.g. 0.0.
+
+    The construction of such policies are in terms of the starting velocity, and the range of the input to the policies.
+
+    For constant policy, the velocity would be the constant value across all input range.
 
 #+NAME:constant-policy
 #+BEGIN_SRC python :noweb tangle :tangle
@@ -592,6 +607,9 @@ then the waypoint is front of my_car.
       ys = [velocity, velocity, velocity]
       return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 2))
 #+END_SRC
+
+For deceleration policy, at input value of 0, the velocity should be 0, and the positive boundary of
+the input, the velocity should be the normal velocity as specified. The decrease should be smooth.
 
 #+NAME:deceleration-policy
 #+BEGIN_SRC python :noweb tangle :tangle
@@ -640,15 +658,95 @@ then the waypoint is front of my_car.
       return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 3))
 #+END_SRC
 
-*** traffic_cb
+*** traffic_waypoint_cb
 
     Store the published /traffic_waypoint data. It's expected to be utilized in the
     main loop of the traffic waypoint data.
 
-#+NAME:traffic_cb
+#+NAME:traffic_waypoint_cb
 #+BEGIN_SRC python :noweb tangle :tangle
-  def traffic_cb(self, msg):
+  def traffic_waypoint_cb(self, msg):
       self.traffic_waypoint = msg.data
+      if msg.data < 0:
+          self.traffic_light_red = False
+          self.traffic_waypoint = -msg.data
+      else:
+          self.traffic_light_red = True
+          self.traffic_waypoint = msg.data
+      # end of if msg.data < 0
+#+END_SRC
+
+*** adjust_velocity_for_traffic_light
+
+In the context of loop for processing the /pose message, determine the velocity policy,
+and adjust the velocity for each final_waypoints
+
+By the current logic, tl_detector will only publish /traffic_waypoint if there is a red traffic light detected.
+
+There might be another case that the car should slow down,
+where it's close to next traffic light, regardless of the traffic light's color.
+To implement this, we need to have the capability to know distance to the next traffic light.
+It seems to me that this might be an abstraction
+should be done in WaypointTracker.
+
+MAJOR CHANGE of the protocol between waypoints_updater and tl_detector ::
+when the traffic light color is not red, report the negative of the waypoint index instead of just report -1, to take advantage of the computation of the waypoint index of the traffic light, saving waypoint_updater from computing it.
+
+#+NAME:velocity-timing-constants
+#+BEGIN_SRC python :noweb tangle :tangle
+  TIME_TO_CRUISE = 5        # seconds, can keep the normal cruise speed
+  TIME_TO_SLOWDOWN = 3        # seconds, must slowdown in anticipation, regardless of the color of the light
+  TIME_TO_STOP_IF_RED = 1     # seconds, must stop if the traffic light is red
+#+END_SRC
+
+#+NAME:adjust_velocity_for_traffic_light
+#+BEGIN_SRC python :noweb tangle :tangle
+  # policy for velocity adjustment in view of traffic light
+  if (self.current_velocity and (0 < self.current_velocity) and
+      self.traffic_waypoint and (self.last_closest_front_waypoint_index < self.traffic_waypoint)):
+      distance_to_traffic_light = self.distance(
+          self.base_waypoints, self.last_closest_front_waypoint_index, self.traffic_waypoint)
+
+      time_to_traffic_light = distance_to_traffic_light/self.current_velocity
+      velocity_policy = None
+      if TIME_TO_CRUISE < time_to_traffic_light:
+          velocity_policy = self.cruise_unless_near_the_end()
+      elif TIME_TO_SLOWDOWN < time_to_traffic_light:
+          velocity_policy = self.decelaration_policy
+      elif self.traffic_light_red:
+          velocity_policy = self.stop_policy
+      else:
+          velocity_policy = self.cruise_unless_near_the_end()
+      # end of if SAFE_TIME_CRUISE < time_to_traffic_light
+
+      # apply the policy to each final_waypoints
+      if velocity_policy:
+          # for all final waypoints
+          num_affected_waypoints = min(final_waypoints_count, self.traffic_waypoint - self.last_closest_front_waypoint_index)
+          for i in range(num_affected_waypoints):
+              waypoint = final_waypoints[i]
+              j = self.last_closest_front_waypoint_index + i
+              distance_to_traffic_light = self.distance(self.base_waypoints, j, self.traffic_waypoint)
+              waypoint.twist.twist.linear.x = velocity_policy(distance_to_traffic_light)
+      # end of if velocity_policy
+  # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
+#+END_SRC
+
+*** cruise_unless_near_the_end
+
+Use cruise policy, unless it's close to the end of the track (base_waypoints). When approaching the end,
+the velocitise have been calculated, thus no need to have the policy to calculate.
+
+#+NAME:cruise_unless_near_the_end
+#+BEGIN_SRC python :noweb tangle :tangle
+  def cruise_unless_near_the_end(self):
+      if (self.base_waypoints_num - self.last_closest_front_waypoint_index) < self.LOOKAHEAD_WPS:
+          velocity_policy = None
+      else:
+          velocity_policy = self.cruise_policy
+      # end of if (self.base_waypoints_num - self.last_closest_front_waypoint_index) < self.LOOKAHEAD_WPS
+
+      return velocity_policy
 #+END_SRC
 
 *** traffic_lights_cb
@@ -721,31 +819,29 @@ Then use that to generate the rest of the final_waypoints.
   self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
 
   # generate final_waypoints
-  waypoints_count = 0
+  final_waypoints_count = 0
   lookahead_dist = 0  # the accumulated distance of the looking ahead
   lookahead_time = 0  # the lookahead time
 
   final_waypoints = []
   accumulated_turning = 0
-  dist_to_here_from_current = []
+  # dist_to_here_from_current = []
 
   # modulize the code to be less dependent
   j = self.last_closest_front_waypoint_index
   while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-          (waypoints_count < LOOKAHEAD_WPS) and
+          (final_waypoints_count < LOOKAHEAD_WPS) and
           (j < self.base_waypoints_num)):
       waypoint = copy.deepcopy(self.base_waypoints[j])
-      dist_to_here_from_current.append(
-          self.dist_to_here_from_start[j]-
-          self.dist_to_here_from_start[self.last_closest_front_waypoint_index])
-
       j = (j + 1) # % self.base_waypoints_num
-      waypoints_count += 1
+      final_waypoints_count += 1
       final_waypoints.append(waypoint)
-  # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
+  # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= final_waypoints_count)
 
-  rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
-                % (waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
+  rospy.loginfo('Lookahead threshold reached: final_waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
+                % (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
+
+  <<adjust_velocity_for_traffic_light>>
 
   # publish to /final_waypoints, need to package final_waypoints into Lane message
   publish_Lane(self.final_waypoints_pub, final_waypoints)
@@ -771,48 +867,73 @@ Then use that to generate the rest of the final_waypoints.
     The value of LOOKAHEAD_WPS might impact the system work load. It should be sufficient large. But not too large.
 
 * Use case: Stop at the red traffic light or at the end
+** Design Considerations for Traffic Light Treatment
 
-*** Simulation of Detection of Traffic Lights
+ - The time away from the traffic light ::
+ It's the distance away from the traffic light divided by the current velocity of the car.
 
-    In the simulator, use of traffic lights data from the simulator, to
-    tell whether there is a traffic light in red in front of the car in near distance.
+ This concept determines the velocity policy:
+
+ The intuition: the closer, the car should be the slower, when it's approaching, the car should have 0 velocity.
+
+ Let's start with the following threshold to experiment:
+
+ Three threshold:
+
+ Ignore: above 5 seconds
+
+ Slow Down: within 3 seconds
+
+ Must stop: within 2 seconds
+
+ Based on the above consideration, here is the implementation:
+
+ 1. In the call back for traffic_waypoint, compute the time away from the traffic light
+ 2. Based the time away, implement the above policy
+ 3. To have the current velocity, need to subscribe and store the current velocity.
+
+**** Simulation of Detection of Traffic Lights
+
+     In the simulator, use of traffic lights data from the simulator, to
+     tell whether there is a traffic light in red in front of the car in near distance.
 
 
-**** message type: styx_msgs/TrafficLightArray
+***** message type: styx_msgs/TrafficLightArray
 
-  #+BEGIN_EXAMPLE
-    styx_msgs/TrafficLightArray
-    std_msgs/Header header
-      uint32 seq
-      time stamp
-      string frame_id
-    styx_msgs/TrafficLight[] lights
-      uint8 UNKNOWN=4
-      uint8 GREEN=2
-      uint8 YELLOW=1
-      uint8 RED=0
-      std_msgs/Header header
-        uint32 seq
-        time stamp
-        string frame_id
-      geometry_msgs/PoseStamped pose
-        std_msgs/Header header
-          uint32 seq
-          time stamp
-          string frame_id
-        geometry_msgs/Pose pose
-          geometry_msgs/Point position
-            float64 x
-            float64 y
-            float64 z
-          geometry_msgs/Quaternion orientation
-            float64 x
-            float64 y
-            float64 z
-            float64 w
-      uint8 state
+   #+BEGIN_EXAMPLE
+     styx_msgs/TrafficLightArray
+     std_msgs/Header header
+       uint32 seq
+       time stamp
+       string frame_id
+     styx_msgs/TrafficLight[] lights
+       uint8 UNKNOWN=4
+       uint8 GREEN=2
+       uint8 YELLOW=1
+       uint8 RED=0
+       std_msgs/Header header
+         uint32 seq
+         time stamp
+         string frame_id
+       geometry_msgs/PoseStamped pose
+         std_msgs/Header header
+           uint32 seq
+           time stamp
+           string frame_id
+         geometry_msgs/Pose pose
+           geometry_msgs/Point position
+             float64 x
+             float64 y
+             float64 z
+           geometry_msgs/Quaternion orientation
+             float64 x
+             float64 y
+             float64 z
+             float64 w
+       uint8 state
 
-  #+END_EXAMPLE
+   #+END_EXAMPLE
+
 * Support functions
 
 #+NAME:distance_two_indices
@@ -856,3 +977,4 @@ styx_server ->> waypoint_updater: /vehicle/traffic_lights
 note over waypoint_updater: Just for simulation purpose
 #+END_SRC
 #results:
+

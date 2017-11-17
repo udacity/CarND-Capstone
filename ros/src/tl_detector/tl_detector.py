@@ -85,7 +85,7 @@ class TLDetector(WaypointTracker):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+            light_wp = light_wp if state == TrafficLight.RED else -light_wp
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
@@ -156,7 +156,7 @@ class TLDetector(WaypointTracker):
                             self.stop_line_positions[self.previous_traffic_light_position])
     
             for i in range(self.previous_traffic_light_position+1,
-                           remaining_traffic_ligths-1):
+                           self.previous_traffic_light_position + remaining_traffic_ligths):
                 d = dl(self.base_waypoints[car_position_index].pose.pose.position,
                 self.stop_line_positions[i])
                 if d < d_shortest:  # found the closest
@@ -170,7 +170,7 @@ class TLDetector(WaypointTracker):
             # find the closest base_waypoint to the found traffic light.
             nearest_waypoint_for_the_light = car_position_index
             d_shortest = dl(self.base_waypoints[car_position_index].pose.pose.position, self.stop_line_positions[traffic_light_index])
-            for j in range(car_position_index+1, len(self.base_waypoints)-car_position_index-1):
+            for j in range(car_position_index + 1, len(self.base_waypoints)):
                 d = dl(self.base_waypoints[j].pose.pose.position, self.stop_line_positions[traffic_light_index])
                 if d < d_shortest:
                     d_shortest = d

@@ -27,7 +27,6 @@ as well as to verify your TL classifier.
 
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
-
 LOOKAHEAD_WPS = 30 # 200 # Number of waypoints we will publish. You can change this number
 LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
 SAEF_TURNING_SPEED = 3.0       # meters/second
@@ -45,6 +44,9 @@ def distance_two_indices(waypoints, i, j):
   a = waypoints[i].pose.pose.position
   b = waypoints[j].pose.pose.position
   return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+TIME_TO_CRUISE = 5        # seconds, can keep the normal cruise speed
+TIME_TO_SLOWDOWN = 3        # seconds, must slowdown in anticipation, regardless of the color of the light
+TIME_TO_STOP_IF_RED = 1     # seconds, must stop if the traffic light is red
 
 class WaypointUpdater(WaypointTracker):
     def __init__(self):
@@ -70,7 +72,7 @@ class WaypointUpdater(WaypointTracker):
         self.current_velocity = None
 
         # self.traffic_lights = None
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_waypoint_cb)
         # rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
 
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
@@ -140,31 +142,57 @@ class WaypointUpdater(WaypointTracker):
                 self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
                 
                 # generate final_waypoints
-                waypoints_count = 0
+                final_waypoints_count = 0
                 lookahead_dist = 0  # the accumulated distance of the looking ahead
                 lookahead_time = 0  # the lookahead time
                 
                 final_waypoints = []
                 accumulated_turning = 0
-                dist_to_here_from_current = []
+                # dist_to_here_from_current = []
                 
                 # modulize the code to be less dependent
                 j = self.last_closest_front_waypoint_index
                 while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-                        (waypoints_count < LOOKAHEAD_WPS) and
+                        (final_waypoints_count < LOOKAHEAD_WPS) and
                         (j < self.base_waypoints_num)):
                     waypoint = copy.deepcopy(self.base_waypoints[j])
-                    dist_to_here_from_current.append(
-                        self.dist_to_here_from_start[j]-
-                        self.dist_to_here_from_start[self.last_closest_front_waypoint_index])
-                
                     j = (j + 1) # % self.base_waypoints_num
-                    waypoints_count += 1
+                    final_waypoints_count += 1
                     final_waypoints.append(waypoint)
-                # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
+                # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= final_waypoints_count)
                 
-                rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
-                              % (waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
+                rospy.loginfo('Lookahead threshold reached: final_waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
+                              % (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
+                
+                # policy for velocity adjustment in view of traffic light
+                if (self.current_velocity and (0 < self.current_velocity) and
+                    self.traffic_waypoint and (self.last_closest_front_waypoint_index < self.traffic_waypoint)):
+                    distance_to_traffic_light = self.distance(
+                        self.base_waypoints, self.last_closest_front_waypoint_index, self.traffic_waypoint)
+                
+                    time_to_traffic_light = distance_to_traffic_light/self.current_velocity
+                    velocity_policy = None
+                    if TIME_TO_CRUISE < time_to_traffic_light:
+                        velocity_policy = self.cruise_unless_near_the_end()
+                    elif TIME_TO_SLOWDOWN < time_to_traffic_light:
+                        velocity_policy = self.decelaration_policy
+                    elif self.traffic_light_red:
+                        velocity_policy = self.stop_policy
+                    else:
+                        velocity_policy = self.cruise_unless_near_the_end()
+                    # end of if SAFE_TIME_CRUISE < time_to_traffic_light
+                
+                    # apply the policy to each final_waypoints
+                    if velocity_policy:
+                        # for all final waypoints
+                        num_affected_waypoints = min(final_waypoints_count, self.traffic_waypoint - self.last_closest_front_waypoint_index)
+                        for i in range(num_affected_waypoints):
+                            waypoint = final_waypoints[i]
+                            j = self.last_closest_front_waypoint_index + i
+                            distance_to_traffic_light = self.distance(self.base_waypoints, j, self.traffic_waypoint)
+                            waypoint.twist.twist.linear.x = velocity_policy(distance_to_traffic_light)
+                    # end of if velocity_policy
+                # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
                 
                 # publish to /final_waypoints, need to package final_waypoints into Lane message
                 publish_Lane(self.final_waypoints_pub, final_waypoints)
@@ -192,8 +220,15 @@ class WaypointUpdater(WaypointTracker):
             expected_velocity = self.deceleration_policy(dist_to_the_end)
             self.base_waypoints[last_ith].twist.twist.linear.x = expected_velocity
         # end of for i in range(LOOKAHEAD_WPS)
-    def traffic_cb(self, msg):
+    def traffic_waypoint_cb(self, msg):
         self.traffic_waypoint = msg.data
+        if msg.data < 0:
+            self.traffic_light_red = False
+            self.traffic_waypoint = -msg.data
+        else:
+            self.traffic_light_red = True
+            self.traffic_waypoint = msg.data
+        # end of if msg.data < 0
     def current_velocity_cb(self, msg):
         self.current_velocity = msg.twist.linear.x
     def obstacle_cb(self, msg):

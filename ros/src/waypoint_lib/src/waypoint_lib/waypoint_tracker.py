@@ -100,9 +100,17 @@ class WaypointTracker(object):
         # end of while (local_x < 0)
         return i
     def distance(self, waypoints, wp1, wp2):
-            dist = 0
-            dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-            for i in range(wp1, wp2+1):
-                dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-                wp1 = i
-            return dist
+        # dist = 0
+        # dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        # for i in range(wp1, wp2+1):
+        #     dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+        #     wp1 = i
+    
+        if (wp1 < wp2):
+            start, end = wp1, wp2
+        else:
+            start, end = wp2, wp1
+        # end of if (wp1 < wp2)
+    
+        dist = self.dist_to_here_from_start[end] - self.dist_to_here_from_start[start]
+        return dist
