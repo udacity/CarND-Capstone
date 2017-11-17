@@ -21,36 +21,40 @@
 
  #+NAME:tl_dectector
  #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/tl_detector/tl_detector.py
-   #!/usr/bin/env python
-   <<imports>>
-   STATE_COUNT_THRESHOLD = 3
+      #!/usr/bin/env python
+      <<imports>>
+      STATE_COUNT_THRESHOLD = 3
 
-   class TLDetector(WaypointTracker):
-       def __init__(self):
-           WaypointTracker.__init__(self)
+      class TLDetector(WaypointTracker):
+          def __init__(self):
+              WaypointTracker.__init__(self)
 
-           rospy.init_node('tl_detector')
-           <<attributes-initialization>>
-           <<subscribers>>
-           config_string = rospy.get_param("/traffic_light_config")
-           self.config = yaml.load(config_string)
-           self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
-           <<traffic_image_processing_initialization>>
-           <<traffic_light_initialization>>
-           rospy.spin()
-       <<base_waypoints_cb>>
-       <<current_pose_cb>>
-       <<traffic_cb>>
-       <<image_cb>>
-       <<get_closest_waypoint>>
-       <<get_light_state>>
-       <<process_traffic_lights>>
+              rospy.init_node('tl_detector')
+              <<attributes-initialization>>
+              <<subscribers>>
+              config_string = rospy.get_param("/traffic_light_config")
+              self.config = yaml.load(config_string)
+              self.previous_traffic_light_position = 0
+              self.number_traffic_lights_passed = 0
 
-   if __name__ == '__main__':
-       try:
-           TLDetector()
-       except rospy.ROSInterruptException:
-           rospy.logerr('Could not start traffic node.')
+              self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+
+              <<traffic_image_processing_initialization>>
+              <<traffic_light_initialization>>
+              rospy.spin()
+          <<base_waypoints_cb>>
+          <<current_pose_cb>>
+          <<traffic_array_cb>>
+          <<image_cb>>
+          <<get_light_state>>
+          <<process_traffic_lights>>
+          <<find-closest-traffic-light>>
+
+      if __name__ == '__main__':
+          try:
+              TLDetector()
+          except rospy.ROSInterruptException:
+              rospy.logerr('Could not start traffic node.')
  #+END_SRC
 
 ** imports
@@ -68,7 +72,8 @@
   from light_classification.tl_classifier import TLClassifier
   from waypoint_lib.waypoint_tracker import WaypointTracker
 
-  import tf
+  import tf as tf_ros
+  import math
   import cv2
   import yaml
 #+END_SRC
@@ -99,7 +104,7 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   simulator. When testing on the vehicle, the color state will not be available. You'll need to
   rely on the position of the light and the camera image to predict it.
   '''
-  sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+  sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_array_cb)
   sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
 #+END_SRC
@@ -121,11 +126,14 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 #+BEGIN_SRC python :noweb tangle :tangle
   self.bridge = CvBridge()
   self.light_classifier = TLClassifier()
-  self.listener = tf.TransformListener()
+  self.listener = tf_ros.TransformListener()
 
 #+END_SRC
 
 ** base_waypoints_cb
+
+   So far, it only need to digest and process the base_points and store them. This has been implemented in the
+   super-class.
 
 #+NAME:base_waypoints_cb
 #+BEGIN_SRC python :noweb tangle :tangle
@@ -135,18 +143,19 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 
 ** current_pose_cb
 
+   - Determine the location of the car by locating the nearest waypoint in front of the car
+   -
 #+NAME:current_pose_cb
 #+BEGIN_SRC python :noweb tangle :tangle
-def current_pose_cb(self, msg):
-    self.pose = msg
-
+  def current_pose_cb(self, msg):
+      self.pose = msg
 #+END_SRC
 
-** traffic_cb
+** traffic_array_cb
 
-#+NAME:traffic_cb
+#+NAME:traffic_array_cb
 #+BEGIN_SRC python :noweb tangle :tangle
-  def traffic_cb(self, msg):
+  def traffic_array_cb(self, msg):
       self.lights = msg.lights
 
 #+END_SRC
@@ -209,61 +218,114 @@ def current_pose_cb(self, msg):
       light = None
 
       # List of positions that correspond to the line to stop in front of for a given intersection
-      stop_line_positions = self.config['stop_line_positions']
+      self.stop_line_positions = self.config['stop_line_positions']
+
       if (self.pose):
           car_position = self.get_closest_waypoint(self.pose.pose)
       # end of if (self.pose)
 
       #TODO find the closest visible traffic light (if one exists)
+      # the index of the waypoint of the traffic light
+      light_index, light_wp = self.find_closest_traffic_light(car_position)
 
-      if light:
-          state = self.get_light_state(light)
+      if light_index:
+          state = self.get_light_state(light_index)
           return light_wp, state
-      self.waypoints = None
+      # self.waypoints = None
       return -1, TrafficLight.UNKNOWN
 
 #+END_SRC
 
+** find-closest-traffic-light
+
+Based on the current car_position, and the previous_traffic_light_position, find the next traffic_light_position
+#+NAME:find-closest-traffic-light
+#+BEGIN_SRC python :noweb tangle :tangle
+  def find_closest_traffic_light(self, car_position_index):
+      remaining_traffic_ligths = len(self.stop_line_positions)-self.number_traffic_lights_passed
+      if 0 < remaining_traffic_ligths:
+          dl = lambda a, b: math.sqrt((a.x-b[0])**2 + (a.y-b[1])**2)
+          # find the closest traffic light to the car's position
+          traffic_light_index = self.previous_traffic_light_position
+          d_shortest = dl(self.base_waypoints[car_position_index].pose.pose.position,
+                          self.stop_line_positions[self.previous_traffic_light_position])
+
+          for i in range(self.previous_traffic_light_position+1,
+                         remaining_traffic_ligths-1):
+              d = dl(self.base_waypoints[car_position_index].pose.pose.position,
+              self.stop_line_positions[i])
+              if d < d_shortest:  # found the closest
+                  d_shortest = d
+                  traffic_light_index = i
+              # end of if d < d_shortest
+          # end of for i in range(self.previous_traffic_light_position, len(self.stop_line_positions)-self.number_traffic_lights_passed)
+          self.previous_traffic_light_position = traffic_light_index
+          self.number_traffic_lights_passed += 1
+
+          # find the closest base_waypoint to the found traffic light.
+          nearest_waypoint_for_the_light = car_position_index
+          d_shortest = dl(self.base_waypoints[car_position_index].pose.pose.position, self.stop_line_positions[traffic_light_index])
+          for j in range(car_position_index+1, len(self.base_waypoints)-car_position_index-1):
+              d = dl(self.base_waypoints[j].pose.pose.position, self.stop_line_positions[traffic_light_index])
+              if d < d_shortest:
+                  d_shortest = d
+                  nearest_waypoint_for_the_light = j
+              # end of if d < d_shortest
+          # end of for j in range(car_position_index, len(self.base_waypoints)-car_position_index)
+          return traffic_light_index, nearest_waypoint_for_the_light
+      else:
+          return None, None
+#+END_SRC
+
 ** get_closest_waypoint
+
+Use the implementation of the super-class, WaypointTracker.
 
 #+NAME:get_closest_waypoint
 #+BEGIN_SRC python :noweb tangle :tangle
-      def get_closest_waypoint(self, pose):
-          """Identifies the closest path waypoint to the given position
-              https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
-          Args:
-              pose (Pose): position to match a waypoint to
+  # def get_closest_waypoint(self, pose):
+  #     """Identifies the closest path waypoint to the given position
+  #         https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
+  #     Args:
+  #         pose (Pose): position to match a waypoint to
 
-          Returns:
-              int: index of the closest waypoint in self.waypoints
+  #     Returns:
+  #         int: index of the closest waypoint in self.waypoints
 
-          """
-          #TODO implement
-          return 0
+  #     """
+  #     #TODO implement
+  #     return 0
 
 #+END_SRC
 
 ** get_light_state
 
+I assume/design the light parameter is the index of the nearest traffic light in the list of traffic lights.
 #+NAME:get_light_state
 #+BEGIN_SRC python :noweb tangle :tangle
-      def get_light_state(self, light):
-          """Determines the current color of the traffic light
+  FAKED_LIGHT = True
 
-          Args:
-              light (TrafficLight): light to classify
+  def get_light_state(self, light_index):
+      """Determines the current color of the traffic light
 
-          Returns:
-              int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+      Args:
+          light_index (TrafficLight): light to classify
 
-          """
-          if(not self.has_image):
-              self.prev_light_loc = None
-              return False
+      Returns:
+          int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
-          cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+      """
+      if FAKED_LIGHT:
+          return self.lights[light_index].state
+      # end of if FAKED_LIGHT
 
-          #Get classification
-          return self.light_classifier.get_classification(cv_image)
+      if(not self.has_image):
+          self.prev_light_loc = None
+          return False
+
+      cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+      #Get classification
+      return self.light_classifier.get_classification(cv_image)
 
 #+END_SRC

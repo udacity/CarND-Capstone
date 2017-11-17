@@ -1,5 +1,34 @@
 import copy
 import math
+import tf as tf_ros                      # This is of ROS geometry, not of TensorFlow!
+def get_yaw(orientation):
+    """
+    Compute yaw from orientation, which is in Quaternion.
+    """
+    # orientation = msg.pose.orientation
+    euler = tf_ros.transformations.euler_from_quaternion([
+        orientation.x,
+        orientation.y,
+        orientation.z,
+        orientation.w])
+    yaw = euler[2]
+    return yaw
+def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
+    """
+    compute the local coordinates for the global x, y coordinates values,
+    given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
+    Assume the rotation is radius
+    """
+    shift_x = x - local_origin_x
+    shift_y = y - local_origin_y
+
+    cos_rotation = math.cos(rotation)
+    sin_rotation = math.sin(rotation)
+
+    local_x =  cos_rotation*shift_x + sin_rotation*shift_y
+    local_y = -sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
+    # assuming the orientation angle clockwise being positive
+    return local_x, local_y
 
 class WaypointTracker(object):
     def __init__(self):
@@ -53,7 +82,23 @@ class WaypointTracker(object):
             self.pose = msg
         # end of if self.pose is None
         # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
+    def get_closest_waypoint(self, pose):
+        current_pose = pose.position
+        current_orientation = pose.orientation
+        yaw = get_yaw(current_orientation)
     
+        # Compute the waypoints ahead of the current_pose
+    
+        local_x = -1
+        i = self.last_closest_front_waypoint_index - 1
+        while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
+            i = (i + 1) # % self.base_waypoints_num
+            waypoint = self.base_waypoints[i]
+            w_pos = waypoint.pose.pose.position
+            local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+                                                    w_pos.x, w_pos.y)
+        # end of while (local_x < 0)
+        return i
     def distance(self, waypoints, wp1, wp2):
             dist = 0
             dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)

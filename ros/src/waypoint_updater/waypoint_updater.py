@@ -35,35 +35,6 @@ SAEF_TURNING_SPEED = 3.0       # meters/second
 DANGER_TURNING_ANGLE = math.pi/4  # 30 degree
 MPH_to_MPS = 1609.344/3600.0 # 1 mile = 1609.344 1 hour = 3600 seconds
 
-import tf                       # This is of ROS geometry, not of TensorFlow!
-def get_yaw(orientation):
-    """
-    Compute yaw from orientation, which is in Quaternion.
-    """
-    # orientation = msg.pose.orientation
-    euler = tf.transformations.euler_from_quaternion([
-        orientation.x,
-        orientation.y,
-        orientation.z,
-        orientation.w])
-    yaw = euler[2]
-    return yaw
-def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
-    """
-    compute the local coordinates for the global x, y coordinates values,
-    given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
-    Assume the rotation is radius
-    """
-    shift_x = x - local_origin_x
-    shift_y = y - local_origin_y
-
-    cos_rotation = math.cos(rotation)
-    sin_rotation = math.sin(rotation)
-
-    local_x =  cos_rotation*shift_x + sin_rotation*shift_y
-    local_y = -sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
-    # assuming the orientation angle clockwise being positive
-    return local_x, local_y
 def publish_Lane(publisher, waypoints):
         lane = Lane()
         lane.header.frame_id = '/world'
@@ -166,29 +137,9 @@ class WaypointUpdater(WaypointTracker):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
             if self.base_waypoints and self.pose:
-                current_pose = self.pose.pose.position
-                current_orientation = self.pose.pose.orientation
-                yaw = get_yaw(current_orientation)
+                self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
                 
-                # Compute the waypoints ahead of the current_pose
-                
-                local_x = -1
-                i = self.last_closest_front_waypoint_index - 1
-                while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
-                  i = (i + 1) # % self.base_waypoints_num
-                  waypoint = self.base_waypoints[i]
-                  w_pos = waypoint.pose.pose.position
-                  local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
-                                                          w_pos.x, w_pos.y)
-                # end of while (local_x < 0)
-                
-                # if (i == self.last_closest_front_waypoint_index):  # no more progress
-                #    self.stopped = True
-                # end of if (i == self.last_closest_front_waypoint_index)
-                
-                # now i is the index of the closest waypoint in front
-                self.last_closest_front_waypoint_index = i
-                
+                # generate final_waypoints
                 waypoints_count = 0
                 lookahead_dist = 0  # the accumulated distance of the looking ahead
                 lookahead_time = 0  # the lookahead time
@@ -202,38 +153,14 @@ class WaypointUpdater(WaypointTracker):
                 while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
                         (waypoints_count < LOOKAHEAD_WPS) and
                         (j < self.base_waypoints_num)):
-                  waypoint = copy.deepcopy(self.base_waypoints[j])
-                  dist_to_here_from_current.append(
-                      self.dist_to_here_from_start[j]-
-                      self.dist_to_here_from_start[self.last_closest_front_waypoint_index])
+                    waypoint = copy.deepcopy(self.base_waypoints[j])
+                    dist_to_here_from_current.append(
+                        self.dist_to_here_from_start[j]-
+                        self.dist_to_here_from_start[self.last_closest_front_waypoint_index])
                 
-                  j = (j + 1) # % self.base_waypoints_num
-                  waypoints_count += 1
-                
-                  # turning_angle = math.atan2(local_y, local_x)
-                  # accumulated_turning = (accumulated_turning + turning_angle) / waypoints_count
-                  # average accumulated turning
-                
-                  # estimated_vel = min(
-                  #     self.max_vel_mps, SAEF_TURNING_SPEED +
-                  #     #(self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.5*abs(turning_angle)))
-                  #     (self.max_vel_mps - SAEF_TURNING_SPEED)*math.exp(-3.9*abs(accumulated_turning)))
-                
-                  # waypoint.twist.twist.linear.x = estimated_vel # meter/s
-                  final_waypoints.append(waypoint)
-                
-                  # dist_between = self.dist_to_next[(j - 1) # % self.base_waypoints_num]
-                  # lookahead_dist += dist_between
-                  # lookahead_time = lookahead_dist / (estimated_vel)
-                
-                  # prepare for the next iteration for estimating the turning angle, velocity
-                  # if (j < self.base_waypoints_num):
-                  #     current_waypoint = waypoint.pose.pose.position
-                  #     w_pos = self.base_waypoints[j].pose.pose.position  # the next waypoint after current_waypoint
-                  #     yaw = yaw + turning_angle
-                  #     local_x, local_y = to_local_coordinates(current_waypoint.x, current_waypoint.y, yaw,
-                  #                                             w_pos.x, w_pos.y)
-                  # end of (j < self.base_waypoints_num)
+                    j = (j + 1) # % self.base_waypoints_num
+                    waypoints_count += 1
+                    final_waypoints.append(waypoint)
                 # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= waypoints_count)
                 
                 rospy.loginfo('Lookahead threshold reached: waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
