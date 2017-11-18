@@ -11,6 +11,7 @@ import tf
 import cv2
 import yaml
 import math
+import os
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -48,7 +49,7 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
 
-        self.light_classifier = TLClassifier('/capstone/ros/src/styx/../../../training/Simulator')
+        self.light_classifier = TLClassifier(os.getcwd()+'/../../../training/Simulator')
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -162,7 +163,7 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         #Get classification
         #return light.state

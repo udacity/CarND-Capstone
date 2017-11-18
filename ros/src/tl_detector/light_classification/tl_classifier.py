@@ -2,6 +2,7 @@ from styx_msgs.msg import TrafficLight
 
 import tensorflow as tf
 import numpy as np
+import os
 
 class TLClassifier(object):
     def __init__(self, model_path):
@@ -48,8 +49,9 @@ class TLClassifier(object):
             	self.config.operation_timeout_in_ms = 50000 # terminate anything that don't return in 50 seconds
 		self.tf_session = tf.Session(config=self.config)
             	#self.saver = tf.train.import_meta_graph(self.model_path + '/checkpoints/generator.ckpt.meta')
-		self.saver = tf.train.import_meta_graph('/capstone/training/Simulator/checkpoints/generator.ckpt.meta')
-            	self.saver.restore(self.tf_session, tf.train.latest_checkpoint('/capstone/training/Simulator/checkpoints'))
+		#print("try os getcwd:",os.getcwd())
+		self.saver = tf.train.import_meta_graph(os.getcwd()+'/../../../training/Simulator/checkpoints/generator.ckpt.meta')
+            	self.saver.restore(self.tf_session, tf.train.latest_checkpoint(os.getcwd()+'/../../../training/Simulator/checkpoints'))
 		
 		#get tensorflow by name
 		self.tf_graph = tf.get_default_graph()
@@ -57,11 +59,12 @@ class TLClassifier(object):
 		self.drop_rate = self.tf_graph.get_tensor_by_name("drop_rate:0")
 		self.predict = self.tf_graph.get_tensor_by_name("predict:0")
 	
-	predict = [ TrafficLight.RED ]
+	predict = [ TrafficLight.UNKNOWN ]
         if self.predict is not None:
             predict = self.tf_session.run(self.predict, feed_dict = {
                 self.input_real: self.scale(image.reshape(-1, 600, 800, 3)),
                 self.drop_rate:0.})
+	print("length of predict:", len(predict),"predict[0]:",predict[0])
 
         return int(predict[0])
 
