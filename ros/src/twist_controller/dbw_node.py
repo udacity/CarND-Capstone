@@ -96,6 +96,7 @@ class DBWNode(object):
                 throttle, brake, steering = self.controller.control(self.twist_cmd.linear,
                                                                     self.twist_cmd.angular,
                                                                     self.current_velocity.linear,
+                                                                    self.current_velocity.angular,
                                                                     self.dbw_enabled)
 
                 # Immediatly before publish control dbw_enable state
