@@ -56,12 +56,12 @@ class WaypointUpdater(object):
     def curr_vel_cb(self, curr_vel_msg):
         self.current_velocity = curr_vel_msg.twist.linear.x
 
-    def pose_cb(self, msg):
+    def pose_cb(self, pose):
         if self.waypoints is None:
             rospy.error('No base_waypoints have been received by master')
             return
 
-        current_pose = msg.pose
+        current_pose = pose
 
         # Compute the index of the waypoint closest to the current pose.
         closest_wp_idx = helper.closest_waypoint_index(current_pose, self.waypoints)
