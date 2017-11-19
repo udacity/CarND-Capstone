@@ -37,16 +37,20 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        # A list of all the waypoints of the track as reported by master node.
+        self.waypoints = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        if self.waypoints is None:
+            rospy.error('No base_waypoints have been received by master')
+            return
+        
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        rospy.loginfo('Received Base waypoints from master...')
+        self.waypoints = waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
