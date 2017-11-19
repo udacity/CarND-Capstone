@@ -11,6 +11,7 @@ import yaml
 
 from custom_logger import logger
 from renderer import PyGameScreen
+from opencv_traffic_light import recognize_traffic_lights
 
 from cv_bridge import CvBridge
 from geometry_msgs.msg import PoseStamped, Pose, TwistStamped
@@ -49,6 +50,7 @@ class DiagnosticsScreen:
         self.lights = []
         self.traffic_light_to_waypoint_map = []
 
+        self.camera_img_idx = 0
         self.camera_image = None
 
         # Run the Loop finally after everything has been initialized
@@ -126,6 +128,13 @@ class DiagnosticsScreen:
             msg.encoding = 'rgb8'
 
         self.camera_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
+        self.camera_img_idx += 1
+        self.camera_image, traffic_light = recognize_traffic_lights(self.camera_image)
+        logger.info('Traffic Light: %s' % traffic_light)
+
+        # Save the camera image
+        camera_image = cv2.cvtColor(self.camera_image, cv2.COLOR_BGR2RGB)
+        cv2.imwrite('src/tools/traffic_lights/%s.png' % self.camera_img_idx, camera_image)
 
     def initialize_light_to_waypoint_map(self):
         # find the closest waypoint to the given (x,y) of the triffic light
@@ -171,7 +180,6 @@ class DiagnosticsScreen:
 
     def drawCameraImage(self, image):
         if self.camera_image is not None:
-            logger.info('Rendered a Camera Image')
             camera_img_width = 800
             camera_img_height = 600
             offset_y = 700
@@ -179,7 +187,6 @@ class DiagnosticsScreen:
             image[self.screen.height // 3 + offset_y:self.screen.height // 3 + offset_y + camera_img_height,
                   self.screen.width // 2 + offset_x :self.screen.width // 2 + offset_x + camera_img_width] = \
                 cv2.resize(self.camera_image, (camera_img_width, camera_img_height), interpolation=cv2.INTER_AREA)
-            # self.camera_image = None
 
     def draw(self, image):
         if not self.all_initialized():
