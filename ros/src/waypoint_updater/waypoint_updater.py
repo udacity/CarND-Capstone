@@ -64,7 +64,7 @@ class WaypointUpdater(object):
         current_pose = pose
 
         # Compute the index of the waypoint closest to the current pose.
-        closest_wp_idx = helper.closest_waypoint_index(current_pose, self.waypoints)
+        closest_wp_idx = helper.next_waypoint_index(current_pose, self.waypoints)
 
         # Find number of waypoints ahead dictated by LOOKAHEAD_WPS
         next_wps = self.waypoints[closest_wp_idx:closest_wp_idx + LOOKAHEAD_WPS]
