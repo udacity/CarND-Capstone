@@ -29,10 +29,10 @@ A super-class for both WaypointTracker and TLDetector
   class WaypointTracker(object):
       def __init__(self):
           self.base_waypoints = None
+          self.base_waypoints_num = None
           self.pose = None
 
           self.last_closest_front_waypoint_index = 0
-
           # this is a super_class, so it will not start loop nor spin()
           # it expects the subclass will implement the appropriate
 
@@ -40,6 +40,7 @@ A super-class for both WaypointTracker and TLDetector
       <<current_pose_cb>>
       <<get_closest_waypoint>>
       <<distance>>
+      <<distance_two_indices>>
 #+END_SRC
 
 ** base_waypoints_process
@@ -82,8 +83,8 @@ A super-class for both WaypointTracker and TLDetector
               # distance to the next waypoint
               if (i < self.base_waypoints_num-1):
                   dist = (
-                      self.distance(waypoints,  # the (i+1)_th element has not been copied yet
-                                           i, (i+1) % self.base_waypoints_num))
+                      self.distance_two_indices(waypoints,  # the (i+1)_th element has not been copied yet
+                                                i, (i+1) % self.base_waypoints_num))
               # end of if (i < self.base_waypoints_num-1)
               if (dist < self.shortest_dist_to_next_waypoint):
                   self.shortest_dist_to_next_waypoint = dist
@@ -116,40 +117,39 @@ A super-class for both WaypointTracker and TLDetector
 #+NAME:get_closest_waypoint
 #+BEGIN_SRC python :noweb tangle :tangle
   def get_closest_waypoint(self, pose):
-      current_pose = pose.position
-      current_orientation = pose.orientation
-      yaw = get_yaw(current_orientation)
+      if self.base_waypoints_num:
+          current_pose = pose.position
+          current_orientation = pose.orientation
+          yaw = get_yaw(current_orientation)
 
-      # Compute the waypoints ahead of the current_pose
+          # Compute the waypoints ahead of the current_pose
 
-      local_x = -1
-      i = self.last_closest_front_waypoint_index - 1
-      while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
-          i = (i + 1) # % self.base_waypoints_num
-          waypoint = self.base_waypoints[i]
-          w_pos = waypoint.pose.pose.position
-          local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
-                                                  w_pos.x, w_pos.y)
-      # end of while (local_x < 0)
-      return i
+          local_x = -1
+          i = self.last_closest_front_waypoint_index - 1
+          while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
+              i = (i + 1) # % self.base_waypoints_num
+              waypoint = self.base_waypoints[i]
+              w_pos = waypoint.pose.pose.position
+              local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+                                                      w_pos.x, w_pos.y)
+              # end of while (local_x < 0)
+          return i
+      # end of if self.base_waypoints_num
+      return None
 #+END_SRC
 
 
 
 ** distance
 
-To do: The computation of the distance between two waypoints can be done by the distances of those
+The computation of the distance between two waypoints can be done by the distances of those
 starting from the start to the i_th node, and j_th node.
+
+This is an optimization in computation.
 
 #+NAME:distance
 #+BEGIN_SRC python :noweb tangle :tangle
-  def distance(self, waypoints, wp1, wp2):
-      # dist = 0
-      # dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-      # for i in range(wp1, wp2+1):
-      #     dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-      #     wp1 = i
-
+  def distance(self, wp1, wp2):
       if (wp1 < wp2):
           start, end = wp1, wp2
       else:
@@ -158,6 +158,19 @@ starting from the start to the i_th node, and j_th node.
 
       dist = self.dist_to_here_from_start[end] - self.dist_to_here_from_start[start]
       return dist
+#+END_SRC
+
+** distance_two_indices
+
+The distance function used to calculate the initial distance between two adjacent waypoints. It's needed before the distance from
+base_waypoint start to the a base_waypoint is calculated.
+
+#+NAME:distance_two_indices
+#+BEGIN_SRC python :noweb tangle :tangle
+  def distance_two_indices(self, waypoints, i, j):
+    a = waypoints[i].pose.pose.position
+    b = waypoints[j].pose.pose.position
+    return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 #+END_SRC
 
 ** to convert a global coordinates to local coordinates:
@@ -451,7 +464,6 @@ then the waypoint is front of my_car.
 
   I may just calculate just the first a few, say 5 from the closest waypoint in front to save computing effort.
 
-
   - 11/12 ::
   Add temporarily subscribe to /vehicle/traffic_lights, to simulate the detection of the traffic lights.
 
@@ -482,7 +494,6 @@ then the waypoint is front of my_car.
   MPH_to_MPS = 1609.344/3600.0 # 1 mile = 1609.344 1 hour = 3600 seconds
 
   <<publish_Lane>>
-  <<distance_two_indices>>
   <<velocity-timing-constants>>
 
   class WaypointUpdater(WaypointTracker):
@@ -705,7 +716,7 @@ when the traffic light color is not red, report the negative of the waypoint ind
   if (self.current_velocity and (0 < self.current_velocity) and
       self.traffic_waypoint and (self.last_closest_front_waypoint_index < self.traffic_waypoint)):
       distance_to_traffic_light = self.distance(
-          self.base_waypoints, self.last_closest_front_waypoint_index, self.traffic_waypoint)
+          self.last_closest_front_waypoint_index, self.traffic_waypoint)
 
       time_to_traffic_light = distance_to_traffic_light/self.current_velocity
       velocity_policy = None
@@ -726,7 +737,7 @@ when the traffic light color is not red, report the negative of the waypoint ind
           for i in range(num_affected_waypoints):
               waypoint = final_waypoints[i]
               j = self.last_closest_front_waypoint_index + i
-              distance_to_traffic_light = self.distance(self.base_waypoints, j, self.traffic_waypoint)
+              distance_to_traffic_light = self.distance(j, self.traffic_waypoint)
               waypoint.twist.twist.linear.x = velocity_policy(distance_to_traffic_light)
       # end of if velocity_policy
   # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
@@ -817,34 +828,35 @@ Then use that to generate the rest of the final_waypoints.
 #+NAME:process-pose
 #+BEGIN_SRC python :noweb tangle :tangle
   self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
+  if self.last_closest_front_waypoint_index:
+      # generate final_waypoints
+      final_waypoints_count = 0
+      lookahead_dist = 0  # the accumulated distance of the looking ahead
+      lookahead_time = 0  # the lookahead time
 
-  # generate final_waypoints
-  final_waypoints_count = 0
-  lookahead_dist = 0  # the accumulated distance of the looking ahead
-  lookahead_time = 0  # the lookahead time
+      final_waypoints = []
+      accumulated_turning = 0
+      # dist_to_here_from_current = []
 
-  final_waypoints = []
-  accumulated_turning = 0
-  # dist_to_here_from_current = []
+      # modulize the code to be less dependent
+      j = self.last_closest_front_waypoint_index
+      while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
+              (final_waypoints_count < LOOKAHEAD_WPS) and
+              (j < self.base_waypoints_num)):
+          waypoint = copy.deepcopy(self.base_waypoints[j])
+          j = (j + 1) # % self.base_waypoints_num
+          final_waypoints_count += 1
+          final_waypoints.append(waypoint)
+      # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= final_waypoints_count)
 
-  # modulize the code to be less dependent
-  j = self.last_closest_front_waypoint_index
-  while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-          (final_waypoints_count < LOOKAHEAD_WPS) and
-          (j < self.base_waypoints_num)):
-      waypoint = copy.deepcopy(self.base_waypoints[j])
-      j = (j + 1) # % self.base_waypoints_num
-      final_waypoints_count += 1
-      final_waypoints.append(waypoint)
-  # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= final_waypoints_count)
+      rospy.loginfo('Lookahead threshold reached: final_waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
+                    % (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
 
-  rospy.loginfo('Lookahead threshold reached: final_waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
-                % (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
+      <<adjust_velocity_for_traffic_light>>
 
-  <<adjust_velocity_for_traffic_light>>
-
-  # publish to /final_waypoints, need to package final_waypoints into Lane message
-  publish_Lane(self.final_waypoints_pub, final_waypoints)
+      # publish to /final_waypoints, need to package final_waypoints into Lane message
+      publish_Lane(self.final_waypoints_pub, final_waypoints)
+  # end of if self.last_closest_front_waypoint_index
 #+END_SRC
 
 *** compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS
@@ -935,14 +947,6 @@ Then use that to generate the rest of the final_waypoints.
    #+END_EXAMPLE
 
 * Support functions
-
-#+NAME:distance_two_indices
-#+BEGIN_SRC python :noweb tangle :tangle
-  def distance_two_indices(waypoints, i, j):
-    a = waypoints[i].pose.pose.position
-    b = waypoints[j].pose.pose.position
-    return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-#+END_SRC
 
 #+NAME:publish_Lane
 #+BEGIN_SRC python :noweb tangle :tangle

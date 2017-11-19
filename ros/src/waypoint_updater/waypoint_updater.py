@@ -40,10 +40,6 @@ def publish_Lane(publisher, waypoints):
         lane.header.stamp = rospy.Time(0)
         lane.waypoints = waypoints
         publisher.publish(lane)
-def distance_two_indices(waypoints, i, j):
-  a = waypoints[i].pose.pose.position
-  b = waypoints[j].pose.pose.position
-  return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 TIME_TO_CRUISE = 5        # seconds, can keep the normal cruise speed
 TIME_TO_SLOWDOWN = 3        # seconds, must slowdown in anticipation, regardless of the color of the light
 TIME_TO_STOP_IF_RED = 1     # seconds, must stop if the traffic light is red
@@ -140,62 +136,63 @@ class WaypointUpdater(WaypointTracker):
         while not rospy.is_shutdown():
             if self.base_waypoints and self.pose:
                 self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
+                if self.last_closest_front_waypoint_index:
+                    # generate final_waypoints
+                    final_waypoints_count = 0
+                    lookahead_dist = 0  # the accumulated distance of the looking ahead
+                    lookahead_time = 0  # the lookahead time
                 
-                # generate final_waypoints
-                final_waypoints_count = 0
-                lookahead_dist = 0  # the accumulated distance of the looking ahead
-                lookahead_time = 0  # the lookahead time
+                    final_waypoints = []
+                    accumulated_turning = 0
+                    # dist_to_here_from_current = []
                 
-                final_waypoints = []
-                accumulated_turning = 0
-                # dist_to_here_from_current = []
+                    # modulize the code to be less dependent
+                    j = self.last_closest_front_waypoint_index
+                    while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
+                            (final_waypoints_count < LOOKAHEAD_WPS) and
+                            (j < self.base_waypoints_num)):
+                        waypoint = copy.deepcopy(self.base_waypoints[j])
+                        j = (j + 1) # % self.base_waypoints_num
+                        final_waypoints_count += 1
+                        final_waypoints.append(waypoint)
+                    # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= final_waypoints_count)
                 
-                # modulize the code to be less dependent
-                j = self.last_closest_front_waypoint_index
-                while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-                        (final_waypoints_count < LOOKAHEAD_WPS) and
-                        (j < self.base_waypoints_num)):
-                    waypoint = copy.deepcopy(self.base_waypoints[j])
-                    j = (j + 1) # % self.base_waypoints_num
-                    final_waypoints_count += 1
-                    final_waypoints.append(waypoint)
-                # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= final_waypoints_count)
+                    rospy.loginfo('Lookahead threshold reached: final_waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
+                                  % (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
                 
-                rospy.loginfo('Lookahead threshold reached: final_waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
-                              % (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
+                    # policy for velocity adjustment in view of traffic light
+                    if (self.current_velocity and (0 < self.current_velocity) and
+                        self.traffic_waypoint and (self.last_closest_front_waypoint_index < self.traffic_waypoint)):
+                        distance_to_traffic_light = self.distance(
+                            self.last_closest_front_waypoint_index, self.traffic_waypoint)
+                    
+                        time_to_traffic_light = distance_to_traffic_light/self.current_velocity
+                        velocity_policy = None
+                        if TIME_TO_CRUISE < time_to_traffic_light:
+                            velocity_policy = self.cruise_unless_near_the_end()
+                        elif TIME_TO_SLOWDOWN < time_to_traffic_light:
+                            velocity_policy = self.decelaration_policy
+                        elif self.traffic_light_red:
+                            velocity_policy = self.stop_policy
+                        else:
+                            velocity_policy = self.cruise_unless_near_the_end()
+                        # end of if SAFE_TIME_CRUISE < time_to_traffic_light
+                    
+                        # apply the policy to each final_waypoints
+                        if velocity_policy:
+                            # for all final waypoints
+                            num_affected_waypoints = min(final_waypoints_count, self.traffic_waypoint - self.last_closest_front_waypoint_index)
+                            for i in range(num_affected_waypoints):
+                                waypoint = final_waypoints[i]
+                                j = self.last_closest_front_waypoint_index + i
+                                distance_to_traffic_light = self.distance(j, self.traffic_waypoint)
+                                waypoint.twist.twist.linear.x = velocity_policy(distance_to_traffic_light)
+                        # end of if velocity_policy
+                    # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
                 
-                # policy for velocity adjustment in view of traffic light
-                if (self.current_velocity and (0 < self.current_velocity) and
-                    self.traffic_waypoint and (self.last_closest_front_waypoint_index < self.traffic_waypoint)):
-                    distance_to_traffic_light = self.distance(
-                        self.base_waypoints, self.last_closest_front_waypoint_index, self.traffic_waypoint)
-                
-                    time_to_traffic_light = distance_to_traffic_light/self.current_velocity
-                    velocity_policy = None
-                    if TIME_TO_CRUISE < time_to_traffic_light:
-                        velocity_policy = self.cruise_unless_near_the_end()
-                    elif TIME_TO_SLOWDOWN < time_to_traffic_light:
-                        velocity_policy = self.decelaration_policy
-                    elif self.traffic_light_red:
-                        velocity_policy = self.stop_policy
-                    else:
-                        velocity_policy = self.cruise_unless_near_the_end()
-                    # end of if SAFE_TIME_CRUISE < time_to_traffic_light
-                
-                    # apply the policy to each final_waypoints
-                    if velocity_policy:
-                        # for all final waypoints
-                        num_affected_waypoints = min(final_waypoints_count, self.traffic_waypoint - self.last_closest_front_waypoint_index)
-                        for i in range(num_affected_waypoints):
-                            waypoint = final_waypoints[i]
-                            j = self.last_closest_front_waypoint_index + i
-                            distance_to_traffic_light = self.distance(self.base_waypoints, j, self.traffic_waypoint)
-                            waypoint.twist.twist.linear.x = velocity_policy(distance_to_traffic_light)
-                    # end of if velocity_policy
-                # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
-                
-                # publish to /final_waypoints, need to package final_waypoints into Lane message
-                publish_Lane(self.final_waypoints_pub, final_waypoints)
+                    # publish to /final_waypoints, need to package final_waypoints into Lane message
+                    publish_Lane(self.final_waypoints_pub, final_waypoints)
+                # end of if self.last_closest_front_waypoint_index
                 self.pose = None        # indicating this message has been processed
             # end of if self.base_waypoints and self.pose
             rate.sleep()
