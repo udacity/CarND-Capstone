@@ -1,10 +1,19 @@
 #!/usr/bin/env python
 
+# Global packages
 import rospy
+import math
+import time
+
+# Local project packages
+import waypoint_lib.helper as helper
+from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import TwistStamped
+
+from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
-import math
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -32,25 +41,38 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.curr_vel_cb, queue_size=1)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
         # A list of all the waypoints of the track as reported by master node.
         self.waypoints = None
+        self.current_velocity = 0.0
 
         rospy.spin()
+
+    def curr_vel_cb(self, curr_vel_msg):
+        self.current_velocity = curr_vel_msg.twist.linear.x
 
     def pose_cb(self, msg):
         if self.waypoints is None:
             rospy.error('No base_waypoints have been received by master')
             return
-        
+
+        current_pose = msg.pose
+
+        # Compute the index of the waypoint closest to the current pose.
+        closest_wp_idx = helper.closest_waypoint_index(current_pose, self.waypoints)
+
+        # Find number of waypoints ahead dictated by LOOKAHEAD_WPS
+        next_wps = self.waypoints[closest_wp_idx:closest_wp_idx + LOOKAHEAD_WPS]
+        self.publish(next_wps)
 
     def waypoints_cb(self, waypoints):
         rospy.loginfo('Received Base waypoints from master...')
-        self.waypoints = waypoints
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -73,6 +95,13 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    def publish(self, waypoints):
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(time.time())
+        lane.waypoints = waypoints
+        self.final_waypoints_pub.publish(lane)
 
 
 if __name__ == '__main__':
