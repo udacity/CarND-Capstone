@@ -9,6 +9,9 @@ import math
 from twist_controller import Controller
 from yaw_controller import YawController
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
 
@@ -57,7 +60,7 @@ class DBWNode(object):
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
 
-        min_speed = 0.1
+        min_speed = 0.
         yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
         self.controller = Controller(yaw_controller, accel_limit, decel_limit)
 
@@ -69,6 +72,8 @@ class DBWNode(object):
         self.current_twist = None
         self.proposed_twist = None
         self.dbw_enabled = False
+
+        self.controls = []
 
         self.loop()
 
@@ -91,14 +96,23 @@ class DBWNode(object):
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
-            if self.dbw_enabled:
-                #  self.publish(throttle, brake, steer)
+            if self.dbw_enabled and self.current_twist and self.proposed_twist:
                 throttle, brake, steer = self.controller.control(
                     self.current_twist, self.proposed_twist, 1/50.)
+                rospy.loginfo("controls %s %s %s %s", throttle, brake, steer, self.proposed_twist.angular.z)
                 self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
+
+        self.controls.append([throttle, brake, steer])
+        # if len(self.controls) > 500:
+        #     c = np.array(self.controls)
+        #     plt.plot(c[:,0], "g")
+        #     plt.show()
+        #     plt.plot(c[:,1], "r")
+        #     plt.show()
+
         tcmd = ThrottleCmd()
         tcmd.enable = True
         tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
