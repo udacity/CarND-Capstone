@@ -27,6 +27,7 @@ class Controller(object):
                                                            min_speed,
                                                            max_lat_accel,
                                                            max_steer_angle)
+        self.clk = rospy.get_time()
 
     def reset(self):
         rospy.loginfo('Controller has been reset')
@@ -35,11 +36,32 @@ class Controller(object):
         self.throttle_filter.ready = False
         self.steer_filter.ready = False
 
+    def get_delta_time(self):
+        t = rospy.get_time()
+        dt = t - self.clk
+        self.clk = t
+        return dt
+
     def control(self,
                 target_linear_vel,
                 target_angular_vel,
                 current_linear_vel,
-                ):
-        # TODO: Change the arg, kwarg list to suit your needs
-        # Return throttle, brake, steer
-        return 1., 0., 0.
+                current_angular_vel,
+                steer_cte):
+        dt = self.get_delta_time()
+
+        # Steering PDE
+        steering = self.steer_pid.step(steer_cte, dt)
+
+        # Yaw Controller
+        yaw_control = self.yaw_controller.get_steering(target_linear_vel, target_angular_vel, current_linear_vel)
+
+        steer = self.steer_filter.filt(steering + 0.1 * yaw_control)
+
+        return 1.0, 0.0, steer
+
+
+
+
+
+

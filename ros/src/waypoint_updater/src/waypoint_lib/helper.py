@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import tf
 from tf import transformations as t
 
@@ -47,3 +48,45 @@ def next_waypoint_index(pose, waypoints):
         closest_wp_idx = (closest_wp_idx + 1) % total_waypoints
 
     return closest_wp_idx
+
+
+def tranform_to_pose_coord_xy(pose, x_coords, y_coords):
+    x_coords_pose = []
+    y_coords_pose = []
+    pose_x = pose.pose.position.x
+    pose_y = pose.pose.position.y
+    pose_yaw = yaw_from_orientation(pose.pose.orientation)
+    for x, y in zip(x_coords, y_coords):
+        # Translation
+        rx = x - pose_x
+        ry = y - pose_y
+        # Rotation
+        rxf = rx * math.cos(pose_yaw) + ry * math.sin(pose_yaw)
+        ryf = rx * (-1.0*math.sin(pose_yaw)) + ry * math.cos(pose_yaw)
+        x_coords_pose.append(rxf)
+        y_coords_pose.append(ryf)
+
+    return x_coords_pose, y_coords_pose
+
+
+def calc_steer_cte(pose, waypoints, fit_length=10):
+    if not fit_length:
+        fit_length = len(waypoints)
+
+    if fit_length > len(waypoints):
+        return 0.0
+
+    # Get X,Y coords
+    x_coords = []
+    y_coords = []
+    for i in range(fit_length):
+        x_coords.append(waypoints[i].pose.pose.position.x)
+        y_coords.append(waypoints[i].pose.pose.position.y)
+
+    # Transform to car coordinates
+    x_coords_car, y_coords_car = tranform_to_pose_coord_xy(pose, x_coords, y_coords)
+
+    coeffs = np.polyfit(x_coords_car, y_coords_car, 3)
+    dist = np.polyval(coeffs, 0.0)
+
+    return dist
