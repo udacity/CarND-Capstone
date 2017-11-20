@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+from tf.transformations import euler_from_quaternion
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -33,17 +34,24 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
         self.base_waypoints = []
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        xyz_position = msg.pose.position
+        quaternion_orientation = msg.pose.orientation
+
+        p = xyz_position
+        qo = quaternion_orientation
+
+        p_list = [p.x, p.y, p.z]
+        qo_list = [qo.x, qo.y, qo.z, qo.w]
+
+        rospy.logwarn(p_list)
+        rospy.logwarn(euler_from_quaternion(qo_list))
 
     def waypoints_cb(self, lane):
         self.base_waypoints = lane.waypoints
