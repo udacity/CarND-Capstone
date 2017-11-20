@@ -159,26 +159,26 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   # implementation:
   # given a list of coordinates of traffic lights
   # List of positions that correspond to the line to stop in front of for a given intersection
-  self.stop_line_positions = self.config['stop_line_positions']
+  stop_line_positions = self.config['stop_line_positions']
   light_cursor = 0
   base_waypoint_search_cursor = 0
 
   dl = lambda a, b: math.sqrt((a.x-b[0])**2 + (a.y-b[1])**2)
-  self.lights_to_waypoints = []
+  lights_to_waypoints = []
 
-  for light_cursor in range(len(self.stop_line_positions)):
+  for light_cursor in range(len(stop_line_positions)):
       # take, l, the first of the remaining traffic lights coordinates list, self.stop_line_positions
       if base_waypoint_search_cursor < self.base_waypoints_num:
-          dist_shorttest = dl(self.base_waypoints[base_waypoint_search_cursor].pose.pose.position,
-                              self.stop_line_positiotns[light_cursor])
+          dist_shortest = dl(self.base_waypoints[base_waypoint_search_cursor].pose.pose.position,
+                              stop_line_positions[light_cursor])
           light_waypoint_index = base_waypoint_search_cursor
 
           # for l to find the closest waypoint in the remaining base_waypoints, w
           for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num):
-              dist = dl(self.base_waypoints[base_waypoint_search_cursor+1+i].pose.pose.position,
-                        self.stop_line_positiotns[light_cursor])
-              if dist < d_shortest:
-                  d_shortest = dist
+              dist = dl(self.base_waypoints[i].pose.pose.position,
+                        stop_line_positions[light_cursor])
+              if dist < dist_shortest:
+                  dist_shortest = dist
                   light_waypoint_index = i
               # end of if dist < d_shortest
           # end of for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num)
@@ -194,7 +194,8 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 
   # construct the map, self.waypoint_to_light, the map from waypoint index to the index of the
   # traffic light in terms of the closest waypoint index
-  self.waypoint_to_light = waypoint_to_light_f(self.lights_to_waypoints, self.base_waypoints_num)
+  self.waypoint_to_light = waypoint_to_light_f(lights_to_waypoints, self.base_waypoints_num)
+  rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
 #+END_SRC
 
 ** traffic_light_waypoint
