@@ -42,6 +42,27 @@ class Controller(object):
         self.clk = t
         return dt
 
+    def get_steer_value(self, dt, steer_cte, target_linear_vel, target_angular_vel, current_linear_vel):
+        # Steering PDE
+        steering = self.steer_pid.step(steer_cte, dt)
+
+        # Yaw Controller
+        yaw_control = self.yaw_controller.get_steering(target_linear_vel, target_angular_vel, current_linear_vel)
+
+        steer = self.steer_filter.filt(steering + 0.1 * yaw_control)
+        return steer
+
+    def get_throttle_value(self, dt, target_linear_vel, target_angular_vel, current_linear_vel, current_angular_vel):
+        velocity_cte = target_linear_vel - current_linear_vel
+
+        throttle = self.throttle_pid.step(velocity_cte, dt)
+        throttle = self.throttle_filter.filt(throttle)
+
+        # Clamp the value between 0.0 & 1.0
+        throttle = min(1.0, max(0.0, throttle))
+        rospy.loginfo("Throttle: %s" % throttle)
+        return throttle
+
     def control(self,
                 target_linear_vel,
                 target_angular_vel,
@@ -50,15 +71,14 @@ class Controller(object):
                 steer_cte):
         dt = self.get_delta_time()
 
-        # Steering PDE
-        steering = self.steer_pid.step(steer_cte, dt)
+        steer = self.get_steer_value(dt, steer_cte, target_linear_vel, target_angular_vel, current_linear_vel)
 
-        # Yaw Controller
-        yaw_control = self.yaw_controller.get_steering(target_linear_vel, target_angular_vel, current_linear_vel)
-
-        steer = self.steer_filter.filt(steering + 0.1 * yaw_control)
-
-        return 1.0, 0.0, steer
+        throttle = self.get_throttle_value(dt,
+                                           target_linear_vel,
+                                           target_angular_vel,
+                                           current_linear_vel,
+                                           current_angular_vel)
+        return throttle, 0.0, steer
 
 
 
