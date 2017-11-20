@@ -127,7 +127,7 @@ class TLDetector(WaypointTracker):
         # construct the map, self.waypoint_to_light, the map from waypoint index to the index of the
         # traffic light in terms of the closest waypoint index
         self.waypoint_to_light = waypoint_to_light_f(lights_to_waypoints, self.base_waypoints_num)
-        rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
+        # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
     def current_pose_cb(self, msg):
         self.pose = msg
     def traffic_array_cb(self, msg):
