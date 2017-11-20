@@ -48,8 +48,8 @@ class TLClassifier(object):
             	self.config.operation_timeout_in_ms = 50000 # terminate anything that don't return in 50 seconds
 		self.tf_session = tf.Session(config=self.config)
             	#self.saver = tf.train.import_meta_graph(self.model_path + '/checkpoints/generator.ckpt.meta')
-		self.saver = tf.train.import_meta_graph('/home/student/catkin_ws/src/CarND-Capstone/training/Simulator/checkpoints/generator.ckpt.meta')
-            	self.saver.restore(self.tf_session, tf.train.latest_checkpoint('/home/student/catkin_ws/src/CarND-Capstone/training/Simulator/checkpoints'))
+		self.saver = tf.train.import_meta_graph('/capstone/training/Simulator/checkpoints/generator.ckpt.meta')
+            	self.saver.restore(self.tf_session, tf.train.latest_checkpoint('/capstone/training/Simulator/checkpoints'))
 		
 		#get tensorflow by name
 		self.tf_graph = tf.get_default_graph()
