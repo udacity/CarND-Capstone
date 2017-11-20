@@ -138,8 +138,6 @@ A super-class for both WaypointTracker and TLDetector
       return None
 #+END_SRC
 
-
-
 ** distance
 
 The computation of the distance between two waypoints can be done by the distances of those
