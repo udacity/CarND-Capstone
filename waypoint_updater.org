@@ -536,6 +536,7 @@ then the waypoint is front of my_car.
 
       <<constant-policy>>
       <<deceleration-policy>>
+      <<cruise_unless_near_the_end>>
       <<loop>>
       <<base_waypoints_cb>>
       <<traffic_waypoint_cb>>

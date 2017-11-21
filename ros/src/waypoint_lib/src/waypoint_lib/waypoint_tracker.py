@@ -47,9 +47,9 @@ class WaypointTracker(object):
             # unsubscribe to the waypoint messages, no longer needed
             self.base_waypoints_sub.unregister()
             self.subscriber_waypoints = None
-
+    
             self.base_waypoints_num = len(waypoints)
-
+    
             # process the waypoints here
             self.dist_to_here_from_start = []
             self.base_waypoints = []
@@ -59,7 +59,7 @@ class WaypointTracker(object):
             for i in range(self.base_waypoints_num):
                 dist_so_far += dist
                 self.dist_to_here_from_start.append(dist_so_far)
-
+    
                 # do a deep copy of the data, to keep the data from lose
                 # just to be safe, simply do shallow copy seems still working
                 # by self.base_waypoints = waypoints
@@ -87,9 +87,9 @@ class WaypointTracker(object):
             current_pose = pose.position
             current_orientation = pose.orientation
             yaw = get_yaw(current_orientation)
-
+    
             # Compute the waypoints ahead of the current_pose
-
+    
             local_x = -1
             i = self.last_closest_front_waypoint_index - 1
             while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
@@ -108,7 +108,7 @@ class WaypointTracker(object):
         else:
             start, end = wp2, wp1
         # end of if (wp1 < wp2)
-
+    
         dist = self.dist_to_here_from_start[end] - self.dist_to_here_from_start[start]
         return dist
     def distance_two_indices(self, waypoints, i, j):

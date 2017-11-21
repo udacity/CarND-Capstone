@@ -35,9 +35,8 @@ class TLClassifier(object):
         #TODO implement light color prediction
         image_expanded = np.expand_dims(image, axis=0)
         (boxes, scores, classes, num_det) = self.session.run(
-            [self.detection_boxes, self.detection_scores,
-             self.detection_classes, self.num_detections],
-            feed_dict={'image_tensor:0': image_expanded})
+              [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
+              feed_dict={self.image_tensor: image_expanded})
     
         boxes = np.squeeze(boxes),
         classes = np.squeeze(classes).astype(np.int32),
@@ -47,7 +46,7 @@ class TLClassifier(object):
         idx = np.argmax(scores)
         rospy.loginfo("Maximum Score = %d"%(scores[idx]))
         if scores[idx] >= 0.9:
-            rospy.loginfo("Traffic Light Color = %d"%(classes[idx]))
+            rospy.loginfo("Traffic Light Color = %r"%(repr(classes[idx])))
             return classes[idx]  # suggested by Aaron????
         # end of if scores[idx] >= 0.9
     

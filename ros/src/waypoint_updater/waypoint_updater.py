@@ -131,6 +131,14 @@ class WaypointUpdater(WaypointTracker):
         ys.append(ref_vel)
     
         return np.poly1d(np.polyfit(np.array(xs), np.array(ys), 3))
+    def cruise_unless_near_the_end(self):
+        if (self.base_waypoints_num - self.last_closest_front_waypoint_index) < self.LOOKAHEAD_WPS:
+            velocity_policy = None
+        else:
+            velocity_policy = self.cruise_policy
+        # end of if (self.base_waypoints_num - self.last_closest_front_waypoint_index) < self.LOOKAHEAD_WPS
+    
+        return velocity_policy
     def loop(self):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
