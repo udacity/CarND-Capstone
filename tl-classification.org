@@ -13,7 +13,9 @@
 This is the ingestion of the implementation from SJ and Sumanth's implementation.
 
 
-* Top Level
+* Code
+
+Top Level
 
 #+NAME:tl-classifier
 #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/tl_detector/light_classification/tl_classifier.py
@@ -24,7 +26,6 @@ This is the ingestion of the implementation from SJ and Sumanth's implementation
       <<get_classification>>
 #+END_SRC
 
-* Sketches
 
 ** imports
 
@@ -32,7 +33,8 @@ This is the ingestion of the implementation from SJ and Sumanth's implementation
 #+BEGIN_SRC python :noweb tangle :tangle
   from styx_msgs.msg import TrafficLight
   import tensorflow as tf
-
+  import numpy as np
+  import rospy
 #+END_SRC
 
 ** __init__
@@ -76,9 +78,9 @@ This is the ingestion of the implementation from SJ and Sumanth's implementation
       #TODO implement light color prediction
       image_expanded = np.expand_dims(image, axis=0)
       (boxes, scores, classes, num_det) = self.session.run(
-          [delf.detection_boxes, self.detection_scores,
+          [self.detection_boxes, self.detection_scores,
            self.detection_classes, self.num_detections],
-          feed_dict={image_tensor: image_expanded})
+          feed_dict={'image_tensor:0': image_expanded})
 
       boxes = np.squeeze(boxes),
       classes = np.squeeze(classes).astype(np.int32),
@@ -94,3 +96,18 @@ This is the ingestion of the implementation from SJ and Sumanth's implementation
 
       return TrafficLight.UNKNOWN
 #+END_SRC
+
+
+* Sketches
+
+#+BEGIN_SRC plantuml :file traffic-light-classification.png
+@startuml
+:TLDetector:get_light_state(light_index);
+:TLClassifier:get_classification(image);
+@enduml
+#+END_SRC
+
+#+RESULTS:
+[[file:traffic-light-classification.png]]
+
+#results:

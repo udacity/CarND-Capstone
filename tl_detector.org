@@ -89,6 +89,7 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   self.waypoints = None
   self.camera_image = None
   self.lights = []
+  self.waypoint_to_light = None
 #+END_SRC
 
 ** subscribers
@@ -330,35 +331,33 @@ when the traffic light color is not red, report the negative of the waypoint ind
 
 #+NAME:process_traffic_lights
 #+BEGIN_SRC python :noweb tangle :tangle
-    def process_traffic_lights(self):
-        """Finds closest visible traffic light, if one exists, and determines its
-            location and color
+  def process_traffic_lights(self):
+      """Finds closest visible traffic light, if one exists, and determines its
+          location and color
 
-        Returns:
-            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
-            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+      Returns:
+          int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
+          int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
-        """
-        light = None
+      """
+      light = None
 
-        # List of positions that correspond to the line to stop in front of for a given intersection
-        # self.stop_line_positions = self.config['stop_line_positions']
+      # List of positions that correspond to the line to stop in front of for a given intersection
+      # self.stop_line_positions = self.config['stop_line_positions']
 
-        if (self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
-            if car_position:
-                #TODO find the closest visible traffic light (if one exists)
-                # the index of the waypoint of the traffic light
-                light_index, light_wp = self.waypoint_to_light[car_position]
-                # self.find_closest_traffic_light(car_position)
-                rospy.loginfo('light_index: %r; light waypoint: %r' % (light_index, light_wp))
-                if light_index:
-                    state = self.get_light_state(light_index)
-                    return light_wp, state
-                # end of if light_index
-            # end of if car_position:
-        # end of if (self.pose)
-        return None, None
+      if (self.base_waypoints and self.waypoint_to_light and self.pose):
+          car_position = self.get_closest_waypoint(self.pose.pose)
+          #TODO find the closest visible traffic light (if one exists)
+          # the index of the waypoint of the traffic light
+          light_index, light_wp = self.waypoint_to_light[car_position]
+          # self.find_closest_traffic_light(car_position)
+          rospy.loginfo('light_index: %r; light waypoint: %r' % (light_index, light_wp))
+          if light_index:
+              state = self.get_light_state(light_index)
+              return light_wp, state
+          # end of if light_index
+      # end of if (self.pose)
+      return None, None
 #+END_SRC
 
 ** find-closest-traffic-light
@@ -441,7 +440,7 @@ I assume/design the light parameter is the index of the nearest traffic light in
           int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
       """
-      FAKED_LIGHT = True
+      FAKED_LIGHT = False
       if FAKED_LIGHT:
           rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
               light_index, self.lights[light_index].state,

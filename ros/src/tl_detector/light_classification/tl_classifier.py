@@ -1,6 +1,7 @@
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
-
+import numpy as np
+import rospy
 
 class TLClassifier(object):
     def __init__(self):
@@ -34,9 +35,9 @@ class TLClassifier(object):
         #TODO implement light color prediction
         image_expanded = np.expand_dims(image, axis=0)
         (boxes, scores, classes, num_det) = self.session.run(
-            [delf.detection_boxes, self.detection_scores,
+            [self.detection_boxes, self.detection_scores,
              self.detection_classes, self.num_detections],
-            feed_dict={image_tensor: image_expanded})
+            feed_dict={'image_tensor:0': image_expanded})
     
         boxes = np.squeeze(boxes),
         classes = np.squeeze(classes).astype(np.int32),
