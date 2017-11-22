@@ -576,6 +576,23 @@ The following are the implementations.
 
 *** base_waypoints_cb
 
+In the following code of modifying global variable may not be a good idea:
+
+#+NAME:potential-improvement
+#+BEGIN_SRC python :noweb tangle :tangle
+global LOOKAHEAD_WPS        # might update it
+LOOKAHEAD_WPS = min(LOOKAHEAD_WPS, self.base_waypoints_num)
+#+END_SRC
+
+It may be to compute a new member attribute of WaypointUpdater:
+
+#+NAME:improvement-to-LOOKAHEAD_WPS
+#+BEGIN_SRC python :noweb tangle :tangle
+  self.lookahead = min(LOOKAHEAD_WPS, self.base_waypoints_num)
+#+END_SRC
+and to replace LOOKAHEAD_WPS in the body of WaypointUpdater by self.lookahead
+but it may not matter as the modification is still constant through the life cycle of program.
+
 #+NAME:base_waypoints_cb
 #+BEGIN_SRC python :noweb tangle :tangle
   def base_waypoints_cb(self, msg):
@@ -750,11 +767,11 @@ the velocitise have been calculated, thus no need to have the policy to calculat
 #+NAME:cruise_unless_near_the_end
 #+BEGIN_SRC python :noweb tangle :tangle
   def cruise_unless_near_the_end(self):
-      if (self.base_waypoints_num - self.last_closest_front_waypoint_index) < self.LOOKAHEAD_WPS:
+      if (self.base_waypoints_num - self.last_closest_front_waypoint_index) < LOOKAHEAD_WPS:
           velocity_policy = None
       else:
           velocity_policy = self.cruise_policy
-      # end of if (self.base_waypoints_num - self.last_closest_front_waypoint_index) < self.LOOKAHEAD_WPS
+      # end of if (self.base_waypoints_num - self.last_closest_front_waypoint_index) < LOOKAHEAD_WPS
 
       return velocity_policy
 #+END_SRC
@@ -981,3 +998,31 @@ note over waypoint_updater: Just for simulation purpose
 #+END_SRC
 #results:
 
+
+* Sketch of Waypoint_Updater:loop
+
+#+BEGIN_SRC plantuml :file waypoint-updater-loop.png
+@startuml
+start
+while (not shutdown) is (running)
+:determine the position of the car in terms of waypoint:
+find the closest waypoint in front of the car
+based on /pose message recevied;
+:generate final_waypoints based on base_waypoints:
+(the waypoints ahead of the car);
+:adjust velocity for the final_waypoints:
+(in terms of the time to reach the next traffic light,
+based on
+the distance to the next traffic light
+(by /traffic_waypoint received),
+the car's velocity) and the color of the next light;
+:publish /final_waypoints;
+endwhile (stop)
+stop
+@enduml
+#+END_SRC
+
+#+RESULTS:
+[[file:waypoint-updater-loop.png]]
+
+#results:

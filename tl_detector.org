@@ -466,3 +466,25 @@ reported light_index: 0 (the first), while the waypoint index keeps changing.
 
 The logic is not right. The waypoint index should remain the same.
 
+
+** Sketch of Traffic Light Classification
+
+#+BEGIN_SRC plantuml :file traffic-classification.png
+@startuml
+:receive camera image:
+image_processing_call_back_start;
+:determine the car's current position:
+get_closest_waypoint(self.pose.pose);
+:find the nearest traffic light to the car:
+light_index, light_wp = self.waypoint_to_light[car_position];
+:classify the color of the light:
+light_classifier.get_classification(cv_image);
+:bounce treatment of light state;
+:publish /traffic_waypoint;
+@enduml
+#+END_SRC
+
+#+RESULTS:
+[[file:traffic-classification.png]]
+
+#results:
