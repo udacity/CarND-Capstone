@@ -13,8 +13,7 @@ class Controller(object):
         self.yaw_controller = yaw_controller
         self.accel_limit = accel_limit
         self.decel_limit = decel_limit
-        #self.pid = PID(4.0, 0.001, 0.05)
-        self.pid = PID(kp=5, ki=0.5, kd=0.5)
+        self.pid = PID(5, 0.5, 0.5)
         #self.pid = PID(2.5, 0.0005, 0.1, -1.0, 1.0)
         self.errs = []
         self.thr = []

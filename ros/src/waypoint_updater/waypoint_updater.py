@@ -72,7 +72,10 @@ class WaypointUpdater(object):
                     if self.traffic_lights_wps[i] < next_wp\
                             and next_wp <= self.traffic_lights_wps[i+1]:
                         closest_light = i+1
-                if self.traffic_lights[closest_light].state == TrafficLight.RED:
+                tl = self.traffic_lights[closest_light]
+                red = tl.state == TrafficLight.RED
+                yellow = tl.state == TrafficLight.YELLOW and self.traffic_wp != self.traffic_lights_wps[closest_light]
+                if red or yellow:
                     self.traffic_wp = self.traffic_lights_wps[closest_light]
                     # rospy.loginfo("closest light %s to %s", self.traffic_wp, next_wp)
                     # wps = np.array([[w.pose.pose.position.x, w.pose.pose.position.y] for w in self.wps])
@@ -187,8 +190,8 @@ class WaypointUpdater(object):
     def publish_final_waypoints(self, next_wp):
         rospy.loginfo("next_wp %s %s", next_wp, self.t - rospy.get_time())
         self.t = rospy.get_time()
-        stop_wp = 754
-        if next_wp > stop_wp - 130:
+        stop_wp = self.traffic_wp
+        if stop_wp > -1 and next_wp > stop_wp - 150:
             final_wps = self.stop_trajectory(next_wp, stop_wp)
             #rospy.loginfo("Stopping speeds %s ", [w.twist.twist.linear.x for w in final_wps])
             self.final_waypoints_pub.publish(Lane(None, final_wps))
