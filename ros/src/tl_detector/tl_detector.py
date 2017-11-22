@@ -13,6 +13,8 @@ import yaml
 import math
 import os
 
+label = ['RED', 'YELLOW', 'GREEN', '', 'UNKNOWN']
+
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
@@ -24,13 +26,15 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = None
 
+	self.has_image = False
+
         # First argument: Corresponding waypoint id
         # Second argument: corrsponding light id
         self.idx_of_stop_line = None
 
 
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        self.sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -84,10 +88,33 @@ class TLDetector(object):
 
     def pose_cb(self, msg):
         self.pose = msg.pose
+        self.position = self.pose.position
+        self.orientation = self.pose.orientation
+        euler = tf.transformations.euler_from_quaternion([
+            self.orientation.x,
+            self.orientation.y,
+            self.orientation.z,
+            self.orientation.w])
+        self.theta = euler[2]
+        if self.light_classifier is not None:
+            if self.light_classifier.predict is None:
+                print "NOT MOVING!   Initializing TRAFFIC LIGHT DETECTOR....", self.has_image
+        else:
+            print "WARNING!   NO TRAFFIC LIGHT DETECTOR...."
 
     def waypoints_cb(self, msg):
-        self.waypoints = msg.waypoints
+        # make our own copy of the waypoints - they are static and do not change
+        if self.waypoints is None:
+            self.waypoints = []
+            for waypoint in msg.waypoints:
+                self.waypoints.append(waypoint)
+        self.wlen = len(self.waypoints)
 
+        # only get it once - reduce resource consumption
+        self.sub2.unregister()
+        self.sub2 = None
+
+        
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -166,8 +193,9 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         #Get classification
-        #return light.state
         return self.light_classifier.get_classification(cv_image)
+        #return light.state
+        
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -207,6 +235,7 @@ class TLDetector(object):
                     # Determine there should be traffic light ahead of the car.
                     light_wp = i
                     light_id = self.idx_of_stop_line[k][1]
+		    print ("light id:",light_id)
                     state = self.get_light_state(self.lights[light_id])
 		    print("state:",state)
                     return light_wp, state
