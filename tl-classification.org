@@ -110,3 +110,16 @@ Top Level
 [[file:traffic-light-classification.png]]
 
 #results:
+
+* Existing problems
+
+** After installing CUDA 9.0
+
+I have still the problem, seems the same:
+
+[INFO] [1511371718.427608]: light_index: 1; light waypoint: 753
+2017-11-22 09:29:19.338048: E tensorflow/stream_executor/cuda/cuda_dnn.cc:371] could not create cudnn handle: CUDNN_STATUS_INTERNAL_ERROR
+2017-11-22 09:29:19.536465: E tensorflow/stream_executor/cuda/cuda_dnn.cc:338] could not destroy cudnn handle: CUDNN_STATUS_BAD_PARAM
+2017-11-22 09:29:19.625729: F tensorflow/core/kernels/conv_ops.cc:672] Check failed: stream->parent()->GetConvolveAlgorithms( conv_parameters.ShouldIncludeWinogradNonfusedAlgo<T>(), &algorithms)
+[tl_detector-8] process has died [pid 5681, exit code -6, cmd /home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py __name:=tl_detector __log:=/home/yubrshen/.ros/log/64f207ac-cfaa-11e7-a4a0-18dbf212c2fb/tl_detector-8.log].
+log file: /home/yubrshen/.ros/log/64f207ac-cfaa-11e7-a4a0-18dbf212c2fb/tl_detector-8*.log
