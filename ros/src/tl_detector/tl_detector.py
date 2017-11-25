@@ -86,7 +86,7 @@ class TLDetector(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(2) #1Hz for traffic light detection
+        rate = rospy.Rate(2) #2Hz for traffic light detection
 
         while not rospy.is_shutdown():
             if self.has_image:
@@ -122,11 +122,11 @@ class TLDetector(object):
             self.orientation.z,
             self.orientation.w])
         self.theta = euler[2]
-        if self.light_classifier is not None:
-            if self.light_classifier.predict is None:
-                print "NOT MOVING!   Initializing TRAFFIC LIGHT DETECTOR....", self.has_image
-        else:
-            print "WARNING!   NO TRAFFIC LIGHT DETECTOR...."
+        #if self.light_classifier is not None:
+        #    if self.light_classifier.predict is None:
+        #        print "NOT MOVING!   Initializing TRAFFIC LIGHT DETECTOR....", self.has_image
+        #else:
+        #    print "WARNING!   NO TRAFFIC LIGHT DETECTOR...."
 
     def waypoints_cb(self, msg):
         # make our own copy of the waypoints - they are static and do not change
@@ -213,7 +213,7 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        visible_distance = 50.
+        visible_distance = 75.
         visible_angle = 50. * math.pi/180.\
 
         if self.pose is not None and self.waypoints is not None and self.idx_of_stop_line is not None:
@@ -238,13 +238,14 @@ class TLDetector(object):
 
                 dist_2 = math.pow(diff_x, 2) + math.pow(diff_y, 2)
 
-                if abs(car_theta - diff_theta) < visible_angle and dist_2 < math.pow(visible_distance, 2):
+                if (abs(car_theta - diff_theta) < visible_angle and dist_2 < math.pow(visible_distance, 2)) or dist_2 < 5.**2:
                     # Determine there should be traffic light ahead of the car.
                     light_wp = i
                     light_id = self.idx_of_stop_line[k][1]
-		    print ("light id:",light_id)
+                    #print ("light id:",light_id)
                     state = self.get_light_state(self.lights[light_id])
-		    print("state:",state)
+                    #print("state:",state)
+                    print("state:",state," observed at light_id:",light_id)
                     return light_wp, state
 
         return -1, TrafficLight.UNKNOWN
