@@ -97,7 +97,7 @@ class TLClassifier(object):
     
         light_color, color_label = self.convert_class_to_color(classes[max_index])
         if max_score < 0.7:
-            light_color, color_label = TrafficLight.UNKNOWN, UNKNOWN
+            light_color, color_label = TrafficLight.UNKNOWN, "UNKNOWN"
         # end of if max_score < 0.7
         rospy.loginfo("Traffic Light Color value: %r, label: %s; score: %f" %
                       (light_color, color_label, max_score))
