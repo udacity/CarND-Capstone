@@ -67,6 +67,6 @@ class TLClassifier(object):
                 self.input_real: self.scale(image.reshape(-1, 600, 800, 3)),
                 self.drop_rate:0.})
 
-        print("length of predict:", len(predict),"predict[0]:",predict[0])
+        #print("length of predict:", len(predict),"predict[0]:",predict[0])
 
         return int(predict[0])
