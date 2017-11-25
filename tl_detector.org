@@ -25,7 +25,7 @@
    <<imports>>
    <<waypoint_to_light_f>>
 
-   STATE_COUNT_THRESHOLD = 3
+   STATE_COUNT_THRESHOLD = 2 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
 
    class TLDetector(WaypointTracker):
        def __init__(self):
@@ -43,13 +43,16 @@
 
            <<traffic_image_processing_initialization>>
            <<traffic_light_initialization>>
-           rospy.spin()
+           #rospy.spin()
+           self.loop()
+
        <<base_waypoints_cb>>
        <<current_pose_cb>>
        <<traffic_array_cb>>
        <<image_color_cb>>
        <<get_light_state>>
        <<process_traffic_lights>>
+       <<loop>>
 
    if __name__ == '__main__':
        try:
@@ -90,6 +93,8 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   self.camera_image = None
   self.lights = []
   self.waypoint_to_light = None
+  self.state_count = 0
+  self.loop_freq = 3
 #+END_SRC
 
 ** subscribers
@@ -304,27 +309,41 @@ when the traffic light color is not red, report the negative of the waypoint ind
       """
       self.has_image = True
       self.camera_image = msg
-      light_wp, state = self.process_traffic_lights()
-      if light_wp and state:
-          '''
-          Publish upcoming red lights at camera frequency.
-          Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-          of times till we start using it. Otherwise the previous stable state is
-          used.
-          '''
-          if self.state != state:
-              self.state_count = 0
-              self.state = state
-          elif self.state_count >= STATE_COUNT_THRESHOLD:
-              self.last_state = self.state
-              light_wp = light_wp if state == TrafficLight.RED else -light_wp
-              self.last_wp = light_wp
-              self.upcoming_red_light_pub.publish(Int32(light_wp))
-          else:
-              self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-          # end of if self.state != state
-          self.state_count += 1
-      # end of if light_wp and state
+#+END_SRC
+
+** loop to process camara image to classify traffic light
+
+#+NAME:loop
+#+BEGIN_SRC python :noweb tangle :tangle
+  def loop(self):
+      rate = rospy.Rate(self.loop_freq)
+      while not rospy.is_shutdown():
+          if self.camera_image:
+              light_wp, state = self.process_traffic_lights()
+              if light_wp and state:
+                  '''
+                  Publish upcoming red lights at camera frequency.
+                  Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+                  of times till we start using it. Otherwise the previous stable state is
+                  used.
+                  '''
+                  if self.state != state:
+                      self.state_count = 0
+                      self.state = state
+                  elif self.state_count >= STATE_COUNT_THRESHOLD:
+                      self.last_state = self.state
+                      light_wp = light_wp if state == TrafficLight.RED else -light_wp
+                      self.last_wp = light_wp
+                      self.upcoming_red_light_pub.publish(Int32(light_wp))
+                  else:
+                      self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                  # end of if self.state != state
+                  self.state_count += 1
+              # end of if light_wp and state
+          # end of if self.camera_image
+          self.camera_image = None
+          rate.sleep()
+      # end of while not rospy.is_shutdow()
 #+END_SRC
 
 ** process_traffic_lights

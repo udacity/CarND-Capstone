@@ -126,3 +126,53 @@ Top Level
 #results:
 
 * Existing problems
+2017-11-24 21:26:34.884851: E tensorflow/stream_executor/cuda/cuda_blas.cc:366] failed to create cublas handle: CUBLAS_STATUS_NOT_INITIALIZED
+2017-11-24 21:26:34.884883: W tensorflow/stream_executor/stream.cc:1756] attempting to perform BLAS operation using StreamExecutor without BLAS support
+Traceback (most recent call last):
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 237, in <module>
+    TLDetector()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 89, in __init__
+    self.loop()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 209, in loop
+    light_wp, state = self.process_traffic_lights()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 200, in process_traffic_lights
+    state = self.get_light_state(light_index)
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 176, in get_light_state
+    return self.light_classifier.get_classification(cv_image)
+  File "/media/yubrshen/DATA/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/light_classification/tl_classifier.py", line 43, in get_classification
+    feed_dict={self.image_tensor: image_expanded})
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 895, in run
+    run_metadata_ptr)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 1124, in _run
+    feed_dict_tensor, options, run_metadata)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 1321, in _do_run
+    options, run_metadata)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 1340, in _do_call
+    raise type(e)(node_def, op, message)
+tensorflow.python.framework.errors_impl.InternalError: Blas SGEMM launch failed : m=30000, n=256, k=64
+	 [[Node: FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/Conv2D = Conv2D[T=DT_FLOAT, data_format="NHWC", padding="SAME", strides=[1, 1, 1, 1], use_cudnn_on_gpu=true, _device="/job:localhost/replica:0/task:0/gpu:0"](FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/pool1/MaxPool, FirstStageFeatureExtractor/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/weights/read)]]
+	 [[Node: SecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/MultiClassNonMaxSuppression/ChangeCoordinateFrame/Scale/concat/_145 = _Recv[client_terminated=false, recv_device="/job:localhost/replica:0/task:0/cpu:0", send_device="/job:localhost/replica:0/task:0/gpu:0", send_device_incarnation=1, tensor_name="edge_3497_SecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/MultiClassNonMaxSuppression/ChangeCoordinateFrame/Scale/concat", tensor_type=DT_FLOAT, _device="/job:localhost/replica:0/task:0/cpu:0"](^_cloopSecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/strided_slice/stack_2/_6)]]
+
+Caused by op u'FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/Conv2D', defined at:
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 237, in <module>
+    TLDetector()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 80, in __init__
+    self.light_classifier = TLClassifier()
+  File "/media/yubrshen/DATA/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/light_classification/tl_classifier.py", line 22, in __init__
+    tf.import_graph_def(od_graph_def, name='')
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/framework/importer.py", line 313, in import_graph_def
+    op_def=op_def)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/framework/ops.py", line 2630, in create_op
+    original_op=self._default_original_op, op_def=op_def)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/framework/ops.py", line 1204, in __init__
+    self._traceback = self._graph._extract_stack()  # pylint: disable=protected-access
+
+InternalError (see above for traceback): Blas SGEMM launch failed : m=30000, n=256, k=64
+	 [[Node: FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/Conv2D = Conv2D[T=DT_FLOAT, data_format="NHWC", padding="SAME", strides=[1, 1, 1, 1], use_cudnn_on_gpu=true, _device="/job:localhost/replica:0/task:0/gpu:0"](FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/pool1/MaxPool, FirstStageFeatureExtractor/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/weights/read)]]
+	 [[Node: SecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/MultiClassNonMaxSuppression/ChangeCoordinateFrame/Scale/concat/_145 = _Recv[client_terminated=false, recv_device="/job:localhost/replica:0/task:0/cpu:0", send_device="/job:localhost/replica:0/task:0/gpu:0", send_device_incarnation=1, tensor_name="edge_3497_SecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/MultiClassNonMaxSuppression/ChangeCoordinateFrame/Scale/concat", tensor_type=DT_FLOAT, _device="/job:localhost/replica:0/task:0/cpu:0"](^_cloopSecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/strided_slice/stack_2/_6)]]
+
+[tl_detector-8] process has died [pid 7469, exit code 1, cmd /home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py __name:=tl_detector __log:=/home/yubrshen/.ros/log/18d1ecb8-d1a1-11e7-91f9-18dbf212c2fb/tl_detector-8.log].
+log file: /home/yubrshen/.ros/log/18d1ecb8-d1a1-11e7-91f9-18dbf212c2fb/tl_detector-8*.log
+127.0.0.1 - - [24/Nov/2017 21:26:40] "GET /socket.io/?EIO=4&transport=websocket HTTP/1.1" 200 0 18.642115
+
+As of<2017-11-24 Fri 21:28> the above problem comes back, after move the processing to a loop with frequency 3 Hz.

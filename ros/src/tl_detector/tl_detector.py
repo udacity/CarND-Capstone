@@ -42,7 +42,7 @@ y = waypoint_to_light_f(lights_to_waypoints, base_waypoints_num)
 x = (y == {0: (0, 1), 1: (1, 3), 2: (1, 3), 3: (2, 7), 4: (2, 7), 5: (2, 7), 6: (2, 7), 7: (3, 8), 8: (4, 10), 8: (4, 10),
                      9: (4, 10), 10: (5, 15), 11: (5, 15), 12: (5, 15), 13: (5, 15), 14: (5, 15), 15: (None, None), 16: (None, None)})
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 2 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
 
 class TLDetector(WaypointTracker):
     def __init__(self):
@@ -54,6 +54,8 @@ class TLDetector(WaypointTracker):
         self.camera_image = None
         self.lights = []
         self.waypoint_to_light = None
+        self.state_count = 0
+        self.loop_freq = 3
         self.current_pose_sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
         
@@ -83,7 +85,9 @@ class TLDetector(WaypointTracker):
         self.last_wp = -1
         self.state_count = 0
         
-        rospy.spin()
+        #rospy.spin()
+        self.loop()
+
     def base_waypoints_cb(self, msg):
         WaypointTracker.base_waypoints_process(self, msg)
         # assumption that a traffic light can only have one waypoint close to it.
@@ -144,27 +148,6 @@ class TLDetector(WaypointTracker):
         """
         self.has_image = True
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
-        if light_wp and state:
-            '''
-            Publish upcoming red lights at camera frequency.
-            Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-            of times till we start using it. Otherwise the previous stable state is
-            used.
-            '''
-            if self.state != state:
-                self.state_count = 0
-                self.state = state
-            elif self.state_count >= STATE_COUNT_THRESHOLD:
-                self.last_state = self.state
-                light_wp = light_wp if state == TrafficLight.RED else -light_wp
-                self.last_wp = light_wp
-                self.upcoming_red_light_pub.publish(Int32(light_wp))
-            else:
-                self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-            # end of if self.state != state
-            self.state_count += 1
-        # end of if light_wp and state
     def get_light_state(self, light_index):
         """Determines the current color of the traffic light
     
@@ -219,6 +202,35 @@ class TLDetector(WaypointTracker):
             # end of if light_index
         # end of if (self.pose)
         return None, None
+    def loop(self):
+        rate = rospy.Rate(self.loop_freq)
+        while not rospy.is_shutdown():
+            if self.camera_image:
+                light_wp, state = self.process_traffic_lights()
+                if light_wp and state:
+                    '''
+                    Publish upcoming red lights at camera frequency.
+                    Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+                    of times till we start using it. Otherwise the previous stable state is
+                    used.
+                    '''
+                    if self.state != state:
+                        self.state_count = 0
+                        self.state = state
+                    elif self.state_count >= STATE_COUNT_THRESHOLD:
+                        self.last_state = self.state
+                        light_wp = light_wp if state == TrafficLight.RED else -light_wp
+                        self.last_wp = light_wp
+                        self.upcoming_red_light_pub.publish(Int32(light_wp))
+                    else:
+                        self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                    # end of if self.state != state
+                    self.state_count += 1
+                # end of if light_wp and state
+            # end of if self.camera_image
+            self.camera_image = None
+            rate.sleep()
+        # end of while not rospy.is_shutdow()
 
 if __name__ == '__main__':
     try:
