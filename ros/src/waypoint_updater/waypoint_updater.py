@@ -179,7 +179,7 @@ class WaypointUpdater(WaypointTracker):
                         if TIME_TO_CRUISE < time_to_traffic_light:
                             velocity_policy = self.cruise_unless_near_the_end()
                         elif TIME_TO_SLOWDOWN < time_to_traffic_light:
-                            velocity_policy = self.decelaration_policy
+                            velocity_policy = self.deceleration_policy
                         elif self.traffic_light_red:
                             velocity_policy = self.stop_policy
                         else:
