@@ -55,7 +55,7 @@ class TLDetector(WaypointTracker):
         self.lights = []
         self.waypoint_to_light = None
         self.state_count = 0
-        self.loop_freq = 3
+        self.loop_freq = 2
         self.current_pose_sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
         

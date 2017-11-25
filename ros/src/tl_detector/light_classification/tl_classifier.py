@@ -21,14 +21,14 @@ class TLClassifier(object):
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
             # end of with tf.gfile.GFile(model_path, 'rb') as fid:
-            self.session = tf.Session(graph=self.detection_graph)
-    
-            self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
-            self.detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
-            self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
-            self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
-            self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
         # with self.detection_graph.as_default():
+        self.session = tf.Session(graph=self.detection_graph)
+    
+        self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
+        self.detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
+        self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
+        self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
+        self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
         Args:

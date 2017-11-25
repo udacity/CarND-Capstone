@@ -94,7 +94,7 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   self.lights = []
   self.waypoint_to_light = None
   self.state_count = 0
-  self.loop_freq = 3
+  self.loop_freq = 2
 #+END_SRC
 
 ** subscribers
