@@ -15,7 +15,7 @@ import os
 
 label = ['RED', 'YELLOW', 'GREEN', '', 'UNKNOWN']
 
-STATE_COUNT_THRESHOLD = 2
+STATE_COUNT_THRESHOLD = 1
 
 class TLDetector(object):
     def __init__(self):
@@ -86,7 +86,7 @@ class TLDetector(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(2) #2Hz for traffic light detection
+        rate = rospy.Rate(1) #2Hz for traffic light detection
 
         while not rospy.is_shutdown():
             if self.has_image:
@@ -238,14 +238,14 @@ class TLDetector(object):
 
                 dist_2 = math.pow(diff_x, 2) + math.pow(diff_y, 2)
 
-                if (abs(car_theta - diff_theta) < visible_angle and dist_2 < math.pow(visible_distance, 2)) or dist_2 < 5.**2:
+                if abs(car_theta - diff_theta) < visible_angle and dist_2 < math.pow(visible_distance, 2):
                     # Determine there should be traffic light ahead of the car.
                     light_wp = i
                     light_id = self.idx_of_stop_line[k][1]
                     #print ("light id:",light_id)
                     state = self.get_light_state(self.lights[light_id])
                     #print("state:",state)
-                    print('state:',state,' observed at light_id:',light_id)
+                    print('state:',label[state],' observed at light_id:',light_id)
                     return light_wp, state
 
         return -1, TrafficLight.UNKNOWN
