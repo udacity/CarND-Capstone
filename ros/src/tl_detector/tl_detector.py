@@ -245,7 +245,7 @@ class TLDetector(object):
                     #print ("light id:",light_id)
                     state = self.get_light_state(self.lights[light_id])
                     #print("state:",state)
-                    print("state:",state," observed at light_id:",light_id)
+                    print('state:',state,' observed at light_id:',light_id)
                     return light_wp, state
 
         return -1, TrafficLight.UNKNOWN

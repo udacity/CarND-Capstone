@@ -28,7 +28,7 @@ class TLClassifier(object):
             self.drop_rate = self.tf_graph.get_tensor_by_name("drop_rate:0")
             self.predict = self.tf_graph.get_tensor_by_name("predict:0")
 
-            print("\nClassifier initialization done.")
+            print("\nClassifier initialization done.\nPlease start the simulator.")
 
     # scale the image features from -1 to 1 for the classifier
     def scale(self, x, feature_range=(-1, 1)):
