@@ -93,7 +93,7 @@ class WaypointUpdater(object):
 
                 v_limit = rospy.get_param('/waypoint_loader/velocity') / 3.6  # Speed limit given by ROS parameter
                 v_limit *= 0.9           # Set margin to not exceed speed limit.
-                v0 = min(25.0, v_limit)  # This program allows maximum spped of 25m/s.
+                v0 = min(20./2.24, v_limit)  # This program allows maximum spped of 20mph.
 
                 if self.traffic == -1:
                     for i in xrange(LOOKAHEAD_WPS):
