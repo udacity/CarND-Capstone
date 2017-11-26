@@ -1,3 +1,4 @@
+[![Waffle.io - Columns and their card count](https://badge.waffle.io/SDC-Team-LastMinute/CarND-Capstone.png?columns=all)](https://waffle.io/SDC-Team-LastMinute/CarND-Capstone?utm_source=badge)
 # Team LastMinute
 
 ### Team members:
