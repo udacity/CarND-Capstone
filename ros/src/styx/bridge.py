@@ -173,8 +173,8 @@ class Bridge(object):
         self.publishers['dbw_status'].publish(Bool(data))
 
     def publish_camera(self, data):
-        if random.uniform(0,1) < 0.2:  # only publish camara image 20% of the time
-            # before the frequency is about 10 Hz, 20% would be about 2 Hz
+        if random.uniform(0,1) < 0.4:  # only publish camara image 40% of the time
+            # before the frequency is about 10 Hz, 40% would be about 4 Hz
             imgString = data["image"]
             image = PIL_Image.open(BytesIO(base64.b64decode(imgString)))
             image_array = np.asarray(image)
