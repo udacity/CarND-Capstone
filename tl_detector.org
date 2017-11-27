@@ -93,7 +93,7 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   self.camera_image = None
   self.lights = []
   self.waypoint_to_light = None
-  self.loop_freq = 4
+  self.loop_freq = 3
   self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
 #+END_SRC
 
@@ -390,7 +390,7 @@ when the traffic light color is not red, report the negative of the waypoint ind
           #TODO find the closest visible traffic light (if one exists)
           # the index of the waypoint of the traffic light
           light_index, light_wp = self.waypoint_to_light[self.car_position]
-          FAKED_LIGHT = True
+          FAKED_LIGHT = False
           if FAKED_LIGHT:
               # rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
               #     light_index, self.lights[light_index].state,

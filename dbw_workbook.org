@@ -423,7 +423,7 @@ The message processing should be regulated, only process the most recent one.
               desired_linear_velocity_modulated, current_angular_velocity,
               current_linear_velocity)
 
-          steer = self.lowpass_filter.filt((desired_steer - current_steer)*self.steer_ratio)
+          steer = self.lowpass_filter.filt((desired_steer - current_steer)) # *self.steer_ratio
 
           # rospy.loginfo('desired_steer: %f; current_steer: %f; steer: %f' % (desired_steer, current_steer, steer))
 

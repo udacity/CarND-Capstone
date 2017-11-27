@@ -51,7 +51,7 @@ class TwistController(object):
             brake = 3250*0.01
         # end of if desired_linear_velocity > current_linear_velocity
 
-        rospy.loginfo('throttle: %f; brake: %f' % (throttle, brake))
+        # rospy.loginfo('throttle: %f; brake: %f' % (throttle, brake))
 
         error_angular_velocity = desired_angular_velocity - current_angular_velocity
 
@@ -63,9 +63,9 @@ class TwistController(object):
             desired_linear_velocity_modulated, current_angular_velocity,
             current_linear_velocity)
 
-        steer = self.lowpass_filter.filt((desired_steer - current_steer)*self.steer_ratio)
+        steer = self.lowpass_filter.filt((desired_steer - current_steer)) # *self.steer_ratio
 
-        rospy.loginfo('desired_steer: %f; current_steer: %f; steer: %f' % (desired_steer, current_steer, steer))
+        # rospy.loginfo('desired_steer: %f; current_steer: %f; steer: %f' % (desired_steer, current_steer, steer))
 
         # self.prev_time = time.time()
         return throttle, brake, steer

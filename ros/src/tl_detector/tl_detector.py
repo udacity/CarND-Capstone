@@ -55,7 +55,7 @@ class TLDetector(WaypointTracker):
         self.camera_image = None
         self.lights = []
         self.waypoint_to_light = None
-        self.loop_freq = 4
+        self.loop_freq = 3
         self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
         self.current_pose_sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
@@ -205,7 +205,7 @@ class TLDetector(WaypointTracker):
             #TODO find the closest visible traffic light (if one exists)
             # the index of the waypoint of the traffic light
             light_index, light_wp = self.waypoint_to_light[self.car_position]
-            FAKED_LIGHT = True
+            FAKED_LIGHT = False
             if FAKED_LIGHT:
                 # rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
                 #     light_index, self.lights[light_index].state,
