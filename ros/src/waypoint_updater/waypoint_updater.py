@@ -178,22 +178,17 @@ class WaypointUpdater(WaypointTracker):
                             self.last_closest_front_waypoint_index, self.traffic_waypoint)
                         time_to_traffic_light = distance_to_traffic_light/self.current_velocity
                     
-                        policy_name = "None"
-                    
                         if self.traffic_light_red:
                             if self.velocity_policy == self.stop_policy:
                                 pass
-                            elif ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
+                            elif ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 3):
                                 self.velocity_policy = self.stop_policy
-                                policy_name = "stop"
                             elif (time_to_traffic_light < TIME_TO_SLOWDOWN) or distance_to_traffic_light < 50:
                                 self.velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
-                                policy_name = "deceleration"
                             # else: keep the original velocity
                             # end of if self.velocity_policy == self.stop_policy
                         elif 20 < distance_to_traffic_light and distance_to_traffic_light < 70:
                             self.velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
-                            policy_name = "deceleration"
                         else:
                             self.velocity_policy = None
                         # end of if self.traffic_light_red
@@ -201,19 +196,19 @@ class WaypointUpdater(WaypointTracker):
                         rospy.loginfo(
                             'current_waypoint: %d; traffic_waypoint: %d; light: RED: %r; Distance to light: %r; Time to light: %d; velocity policy: %s' %
                         (self.last_closest_front_waypoint_index, self.traffic_waypoint, self.traffic_light_red, distance_to_traffic_light,
-                         time_to_traffic_light, policy_name))
+                         time_to_traffic_light, self.policy_name()))
                     
                         # apply the policy to each final_waypoints
                         if self.velocity_policy:
                             # for all final waypoints
                             num_affected_waypoints = min(final_waypoints_count, self.traffic_waypoint - self.last_closest_front_waypoint_index)
                             for i in range(num_affected_waypoints):
-                                waypoint = final_waypoints[i]
                                 j = self.last_closest_front_waypoint_index + i
+                                waypoint = final_waypoints[i]
                                 distance_to_traffic_light = self.distance(j, self.traffic_waypoint)
                                 waypoint.twist.twist.linear.x = self.velocity_policy(distance_to_traffic_light)
                                 rospy.loginfo('velocity policy: %s; index away from current pose: %d; linear.x: %f' %
-                                (policy_name, i, waypoint.twist.twist.linear.x))
+                                (self.policy_name(), i, waypoint.twist.twist.linear.x))
                             # end of for i in range(num_affected_waypoints)
                         # end of if self.velocity_policy
                     # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
@@ -270,6 +265,14 @@ class WaypointUpdater(WaypointTracker):
     
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
             waypoints[waypoint].twist.twist.linear.x = velocity
+    
+    def policy_name(self):
+        if self.velocity_policy == self.stop_policy:
+            return "stop"
+        elif self.velocity_policy is None:
+            return "None"
+        else:
+            return "deceleration"   # by result of exclusion
     
 
 if __name__ == '__main__':
