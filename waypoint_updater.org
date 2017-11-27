@@ -517,6 +517,7 @@ then the waypoint is front of my_car.
 
           self.obstacle_waypoint = None
           self.current_velocity = None
+          self.velocity_policy = None
 
           # self.traffic_lights = None
           rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_waypoint_cb)
@@ -743,40 +744,74 @@ when the traffic light color is not red, report the negative of the waypoint ind
           self.last_closest_front_waypoint_index, self.traffic_waypoint)
       time_to_traffic_light = distance_to_traffic_light/self.current_velocity
 
-      velocity_policy = None
       policy_name = "None"
 
-      if self.traffic_light_red and ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
-          velocity_policy = self.stop_policy
-          policy_name = "stop"
-      elif self.traffic_light_red and (time_to_traffic_light < TIME_TO_SLOWDOWN):
-          velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
-          #self.deceleration_policy
-          policy_name = "deceleration"
-      elif (time_to_traffic_light < TIME_TO_CRUISE):
-          velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
-          #self.deceleration_policy
-          policy_name = "deceleration"
-      # end of if self.traffic_light_red and ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5)
+      <<determine-velocity-policy>>
 
-      rospy.loginfo('current_waypoint: %d; traffic_waypoint: %d; light is RED: %r; Time to next traffic light: %d; velocity policy: %s' %
-      (self.last_closest_front_waypoint_index, self.traffic_waypoint, self.traffic_light_red, time_to_traffic_light, policy_name))
+      rospy.loginfo(
+          'current_waypoint: %d; traffic_waypoint: %d; light: RED: %r; Distance to light: %r; Time to light: %d; velocity policy: %s' %
+      (self.last_closest_front_waypoint_index, self.traffic_waypoint, self.traffic_light_red, distance_to_traffic_light,
+       time_to_traffic_light, policy_name))
 
       # apply the policy to each final_waypoints
-      if velocity_policy:
+      if self.velocity_policy:
           # for all final waypoints
           num_affected_waypoints = min(final_waypoints_count, self.traffic_waypoint - self.last_closest_front_waypoint_index)
           for i in range(num_affected_waypoints):
               waypoint = final_waypoints[i]
               j = self.last_closest_front_waypoint_index + i
               distance_to_traffic_light = self.distance(j, self.traffic_waypoint)
-              waypoint.twist.twist.linear.x = velocity_policy(distance_to_traffic_light)
+              waypoint.twist.twist.linear.x = self.velocity_policy(distance_to_traffic_light)
               rospy.loginfo('velocity policy: %s; index away from current pose: %d; linear.x: %f' %
               (policy_name, i, waypoint.twist.twist.linear.x))
           # end of for i in range(num_affected_waypoints)
-      # end of if velocity_policy
+      # end of if self.velocity_policy
   # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
 #+END_SRC
+
+** determine-velocity-policy
+
+#+NAME:determine-velocity-policy
+#+BEGIN_SRC python :noweb tangle :tangle
+  if self.traffic_light_red:
+      if self.velocity_policy == self.stop_policy:
+          pass
+      elif ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
+          self.velocity_policy = self.stop_policy
+          policy_name = "stop"
+      elif (time_to_traffic_light < TIME_TO_SLOWDOWN) or distance_to_traffic_light < 50:
+          self.velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
+          policy_name = "deceleration"
+      # else: keep the original velocity
+      # end of if self.velocity_policy == self.stop_policy
+  elif 20 < distance_to_traffic_light and distance_to_traffic_light < 70:
+      self.velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
+      policy_name = "deceleration"
+  else:
+      self.velocity_policy = None
+  # end of if self.traffic_light_red
+#+END_SRC
+
+Need to make sure the policy be reset to NONE when the light is no longer red.
+
+#+NAME:determine-velocity-policy-old
+#+BEGIN_SRC python :noweb tangle :tangle
+    if self.traffic_light_red and ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
+        velocity_policy = self.stop_policy
+        policy_name = "stop"
+    elif self.traffic_light_red and (time_to_traffic_light < TIME_TO_SLOWDOWN):
+        velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
+        #self.deceleration_policy
+        policy_name = "deceleration"
+    elif (time_to_traffic_light < TIME_TO_CRUISE):
+        velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
+        #self.deceleration_policy
+        policy_name = "deceleration"
+    # end of if self.traffic_light_red and ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5)
+
+
+#+END_SRC
+
 
 *** cruise_unless_near_the_end
 

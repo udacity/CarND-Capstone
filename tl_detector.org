@@ -539,3 +539,39 @@ light_classifier.get_classification(cv_image);
 [[file:traffic-classification.png]]
 
 #results:
+
+*** logic of velocity adjustment
+
+#+BEGIN_SRC plantuml :file velocity-adjustment.png
+@startuml
+if (Light is RED) then (red)
+  if (current policy) then (already
+STOP)
+    :do nothing;
+  elseif (time or distance ) then (too close)
+    :STOP;
+  elseif (time or distance) then (close enough
+to decelerate)
+    :DECELERATE;
+  elseif (time or distance) then (far enough
+to cruise)
+    :cruise;
+  else
+  :nothing;
+  endif
+elseif (distance or time is) then (Light is not red
+but time or distance
+is large enough but
+close enough
+for the next cycle red)
+:DECELERATE;
+else
+:nothing;
+endif
+#+END_SRC
+
+#+RESULTS:
+[[file:velocity-adjustment.png]]
+
+
+For the next cycle of red, how large the distance should be, and how close enough it should be?
