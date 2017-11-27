@@ -40,9 +40,9 @@ def publish_Lane(publisher, waypoints):
         lane.header.stamp = rospy.Time(0)
         lane.waypoints = waypoints
         publisher.publish(lane)
-TIME_TO_CRUISE = 15             # seconds, can keep the normal cruise speed
-TIME_TO_SLOWDOWN = 10  # seconds, must slowdown in anticipation, regardless of the color of the light
-TIME_TO_STOP_IF_RED = 5        # seconds, must stop if the traffic light is red
+TIME_TO_CRUISE = 20             # seconds, can keep the normal cruise speed
+TIME_TO_SLOWDOWN = 3  # seconds, must slowdown in anticipation, regardless of the color of the light
+TIME_TO_STOP_IF_RED = 2        # seconds, must stop if the traffic light is red
 
 class WaypointUpdater(WaypointTracker):
     def __init__(self):
@@ -63,6 +63,7 @@ class WaypointUpdater(WaypointTracker):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         self.traffic_waypoint = None
+        self.new_traffic_waypoint = False  # whether there is new traffic_waypoint data to process
 
         self.obstacle_waypoint = None
         self.current_velocity = None
@@ -170,25 +171,28 @@ class WaypointUpdater(WaypointTracker):
                 
                     # policy for velocity adjustment in view of traffic light
                     if (self.current_velocity and (0 < self.current_velocity) and
+                        # self.new_traffic_waypoint and
                         self.traffic_waypoint and (self.last_closest_front_waypoint_index < self.traffic_waypoint)):
                         distance_to_traffic_light = self.distance(
                             self.last_closest_front_waypoint_index, self.traffic_waypoint)
                         time_to_traffic_light = distance_to_traffic_light/self.current_velocity
                     
                         velocity_policy = None
-                        if TIME_TO_CRUISE < time_to_traffic_light:
-                            velocity_policy = None #self.cruise_unless_near_the_end()
-                            policy_name = "None"
-                        elif TIME_TO_SLOWDOWN < time_to_traffic_light:
-                            velocity_policy = self.deceleration_policy
-                            policy_name = "deceleration"
-                        elif self.traffic_light_red:
+                        policy_name = "None"
+                    
+                        if self.traffic_light_red and ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
                             velocity_policy = self.stop_policy
                             policy_name = "stop"
-                        else:
-                            velocity_policy = None # self.cruise_unless_near_the_end()
-                            policy_name = "None"
-                        # end of if SAFE_TIME_CRUISE < time_to_traffic_light
+                        elif self.traffic_light_red and (time_to_traffic_light < TIME_TO_SLOWDOWN):
+                            velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
+                            #self.deceleration_policy
+                            policy_name = "deceleration"
+                        elif (time_to_traffic_light < TIME_TO_CRUISE):
+                            velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
+                            #self.deceleration_policy
+                            policy_name = "deceleration"
+                        # end of if self.traffic_light_red and ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5)
+                    
                         rospy.loginfo('current_waypoint: %d; traffic_waypoint: %d; light is RED: %r; Time to next traffic light: %d; velocity policy: %s' %
                         (self.last_closest_front_waypoint_index, self.traffic_waypoint, self.traffic_light_red, time_to_traffic_light, policy_name))
                     
@@ -235,14 +239,20 @@ class WaypointUpdater(WaypointTracker):
             self.base_waypoints[last_ith].twist.twist.linear.x = expected_velocity
         # end of for i in range(LOOKAHEAD_WPS)
     def traffic_waypoint_cb(self, msg):
-        self.traffic_waypoint = msg.data
-        if msg.data < 0:
-            self.traffic_light_red = False
-            self.traffic_waypoint = -msg.data
-        else:
-            self.traffic_light_red = True
+        if self.traffic_waypoint != msg.data:
+            self.new_traffic_waypoint = True
             self.traffic_waypoint = msg.data
-        # end of if msg.data < 0
+            if msg.data < 0:
+                self.traffic_light_red = False
+                self.traffic_waypoint = -msg.data
+            else:
+                self.traffic_light_red = True
+                self.traffic_waypoint = msg.data
+            # end of if msg.data < 0
+        else:
+            self.new_traffic_waypoint = False
+        # end of if self.traffic_waypoint != msg.data
+    
     def current_velocity_cb(self, msg):
         self.current_velocity = msg.twist.linear.x
     def obstacle_cb(self, msg):

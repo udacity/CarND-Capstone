@@ -94,6 +94,7 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   self.lights = []
   self.waypoint_to_light = None
   self.loop_freq = 4
+  self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
 #+END_SRC
 
 ** subscribers
@@ -333,7 +334,8 @@ when the traffic light color is not red, report the negative of the waypoint ind
       while not rospy.is_shutdown():
           if self.camera_image:
               light_wp, state = self.process_traffic_lights()
-              if light_wp: # and state:
+              # only consider the traffic image when the car is close enough to the traffic light, say 20 waypoints
+              if (light_wp and (light_wp - self.car_position) < 20): # and state:
                   # Note: state might have value 0 and light_wp and 0 == False!
                   '''
                   Publish upcoming red lights at camera frequency.
@@ -384,11 +386,10 @@ when the traffic light color is not red, report the negative of the waypoint ind
       # self.stop_line_positions = self.config['stop_line_positions']
 
       if (self.base_waypoints and self.waypoint_to_light and self.pose):
-          car_position = self.get_closest_waypoint(self.pose.pose)
+          self.car_position = self.get_closest_waypoint(self.pose.pose)
           #TODO find the closest visible traffic light (if one exists)
           # the index of the waypoint of the traffic light
-          light_index, light_wp = self.waypoint_to_light[car_position]
-          # self.find_closest_traffic_light(car_position)
+          light_index, light_wp = self.waypoint_to_light[self.car_position]
           FAKED_LIGHT = True
           if FAKED_LIGHT:
               # rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
@@ -403,7 +404,7 @@ when the traffic light color is not red, report the negative of the waypoint ind
 
           # end of if FAKED_LIGHT
           rospy.loginfo('car index: %r; light_index: %r; light waypoint: %r; light is RED: %r' %
-                        (car_position, light_index, light_wp, state==TrafficLight.RED))
+                        (self.car_position, light_index, light_wp, state==TrafficLight.RED))
 
           return light_wp, state
       # end of if (self.pose)
