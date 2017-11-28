@@ -1,0 +1,986 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2017-11-28 Tue 08:30 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Design and Construction of tl_detector (traffic light detector)</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="yu-shen" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2017 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Design and Construction of tl_detector (traffic light detector)</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgeb974f2">1. Source Code</a>
+<ul>
+<li><a href="#orgd97d408">1.1. Top level</a></li>
+<li><a href="#org029e4ce">1.2. imports</a></li>
+<li><a href="#org79f1cbd">1.3. attributes-initialization</a></li>
+<li><a href="#org241fa4a">1.4. subscribers</a></li>
+<li><a href="#org94e0417">1.5. traffic_light_initialization</a></li>
+<li><a href="#org14d9f95">1.6. traffic_image_processing_initialization</a></li>
+<li><a href="#org31b910e">1.7. base_waypoints_cb</a></li>
+<li><a href="#orgad79cce">1.8. traffic_lights_to_waypoints</a></li>
+<li><a href="#org0e4af46">1.9. traffic_light_waypoint</a></li>
+<li><a href="#org937400a">1.10. waypoint_to_light_f</a></li>
+<li><a href="#orgcbd1495">1.11. current_pose_cb</a></li>
+<li><a href="#orgd1fd513">1.12. traffic_array_cb</a></li>
+<li><a href="#org8fb6028">1.13. image_color_cb</a></li>
+<li><a href="#org45be68c">1.14. loop to process camara image to classify traffic light</a></li>
+<li><a href="#org20a0e4b">1.15. process_traffic_lights</a></li>
+<li><a href="#org1673bec">1.16. find-closest-traffic-light</a></li>
+<li><a href="#org2aaae87">1.17. get_closest_waypoint</a></li>
+<li><a href="#org04e3110">1.18. get_light_state</a></li>
+<li><a href="#org34d2e01">1.19. Current problems</a></li>
+<li><a href="#org6996f19">1.20. Sketch of Traffic Light Classification</a>
+<ul>
+<li><a href="#orgdc5c6d5">1.20.1. logic of velocity adjustment</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-orgeb974f2" class="outline-2">
+<h2 id="orgeb974f2"><span class="section-number-2">1</span> Source Code</h2>
+<div class="outline-text-2" id="text-1">
+</div>
+<div id="outline-container-orgd97d408" class="outline-3">
+<h3 id="orgd97d408"><span class="section-number-3">1.1</span> Top level</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+Here we construct the source code from top to bottom.
+</p>
+
+<p>
+<code>tl_dectector</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">!/usr/bin/env python</span>
+&lt;&lt;imports&gt;&gt;
+&lt;&lt;waypoint_to_light_f&gt;&gt;
+
+<span style="color: #7590db;">STATE_COUNT_THRESHOLD</span> = <span style="color: #a45bad;">2</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz</span>
+
+<span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">TLDetector</span><span style="color: #4f97d7;">(</span>WaypointTracker<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">__init__</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+        WaypointTracker.__init__<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>
+
+        rospy.init_node<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'tl_detector'</span><span style="color: #4f97d7;">)</span>
+        &lt;&lt;attributes-initialization&gt;&gt;
+        &lt;&lt;subscribers&gt;&gt;
+        <span style="color: #7590db;">config_string</span> = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"/traffic_light_config"</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.config = yaml.load<span style="color: #4f97d7;">(</span>config_string<span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.previous_traffic_light_position = 0</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.number_traffic_lights_passed = 0</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.upcoming_red_light_pub = rospy.Publisher<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/traffic_waypoint'</span>, Int32, queue_size=<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+
+        &lt;&lt;traffic_image_processing_initialization&gt;&gt;
+        &lt;&lt;traffic_light_initialization&gt;&gt;
+        <span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">rospy.spin()</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.loop<span style="color: #4f97d7;">()</span>
+
+    &lt;&lt;base_waypoints_cb&gt;&gt;
+    &lt;&lt;current_pose_cb&gt;&gt;
+    &lt;&lt;traffic_array_cb&gt;&gt;
+    &lt;&lt;image_color_cb&gt;&gt;
+    &lt;&lt;get_light_state&gt;&gt;
+    &lt;&lt;process_traffic_lights&gt;&gt;
+    &lt;&lt;loop&gt;&gt;
+
+<span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">__name__</span> == <span style="color: #2d9574;">'__main__'</span>:
+    <span style="color: #4f97d7; font-weight: bold;">try</span>:
+        TLDetector<span style="color: #4f97d7;">()</span>
+    <span style="color: #4f97d7; font-weight: bold;">except</span> rospy.ROSInterruptException:
+        rospy.logerr<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'Could not start traffic node.'</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org029e4ce" class="outline-3">
+<h3 id="org029e4ce"><span class="section-number-3">1.2</span> imports</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+<code>imports</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">import</span> rospy
+<span style="color: #4f97d7; font-weight: bold;">from</span> std_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> Int32
+<span style="color: #4f97d7; font-weight: bold;">from</span> geometry_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> PoseStamped, Pose
+<span style="color: #4f97d7; font-weight: bold;">from</span> styx_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> TrafficLightArray, TrafficLight
+<span style="color: #4f97d7; font-weight: bold;">from</span> styx_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> Lane
+<span style="color: #4f97d7; font-weight: bold;">from</span> sensor_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> Image
+<span style="color: #4f97d7; font-weight: bold;">from</span> cv_bridge <span style="color: #4f97d7; font-weight: bold;">import</span> CvBridge
+
+<span style="color: #4f97d7; font-weight: bold;">from</span> light_classification.tl_classifier <span style="color: #4f97d7; font-weight: bold;">import</span> TLClassifier
+<span style="color: #4f97d7; font-weight: bold;">from</span> waypoint_lib.waypoint_tracker <span style="color: #4f97d7; font-weight: bold;">import</span> WaypointTracker
+
+<span style="color: #4f97d7; font-weight: bold;">import</span> tf <span style="color: #4f97d7; font-weight: bold;">as</span> tf_ros
+<span style="color: #4f97d7; font-weight: bold;">import</span> math
+<span style="color: #4f97d7; font-weight: bold;">import</span> cv2
+<span style="color: #4f97d7; font-weight: bold;">import</span> yaml
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org79f1cbd" class="outline-3">
+<h3 id="org79f1cbd"><span class="section-number-3">1.3</span> attributes-initialization</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+self.lights is from TrafficLightArray.lights, the position and state of traffic lights.
+</p>
+
+<p>
+<code>attributes-initialization</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.pose = <span style="color: #a45bad;">None</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.waypoints = <span style="color: #a45bad;">None</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.camera_image = <span style="color: #a45bad;">None</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.lights = <span style="color: #4f97d7;">[]</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.waypoint_to_light = <span style="color: #a45bad;">None</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.loop_freq = <span style="color: #a45bad;">3</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.car_position = <span style="color: #a45bad;">None</span>        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the waypoint index in the base_waypoints of the waypoint in front of the car</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org241fa4a" class="outline-3">
+<h3 id="org241fa4a"><span class="section-number-3">1.4</span> subscribers</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+<code>subscribers</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.current_pose_sub1 = rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/current_pose'</span>, PoseStamped, <span style="color: #4f97d7; font-weight: bold;">self</span>.current_pose_cb<span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_sub = rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/base_waypoints'</span>, Lane, <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_cb<span style="color: #4f97d7;">)</span>
+
+<span style="color: #2aa1ae;">'''</span>
+<span style="color: #2aa1ae;">/vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and</span>
+<span style="color: #2aa1ae;">helps you acquire an accurate ground truth data source for the traffic light</span>
+<span style="color: #2aa1ae;">classifier by sending the current color state of all traffic lights in the</span>
+<span style="color: #2aa1ae;">simulator. When testing on the vehicle, the color state will not be available. You'll need to</span>
+<span style="color: #2aa1ae;">rely on the position of the light and the camera image to predict it.</span>
+<span style="color: #2aa1ae;">'''</span>
+<span style="color: #7590db;">sub3</span> = rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/vehicle/traffic_lights'</span>, TrafficLightArray, <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_array_cb<span style="color: #4f97d7;">)</span>
+<span style="color: #7590db;">sub6</span> = rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/image_color'</span>, Image, <span style="color: #4f97d7; font-weight: bold;">self</span>.image_color_cb<span style="color: #4f97d7;">)</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org94e0417" class="outline-3">
+<h3 id="org94e0417"><span class="section-number-3">1.5</span> traffic_light_initialization</h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+<code>traffic_light_initialization</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.state = TrafficLight.UNKNOWN
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.last_state = TrafficLight.UNKNOWN</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.last_wp = <span style="color: #a45bad;">None</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.state_count = <span style="color: #a45bad;">0</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org14d9f95" class="outline-3">
+<h3 id="org14d9f95"><span class="section-number-3">1.6</span> traffic_image_processing_initialization</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+<code>traffic_image_processing_initialization</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.bridge = CvBridge<span style="color: #4f97d7;">()</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.light_classifier = TLClassifier<span style="color: #4f97d7;">()</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.listener = tf_ros.TransformListener<span style="color: #4f97d7;">()</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org31b910e" class="outline-3">
+<h3 id="org31b910e"><span class="section-number-3">1.7</span> base_waypoints_cb</h3>
+<div class="outline-text-3" id="text-1-7">
+<p>
+So far, it only need to digest and process the base_points and store them. This has been implemented in the
+super-class.
+</p>
+
+<p>
+<code>base_waypoints_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">base_waypoints_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">copy the base_waypoints, compute the distance from the start to each base_waypoint,</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">to be able to compute distance among any two base_waypoints.</span>
+    WaypointTracker.base_waypoints_process<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Construct the map, self.waypoint_to_light from a waypoint index to the traffic light</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">in terms of waypoint index</span>
+
+    &lt;&lt;traffic_lights_to_waypoints&gt;&gt;
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgad79cce" class="outline-3">
+<h3 id="orgad79cce"><span class="section-number-3">1.8</span> traffic_lights_to_waypoints</h3>
+<div class="outline-text-3" id="text-1-8">
+<p>
+Identify waypoint index with traffic lights once.
+</p>
+
+<p>
+For each traffic light, find the closest waypoint, record the index of that waypoint.
+Then build a map from the index of a waypoint in front of the car to the waypoint for a traffic light ahead of the waypoint ahead of the car.
+The index of the traffic light should be equal or greater than the index of the waypoint ahead of the car.
+</p>
+
+<p>
+<code>traffic_lights_to_waypoints</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">assumption that a traffic light can only have one waypoint close to it.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">or one waypoint can have at most one traffic light near it.</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">implementation:</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">given a list of coordinates of traffic lights</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">List of positions that correspond to the line to stop in front of for a given intersection</span>
+<span style="color: #7590db;">stop_line_positions</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.config<span style="color: #4f97d7;">[</span><span style="color: #2d9574;">'stop_line_positions'</span><span style="color: #4f97d7;">]</span>
+<span style="color: #7590db;">light_cursor</span> = <span style="color: #a45bad;">0</span>
+<span style="color: #7590db;">base_waypoint_search_cursor</span> = <span style="color: #a45bad;">0</span>
+
+<span style="color: #7590db;">dl</span> = <span style="color: #4f97d7; font-weight: bold;">lambda</span> a, b: math.sqrt<span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>a.x-b<span style="color: #2d9574;">[</span><span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span> + <span style="color: #bc6ec5;">(</span>a.y-b<span style="color: #2d9574;">[</span><span style="color: #a45bad;">1</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span><span style="color: #4f97d7;">)</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">The list of the waypoint index of the traffic lights</span>
+<span style="color: #7590db;">lights_to_waypoints</span> = <span style="color: #4f97d7;">[]</span>
+
+<span style="color: #4f97d7; font-weight: bold;">for</span> light_cursor <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">len</span><span style="color: #bc6ec5;">(</span>stop_line_positions<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">take, l, the first of the remaining traffic lights coordinates list, self.stop_line_positions</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> base_waypoint_search_cursor &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num:
+        <span style="color: #7590db;">dist_shortest</span> = dl<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #bc6ec5;">[</span>base_waypoint_search_cursor<span style="color: #bc6ec5;">]</span>.pose.pose.position,
+                            stop_line_positions<span style="color: #bc6ec5;">[</span>light_cursor<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #7590db;">light_waypoint_index</span> = base_waypoint_search_cursor
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">for l to find the closest waypoint in the remaining base_waypoints, w</span>
+        <span style="color: #4f97d7; font-weight: bold;">for</span> i <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span>base_waypoint_search_cursor+<span style="color: #a45bad;">1</span>, <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #4f97d7;">)</span>:
+            <span style="color: #7590db;">dist</span> = dl<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #bc6ec5;">[</span>i<span style="color: #bc6ec5;">]</span>.pose.pose.position,
+                      stop_line_positions<span style="color: #bc6ec5;">[</span>light_cursor<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> dist &lt; dist_shortest:
+                <span style="color: #7590db;">dist_shortest</span> = dist
+                <span style="color: #7590db;">light_waypoint_index</span> = i
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if dist &lt; d_shortest</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">record the mapping from l to w</span>
+        lights_to_waypoints.append<span style="color: #4f97d7;">(</span>light_waypoint_index<span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">remove l from the list of traffic lights, and w from the base_points</span>
+        <span style="color: #7590db;">base_waypoint_search_cursor</span> = light_waypoint_index + <span style="color: #a45bad;">1</span>
+    <span style="color: #4f97d7; font-weight: bold;">else</span>:
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">there is extra traffic lights after having found the traffic light for the last waypoint.</span>
+        lights_to_waypoints.append<span style="color: #4f97d7;">(</span><span style="color: #a45bad;">None</span><span style="color: #4f97d7;">)</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if base_waypoint_search_cursor &lt; self.base_waypoints_num</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for light_cursor in range(len(self.stop_line_positions))</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">until there is no more traffic light, or no more waypoint</span>
+rospy.loginfo<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'Waypoints for traffic lights: %r'</span> % <span style="color: #4f97d7;">repr</span><span style="color: #bc6ec5;">(</span>lights_to_waypoints<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">construct the map, self.waypoint_to_light, the map from waypoint index to the index of the</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">traffic light in terms of the closest waypoint index</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.waypoint_to_light = waypoint_to_light_f<span style="color: #4f97d7;">(</span>lights_to_waypoints, <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #4f97d7;">)</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0e4af46" class="outline-3">
+<h3 id="org0e4af46"><span class="section-number-3">1.9</span> traffic_light_waypoint</h3>
+<div class="outline-text-3" id="text-1-9">
+<p>
+This is obsolete. It's been replaced by the computation of
+self.waypoint_to_light = waypoint_to_light_f(lights_to_waypoints, self.base_waypoints_num) in traffic_lights_to_waypoints
+</p>
+
+<p>
+A function from an index of a waypoint (ahead of the car) to the waypoint index of the traffic light.
+</p>
+
+<p>
+This should be the replacement for self.find_closest_traffic_light
+</p>
+
+<p>
+<code>traffic_light_waypoint</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">construct a function or map from waypoint index in front of a car to the index of the waypoirt for traffic light</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">I know how to do it with map, but how to do it with function?</span>
+
+<span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">traffic_light_waypoint</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, waypoint_index<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.waypoint_to_light <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #a45bad;">None</span>:
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">construct the map</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.waypoint_to_light = <span style="color: #4f97d7;">{}</span>
+        <span style="color: #7590db;">waypoint_start</span> = <span style="color: #a45bad;">0</span>
+        <span style="color: #4f97d7; font-weight: bold;">for</span> light_index <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">len</span><span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.lights_to_waypoints<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
+            <span style="color: #4f97d7; font-weight: bold;">for</span> waypoint_index <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span>waypoint_start, <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #4f97d7;">)</span>:
+                <span style="color: #4f97d7; font-weight: bold;">if</span> waypoint_index &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.lights_to_waypoints<span style="color: #4f97d7;">[</span>light_index<span style="color: #4f97d7;">]</span>:
+                    <span style="color: #4f97d7; font-weight: bold;">self</span>.waypoint_to_light<span style="color: #4f97d7;">[</span>waypoint_index<span style="color: #4f97d7;">]</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.lights_to_waypoints<span style="color: #4f97d7;">[</span>light_index<span style="color: #4f97d7;">]</span>
+                <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if waypoint_index &lt;= self.lights_to_waypoints[light_index]</span>
+                <span style="color: #7590db;">waypoint_start</span> = waypoint_index
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(self.base_waypoints_num)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for light_index in range(len(self.lights_to_waypoints))</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.waypoint_to_light is None</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.waypoint_to_light<span style="color: #4f97d7;">[</span>waypoint_index<span style="color: #4f97d7;">]</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org937400a" class="outline-3">
+<h3 id="org937400a"><span class="section-number-3">1.10</span> waypoint_to_light_f</h3>
+<div class="outline-text-3" id="text-1-10">
+<p>
+The function to construct the map between the index of a waypoint and the index of the waypoint nearest to the traffic light.
+</p>
+
+<p>
+<code>waypoint_to_light_f</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">waypoint_to_light_f</span><span style="color: #4f97d7;">(</span>lights_to_waypoints, base_waypoints_num<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">implementation</span>
+    <span style="color: #7590db;">waypoint_to_light</span> = <span style="color: #4f97d7;">{}</span>
+    <span style="color: #7590db;">light_next</span> = <span style="color: #a45bad;">0</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">for</span> waypoint_index <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span>base_waypoints_num<span style="color: #4f97d7;">)</span>:
+        <span style="color: #4f97d7; font-weight: bold;">for</span> light_index <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span>light_next, <span style="color: #4f97d7;">len</span><span style="color: #bc6ec5;">(</span>lights_to_waypoints<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
+            <span style="color: #7590db;">waypoint_index_of_light</span> = lights_to_waypoints<span style="color: #4f97d7;">[</span>light_index<span style="color: #4f97d7;">]</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> waypoint_index &lt; waypoint_index_of_light:
+                <span style="color: #7590db;">waypoint_to_light</span><span style="color: #4f97d7;">[</span>waypoint_index<span style="color: #4f97d7;">]</span> = <span style="color: #4f97d7;">(</span>light_index, waypoint_index_of_light<span style="color: #4f97d7;">)</span>
+                <span style="color: #4f97d7; font-weight: bold;">break</span>
+            <span style="color: #4f97d7; font-weight: bold;">elif</span> lights_to_waypoints<span style="color: #4f97d7;">[</span>-<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">]</span> &lt;= waypoint_index:
+                <span style="color: #7590db;">waypoint_to_light</span><span style="color: #4f97d7;">[</span>waypoint_index<span style="color: #4f97d7;">]</span> = <span style="color: #4f97d7;">(</span><span style="color: #a45bad;">None</span>, <span style="color: #a45bad;">None</span><span style="color: #4f97d7;">)</span>
+                <span style="color: #4f97d7; font-weight: bold;">break</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if waypoint_index &lt;= waypoint_index_of_light</span>
+            <span style="color: #7590db;">light_next</span> = light_index
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for light_index in range(len(lights_to_waypoints))</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(base_waypoints_num)</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> waypoint_to_light
+
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">test data:</span>
+<span style="color: #7590db;">lights_to_waypoints</span> = <span style="color: #4f97d7;">[</span><span style="color: #a45bad;">1</span>, <span style="color: #a45bad;">3</span>, <span style="color: #a45bad;">7</span>, <span style="color: #a45bad;">8</span>, <span style="color: #a45bad;">10</span>, <span style="color: #a45bad;">15</span><span style="color: #4f97d7;">]</span>
+<span style="color: #7590db;">base_waypoints_num</span> = <span style="color: #a45bad;">17</span>
+
+<span style="color: #7590db;">y</span> = waypoint_to_light_f<span style="color: #4f97d7;">(</span>lights_to_waypoints, base_waypoints_num<span style="color: #4f97d7;">)</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">expected outcome:</span>
+<span style="color: #7590db;">x</span> = <span style="color: #4f97d7;">(</span>y == <span style="color: #bc6ec5;">{</span><span style="color: #a45bad;">0</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">0</span>, <span style="color: #a45bad;">1</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">1</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">1</span>, <span style="color: #a45bad;">3</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">2</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">1</span>, <span style="color: #a45bad;">3</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">3</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">2</span>, <span style="color: #a45bad;">7</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">4</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">2</span>, <span style="color: #a45bad;">7</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">5</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">2</span>, <span style="color: #a45bad;">7</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">6</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">2</span>, <span style="color: #a45bad;">7</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">7</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">3</span>, <span style="color: #a45bad;">8</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">8</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">4</span>, <span style="color: #a45bad;">10</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">8</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">4</span>, <span style="color: #a45bad;">10</span><span style="color: #2d9574;">)</span>,
+                     <span style="color: #a45bad;">9</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">4</span>, <span style="color: #a45bad;">10</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">10</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">5</span>, <span style="color: #a45bad;">15</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">11</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">5</span>, <span style="color: #a45bad;">15</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">12</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">5</span>, <span style="color: #a45bad;">15</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">13</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">5</span>, <span style="color: #a45bad;">15</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">14</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">5</span>, <span style="color: #a45bad;">15</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">15</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">None</span>, <span style="color: #a45bad;">None</span><span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">16</span>: <span style="color: #2d9574;">(</span><span style="color: #a45bad;">None</span>, <span style="color: #a45bad;">None</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">}</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgcbd1495" class="outline-3">
+<h3 id="orgcbd1495"><span class="section-number-3">1.11</span> current_pose_cb</h3>
+<div class="outline-text-3" id="text-1-11">
+<ul class="org-ul">
+<li>Determine the location of the car by locating the nearest waypoint in front of the car</li>
+<li></li>
+</ul>
+<p>
+<code>current_pose_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">current_pose_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.pose = msg
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgd1fd513" class="outline-3">
+<h3 id="orgd1fd513"><span class="section-number-3">1.12</span> traffic_array_cb</h3>
+<div class="outline-text-3" id="text-1-12">
+<p>
+<code>traffic_array_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">traffic_array_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.lights = msg.lights
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org8fb6028" class="outline-3">
+<h3 id="org8fb6028"><span class="section-number-3">1.13</span> image_color_cb</h3>
+<div class="outline-text-3" id="text-1-13">
+<p>
+Delegate the processing of the image, recognition to self.process_traffic_lights
+</p>
+
+<p>
+Publish stable recognition outcome in terms of /traffic_waypoint (index)
+</p>
+<ul class="org-ul">
+<li>Frequency of /image_color::</li>
+</ul>
+<p>
+It's about 10 Hz by observing through <code>=rostopic hz /image_color=</code>
+</p>
+
+<p>
+MAJOR CHANGE of the protocol between waypoints_updater and tl_detector ::
+when the traffic light color is not red, report the negative of the waypoint index instead of just report -1, to take advantage of the computation of the waypoint index of the traffic light, saving waypoint_updater from computing it.
+</p>
+
+<p>
+<code>image_color_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">image_color_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae;">"""Identifies red lights in the incoming camera image and publishes the index</span>
+<span style="color: #2aa1ae;">            of the waypoint closest to the red light's stop line to /traffic_waypoint</span>
+
+<span style="color: #2aa1ae;">        Args:</span>
+<span style="color: #2aa1ae;">            msg (Image): image from car-mounted camera</span>
+
+<span style="color: #2aa1ae;">    """</span>
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.has_image = <span style="color: #a45bad;">True</span>
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.camera_image = msg
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org45be68c" class="outline-3">
+<h3 id="org45be68c"><span class="section-number-3">1.14</span> loop to process camara image to classify traffic light</h3>
+<div class="outline-text-3" id="text-1-14">
+<p>
+<code>loop</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">loop</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">rate</span> = rospy.Rate<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.loop_freq<span style="color: #4f97d7;">)</span>
+    <span style="color: #4f97d7; font-weight: bold;">while</span> <span style="color: #4f97d7; font-weight: bold;">not</span> rospy.is_shutdown<span style="color: #4f97d7;">()</span>:
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.camera_image:
+            <span style="color: #7590db;">light_wp</span>, <span style="color: #7590db;">state</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.process_traffic_lights<span style="color: #4f97d7;">()</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">only consider the traffic image when the car is close enough to the traffic light, say 20 waypoints</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>light_wp <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #bc6ec5;">(</span>light_wp - <span style="color: #4f97d7; font-weight: bold;">self</span>.car_position<span style="color: #bc6ec5;">)</span> &lt; <span style="color: #a45bad;">100</span><span style="color: #4f97d7;">)</span>: <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">and state:</span>
+                <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Note: state might have value 0 and light_wp and 0 == False!</span>
+                <span style="color: #2d9574;">'''</span>
+<span style="color: #2d9574;">                Publish upcoming red lights at camera frequency.</span>
+<span style="color: #2d9574;">                Each predicted state has to occur `STATE_COUNT_THRESHOLD` number</span>
+<span style="color: #2d9574;">                of times till we start using it. Otherwise the previous stable state is</span>
+<span style="color: #2d9574;">                used.</span>
+<span style="color: #2d9574;">                '''</span>
+                <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))</span>
+                <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">(abs(self.last_wp) != light_wp if self.last_wp else True) or</span>
+                <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.state <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #a45bad;">None</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">or</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.state != state<span style="color: #4f97d7;">)</span>:  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">state changed</span>
+                    rospy.loginfo<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'state changed: old state count: %r; old state: %r; new state: %d'</span> %
+                    <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.state_count, <span style="color: #4f97d7; font-weight: bold;">self</span>.state, state<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+                    <span style="color: #4f97d7; font-weight: bold;">self</span>.state_count = <span style="color: #a45bad;">0</span>
+                    <span style="color: #4f97d7; font-weight: bold;">self</span>.state = state
+                    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.last_state = self.state</span>
+                    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.last_wp = light_wp if state == TrafficLight.RED else -light_wp</span>
+                <span style="color: #4f97d7; font-weight: bold;">elif</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.state_count &gt;= STATE_COUNT_THRESHOLD:
+                    <span style="color: #4f97d7; font-weight: bold;">self</span>.last_wp = light_wp <span style="color: #4f97d7; font-weight: bold;">if</span> state == TrafficLight.RED <span style="color: #4f97d7; font-weight: bold;">else</span> -light_wp
+                    <span style="color: #4f97d7; font-weight: bold;">self</span>.upcoming_red_light_pub.publish<span style="color: #4f97d7;">(</span>Int32<span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.last_wp<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+                    rospy.loginfo<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %d'</span> %
+                                <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.state_count, <span style="color: #4f97d7; font-weight: bold;">self</span>.state, state, <span style="color: #4f97d7; font-weight: bold;">self</span>.last_wp<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+                <span style="color: #4f97d7; font-weight: bold;">else</span>:
+                    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.last_wp:
+                        <span style="color: #4f97d7; font-weight: bold;">self</span>.upcoming_red_light_pub.publish<span style="color: #4f97d7;">(</span>Int32<span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.last_wp<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+                    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.last_wp</span>
+                    rospy.loginfo<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'not enough state change: old state: %r; keep publish the old traffic_waypoint: %r'</span> % <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.state, <span style="color: #4f97d7; font-weight: bold;">self</span>.last_wp<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+                <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.state != state</span>
+                <span style="color: #4f97d7; font-weight: bold;">self</span>.state_count += <span style="color: #a45bad;">1</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if light_wp and state</span>
+            <span style="color: #4f97d7; font-weight: bold;">self</span>.camera_image = <span style="color: #a45bad;">None</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.camera_image</span>
+        rate.sleep<span style="color: #4f97d7;">()</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of while not rospy.is_shutdow()</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org20a0e4b" class="outline-3">
+<h3 id="org20a0e4b"><span class="section-number-3">1.15</span> process_traffic_lights</h3>
+<div class="outline-text-3" id="text-1-15">
+<p>
+<code>process_traffic_lights</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">process_traffic_lights</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae;">"""Finds closest visible traffic light, if one exists, and determines its</span>
+<span style="color: #2aa1ae;">        location and color</span>
+
+<span style="color: #2aa1ae;">    Returns:</span>
+<span style="color: #2aa1ae;">        int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)</span>
+<span style="color: #2aa1ae;">        int: ID of traffic light color (specified in styx_msgs/TrafficLight)</span>
+
+<span style="color: #2aa1ae;">    """</span>
+    <span style="color: #7590db;">light</span> = <span style="color: #a45bad;">None</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">List of positions that correspond to the line to stop in front of for a given intersection</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.stop_line_positions = self.config['stop_line_positions']</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.waypoint_to_light <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.pose<span style="color: #4f97d7;">)</span>:
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.car_position = <span style="color: #4f97d7; font-weight: bold;">self</span>.get_closest_waypoint<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.pose.pose<span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #cc9393;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;"> find the closest visible traffic light (if one exists)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the index of the waypoint of the traffic light</span>
+        <span style="color: #7590db;">light_index</span>, <span style="color: #7590db;">light_wp</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.waypoint_to_light<span style="color: #4f97d7;">[</span><span style="color: #4f97d7; font-weight: bold;">self</span>.car_position<span style="color: #4f97d7;">]</span>
+        <span style="color: #7590db;">FAKED_LIGHT</span> = <span style="color: #a45bad;">True</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> FAKED_LIGHT:
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">light_index, self.lights[light_index].state,</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">self.lights[light_index].state == TrafficLight.RED))</span>
+            <span style="color: #7590db;">state</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.lights<span style="color: #4f97d7;">[</span>light_index<span style="color: #4f97d7;">]</span>.state
+        <span style="color: #4f97d7; font-weight: bold;">else</span>:
+            <span style="color: #7590db;">cv_image</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.bridge.imgmsg_to_cv2<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.camera_image, <span style="color: #2d9574;">"bgr8"</span><span style="color: #4f97d7;">)</span>
+
+            <span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">Get classification</span>
+            <span style="color: #7590db;">state</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.light_classifier.get_classification<span style="color: #4f97d7;">(</span>cv_image<span style="color: #4f97d7;">)</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if FAKED_LIGHT</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>state==TrafficLight.RED<span style="color: #4f97d7;">)</span>:
+            rospy.loginfo<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'car index: %r; light_index: %r; light waypoint: %r; light is RED: %r'</span> %
+                          <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.car_position, light_index, light_wp, state==TrafficLight.RED<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (state==TrafficLight.RED)</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">return</span> light_wp, state
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (self.pose)</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">None</span>, TrafficLight.UNKNOWN
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org1673bec" class="outline-3">
+<h3 id="org1673bec"><span class="section-number-3">1.16</span> find-closest-traffic-light</h3>
+<div class="outline-text-3" id="text-1-16">
+<p>
+Based on the current car_position, and the previous_traffic_light_position, find the next traffic_light_position
+</p>
+<p>
+<code>find-closest-traffic-light</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">find_closest_traffic_light</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, car_position_index<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">remaining_traffic_ligths = len(self.stop_line_positions)-self.number_traffic_lights_passed</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.number_traffic_lights_passed &lt; <span style="color: #4f97d7;">len</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.stop_line_positions<span style="color: #4f97d7;">)</span>-<span style="color: #a45bad;">1</span>:
+        <span style="color: #7590db;">dl</span> = <span style="color: #4f97d7; font-weight: bold;">lambda</span> a, b: math.sqrt<span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>a.x-b<span style="color: #2d9574;">[</span><span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span> + <span style="color: #bc6ec5;">(</span>a.y-b<span style="color: #2d9574;">[</span><span style="color: #a45bad;">1</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">find the closest traffic light to the car's position</span>
+        <span style="color: #7590db;">traffic_light_index</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.previous_traffic_light_position
+        <span style="color: #7590db;">d_shortest</span> = dl<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #bc6ec5;">[</span>car_position_index<span style="color: #bc6ec5;">]</span>.pose.pose.position,
+                        <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_line_positions<span style="color: #bc6ec5;">[</span><span style="color: #4f97d7; font-weight: bold;">self</span>.previous_traffic_light_position<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">for</span> i <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.previous_traffic_light_position+<span style="color: #a45bad;">1</span>, <span style="color: #4f97d7;">len</span><span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.stop_line_positions<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
+            <span style="color: #7590db;">d</span> = dl<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #bc6ec5;">[</span>car_position_index<span style="color: #bc6ec5;">]</span>.pose.pose.position,
+                   <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_line_positions<span style="color: #bc6ec5;">[</span>i<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> d &lt; d_shortest:  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">found the closest</span>
+                <span style="color: #7590db;">d_shortest</span> = d
+                <span style="color: #7590db;">traffic_light_index</span> = i
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if d &lt; d_shortest</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(self.previous_traffic_light_position+1, len(self.stop_line_positions))</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.previous_traffic_light_position = traffic_light_index
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.number_traffic_lights_passed += 1</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">find the closest base_waypoint to the found traffic light.</span>
+        <span style="color: #7590db;">nearest_waypoint_for_the_light</span> = car_position_index
+        <span style="color: #7590db;">d_shortest</span> = dl<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #bc6ec5;">[</span>car_position_index<span style="color: #bc6ec5;">]</span>.pose.pose.position,
+                        <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_line_positions<span style="color: #bc6ec5;">[</span>traffic_light_index<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">for</span> j <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span>car_position_index + <span style="color: #a45bad;">1</span>, <span style="color: #4f97d7;">len</span><span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
+            <span style="color: #7590db;">d</span> = dl<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #bc6ec5;">[</span>j<span style="color: #bc6ec5;">]</span>.pose.pose.position,
+                   <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_line_positions<span style="color: #bc6ec5;">[</span>traffic_light_index<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> d &lt; d_shortest:
+                <span style="color: #7590db;">d_shortest</span> = d
+                <span style="color: #7590db;">nearest_waypoint_for_the_light</span> = j
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if d &lt; d_shortest</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for j in range(car_position_index, len(self.base_waypoints)-car_position_index)</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> traffic_light_index, nearest_waypoint_for_the_light
+    <span style="color: #4f97d7; font-weight: bold;">else</span>:
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">None</span>, <span style="color: #a45bad;">None</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of self.number_traffic_lights_passed &lt; len(self.stop_line_positions)-1</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org2aaae87" class="outline-3">
+<h3 id="org2aaae87"><span class="section-number-3">1.17</span> get_closest_waypoint</h3>
+<div class="outline-text-3" id="text-1-17">
+<p>
+Use the implementation of the super-class, WaypointTracker.
+</p>
+
+<p>
+<code>get_closest_waypoint</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">def get_closest_waypoint(self, pose):</span>
+<span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">"""Identifies the closest path waypoint to the given position</span>
+<span style="color: #2aa1ae; background-color: #292e34;">#         </span><span style="color: #2aa1ae; background-color: #292e34;">https://en.wikipedia.org/wiki/Closest_pair_of_points_problem</span>
+<span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">Args:</span>
+<span style="color: #2aa1ae; background-color: #292e34;">#         </span><span style="color: #2aa1ae; background-color: #292e34;">pose (Pose): position to match a waypoint to</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">Returns:</span>
+<span style="color: #2aa1ae; background-color: #292e34;">#         </span><span style="color: #2aa1ae; background-color: #292e34;">int: index of the closest waypoint in self.waypoints</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">"""</span>
+<span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #cc9393;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;"> implement</span>
+<span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">return 0</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org04e3110" class="outline-3">
+<h3 id="org04e3110"><span class="section-number-3">1.18</span> get_light_state</h3>
+<div class="outline-text-3" id="text-1-18">
+<p>
+I assume/design the light parameter is the index of the nearest traffic light in the list of traffic lights.
+</p>
+<p>
+<code>get_light_state</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">get_light_state</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, light_index<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae;">"""Determines the current color of the traffic light</span>
+
+<span style="color: #2aa1ae;">    Args:</span>
+<span style="color: #2aa1ae;">        light_index (TrafficLight): light to classify</span>
+
+<span style="color: #2aa1ae;">    Returns:</span>
+<span style="color: #2aa1ae;">        int: ID of traffic light color (specified in styx_msgs/TrafficLight)</span>
+
+<span style="color: #2aa1ae;">    """</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">FAKED_LIGHT = False</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">if FAKED_LIGHT:</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#         </span><span style="color: #2aa1ae; background-color: #292e34;">light_index, self.lights[light_index].state,</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#         </span><span style="color: #2aa1ae; background-color: #292e34;">self.lights[light_index].state == TrafficLight.RED))</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">return self.lights[light_index].state</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if FAKED_LIGHT</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">if(not self.has_image):</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">self.prev_light_loc = None</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">return None</span>
+
+    <span style="color: #7590db;">cv_image</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.bridge.imgmsg_to_cv2<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.camera_image, <span style="color: #2d9574;">"bgr8"</span><span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">Get classification</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.light_classifier.get_classification<span style="color: #4f97d7;">(</span>cv_image<span style="color: #4f97d7;">)</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org34d2e01" class="outline-3">
+<h3 id="org34d2e01"><span class="section-number-3">1.19</span> Current problems</h3>
+<div class="outline-text-3" id="text-1-19">
+<p>
+As of 11/17, 22:15, the light index calculated seems not right. The car has already passed the first traffic light, it still
+reported light_index: 0 (the first), while the waypoint index keeps changing.
+</p>
+
+<p>
+The logic is not right. The waypoint index should remain the same.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-org6996f19" class="outline-3">
+<h3 id="org6996f19"><span class="section-number-3">1.20</span> Sketch of Traffic Light Classification</h3>
+<div class="outline-text-3" id="text-1-20">
+
+<div class="figure">
+<p><img src="traffic-classification.png" alt="traffic-classification.png" />
+</p>
+</div>
+
+<p>
+#results:
+</p>
+</div>
+
+<div id="outline-container-orgdc5c6d5" class="outline-4">
+<h4 id="orgdc5c6d5"><span class="section-number-4">1.20.1</span> logic of velocity adjustment</h4>
+<div class="outline-text-4" id="text-1-20-1">
+<p>
+Here is one with potential improvement, as of <span class="timestamp-wrapper"><span class="timestamp">&lt;2017-11-27 Mon 21:58&gt;</span></span>
+</p>
+
+<div class="figure">
+<p><img src="velocity-adjustment-improved.png" alt="velocity-adjustment-improved.png" />
+</p>
+</div>
+
+
+<p>
+Here is the original.
+</p>
+
+<div class="figure">
+<p><img src="velocity-adjustment.png" alt="velocity-adjustment.png" />
+</p>
+</div>
+
+
+<p>
+For the next cycle of red, how large the distance should be, and how close enough it should be?
+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: \today</p>
+<p class="author">Author: yu-shen</p>
+<p class="date">Created: 2017-11-28 Tue 08:30</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
