@@ -55,7 +55,7 @@ class TLDetector(WaypointTracker):
         self.camera_image = None
         self.lights = []
         self.waypoint_to_light = None
-        self.loop_freq = 3
+        self.loop_freq = rospy.get_param('~loop_freq', 2)
         self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
         self.current_pose_sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)

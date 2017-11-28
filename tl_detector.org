@@ -93,7 +93,7 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
   self.camera_image = None
   self.lights = []
   self.waypoint_to_light = None
-  self.loop_freq = 3
+  self.loop_freq = rospy.get_param('~loop_freq', 2)
   self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
 #+END_SRC
 
