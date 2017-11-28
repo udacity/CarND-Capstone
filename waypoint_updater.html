@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2017-11-28 Tue 08:31 -->
+<!-- 2017-11-28 Tue 13:55 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>&lrm;</title>
@@ -233,71 +233,60 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org67462ee">1. High level requirements</a></li>
-<li><a href="#org1390ac0">2. WaypointTracker</a>
+<li><a href="#orgb7bb544">1. High level requirements</a></li>
+<li><a href="#orgc385201">2. Use Case: Waypoint Updater providing final_waypoints</a>
 <ul>
-<li><a href="#org21090ba">2.1. base_waypoints_process</a></li>
-<li><a href="#orgfbb068a">2.2. current_pose_cb</a></li>
-<li><a href="#org48afd9b">2.3. get_closest_waypoint</a></li>
-<li><a href="#org4dc879c">2.4. distance</a></li>
-<li><a href="#orgac567fd">2.5. distance_two_indices</a></li>
-<li><a href="#org94f57ff">2.6. to convert a global coordinates to local coordinates:</a></li>
-<li><a href="#org9795076">2.7. How to calculate my_car's yaw angle, given its orientation in quaternion:</a></li>
+<li><a href="#org58a0eb6">2.1. Work-flow</a></li>
+<li><a href="#org152f38d">2.2. Experience sharing</a></li>
+<li><a href="#org6dffbfe">2.3. messages involved</a>
+<ul>
+<li><a href="#org4e72754">2.3.1. Message types</a></li>
+<li><a href="#orgbe31720">2.3.2. /base_waypoints : input</a></li>
+<li><a href="#orgbc5e9c3">2.3.3. /current_pose : input</a></li>
+<li><a href="#org8d5ada5">2.3.4. /final_waypoints : output</a></li>
 </ul>
 </li>
-<li><a href="#orgcebc96a">3. Use Case: Waypoint Updater providing final_waypoints</a>
+<li><a href="#orga302ee2">2.4. Design Sketch for producing final_wayponts</a></li>
+<li><a href="#org3cb91e5">2.5. Code construction</a>
 <ul>
-<li><a href="#org69bc221">3.1. Work-flow</a></li>
-<li><a href="#org7aa6af7">3.2. Experience sharing</a></li>
-<li><a href="#org6b3fa02">3.3. messages involved</a>
-<ul>
-<li><a href="#orgd37c482">3.3.1. Message types</a></li>
-<li><a href="#org95f5ced">3.3.2. /base_waypoints : input</a></li>
-<li><a href="#org47b5a01">3.3.3. /current_pose : input</a></li>
-<li><a href="#orgdc43ec5">3.3.4. /final_waypoints : output</a></li>
+<li><a href="#org0f3a6ce">2.5.1. Waypoint_Uploader integration</a></li>
+<li><a href="#org594ff8f">2.5.2. imports</a></li>
+<li><a href="#orgd8a8a92">2.5.3. base_waypoints_cb</a></li>
+<li><a href="#orgf70c09a">2.5.4. velocity-policy</a></li>
+<li><a href="#orga54bf91">2.5.5. traffic_waypoint_cb</a></li>
+<li><a href="#org920ce24">2.5.6. adjust_velocity_for_traffic_light</a></li>
 </ul>
 </li>
-<li><a href="#org343013b">3.4. Design Sketch for producing final_wayponts</a></li>
-<li><a href="#orgdbfbde2">3.5. Code construction</a>
+<li><a href="#orgdceb216">2.6. determine-velocity-policy</a>
 <ul>
-<li><a href="#org4b3aba5">3.5.1. Waypoint_Uploader integration</a></li>
-<li><a href="#org9056793">3.5.2. imports</a></li>
-<li><a href="#orgf74c9ce">3.5.3. base_waypoints_cb</a></li>
-<li><a href="#orga4295f3">3.5.4. velocity-policy</a></li>
-<li><a href="#org89367dc">3.5.5. traffic_waypoint_cb</a></li>
-<li><a href="#org0c3b645">3.5.6. adjust_velocity_for_traffic_light</a></li>
-</ul>
-</li>
-<li><a href="#org350ba84">3.6. determine-velocity-policy</a>
-<ul>
-<li><a href="#org8a1e6c9">3.6.1. cruise_unless_near_the_end</a></li>
-<li><a href="#org3d6c151">3.6.2. traffic_lights_cb</a></li>
-<li><a href="#org95eb50d">3.6.3. current_velocity_cb</a></li>
-<li><a href="#org34b231c">3.6.4. obstacle_cb</a></li>
-<li><a href="#org06a3c6f">3.6.5. loop</a></li>
-<li><a href="#orgb546412">3.6.6. process-pose</a></li>
-<li><a href="#orgd9f63dc">3.6.7. compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS</a></li>
-<li><a href="#org6d96a30">3.6.8. select waypoints for /final_waypoints</a></li>
-<li><a href="#org5396d8b">3.6.9. determine the velocity for waypoints</a></li>
-<li><a href="#org24765e3">3.6.10. Discussion on the appropriate value of LOOKAHEAD_WPS</a></li>
+<li><a href="#orgf3c986e">2.6.1. cruise_unless_near_the_end</a></li>
+<li><a href="#org46dc9ea">2.6.2. traffic_lights_cb</a></li>
+<li><a href="#orgef83e16">2.6.3. current_velocity_cb</a></li>
+<li><a href="#org5fbf6f1">2.6.4. obstacle_cb</a></li>
+<li><a href="#org108b41c">2.6.5. loop</a></li>
+<li><a href="#org11a0453">2.6.6. process-pose</a></li>
+<li><a href="#org7b0e664">2.6.7. compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS</a></li>
+<li><a href="#org7ab3501">2.6.8. select waypoints for /final_waypoints</a></li>
+<li><a href="#org46ce908">2.6.9. determine the velocity for waypoints</a></li>
+<li><a href="#orge6f1424">2.6.10. Discussion on the appropriate value of LOOKAHEAD_WPS</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a href="#org7600a6c">4. Use case: Stop at the red traffic light or at the end</a>
+<li><a href="#org200a2ad">3. Use case: Stop at the red traffic light or at the end</a>
 <ul>
-<li><a href="#orge8ccbd2">4.1. Design Considerations for Traffic Light Treatment</a></li>
+<li><a href="#orgf3b7ebc">3.1. Design Considerations for Traffic Light Treatment</a></li>
 </ul>
 </li>
-<li><a href="#orge89867d">5. Support functions</a></li>
-<li><a href="#orgc7131fc">6. Message Sequence Charts</a></li>
-<li><a href="#orgd214d92">7. Sketch of Waypoint_Updater:loop</a></li>
+<li><a href="#orgcf79485">4. Support functions</a></li>
+<li><a href="#orgc90d637">5. Message Sequence Charts</a></li>
+<li><a href="#orgf8b3783">6. Sketch of Waypoint_Updater:loop</a></li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org67462ee" class="outline-2">
-<h2 id="org67462ee"><span class="section-number-2">1</span> High level requirements</h2>
+<div id="outline-container-orgb7bb544" class="outline-2">
+<h2 id="orgb7bb544"><span class="section-number-2">1</span> High level requirements</h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
 <li>The car should stop at the end of the base_waypoints, i.e. the end of the track. (So no looping around is needed.)</li>
@@ -306,326 +295,13 @@ for the JavaScript code in this tag.
 </div>
 
 
-<div id="outline-container-org1390ac0" class="outline-2">
-<h2 id="org1390ac0"><span class="section-number-2">2</span> WaypointTracker</h2>
+<div id="outline-container-orgc385201" class="outline-2">
+<h2 id="orgc385201"><span class="section-number-2">2</span> Use Case: Waypoint Updater providing final_waypoints</h2>
 <div class="outline-text-2" id="text-2">
-<p>
-A super-class for both WaypointTracker and TLDetector
-</p>
-
-<p>
-<code>waypoint-tracker</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">import</span> copy
-<span style="color: #4f97d7; font-weight: bold;">import</span> math
-&lt;&lt;get_yaw&gt;&gt;
-&lt;&lt;to_local_coordinates&gt;&gt;
-
-<span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">WaypointTracker</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">object</span><span style="color: #4f97d7;">)</span>:
-    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">__init__</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints = <span style="color: #a45bad;">None</span>
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num = <span style="color: #a45bad;">None</span>
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.pose = <span style="color: #a45bad;">None</span>
-
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index = <span style="color: #a45bad;">0</span>
-        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">this is a super_class, so it will not start loop nor spin()</span>
-        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">it expects the subclass will implement the appropriate</span>
-
-    &lt;&lt;base_waypoints_process&gt;&gt;
-    &lt;&lt;current_pose_cb&gt;&gt;
-    &lt;&lt;get_closest_waypoint&gt;&gt;
-    &lt;&lt;distance&gt;&gt;
-    &lt;&lt;distance_two_indices&gt;&gt;
-</pre>
 </div>
-</div>
-
-<div id="outline-container-org21090ba" class="outline-3">
-<h3 id="org21090ba"><span class="section-number-3">2.1</span> base_waypoints_process</h3>
+<div id="outline-container-org58a0eb6" class="outline-3">
+<h3 id="org58a0eb6"><span class="section-number-3">2.1</span> Work-flow</h3>
 <div class="outline-text-3" id="text-2-1">
-<ul class="org-ul">
-<li>Subscribe to /base_waypoint has been done in the <span class="underline"><span class="underline">init</span></span></li>
-<li>implement the callback to store it and declare its availability.</li>
-<li>compute the distance from the start of the base_waypoints to a base_waypoint stored into an array self.dist_to_here_from_start::</li>
-</ul>
-<p>
-the i_th element is the distance from the 0_th waypoint to the (i)_th waypoint.
-</p>
-<ul class="org-ul">
-<li>also record the shortest distance to neighbor</li>
-<li id="11/13">add back the computation of self.shortest_dist_to_next_waypoint</li>
-</ul>
-<p>
-in order to optimize the computation of the waypoint index of the traffic lights.
-</p>
-
-<p>
-<code>base_waypoints_process</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">base_waypoints_process</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #afd8af;">DONE</span><span style="color: #2aa1ae; background-color: #292e34;">: Implement</span>
-    <span style="color: #7590db;">waypoints</span> = msg.waypoints
-    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #a45bad;">None</span>:
-        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">unsubscribe to the waypoint messages, no longer needed</span>
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_sub.unregister<span style="color: #4f97d7;">()</span>
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.subscriber_waypoints = <span style="color: #a45bad;">None</span>
-
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num = <span style="color: #4f97d7;">len</span><span style="color: #4f97d7;">(</span>waypoints<span style="color: #4f97d7;">)</span>
-
-        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">process the waypoints here</span>
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start = <span style="color: #4f97d7;">[]</span>
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints = <span style="color: #4f97d7;">[]</span>
-        <span style="color: #7590db;">dist</span> = <span style="color: #a45bad;">0</span>
-        <span style="color: #7590db;">dist_so_far</span> = <span style="color: #a45bad;">0</span>
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.shortest_dist_to_next_waypoint = <span style="color: #a45bad;">0</span>
-        <span style="color: #4f97d7; font-weight: bold;">for</span> i <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #4f97d7;">)</span>:
-            <span style="color: #7590db;">dist_so_far</span> += dist
-            <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start.append<span style="color: #4f97d7;">(</span>dist_so_far<span style="color: #4f97d7;">)</span>
-
-            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">do a deep copy of the data, to keep the data from lose</span>
-            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">just to be safe, simply do shallow copy seems still working</span>
-            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">by self.base_waypoints = waypoints</span>
-            <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints.append<span style="color: #4f97d7;">(</span>copy.deepcopy<span style="color: #bc6ec5;">(</span>waypoints<span style="color: #2d9574;">[</span>i<span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
-            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">distance to the next waypoint</span>
-            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>i &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num-<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>:
-                <span style="color: #7590db;">dist</span> = <span style="color: #4f97d7;">(</span>
-                    <span style="color: #4f97d7; font-weight: bold;">self</span>.distance_two_indices<span style="color: #bc6ec5;">(</span>waypoints,  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the (i+1)_th element has not been copied yet</span>
-                                              i, <span style="color: #2d9574;">(</span>i+<span style="color: #a45bad;">1</span><span style="color: #2d9574;">)</span> % <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
-            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (i &lt; self.base_waypoints_num-1)</span>
-            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>dist &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.shortest_dist_to_next_waypoint<span style="color: #4f97d7;">)</span>:
-                <span style="color: #4f97d7; font-weight: bold;">self</span>.shortest_dist_to_next_waypoint = dist
-            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (dist &lt; self.shortest_dist_to_next_waypoint)</span>
-        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(self.base_waypoints_num - 1)</span>
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.base_waypoints is None</span>
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-orgfbb068a" class="outline-3">
-<h3 id="orgfbb068a"><span class="section-number-3">2.2</span> current_pose_cb</h3>
-<div class="outline-text-3" id="text-2-2">
-<ul class="org-ul">
-<li>Subscribe to /current_pose is done in <span class="underline"><span class="underline">init</span></span></li>
-
-<li id="11/6"></li>
-</ul>
-<p>
-change pose_cb only update the self.pose message, moving the function of generating waypoints ahead to self.loop.
-This is to make the call back more time responsive to improve overall system predictability.
-Only accept message when Waypoint_Updater is ready to process, otherwise reject /current_pose update to avoid delay.
-</p>
-
-<p>
-<code>current_pose_cb</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">current_pose_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">WORKING: Implement</span>
-    <span style="color: #2aa1ae; background-color: #292e34;">#</span>
-    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.pose <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #a45bad;">None</span>:       <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">ready to process message</span>
-        <span style="color: #4f97d7; font-weight: bold;">self</span>.pose = msg
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.pose is None</span>
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.</span>
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-org48afd9b" class="outline-3">
-<h3 id="org48afd9b"><span class="section-number-3">2.3</span> get_closest_waypoint</h3>
-<div class="outline-text-3" id="text-2-3">
-<p>
-<code>get_closest_waypoint</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">get_closest_waypoint</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, pose<span style="color: #4f97d7;">)</span>:
-    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num:
-        <span style="color: #7590db;">current_pose</span> = pose.position
-        <span style="color: #7590db;">current_orientation</span> = pose.orientation
-        <span style="color: #7590db;">yaw</span> = get_yaw<span style="color: #4f97d7;">(</span>current_orientation<span style="color: #4f97d7;">)</span>
-
-        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Compute the waypoints ahead of the current_pose</span>
-
-        <span style="color: #7590db;">local_x</span> = -<span style="color: #a45bad;">1</span>
-        <span style="color: #7590db;">i</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index - <span style="color: #a45bad;">1</span>
-        <span style="color: #4f97d7; font-weight: bold;">while</span> <span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>i &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num-<span style="color: #a45bad;">1</span><span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #bc6ec5;">(</span>local_x &lt;= <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
-            <span style="color: #7590db;">i</span> = <span style="color: #4f97d7;">(</span>i + <span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">% self.base_waypoints_num</span>
-            <span style="color: #7590db;">waypoint</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #4f97d7;">[</span>i<span style="color: #4f97d7;">]</span>
-            <span style="color: #7590db;">w_pos</span> = waypoint.pose.pose.position
-            <span style="color: #7590db;">local_x</span>, <span style="color: #7590db;">local_y</span> = to_local_coordinates<span style="color: #4f97d7;">(</span>current_pose.x, current_pose.y, yaw,
-                                                    w_pos.x, w_pos.y<span style="color: #4f97d7;">)</span>
-            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of while (local_x &lt; 0)</span>
-        <span style="color: #4f97d7; font-weight: bold;">return</span> i
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.base_waypoints_num</span>
-    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">None</span>
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-org4dc879c" class="outline-3">
-<h3 id="org4dc879c"><span class="section-number-3">2.4</span> distance</h3>
-<div class="outline-text-3" id="text-2-4">
-<p>
-The computation of the distance between two waypoints can be done by the distances of those
-starting from the start to the i_th node, and j_th node.
-</p>
-
-<p>
-This is an optimization in computation.
-</p>
-
-<p>
-<code>distance</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">distance</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, wp1, wp2<span style="color: #4f97d7;">)</span>:
-    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>wp1 &lt; wp2<span style="color: #4f97d7;">)</span>:
-        <span style="color: #7590db;">start</span>, <span style="color: #7590db;">end</span> = wp1, wp2
-    <span style="color: #4f97d7; font-weight: bold;">else</span>:
-        <span style="color: #7590db;">start</span>, <span style="color: #7590db;">end</span> = wp2, wp1
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (wp1 &lt; wp2)</span>
-
-    <span style="color: #7590db;">dist</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start<span style="color: #4f97d7;">[</span>end<span style="color: #4f97d7;">]</span> - <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start<span style="color: #4f97d7;">[</span>start<span style="color: #4f97d7;">]</span>
-    <span style="color: #4f97d7; font-weight: bold;">return</span> dist
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-orgac567fd" class="outline-3">
-<h3 id="orgac567fd"><span class="section-number-3">2.5</span> distance_two_indices</h3>
-<div class="outline-text-3" id="text-2-5">
-<p>
-The distance function used to calculate the initial distance between two adjacent waypoints. It's needed before the distance from
-base_waypoint start to the a base_waypoint is calculated.
-</p>
-
-<p>
-<code>distance_two_indices</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">distance_two_indices</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, waypoints, i, j<span style="color: #4f97d7;">)</span>:
-  <span style="color: #7590db;">a</span> = waypoints<span style="color: #4f97d7;">[</span>i<span style="color: #4f97d7;">]</span>.pose.pose.position
-  <span style="color: #7590db;">b</span> = waypoints<span style="color: #4f97d7;">[</span>j<span style="color: #4f97d7;">]</span>.pose.pose.position
-  <span style="color: #4f97d7; font-weight: bold;">return</span> math.sqrt<span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>a.x-b.x<span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span> + <span style="color: #bc6ec5;">(</span>a.y-b.y<span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span>  + <span style="color: #bc6ec5;">(</span>a.z-b.z<span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span><span style="color: #4f97d7;">)</span>
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-org94f57ff" class="outline-3">
-<h3 id="org94f57ff"><span class="section-number-3">2.6</span> to convert a global coordinates to local coordinates:</h3>
-<div class="outline-text-3" id="text-2-6">
-<p>
-It's based on the wiki:
-<a href="https://en.wikipedia.org/wiki/Rotation_matrix">https://en.wikipedia.org/wiki/Rotation_matrix</a>
-</p>
-
-<p>
-This implementation assumes the rotation has positive value from the global x-axis to the local x-axis
-counter-clockwise.
-</p>
-
-<p>
-This following one works based on the experiment.
-</p>
-
-<p>
-<code>to_local_coordinates</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">to_local_coordinates</span><span style="color: #4f97d7;">(</span>local_origin_x, local_origin_y, rotation, x, y<span style="color: #4f97d7;">)</span>:
-    <span style="color: #2aa1ae;">"""</span>
-<span style="color: #2aa1ae;">    compute the local coordinates for the global x, y coordinates values,</span>
-<span style="color: #2aa1ae;">    given the local_origin_x, local_origin_y, and the rotation of the local x-axis.</span>
-<span style="color: #2aa1ae;">    Assume the rotation is radius</span>
-<span style="color: #2aa1ae;">    """</span>
-    <span style="color: #7590db;">shift_x</span> = x - local_origin_x
-    <span style="color: #7590db;">shift_y</span> = y - local_origin_y
-
-    <span style="color: #7590db;">cos_rotation</span> = math.cos<span style="color: #4f97d7;">(</span>rotation<span style="color: #4f97d7;">)</span>
-    <span style="color: #7590db;">sin_rotation</span> = math.sin<span style="color: #4f97d7;">(</span>rotation<span style="color: #4f97d7;">)</span>
-
-    <span style="color: #7590db;">local_x</span> =  cos_rotation*shift_x + sin_rotation*shift_y
-    <span style="color: #7590db;">local_y</span> = -sin_rotation*shift_x + cos_rotation*shift_y  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">according to John Chen's</span>
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">assuming the orientation angle clockwise being positive</span>
-    <span style="color: #4f97d7; font-weight: bold;">return</span> local_x, local_y
-</pre>
-</div>
-
-<p>
-Based on experiment, the following does not work.
-</p>
-
-<p>
-<code>to_local_coordinates_counter_clockwise_orientation</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">to_local_coordinates</span><span style="color: #4f97d7;">(</span>local_origin_x, local_origin_y, rotation, x, y<span style="color: #4f97d7;">)</span>:
-    <span style="color: #2aa1ae;">"""</span>
-<span style="color: #2aa1ae;">    compute the local coordinates for the global x, y coordinates values,</span>
-<span style="color: #2aa1ae;">    given the local_origin_x, local_origin_y, and the rotation of the local x-axis.</span>
-<span style="color: #2aa1ae;">    Assume the rotation is radius</span>
-<span style="color: #2aa1ae;">    """</span>
-    <span style="color: #7590db;">shift_x</span> = x - local_origin_x
-    <span style="color: #7590db;">shift_y</span> = y - local_origin_y
-
-    <span style="color: #7590db;">cos_rotation</span> = math.cos<span style="color: #4f97d7;">(</span>rotation<span style="color: #4f97d7;">)</span>
-    <span style="color: #7590db;">sin_rotation</span> = math.sin<span style="color: #4f97d7;">(</span>rotation<span style="color: #4f97d7;">)</span>
-
-    <span style="color: #7590db;">local_x</span> = cos_rotation*shift_x - sin_rotation*shift_y
-    <span style="color: #7590db;">local_y</span> = sin_rotation*shift_x + cos_rotation*shift_y  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">according to John Chen's</span>
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">assuming the orientation angle counter-clockwise being positive</span>
-    <span style="color: #4f97d7; font-weight: bold;">return</span> local_x, local_y
-</pre>
-</div>
-</div>
-</div>
-
-
-<div id="outline-container-org9795076" class="outline-3">
-<h3 id="org9795076"><span class="section-number-3">2.7</span> How to calculate my_car's yaw angle, given its orientation in quaternion:</h3>
-<div class="outline-text-3" id="text-2-7">
-<p>
-The unit of the returned value is in radius?
-To check the documentation of transformations.euler_from_quaternion
-</p>
-
-<p>
-<code>get_yaw</code>:
-</p>
-<div class="org-src-container">
-<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">import</span> tf <span style="color: #4f97d7; font-weight: bold;">as</span> tf_ros                      <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">This is of ROS geometry, not of TensorFlow!</span>
-<span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">get_yaw</span><span style="color: #4f97d7;">(</span>orientation<span style="color: #4f97d7;">)</span>:
-    <span style="color: #2aa1ae;">"""</span>
-<span style="color: #2aa1ae;">    Compute yaw from orientation, which is in Quaternion.</span>
-<span style="color: #2aa1ae;">    """</span>
-    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">orientation = msg.pose.orientation</span>
-    <span style="color: #7590db;">euler</span> = tf_ros.transformations.euler_from_quaternion<span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">[</span>
-        orientation.x,
-        orientation.y,
-        orientation.z,
-        orientation.w<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
-    <span style="color: #7590db;">yaw</span> = euler<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">2</span><span style="color: #4f97d7;">]</span>
-    <span style="color: #4f97d7; font-weight: bold;">return</span> yaw
-</pre>
-</div>
-</div>
-</div>
-</div>
-
-
-<div id="outline-container-orgcebc96a" class="outline-2">
-<h2 id="orgcebc96a"><span class="section-number-2">3</span> Use Case: Waypoint Updater providing final_waypoints</h2>
-<div class="outline-text-2" id="text-3">
-</div>
-<div id="outline-container-org69bc221" class="outline-3">
-<h3 id="org69bc221"><span class="section-number-3">3.1</span> Work-flow</h3>
-<div class="outline-text-3" id="text-3-1">
 <p>
 To build Waypoint_Updater:
 </p>
@@ -691,9 +367,9 @@ Eventually, after the working of dbw_node, we should see the car's movement in t
 </div>
 </div>
 
-<div id="outline-container-org7aa6af7" class="outline-3">
-<h3 id="org7aa6af7"><span class="section-number-3">3.2</span> Experience sharing</h3>
-<div class="outline-text-3" id="text-3-2">
+<div id="outline-container-org152f38d" class="outline-3">
+<h3 id="org152f38d"><span class="section-number-3">2.2</span> Experience sharing</h3>
+<div class="outline-text-3" id="text-2-2">
 <p>
    It's quite time consuming to fix bugs, as there are a lots of print-outs in the shell for Waypoint_Updater, one has to
 scroll back to figure out what when wrong. Often, only one error would be reported, and one has to repeat the above work-flow for
@@ -706,17 +382,17 @@ If you know bettor work-flow or tools, please share.
 </div>
 </div>
 
-<div id="outline-container-org6b3fa02" class="outline-3">
-<h3 id="org6b3fa02"><span class="section-number-3">3.3</span> messages involved</h3>
-<div class="outline-text-3" id="text-3-3">
+<div id="outline-container-org6dffbfe" class="outline-3">
+<h3 id="org6dffbfe"><span class="section-number-3">2.3</span> messages involved</h3>
+<div class="outline-text-3" id="text-2-3">
 </div>
-<div id="outline-container-orgd37c482" class="outline-4">
-<h4 id="orgd37c482"><span class="section-number-4">3.3.1</span> Message types</h4>
-<div class="outline-text-4" id="text-3-3-1">
+<div id="outline-container-org4e72754" class="outline-4">
+<h4 id="org4e72754"><span class="section-number-4">2.3.1</span> Message types</h4>
+<div class="outline-text-4" id="text-2-3-1">
 </div>
 <ol class="org-ol">
-<li><a id="org4b01503"></a>geometry_msgs/PoseStamped<br />
-<div class="outline-text-5" id="text-3-3-1-1">
+<li><a id="orge9130af"></a>geometry_msgs/PoseStamped<br />
+<div class="outline-text-5" id="text-2-3-1-1">
 <pre class="example">
 $ rosmsg info geometry_msgs/PoseStamped
 std_msgs/Header header
@@ -749,8 +425,8 @@ See the example for styx_msgs/Lane.
 </div>
 </li>
 
-<li><a id="org71b67b4"></a>styx_msgs/Lane<br />
-<div class="outline-text-5" id="text-3-3-1-2">
+<li><a id="orgdb110e8"></a>styx_msgs/Lane<br />
+<div class="outline-text-5" id="text-2-3-1-2">
 <p>
 List of waypoints, used to for /base_waypoints and /final_waypoints
 </p>
@@ -800,9 +476,9 @@ Example of access/manipulation in Python:
 </ol>
 </div>
 
-<div id="outline-container-org95f5ced" class="outline-4">
-<h4 id="org95f5ced"><span class="section-number-4">3.3.2</span> /base_waypoints : input</h4>
-<div class="outline-text-4" id="text-3-3-2">
+<div id="outline-container-orgbe31720" class="outline-4">
+<h4 id="orgbe31720"><span class="section-number-4">2.3.2</span> /base_waypoints : input</h4>
+<div class="outline-text-4" id="text-2-3-2">
 <p>
 All the waypoints on the track.
 Note, this is only published once, so it must be stored by the Waypoint_Updater.
@@ -810,18 +486,18 @@ Note, this is only published once, so it must be stored by the Waypoint_Updater.
 </div>
 </div>
 
-<div id="outline-container-org47b5a01" class="outline-4">
-<h4 id="org47b5a01"><span class="section-number-4">3.3.3</span> /current_pose : input</h4>
-<div class="outline-text-4" id="text-3-3-3">
+<div id="outline-container-orgbc5e9c3" class="outline-4">
+<h4 id="orgbc5e9c3"><span class="section-number-4">2.3.3</span> /current_pose : input</h4>
+<div class="outline-text-4" id="text-2-3-3">
 <p>
 The current position of the car, with orientation.
 </p>
 </div>
 </div>
 
-<div id="outline-container-orgdc43ec5" class="outline-4">
-<h4 id="orgdc43ec5"><span class="section-number-4">3.3.4</span> /final_waypoints : output</h4>
-<div class="outline-text-4" id="text-3-3-4">
+<div id="outline-container-org8d5ada5" class="outline-4">
+<h4 id="org8d5ada5"><span class="section-number-4">2.3.4</span> /final_waypoints : output</h4>
+<div class="outline-text-4" id="text-2-3-4">
 <p>
 The positions to be for the car after the current position, with the specified speed in
 the fields of twist.
@@ -838,9 +514,9 @@ The angular speed on z dimension might be needed for turning? Not quite sure abo
 </div>
 </div>
 
-<div id="outline-container-org343013b" class="outline-3">
-<h3 id="org343013b"><span class="section-number-3">3.4</span> Design Sketch for producing final_wayponts</h3>
-<div class="outline-text-3" id="text-3-4">
+<div id="outline-container-orga302ee2" class="outline-3">
+<h3 id="orga302ee2"><span class="section-number-3">2.4</span> Design Sketch for producing final_wayponts</h3>
+<div class="outline-text-3" id="text-2-4">
 <ol class="org-ol">
 <li>Subscribe for /base_points to get all the available waypoints
 Note: need to store the base_points, as it's only published once.</li>
@@ -883,16 +559,16 @@ For example, there are waypoints on the track ahead of my_car, A, B, C, is it OK
 </div>
 </div>
 
-<div id="outline-container-orgdbfbde2" class="outline-3">
-<h3 id="orgdbfbde2"><span class="section-number-3">3.5</span> Code construction</h3>
-<div class="outline-text-3" id="text-3-5">
+<div id="outline-container-org3cb91e5" class="outline-3">
+<h3 id="org3cb91e5"><span class="section-number-3">2.5</span> Code construction</h3>
+<div class="outline-text-3" id="text-2-5">
 <p>
 This section provides the detailed design and construction of the code for Waypoint_Updater.
 </p>
 </div>
-<div id="outline-container-org4b3aba5" class="outline-4">
-<h4 id="org4b3aba5"><span class="section-number-4">3.5.1</span> Waypoint_Uploader integration</h4>
-<div class="outline-text-4" id="text-3-5-1">
+<div id="outline-container-org0f3a6ce" class="outline-4">
+<h4 id="org0f3a6ce"><span class="section-number-4">2.5.1</span> Waypoint_Uploader integration</h4>
+<div class="outline-text-4" id="text-2-5-1">
 <p>
 This is the full source code for ./ros/src/waypoint_updater/waypoint_updater.py
 </p>
@@ -1060,9 +736,9 @@ The following are the implementations.
 </div>
 </div>
 
-<div id="outline-container-org9056793" class="outline-4">
-<h4 id="org9056793"><span class="section-number-4">3.5.2</span> imports</h4>
-<div class="outline-text-4" id="text-3-5-2">
+<div id="outline-container-org594ff8f" class="outline-4">
+<h4 id="org594ff8f"><span class="section-number-4">2.5.2</span> imports</h4>
+<div class="outline-text-4" id="text-2-5-2">
 <p>
 <code>imports</code>:
 </p>
@@ -1085,9 +761,9 @@ The following are the implementations.
 </div>
 </div>
 
-<div id="outline-container-orgf74c9ce" class="outline-4">
-<h4 id="orgf74c9ce"><span class="section-number-4">3.5.3</span> base_waypoints_cb</h4>
-<div class="outline-text-4" id="text-3-5-3">
+<div id="outline-container-orgd8a8a92" class="outline-4">
+<h4 id="orgd8a8a92"><span class="section-number-4">2.5.3</span> base_waypoints_cb</h4>
+<div class="outline-text-4" id="text-2-5-3">
 <p>
 In the following code of modifying global variable may not be a good idea:
 </p>
@@ -1146,9 +822,9 @@ but it may not matter as the modification is still constant through the life cyc
 </div>
 </div>
 
-<div id="outline-container-orga4295f3" class="outline-4">
-<h4 id="orga4295f3"><span class="section-number-4">3.5.4</span> velocity-policy</h4>
-<div class="outline-text-4" id="text-3-5-4">
+<div id="outline-container-orgf70c09a" class="outline-4">
+<h4 id="orgf70c09a"><span class="section-number-4">2.5.4</span> velocity-policy</h4>
+<div class="outline-text-4" id="text-2-5-4">
 <p>
 Velocity policies are functions that take input of the distance to a reference point,
 in this context of vehicle control, it's the point where the car should reach
@@ -1231,9 +907,9 @@ the input, the velocity should be the normal velocity as specified. The decrease
 </div>
 </div>
 
-<div id="outline-container-org89367dc" class="outline-4">
-<h4 id="org89367dc"><span class="section-number-4">3.5.5</span> traffic_waypoint_cb</h4>
-<div class="outline-text-4" id="text-3-5-5">
+<div id="outline-container-orga54bf91" class="outline-4">
+<h4 id="orga54bf91"><span class="section-number-4">2.5.5</span> traffic_waypoint_cb</h4>
+<div class="outline-text-4" id="text-2-5-5">
 <p>
 Store the published /traffic_waypoint data. It's expected to be utilized in the
 main loop of the traffic waypoint data.
@@ -1263,9 +939,9 @@ main loop of the traffic waypoint data.
 </div>
 </div>
 
-<div id="outline-container-org0c3b645" class="outline-4">
-<h4 id="org0c3b645"><span class="section-number-4">3.5.6</span> adjust_velocity_for_traffic_light</h4>
-<div class="outline-text-4" id="text-3-5-6">
+<div id="outline-container-org920ce24" class="outline-4">
+<h4 id="org920ce24"><span class="section-number-4">2.5.6</span> adjust_velocity_for_traffic_light</h4>
+<div class="outline-text-4" id="text-2-5-6">
 <p>
 In the context of loop for processing the /pose message, determine the velocity policy,
 and adjust the velocity for each final_waypoints
@@ -1335,9 +1011,9 @@ when the traffic light color is not red, report the negative of the waypoint ind
 </div>
 </div>
 
-<div id="outline-container-org350ba84" class="outline-3">
-<h3 id="org350ba84"><span class="section-number-3">3.6</span> determine-velocity-policy</h3>
-<div class="outline-text-3" id="text-3-6">
+<div id="outline-container-orgdceb216" class="outline-3">
+<h3 id="orgdceb216"><span class="section-number-3">2.6</span> determine-velocity-policy</h3>
+<div class="outline-text-3" id="text-2-6">
 <p>
 <code>velocity-timing-constants</code>:
 </p>
@@ -1391,9 +1067,9 @@ Need to make sure the policy be reset to NONE when the light is no longer red.
 </div>
 
 
-<div id="outline-container-org8a1e6c9" class="outline-4">
-<h4 id="org8a1e6c9"><span class="section-number-4">3.6.1</span> cruise_unless_near_the_end</h4>
-<div class="outline-text-4" id="text-3-6-1">
+<div id="outline-container-orgf3c986e" class="outline-4">
+<h4 id="orgf3c986e"><span class="section-number-4">2.6.1</span> cruise_unless_near_the_end</h4>
+<div class="outline-text-4" id="text-2-6-1">
 <p>
 Use cruise policy, unless it's close to the end of the track (base_waypoints). When approaching the end,
 the velocitise have been calculated, thus no need to have the policy to calculate.
@@ -1416,9 +1092,9 @@ the velocitise have been calculated, thus no need to have the policy to calculat
 </div>
 </div>
 
-<div id="outline-container-org3d6c151" class="outline-4">
-<h4 id="org3d6c151"><span class="section-number-4">3.6.2</span> traffic_lights_cb</h4>
-<div class="outline-text-4" id="text-3-6-2">
+<div id="outline-container-org46dc9ea" class="outline-4">
+<h4 id="org46dc9ea"><span class="section-number-4">2.6.2</span> traffic_lights_cb</h4>
+<div class="outline-text-4" id="text-2-6-2">
 <p>
 <code>traffic_lights_cb</code>:
 </p>
@@ -1430,9 +1106,9 @@ the velocitise have been calculated, thus no need to have the policy to calculat
 </div>
 </div>
 
-<div id="outline-container-org95eb50d" class="outline-4">
-<h4 id="org95eb50d"><span class="section-number-4">3.6.3</span> current_velocity_cb</h4>
-<div class="outline-text-4" id="text-3-6-3">
+<div id="outline-container-orgef83e16" class="outline-4">
+<h4 id="orgef83e16"><span class="section-number-4">2.6.3</span> current_velocity_cb</h4>
+<div class="outline-text-4" id="text-2-6-3">
 <p>
 <code>current_velocity_cb</code>:
 </p>
@@ -1444,9 +1120,9 @@ the velocitise have been calculated, thus no need to have the policy to calculat
 </div>
 </div>
 
-<div id="outline-container-org34b231c" class="outline-4">
-<h4 id="org34b231c"><span class="section-number-4">3.6.4</span> obstacle_cb</h4>
-<div class="outline-text-4" id="text-3-6-4">
+<div id="outline-container-org5fbf6f1" class="outline-4">
+<h4 id="org5fbf6f1"><span class="section-number-4">2.6.4</span> obstacle_cb</h4>
+<div class="outline-text-4" id="text-2-6-4">
 <p>
 <code>obstacle_cb</code>:
 </p>
@@ -1458,9 +1134,9 @@ the velocitise have been calculated, thus no need to have the policy to calculat
 </div>
 </div>
 
-<div id="outline-container-org06a3c6f" class="outline-4">
-<h4 id="org06a3c6f"><span class="section-number-4">3.6.5</span> loop</h4>
-<div class="outline-text-4" id="text-3-6-5">
+<div id="outline-container-org108b41c" class="outline-4">
+<h4 id="org108b41c"><span class="section-number-4">2.6.5</span> loop</h4>
+<div class="outline-text-4" id="text-2-6-5">
 <p>
 The loop for processing the /current_pose message
 </p>
@@ -1514,9 +1190,9 @@ without any negative impact:
 </div>
 </div>
 
-<div id="outline-container-orgb546412" class="outline-4">
-<h4 id="orgb546412"><span class="section-number-4">3.6.6</span> process-pose</h4>
-<div class="outline-text-4" id="text-3-6-6">
+<div id="outline-container-org11a0453" class="outline-4">
+<h4 id="org11a0453"><span class="section-number-4">2.6.6</span> process-pose</h4>
+<div class="outline-text-4" id="text-2-6-6">
 <p>
 Process one pose message in self.pose
 </p>
@@ -1565,9 +1241,9 @@ Then use that to generate the rest of the final_waypoints.
 </div>
 </div>
 
-<div id="outline-container-orgd9f63dc" class="outline-4">
-<h4 id="orgd9f63dc"><span class="section-number-4">3.6.7</span> compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS</h4>
-<div class="outline-text-4" id="text-3-6-7">
+<div id="outline-container-org7b0e664" class="outline-4">
+<h4 id="org7b0e664"><span class="section-number-4">2.6.7</span> compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS</h4>
+<div class="outline-text-4" id="text-2-6-7">
 <p>
 Compare between two pose if one is ahead of the other within the range of LOOKAHEAD_WPS
 </p>
@@ -1578,9 +1254,9 @@ This problem is solved by converting the waypoint to the local coordinates of my
 </div>
 </div>
 
-<div id="outline-container-org6d96a30" class="outline-4">
-<h4 id="org6d96a30"><span class="section-number-4">3.6.8</span> select waypoints for /final_waypoints</h4>
-<div class="outline-text-4" id="text-3-6-8">
+<div id="outline-container-org7ab3501" class="outline-4">
+<h4 id="org7ab3501"><span class="section-number-4">2.6.8</span> select waypoints for /final_waypoints</h4>
+<div class="outline-text-4" id="text-2-6-8">
 <p>
 A loop or list expression to generate the list of eligible waypoints for /final_waypoints.
 It's implemented in the pose_cb.
@@ -1588,18 +1264,18 @@ It's implemented in the pose_cb.
 </div>
 </div>
 
-<div id="outline-container-org5396d8b" class="outline-4">
-<h4 id="org5396d8b"><span class="section-number-4">3.6.9</span> determine the velocity for waypoints</h4>
-<div class="outline-text-4" id="text-3-6-9">
+<div id="outline-container-org46ce908" class="outline-4">
+<h4 id="org46ce908"><span class="section-number-4">2.6.9</span> determine the velocity for waypoints</h4>
+<div class="outline-text-4" id="text-2-6-9">
 <p>
 Compute the desired velocity for waypoints: for now, it's stab as constant. This is to be done (TBD).
 </p>
 </div>
 </div>
 
-<div id="outline-container-org24765e3" class="outline-4">
-<h4 id="org24765e3"><span class="section-number-4">3.6.10</span> Discussion on the appropriate value of LOOKAHEAD_WPS</h4>
-<div class="outline-text-4" id="text-3-6-10">
+<div id="outline-container-orge6f1424" class="outline-4">
+<h4 id="orge6f1424"><span class="section-number-4">2.6.10</span> Discussion on the appropriate value of LOOKAHEAD_WPS</h4>
+<div class="outline-text-4" id="text-2-6-10">
 <p>
 The value of LOOKAHEAD_WPS might impact the system work load. It should be sufficient large. But not too large.
 </p>
@@ -1608,13 +1284,13 @@ The value of LOOKAHEAD_WPS might impact the system work load. It should be suffi
 </div>
 </div>
 
-<div id="outline-container-org7600a6c" class="outline-2">
-<h2 id="org7600a6c"><span class="section-number-2">4</span> Use case: Stop at the red traffic light or at the end</h2>
-<div class="outline-text-2" id="text-4">
+<div id="outline-container-org200a2ad" class="outline-2">
+<h2 id="org200a2ad"><span class="section-number-2">3</span> Use case: Stop at the red traffic light or at the end</h2>
+<div class="outline-text-2" id="text-3">
 </div>
-<div id="outline-container-orge8ccbd2" class="outline-3">
-<h3 id="orge8ccbd2"><span class="section-number-3">4.1</span> Design Considerations for Traffic Light Treatment</h3>
-<div class="outline-text-3" id="text-4-1">
+<div id="outline-container-orgf3b7ebc" class="outline-3">
+<h3 id="orgf3b7ebc"><span class="section-number-3">3.1</span> Design Considerations for Traffic Light Treatment</h3>
+<div class="outline-text-3" id="text-3-1">
 <dl class="org-dl">
 <dt>The time away from the traffic light</dt><dd></dd>
 </dl>
@@ -1662,8 +1338,8 @@ Based on the above consideration, here is the implementation:
 </div>
 
 <ol class="org-ol">
-<li><a id="orga9e89ec"></a>Simulation of Detection of Traffic Lights<br />
-<div class="outline-text-5" id="text-4-1-0-1">
+<li><a id="org6318426"></a>Simulation of Detection of Traffic Lights<br />
+<div class="outline-text-5" id="text-3-1-0-1">
 <p>
 In the simulator, use of traffic lights data from the simulator, to
 tell whether there is a traffic light in red in front of the car in near distance.
@@ -1672,8 +1348,8 @@ tell whether there is a traffic light in red in front of the car in near distanc
 
 
 <ol class="org-ol">
-<li><a id="orgc83c4e0"></a>message type: styx_msgs/TrafficLightArray<br />
-<div class="outline-text-6" id="text-4-1-0-1-1">
+<li><a id="org0f3cdf3"></a>message type: styx_msgs/TrafficLightArray<br />
+<div class="outline-text-6" id="text-3-1-0-1-1">
 <pre class="example">
 styx_msgs/TrafficLightArray
 std_msgs/Header header
@@ -1715,9 +1391,9 @@ styx_msgs/TrafficLight[] lights
 </div>
 </div>
 
-<div id="outline-container-orge89867d" class="outline-2">
-<h2 id="orge89867d"><span class="section-number-2">5</span> Support functions</h2>
-<div class="outline-text-2" id="text-5">
+<div id="outline-container-orgcf79485" class="outline-2">
+<h2 id="orgcf79485"><span class="section-number-2">4</span> Support functions</h2>
+<div class="outline-text-2" id="text-4">
 <p>
 <code>publish_Lane</code>:
 </p>
@@ -1754,9 +1430,9 @@ styx_msgs/TrafficLight[] lights
 </div>
 </div>
 
-<div id="outline-container-orgc7131fc" class="outline-2">
-<h2 id="orgc7131fc"><span class="section-number-2">6</span> Message Sequence Charts</h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-orgc90d637" class="outline-2">
+<h2 id="orgc90d637"><span class="section-number-2">5</span> Message Sequence Charts</h2>
+<div class="outline-text-2" id="text-5">
 
 <div class="figure">
 <p><img src="traffic_light_report.png" alt="traffic_light_report.png" />
@@ -1780,9 +1456,9 @@ styx_msgs/TrafficLight[] lights
 </div>
 
 
-<div id="outline-container-orgd214d92" class="outline-2">
-<h2 id="orgd214d92"><span class="section-number-2">7</span> Sketch of Waypoint_Updater:loop</h2>
-<div class="outline-text-2" id="text-7">
+<div id="outline-container-orgf8b3783" class="outline-2">
+<h2 id="orgf8b3783"><span class="section-number-2">6</span> Sketch of Waypoint_Updater:loop</h2>
+<div class="outline-text-2" id="text-6">
 
 <div class="figure">
 <p><img src="waypoint-updater-loop.png" alt="waypoint-updater-loop.png" />
@@ -1798,7 +1474,7 @@ styx_msgs/TrafficLight[] lights
 <div id="postamble" class="status">
 <p class="date">Date: \today</p>
 <p class="author">Author: yu-shen</p>
-<p class="date">Created: 2017-11-28 Tue 08:31</p>
+<p class="date">Created: 2017-11-28 Tue 13:55</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

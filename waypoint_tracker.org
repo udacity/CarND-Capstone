@@ -1,0 +1,244 @@
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE: \today
+
+#+TITLE: Waypoint Traceback
+
+This is a super class to capture the common functionality of waypoint updater and tl_dectector for
+waypoint related functionality.
+
+* WaypointTracker
+
+A super-class for both WaypointTracker and TLDetector
+
+#+NAME:waypoint-tracker
+#+BEGIN_SRC python :noweb tangle :tangle ./ros/src/waypoint_lib/src/waypoint_lib/waypoint_tracker.py
+  import copy
+  import math
+  <<get_yaw>>
+  <<to_local_coordinates>>
+
+  class WaypointTracker(object):
+      def __init__(self):
+          self.base_waypoints = None
+          self.base_waypoints_num = None
+          self.pose = None
+
+          self.last_closest_front_waypoint_index = 0
+          # this is a super_class, so it will not start loop nor spin()
+          # it expects the subclass will implement the appropriate
+
+      <<base_waypoints_process>>
+      <<current_pose_cb>>
+      <<get_closest_waypoint>>
+      <<distance>>
+      <<distance_two_indices>>
+#+END_SRC
+
+** base_waypoints_process
+
+    - Subscribe to /base_waypoint has been done in the __init__
+    - implement the callback to store it and declare its availability.
+    - compute the distance from the start of the base_waypoints to a base_waypoint stored into an array self.dist_to_here_from_start::
+    the i_th element is the distance from the 0_th waypoint to the (i)_th waypoint.
+    - also record the shortest distance to neighbor
+    - 11/13 ::
+               add back the computation of self.shortest_dist_to_next_waypoint
+    in order to optimize the computation of the waypoint index of the traffic lights.
+
+#+NAME:base_waypoints_process
+#+BEGIN_SRC python :noweb tangle :tangle
+  def base_waypoints_process(self, msg):
+      # DONE: Implement
+      waypoints = msg.waypoints
+      if self.base_waypoints is None:
+          # unsubscribe to the waypoint messages, no longer needed
+          self.base_waypoints_sub.unregister()
+          self.subscriber_waypoints = None
+
+          self.base_waypoints_num = len(waypoints)
+
+          # process the waypoints here
+          self.dist_to_here_from_start = []
+          self.base_waypoints = []
+          dist = 0
+          dist_so_far = 0
+          self.shortest_dist_to_next_waypoint = 0
+          for i in range(self.base_waypoints_num):
+              dist_so_far += dist
+              self.dist_to_here_from_start.append(dist_so_far)
+
+              # do a deep copy of the data, to keep the data from lose
+              # just to be safe, simply do shallow copy seems still working
+              # by self.base_waypoints = waypoints
+              self.base_waypoints.append(copy.deepcopy(waypoints[i]))
+              # distance to the next waypoint
+              if (i < self.base_waypoints_num-1):
+                  dist = (
+                      self.distance_two_indices(waypoints,  # the (i+1)_th element has not been copied yet
+                                                i, (i+1) % self.base_waypoints_num))
+              # end of if (i < self.base_waypoints_num-1)
+              if (dist < self.shortest_dist_to_next_waypoint):
+                  self.shortest_dist_to_next_waypoint = dist
+              # end of if (dist < self.shortest_dist_to_next_waypoint)
+          # end of for i in range(self.base_waypoints_num - 1)
+      # end of if self.base_waypoints is None
+#+END_SRC
+
+** current_pose_cb
+    - Subscribe to /current_pose is done in __init__
+
+    - 11/6 ::
+    change pose_cb only update the self.pose message, moving the function of generating waypoints ahead to self.loop.
+    This is to make the call back more time responsive to improve overall system predictability.
+    Only accept message when Waypoint_Updater is ready to process, otherwise reject /current_pose update to avoid delay.
+
+#+NAME:current_pose_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+  def current_pose_cb(self, msg):
+      # WORKING: Implement
+      #
+      if self.pose is None:       # ready to process message
+          self.pose = msg
+      # end of if self.pose is None
+      # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
+#+END_SRC
+
+** get_closest_waypoint
+
+#+NAME:get_closest_waypoint
+#+BEGIN_SRC python :noweb tangle :tangle
+  def get_closest_waypoint(self, pose):
+      if self.base_waypoints_num:
+          current_pose = pose.position
+          current_orientation = pose.orientation
+          yaw = get_yaw(current_orientation)
+
+          # Compute the waypoints ahead of the current_pose
+
+          local_x = -1
+          i = self.last_closest_front_waypoint_index - 1
+          while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
+              i = (i + 1) # % self.base_waypoints_num
+              waypoint = self.base_waypoints[i]
+              w_pos = waypoint.pose.pose.position
+              local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
+                                                      w_pos.x, w_pos.y)
+              # end of while (local_x < 0)
+          return i
+      # end of if self.base_waypoints_num
+      return None
+#+END_SRC
+
+** distance
+
+The computation of the distance between two waypoints can be done by the distances of those
+starting from the start to the i_th node, and j_th node.
+
+This is an optimization in computation.
+
+#+NAME:distance
+#+BEGIN_SRC python :noweb tangle :tangle
+  def distance(self, wp1, wp2):
+      if (wp1 < wp2):
+          start, end = wp1, wp2
+      else:
+          start, end = wp2, wp1
+      # end of if (wp1 < wp2)
+
+      dist = self.dist_to_here_from_start[end] - self.dist_to_here_from_start[start]
+      return dist
+#+END_SRC
+
+** distance_two_indices
+
+The distance function used to calculate the initial distance between two adjacent waypoints. It's needed before the distance from
+base_waypoint start to the a base_waypoint is calculated.
+
+#+NAME:distance_two_indices
+#+BEGIN_SRC python :noweb tangle :tangle
+  def distance_two_indices(self, waypoints, i, j):
+    a = waypoints[i].pose.pose.position
+    b = waypoints[j].pose.pose.position
+    return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+#+END_SRC
+
+** to convert a global coordinates to local coordinates:
+    It's based on the wiki:
+    https://en.wikipedia.org/wiki/Rotation_matrix
+
+    This implementation assumes the rotation has positive value from the global x-axis to the local x-axis
+    counter-clockwise.
+
+This following one works based on the experiment.
+
+   #+NAME:to_local_coordinates
+   #+BEGIN_SRC python :noweb tangle :tangle
+     def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
+         """
+         compute the local coordinates for the global x, y coordinates values,
+         given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
+         Assume the rotation is radius
+         """
+         shift_x = x - local_origin_x
+         shift_y = y - local_origin_y
+
+         cos_rotation = math.cos(rotation)
+         sin_rotation = math.sin(rotation)
+
+         local_x =  cos_rotation*shift_x + sin_rotation*shift_y
+         local_y = -sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
+         # assuming the orientation angle clockwise being positive
+         return local_x, local_y
+   #+END_SRC
+
+Based on experiment, the following does not work.
+
+#+NAME:to_local_coordinates_counter_clockwise_orientation
+   #+BEGIN_SRC python :noweb tangle :tangle
+  def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
+      """
+      compute the local coordinates for the global x, y coordinates values,
+      given the local_origin_x, local_origin_y, and the rotation of the local x-axis.
+      Assume the rotation is radius
+      """
+      shift_x = x - local_origin_x
+      shift_y = y - local_origin_y
+
+      cos_rotation = math.cos(rotation)
+      sin_rotation = math.sin(rotation)
+
+      local_x = cos_rotation*shift_x - sin_rotation*shift_y
+      local_y = sin_rotation*shift_x + cos_rotation*shift_y  # according to John Chen's
+      # assuming the orientation angle counter-clockwise being positive
+      return local_x, local_y
+   #+END_SRC
+
+
+** How to calculate my_car's yaw angle, given its orientation in quaternion:
+
+      The unit of the returned value is in radius?
+      To check the documentation of transformations.euler_from_quaternion
+
+#+NAME:get_yaw
+#+BEGIN_SRC python :noweb tangle :tangle
+  import tf as tf_ros                      # This is of ROS geometry, not of TensorFlow!
+  def get_yaw(orientation):
+      """
+      Compute yaw from orientation, which is in Quaternion.
+      """
+      # orientation = msg.pose.orientation
+      euler = tf_ros.transformations.euler_from_quaternion([
+          orientation.x,
+          orientation.y,
+          orientation.z,
+          orientation.w])
+      yaw = euler[2]
+      return yaw
+#+END_SRC

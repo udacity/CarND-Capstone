@@ -1,0 +1,575 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2017-11-28 Tue 13:55 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Waypoint Traceback</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="yu-shen" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2017 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Waypoint Traceback</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org2f6e06c">1. WaypointTracker</a>
+<ul>
+<li><a href="#org7440f9b">1.1. base<sub>waypoints</sub><sub>process</sub></a></li>
+<li><a href="#org3de3eb2">1.2. current<sub>pose</sub><sub>cb</sub></a></li>
+<li><a href="#org0f1fde7">1.3. get<sub>closest</sub><sub>waypoint</sub></a></li>
+<li><a href="#org65c12e7">1.4. distance</a></li>
+<li><a href="#orga6238aa">1.5. distance<sub>two</sub><sub>indices</sub></a></li>
+<li><a href="#orgb628e8c">1.6. to convert a global coordinates to local coordinates:</a></li>
+<li><a href="#orge273a94">1.7. How to calculate my<sub>car</sub>'s yaw angle, given its orientation in quaternion:</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<p>
+This is a super class to capture the common functionality of waypoint updater and tl<sub>dectector</sub> for
+waypoint related functionality.
+</p>
+
+<div id="outline-container-org2f6e06c" class="outline-2">
+<h2 id="org2f6e06c"><span class="section-number-2">1</span> WaypointTracker</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+A super-class for both WaypointTracker and TLDetector
+</p>
+
+<p>
+<code>waypoint-tracker</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">import</span> copy
+<span style="color: #4f97d7; font-weight: bold;">import</span> math
+&lt;&lt;get_yaw&gt;&gt;
+&lt;&lt;to_local_coordinates&gt;&gt;
+
+<span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">WaypointTracker</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">object</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">__init__</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints = <span style="color: #a45bad;">None</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num = <span style="color: #a45bad;">None</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.pose = <span style="color: #a45bad;">None</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index = <span style="color: #a45bad;">0</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">this is a super_class, so it will not start loop nor spin()</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">it expects the subclass will implement the appropriate</span>
+
+    &lt;&lt;base_waypoints_process&gt;&gt;
+    &lt;&lt;current_pose_cb&gt;&gt;
+    &lt;&lt;get_closest_waypoint&gt;&gt;
+    &lt;&lt;distance&gt;&gt;
+    &lt;&lt;distance_two_indices&gt;&gt;
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org7440f9b" class="outline-3">
+<h3 id="org7440f9b"><span class="section-number-3">1.1</span> base<sub>waypoints</sub><sub>process</sub></h3>
+<div class="outline-text-3" id="text-1-1">
+<ul class="org-ul">
+<li>Subscribe to /base<sub>waypoint</sub> has been done in the <span class="underline"><span class="underline">init</span></span></li>
+<li>implement the callback to store it and declare its availability.</li>
+<li>compute the distance from the start of the base<sub>waypoints</sub> to a base<sub>waypoint</sub> stored into an array self.dist<sub>to</sub><sub>here</sub><sub>from</sub><sub>start</sub>::</li>
+</ul>
+<p>
+the i<sub>th</sub> element is the distance from the 0<sub>th</sub> waypoint to the (i)<sub>th</sub> waypoint.
+</p>
+<ul class="org-ul">
+<li>also record the shortest distance to neighbor</li>
+<li id="11/13">add back the computation of self.shortest<sub>dist</sub><sub>to</sub><sub>next</sub><sub>waypoint</sub></li>
+</ul>
+<p>
+in order to optimize the computation of the waypoint index of the traffic lights.
+</p>
+
+<p>
+<code>base_waypoints_process</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">base_waypoints_process</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #afd8af;">DONE</span><span style="color: #2aa1ae; background-color: #292e34;">: Implement</span>
+    <span style="color: #7590db;">waypoints</span> = msg.waypoints
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #a45bad;">None</span>:
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">unsubscribe to the waypoint messages, no longer needed</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_sub.unregister<span style="color: #4f97d7;">()</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.subscriber_waypoints = <span style="color: #a45bad;">None</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num = <span style="color: #4f97d7;">len</span><span style="color: #4f97d7;">(</span>waypoints<span style="color: #4f97d7;">)</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">process the waypoints here</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start = <span style="color: #4f97d7;">[]</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints = <span style="color: #4f97d7;">[]</span>
+        <span style="color: #7590db;">dist</span> = <span style="color: #a45bad;">0</span>
+        <span style="color: #7590db;">dist_so_far</span> = <span style="color: #a45bad;">0</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.shortest_dist_to_next_waypoint = <span style="color: #a45bad;">0</span>
+        <span style="color: #4f97d7; font-weight: bold;">for</span> i <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #4f97d7;">)</span>:
+            <span style="color: #7590db;">dist_so_far</span> += dist
+            <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start.append<span style="color: #4f97d7;">(</span>dist_so_far<span style="color: #4f97d7;">)</span>
+
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">do a deep copy of the data, to keep the data from lose</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">just to be safe, simply do shallow copy seems still working</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">by self.base_waypoints = waypoints</span>
+            <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints.append<span style="color: #4f97d7;">(</span>copy.deepcopy<span style="color: #bc6ec5;">(</span>waypoints<span style="color: #2d9574;">[</span>i<span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">distance to the next waypoint</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>i &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num-<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>:
+                <span style="color: #7590db;">dist</span> = <span style="color: #4f97d7;">(</span>
+                    <span style="color: #4f97d7; font-weight: bold;">self</span>.distance_two_indices<span style="color: #bc6ec5;">(</span>waypoints,  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the (i+1)_th element has not been copied yet</span>
+                                              i, <span style="color: #2d9574;">(</span>i+<span style="color: #a45bad;">1</span><span style="color: #2d9574;">)</span> % <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (i &lt; self.base_waypoints_num-1)</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>dist &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.shortest_dist_to_next_waypoint<span style="color: #4f97d7;">)</span>:
+                <span style="color: #4f97d7; font-weight: bold;">self</span>.shortest_dist_to_next_waypoint = dist
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (dist &lt; self.shortest_dist_to_next_waypoint)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(self.base_waypoints_num - 1)</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.base_waypoints is None</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org3de3eb2" class="outline-3">
+<h3 id="org3de3eb2"><span class="section-number-3">1.2</span> current<sub>pose</sub><sub>cb</sub></h3>
+<div class="outline-text-3" id="text-1-2">
+<ul class="org-ul">
+<li>Subscribe to /current<sub>pose</sub> is done in <span class="underline"><span class="underline">init</span></span></li>
+
+<li id="11/6"></li>
+</ul>
+<p>
+change pose<sub>cb</sub> only update the self.pose message, moving the function of generating waypoints ahead to self.loop.
+This is to make the call back more time responsive to improve overall system predictability.
+Only accept message when Waypoint<sub>Updater</sub> is ready to process, otherwise reject /current<sub>pose</sub> update to avoid delay.
+</p>
+
+<p>
+<code>current_pose_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">current_pose_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">WORKING: Implement</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.pose <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #a45bad;">None</span>:       <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">ready to process message</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.pose = msg
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.pose is None</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0f1fde7" class="outline-3">
+<h3 id="org0f1fde7"><span class="section-number-3">1.3</span> get<sub>closest</sub><sub>waypoint</sub></h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+<code>get_closest_waypoint</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">get_closest_waypoint</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, pose<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num:
+        <span style="color: #7590db;">current_pose</span> = pose.position
+        <span style="color: #7590db;">current_orientation</span> = pose.orientation
+        <span style="color: #7590db;">yaw</span> = get_yaw<span style="color: #4f97d7;">(</span>current_orientation<span style="color: #4f97d7;">)</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Compute the waypoints ahead of the current_pose</span>
+
+        <span style="color: #7590db;">local_x</span> = -<span style="color: #a45bad;">1</span>
+        <span style="color: #7590db;">i</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index - <span style="color: #a45bad;">1</span>
+        <span style="color: #4f97d7; font-weight: bold;">while</span> <span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>i &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num-<span style="color: #a45bad;">1</span><span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #bc6ec5;">(</span>local_x &lt;= <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
+            <span style="color: #7590db;">i</span> = <span style="color: #4f97d7;">(</span>i + <span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">% self.base_waypoints_num</span>
+            <span style="color: #7590db;">waypoint</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #4f97d7;">[</span>i<span style="color: #4f97d7;">]</span>
+            <span style="color: #7590db;">w_pos</span> = waypoint.pose.pose.position
+            <span style="color: #7590db;">local_x</span>, <span style="color: #7590db;">local_y</span> = to_local_coordinates<span style="color: #4f97d7;">(</span>current_pose.x, current_pose.y, yaw,
+                                                    w_pos.x, w_pos.y<span style="color: #4f97d7;">)</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of while (local_x &lt; 0)</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> i
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.base_waypoints_num</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">None</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org65c12e7" class="outline-3">
+<h3 id="org65c12e7"><span class="section-number-3">1.4</span> distance</h3>
+<div class="outline-text-3" id="text-1-4">
+<p>
+The computation of the distance between two waypoints can be done by the distances of those
+starting from the start to the i<sub>th</sub> node, and j<sub>th</sub> node.
+</p>
+
+<p>
+This is an optimization in computation.
+</p>
+
+<p>
+<code>distance</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">distance</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, wp1, wp2<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>wp1 &lt; wp2<span style="color: #4f97d7;">)</span>:
+        <span style="color: #7590db;">start</span>, <span style="color: #7590db;">end</span> = wp1, wp2
+    <span style="color: #4f97d7; font-weight: bold;">else</span>:
+        <span style="color: #7590db;">start</span>, <span style="color: #7590db;">end</span> = wp2, wp1
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (wp1 &lt; wp2)</span>
+
+    <span style="color: #7590db;">dist</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start<span style="color: #4f97d7;">[</span>end<span style="color: #4f97d7;">]</span> - <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start<span style="color: #4f97d7;">[</span>start<span style="color: #4f97d7;">]</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> dist
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga6238aa" class="outline-3">
+<h3 id="orga6238aa"><span class="section-number-3">1.5</span> distance<sub>two</sub><sub>indices</sub></h3>
+<div class="outline-text-3" id="text-1-5">
+<p>
+The distance function used to calculate the initial distance between two adjacent waypoints. It's needed before the distance from
+base<sub>waypoint</sub> start to the a base<sub>waypoint</sub> is calculated.
+</p>
+
+<p>
+<code>distance_two_indices</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">distance_two_indices</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, waypoints, i, j<span style="color: #4f97d7;">)</span>:
+  <span style="color: #7590db;">a</span> = waypoints<span style="color: #4f97d7;">[</span>i<span style="color: #4f97d7;">]</span>.pose.pose.position
+  <span style="color: #7590db;">b</span> = waypoints<span style="color: #4f97d7;">[</span>j<span style="color: #4f97d7;">]</span>.pose.pose.position
+  <span style="color: #4f97d7; font-weight: bold;">return</span> math.sqrt<span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>a.x-b.x<span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span> + <span style="color: #bc6ec5;">(</span>a.y-b.y<span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span>  + <span style="color: #bc6ec5;">(</span>a.z-b.z<span style="color: #bc6ec5;">)</span>**<span style="color: #a45bad;">2</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgb628e8c" class="outline-3">
+<h3 id="orgb628e8c"><span class="section-number-3">1.6</span> to convert a global coordinates to local coordinates:</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+It's based on the wiki:
+<a href="https://en.wikipedia.org/wiki/Rotation_matrix">https://en.wikipedia.org/wiki/Rotation_matrix</a>
+</p>
+
+<p>
+This implementation assumes the rotation has positive value from the global x-axis to the local x-axis
+counter-clockwise.
+</p>
+
+<p>
+This following one works based on the experiment.
+</p>
+
+<p>
+<code>to_local_coordinates</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">to_local_coordinates</span><span style="color: #4f97d7;">(</span>local_origin_x, local_origin_y, rotation, x, y<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae;">"""</span>
+<span style="color: #2aa1ae;">    compute the local coordinates for the global x, y coordinates values,</span>
+<span style="color: #2aa1ae;">    given the local_origin_x, local_origin_y, and the rotation of the local x-axis.</span>
+<span style="color: #2aa1ae;">    Assume the rotation is radius</span>
+<span style="color: #2aa1ae;">    """</span>
+    <span style="color: #7590db;">shift_x</span> = x - local_origin_x
+    <span style="color: #7590db;">shift_y</span> = y - local_origin_y
+
+    <span style="color: #7590db;">cos_rotation</span> = math.cos<span style="color: #4f97d7;">(</span>rotation<span style="color: #4f97d7;">)</span>
+    <span style="color: #7590db;">sin_rotation</span> = math.sin<span style="color: #4f97d7;">(</span>rotation<span style="color: #4f97d7;">)</span>
+
+    <span style="color: #7590db;">local_x</span> =  cos_rotation*shift_x + sin_rotation*shift_y
+    <span style="color: #7590db;">local_y</span> = -sin_rotation*shift_x + cos_rotation*shift_y  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">according to John Chen's</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">assuming the orientation angle clockwise being positive</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> local_x, local_y
+</pre>
+</div>
+
+<p>
+Based on experiment, the following does not work.
+</p>
+
+<p>
+<code>to_local_coordinates_counter_clockwise_orientation</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">to_local_coordinates</span><span style="color: #4f97d7;">(</span>local_origin_x, local_origin_y, rotation, x, y<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae;">"""</span>
+<span style="color: #2aa1ae;">    compute the local coordinates for the global x, y coordinates values,</span>
+<span style="color: #2aa1ae;">    given the local_origin_x, local_origin_y, and the rotation of the local x-axis.</span>
+<span style="color: #2aa1ae;">    Assume the rotation is radius</span>
+<span style="color: #2aa1ae;">    """</span>
+    <span style="color: #7590db;">shift_x</span> = x - local_origin_x
+    <span style="color: #7590db;">shift_y</span> = y - local_origin_y
+
+    <span style="color: #7590db;">cos_rotation</span> = math.cos<span style="color: #4f97d7;">(</span>rotation<span style="color: #4f97d7;">)</span>
+    <span style="color: #7590db;">sin_rotation</span> = math.sin<span style="color: #4f97d7;">(</span>rotation<span style="color: #4f97d7;">)</span>
+
+    <span style="color: #7590db;">local_x</span> = cos_rotation*shift_x - sin_rotation*shift_y
+    <span style="color: #7590db;">local_y</span> = sin_rotation*shift_x + cos_rotation*shift_y  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">according to John Chen's</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">assuming the orientation angle counter-clockwise being positive</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> local_x, local_y
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orge273a94" class="outline-3">
+<h3 id="orge273a94"><span class="section-number-3">1.7</span> How to calculate my<sub>car</sub>'s yaw angle, given its orientation in quaternion:</h3>
+<div class="outline-text-3" id="text-1-7">
+<p>
+The unit of the returned value is in radius?
+To check the documentation of transformations.euler<sub>from</sub><sub>quaternion</sub>
+</p>
+
+<p>
+<code>get_yaw</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">import</span> tf <span style="color: #4f97d7; font-weight: bold;">as</span> tf_ros                      <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">This is of ROS geometry, not of TensorFlow!</span>
+<span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">get_yaw</span><span style="color: #4f97d7;">(</span>orientation<span style="color: #4f97d7;">)</span>:
+    <span style="color: #2aa1ae;">"""</span>
+<span style="color: #2aa1ae;">    Compute yaw from orientation, which is in Quaternion.</span>
+<span style="color: #2aa1ae;">    """</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">orientation = msg.pose.orientation</span>
+    <span style="color: #7590db;">euler</span> = tf_ros.transformations.euler_from_quaternion<span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">[</span>
+        orientation.x,
+        orientation.y,
+        orientation.z,
+        orientation.w<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+    <span style="color: #7590db;">yaw</span> = euler<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">2</span><span style="color: #4f97d7;">]</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> yaw
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: \today</p>
+<p class="author">Author: yu-shen</p>
+<p class="date">Created: 2017-11-28 Tue 13:55</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
