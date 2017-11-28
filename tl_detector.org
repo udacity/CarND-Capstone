@@ -547,7 +547,43 @@ light_classifier.get_classification(cv_image);
 #results:
 
 *** logic of velocity adjustment
+Here is one with potential improvement, as of <2017-11-27 Mon 21:58>
+#+BEGIN_SRC plantuml :file velocity-adjustment-improved.png
+@startuml
+if (Light is RED) then (red)
+  if (current policy) then (already
+STOP)
+    :do nothing;
+  elseif (time or distance ) then (too close)
+    :STOP;
+  elseif (time or distance) then (close enough
+to decelerate)
+    :DECELERATE;
+  elseif (time or distance) then (far enough
+to cruise)
+    :cruise
+(polycy <- None);
+  else
+  :nothing;
+  endif
+else
+:policy <- None;
+note right
+  after turning green from red,
+  it seems that
+  the originally programmed
+  velocity is too slow.
+  It might need some acceleration.
+  To be discussed.
+end note
+endif
+#+END_SRC
 
+#+RESULTS:
+[[file:velocity-adjustment-improved.png]]
+
+
+Here is the original.
 #+BEGIN_SRC plantuml :file velocity-adjustment.png
 @startuml
 if (Light is RED) then (red)
