@@ -41,7 +41,7 @@ def publish_Lane(publisher, waypoints):
         lane.waypoints = waypoints
         publisher.publish(lane)
 # TIME_TO_CRUISE = 20             # seconds, can keep the normal cruise speed
-TIME_TO_SLOWDOWN = 30  # seconds, must slowdown in anticipation, regardless of the color of the light
+TIME_TO_SLOWDOWN = 90  # seconds, must slowdown in anticipation, regardless of the color of the light
 TIME_TO_STOP_IF_RED = 2        # seconds, must stop if the traffic light is red
 
 class WaypointUpdater(WaypointTracker):
@@ -193,10 +193,12 @@ class WaypointUpdater(WaypointTracker):
                             self.velocity_policy = None
                         # end of if self.traffic_light_red
                     
-                        rospy.loginfo(
-                            'current_waypoint: %d; traffic_waypoint: %d; light: RED: %r; Distance to light: %r; Time to light: %d; velocity policy: %s' %
-                        (self.last_closest_front_waypoint_index, self.traffic_waypoint, self.traffic_light_red, distance_to_traffic_light,
-                         time_to_traffic_light, self.policy_name()))
+                        if self.traffic_light_red:
+                            rospy.loginfo(
+                                'current_waypoint: %d; traffic_waypoint: %d; light: RED: %r; Distance to light: %r; Time to light: %d; velocity policy: %s' %
+                                (self.last_closest_front_waypoint_index, self.traffic_waypoint, self.traffic_light_red, distance_to_traffic_light,
+                                 time_to_traffic_light, self.policy_name()))
+                        # if self.traffic_light_red
                     
                         # apply the policy to each final_waypoints
                         if self.velocity_policy:
@@ -211,11 +213,11 @@ class WaypointUpdater(WaypointTracker):
                                               (self.policy_name(), i, waypoint.twist.twist.linear.x))
                             # end of for i in range(num_affected_waypoints)
                         else:
-                            for i in range(final_waypoints_count):
-                                rospy.loginfo('velocity policy: %s; index away from current pose: %d; linear.x: %f' %
-                                              (self.policy_name(), i, final_waypoints[i].twist.twist.linear.x))
+                            # for i in range(final_waypoints_count):
+                            #     rospy.loginfo('velocity policy: %s; index away from current pose: %d; linear.x: %f' %
+                            #                   (self.policy_name(), i, final_waypoints[i].twist.twist.linear.x))
                             # end of for i in range(final_waypoints_count)
-                    
+                            pass                    # in place of the above commented out code
                         # end of if self.velocity_policy
                     # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
                 
