@@ -395,18 +395,23 @@ when the traffic light color is not red, report the negative of the waypoint ind
           # the index of the waypoint of the traffic light
           light_index, light_wp = self.waypoint_to_light[self.car_position]
           FAKED_LIGHT = True
-          if FAKED_LIGHT:
-              # rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
-              #     light_index, self.lights[light_index].state,
-              #     self.lights[light_index].state == TrafficLight.RED))
-              state = self.lights[light_index].state
+          # when the light_index is None, then is no more light in front
+          if light_index:
+              if FAKED_LIGHT:
+                  # rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
+                  #     light_index, self.lights[light_index].state,
+                  #     self.lights[light_index].state == TrafficLight.RED))
+                  state = self.lights[light_index].state
+              else:
+                  cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+                  #Get classification
+                  state = self.light_classifier.get_classification(cv_image)
+
+              # end of if FAKED_LIGHT
           else:
-              cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-              #Get classification
-              state = self.light_classifier.get_classification(cv_image)
-
-          # end of if FAKED_LIGHT
+              state = TrafficLight.UNKNOWN
+          # end of if light_index
           if (state==TrafficLight.RED):
               rospy.loginfo('car index: %r; light_index: %r; light waypoint: %r; light is RED: %r' %
                             (self.car_position, light_index, light_wp, state==TrafficLight.RED))
