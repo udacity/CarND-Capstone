@@ -5,6 +5,7 @@ from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
 import math
+#import sys
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -26,26 +27,59 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater')
-
+	#sys.stdout.flush()
+        print("init start") 
+	rospy.init_node('waypoint_updater')#, log_level=rospy.DEBUG)
+        #rospy.logdebug('asdfasdfasdf')
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
+	self.ego_pos = object()
+        self.ego_pos = lambda:none
+	self.ego_pos.x = 0        
+	self.ego_pos.y = 0
+        self.ego_pos.z = 0	
+	       
+	rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+	
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
+	
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
 
         rospy.spin()
+	print("init done") 
+	
 
-    def pose_cb(self, msg):
-        # TODO: Implement
+    def pose_cb(self, msg):        
+	# TODO: Implement
+	self.ego_pos = msg.pose.position
+	#self.final_waypoints_pub.publish(waypoints.waypoints[first_wp:first_wp+LOOKAHEAD_WPS])
         pass
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
+	self.wps = waypoints	
+	print("ego position begin")	
+	print(self.ego_pos.x) 
+	print(self.ego_pos.y)          
+	print(self.ego_pos.z)   
+	print("ego position end")
+		
+	# TODO: return the index of the closest waypoint, given our current position (pose)
+	distances = []	
+	find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)	
+	for i in range(len(waypoints.waypoints)):
+		#get current position
+		#find the distance between each waypoint and the current position
+		distances.append(find_dist(waypoints.waypoints[i].pose.pose.position, self.ego_pos))
+	
+	#find index of minimum distance
+	first_wp = distances.index(min(distances))
+	print("closest and first waypoints")
+	print(self.wps.waypoints[first_wp].pose.pose.position.x)
+	print(self.wps.waypoints[first_wp].pose.pose.position.y)
+	print(self.wps.waypoints[0].pose.pose.position.x)
+	print(self.wps.waypoints[0].pose.pose.position.y)
         pass
 
     def traffic_cb(self, msg):
@@ -73,6 +107,17 @@ class WaypointUpdater(object):
 
 if __name__ == '__main__':
     try:
-        WaypointUpdater()
+	WaypointUpdater()
+	#send final waypoints
+	#While True:
+		#self.final_waypoints_pub.publish(waypoints.waypoints[first_wp:first_wp+LOOKAHEAD_WPS])
+		#as ego vehicle position changes, update first_wp
+		#always find the closest waypoint to current ego vehicle position
+
+
+
+
+
+	
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start waypoint updater node.')
