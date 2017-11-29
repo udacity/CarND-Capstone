@@ -27,16 +27,13 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
-	#sys.stdout.flush()
         print("init start") 
 	rospy.init_node('waypoint_updater')#, log_level=rospy.DEBUG)
         #rospy.logdebug('asdfasdfasdf')
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-	self.ego_pos = object()
-        self.ego_pos = lambda:none
-	self.ego_pos.x = 0        
-	self.ego_pos.y = 0
-        self.ego_pos.z = 0	
+	self.ego_pos = 'None'
+	self.wps = 'None'
+	self.first_pass = True		
 	       
 	rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 	
@@ -52,34 +49,29 @@ class WaypointUpdater(object):
 	
 
     def pose_cb(self, msg):        
-	# TODO: Implement
 	self.ego_pos = msg.pose.position
-	#self.final_waypoints_pub.publish(waypoints.waypoints[first_wp:first_wp+LOOKAHEAD_WPS])
-        pass
+	if self.wps != 'None':	
+		#return the index of the closest waypoint, given our current position (pose)
+		distances = []	
+		find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)	
+		for i in range(len(self.wps.waypoints)):
+			#find the distance between each waypoint and the current position
+			distances.append(find_dist(self.wps.waypoints[i].pose.pose.position, self.ego_pos))
+	
+		#find index of waypoint closet to current position
+		first_wp = distances.index(min(distances))
+		if self.first_pass == True:		
+			print("current position")
+			print(self.wps.waypoints[first_wp].pose.pose.position.x)
+			print(self.wps.waypoints[first_wp].pose.pose.position.y)
+			print("closest waypoint")
+			print(self.ego_pos.x) 
+			print(self.ego_pos.y)
+			self.first_pass = False
+	pass
 
     def waypoints_cb(self, waypoints):
 	self.wps = waypoints	
-	print("ego position begin")	
-	print(self.ego_pos.x) 
-	print(self.ego_pos.y)          
-	print(self.ego_pos.z)   
-	print("ego position end")
-		
-	# TODO: return the index of the closest waypoint, given our current position (pose)
-	distances = []	
-	find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)	
-	for i in range(len(waypoints.waypoints)):
-		#get current position
-		#find the distance between each waypoint and the current position
-		distances.append(find_dist(waypoints.waypoints[i].pose.pose.position, self.ego_pos))
-	
-	#find index of minimum distance
-	first_wp = distances.index(min(distances))
-	print("closest and first waypoints")
-	print(self.wps.waypoints[first_wp].pose.pose.position.x)
-	print(self.wps.waypoints[first_wp].pose.pose.position.y)
-	print(self.wps.waypoints[0].pose.pose.position.x)
-	print(self.wps.waypoints[0].pose.pose.position.y)
         pass
 
     def traffic_cb(self, msg):
@@ -110,7 +102,7 @@ if __name__ == '__main__':
 	WaypointUpdater()
 	#send final waypoints
 	#While True:
-		#self.final_waypoints_pub.publish(waypoints.waypoints[first_wp:first_wp+LOOKAHEAD_WPS])
+		#self.final_waypoints_pub.publish(waypoints.waypoints[closest_wp:closest_wp+LOOKAHEAD_WPS])
 		#as ego vehicle position changes, update first_wp
 		#always find the closest waypoint to current ego vehicle position
 
