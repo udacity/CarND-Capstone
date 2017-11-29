@@ -5,7 +5,6 @@ from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
 import math
-#import sys
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -32,11 +31,12 @@ class WaypointUpdater(object):
 	self.wps = 'None'
 	self.final_wps = 'None'
 	self.first_pass = True	
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)	       
+    rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)	       
 	rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-        rospy.spin()
+
+    # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+    self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+    rospy.spin()
 
     def pose_cb(self, msg):        
 	self.ego_pos = msg.pose.position
