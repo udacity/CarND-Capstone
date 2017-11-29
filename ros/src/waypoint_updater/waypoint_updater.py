@@ -145,7 +145,7 @@ class WaypointUpdater(WaypointTracker):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
             if self.base_waypoints and self.pose:
-                self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
+                self.get_closest_waypoint(self.pose.pose)  # as side effect stored in self.last_closest_front_waypoint_index =
                 if self.last_closest_front_waypoint_index:
                     # generate final_waypoints
                     final_waypoints_count = 0
@@ -179,7 +179,7 @@ class WaypointUpdater(WaypointTracker):
                         time_to_traffic_light = distance_to_traffic_light/self.current_velocity
                     
                         if self.traffic_light_red:
-                            if self.velocity_policy == self.stop_policy:
+                            if self.velocity_policy and (self.velocity_policy == self.stop_policy):
                                 pass
                             elif ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
                                 self.velocity_policy = self.stop_policy
@@ -275,12 +275,13 @@ class WaypointUpdater(WaypointTracker):
             waypoints[waypoint].twist.twist.linear.x = velocity
     
     def policy_name(self):
-        if self.velocity_policy == self.stop_policy:
+        if self.velocity_policy and (self.velocity_policy == self.stop_policy):
             return "stop"
         elif self.velocity_policy is None:
             return "None"
         else:
             return "deceleration"   # by result of exclusion
+        # end of if self.velocity_policy and (self.velocity_policy == self.stop_policy)
     
 
 if __name__ == '__main__':

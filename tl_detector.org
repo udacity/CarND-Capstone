@@ -517,12 +517,17 @@ I assume/design the light parameter is the index of the nearest traffic light in
 #+END_SRC
 
 ** Current problems
-
-As of 11/17, 22:15, the light index calculated seems not right. The car has already passed the first traffic light, it still
-reported light_index: 0 (the first), while the waypoint index keeps changing.
-
-The logic is not right. The waypoint index should remain the same.
-
+Traceback (most recent call last):
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 272, in <module>
+    TLDetector()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 90, in __init__
+    self.loop()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 233, in loop
+    light_wp, state = self.process_traffic_lights()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 213, in process_traffic_lights
+    state = self.lights[light_index].state
+TypeError: list indices must be integers, not NoneType
+[tl_detector-2] process has died [pid 13902, exit code 1, cmd /home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py __name:=tl_detector __log:=/home/yubrshen/.ros/log/491be1a6-d53b-11e7-a096-18dbf212c2fb/tl_detector-2.log].
 
 ** Sketch of Traffic Light Classification
 
