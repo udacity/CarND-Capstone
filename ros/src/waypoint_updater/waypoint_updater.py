@@ -6,6 +6,7 @@ from styx_msgs.msg import Lane, Waypoint
 
 import math
 import copy
+import tf.transformations   # to get Euler coordinates
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -40,21 +41,12 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        self.ego_pos = msg.pose.position
-        if self.wps is not None:	#Don't proceed until we have received waypoints
-
-            #return the index of the closest waypoint, given our current position (pose)
-            find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-            distances = [find_dist(waypoint.pose.pose.position, self.ego_pos) for waypoint in self.wps.waypoints]
+        self.ego_pos = msg.pose
         
-            #find index of waypoint closest to current position
-            closest_wp = distances.index(min(distances))
-
-            #Log closest waypoint position
-            log_info = 'Current position: ({}; {}) | Closest waypoint idx #{}: ({}; {})'.format(
-                self.ego_pos.x, self.ego_pos.y, closest_wp,
-                self.wps.waypoints[closest_wp].pose.pose.position.x, self.wps.waypoints[closest_wp].pose.pose.position.y)
-            rospy.loginfo_throttle(1, log_info) # ensure we don't log more than once per second
+        if self.wps is not None:	#Don't proceed until we have received waypoints
+            
+            #return the index of the closest waypoint ahead of us
+            closest_idx_waypoint = self.closest_waypoint_ahead()
 
             #final waypoints is a subset of original set of waypoints
             self.final_wps.waypoints = self.wps.waypoints[closest_wp:closest_wp+LOOKAHEAD_WPS]
@@ -89,6 +81,37 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    def closest_waypoint_ahead(self):
+        ''' Return index of closest point ahead '''
+
+        # Get car orientation
+        car_x, car_y = self.ego_pos.position.x, self.ego_pos.position.y
+        quaternion = (self.ego_pos.orientation.x, self.ego_pos.orientation.y,
+                      self.ego_pos.orientation.z, self.ego_pos.orientation.w)
+        euler = tf.transformations.euler_from_quaternion(quaternion)
+        car_yaw = euler[2]
+        loginfo = 'Car yaw: {} | x: {} | y: {}'.format(car_yaw, car_x, car_y)
+
+        # Define unit vector for car orientation in global (x, y) coordinates
+        orient_x, orient_y = math.cos(car_yaw), math.sin(car_yaw)
+
+        # Filter waypoints to keep only the ones ahead of us by checking scalar product
+        waypoints_ahead = [(n, wp) for (n, wp) in enumerate(self.wps.waypoints)
+                           if (orient_x * (wp.pose.pose.position.x - car_x) +
+                           orient_y * (wp.pose.pose.position.y - car_y)) > 0]
+        if not len(waypoints_ahead):
+            rospy.logwarn("No points detected ahead of us")
+        
+        # Extract closest waypoint
+        closest_waypoint = min(waypoints_ahead,
+                               key = lambda wpidx: (wpidx[1].pose.pose.position.x - self.ego_pos.position.x) ** 2
+                               + (wpidx[1].pose.pose.position.y - self.ego_pos.position.y) ** 2)
+        closest_index = closest_waypoint[0]
+        loginfo += '| Closest waypoint index: {}'.format(closest_index)
+        rospy.loginfo_throttle(1, loginfo)
+
+        return closest_index
 
 
 if __name__ == '__main__':
