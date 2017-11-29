@@ -100,7 +100,9 @@ class WaypointTracker(object):
                 w_pos = waypoint.pose.pose.position
                 local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                         w_pos.x, w_pos.y)
-                # end of while (local_x < 0)
+            # end of while (local_x < 0)
+            self.last_closest_front_waypoint_index = i
+            # make the update last_closest_front_waypoint_index atomic with the search of the next one.
             return i
         # end of if self.base_waypoints_num
         return None

@@ -145,7 +145,7 @@ class WaypointUpdater(WaypointTracker):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
             if self.base_waypoints and self.pose:
-                self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
+                self.get_closest_waypoint(self.pose.pose)  # as side effect stored in self.last_closest_front_waypoint_index =
                 if self.last_closest_front_waypoint_index:
                     # generate final_waypoints
                     final_waypoints_count = 0

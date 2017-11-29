@@ -663,7 +663,7 @@ Then use that to generate the rest of the final_waypoints.
 
 #+NAME:process-pose
 #+BEGIN_SRC python :noweb tangle :tangle
-  self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
+  self.get_closest_waypoint(self.pose.pose)  # as side effect stored in self.last_closest_front_waypoint_index =
   if self.last_closest_front_waypoint_index:
       # generate final_waypoints
       final_waypoints_count = 0
