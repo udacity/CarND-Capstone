@@ -98,7 +98,11 @@ class WaypointTracker(object):
                 w_pos = waypoint.pose.pose.position
                 local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                         w_pos.x, w_pos.y)
-                # end of while (local_x < 0)
+            # end of while (local_x < 0)
+            if i == 0:
+                rospy.loginf('Zero waypoint index: %d' % i)
+            # end of if i == 0
+
             return i
         # end of if self.base_waypoints_num
         return None

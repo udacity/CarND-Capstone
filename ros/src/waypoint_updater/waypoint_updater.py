@@ -179,7 +179,7 @@ class WaypointUpdater(WaypointTracker):
                         time_to_traffic_light = distance_to_traffic_light/self.current_velocity
                     
                         if self.traffic_light_red:
-                            if self.velocity_policy == self.stop_policy:
+                            if self.velocity_policy and (self.velocity_policy == self.stop_policy):
                                 pass
                             elif ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
                                 self.velocity_policy = self.stop_policy

@@ -17,10 +17,13 @@ waypoint related functionality.
 
 A super-class for both WaypointTracker and TLDetector
 
+** Top level
 #+NAME:waypoint-tracker
 #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/waypoint_lib/src/waypoint_lib/waypoint_tracker.py
   import copy
   import math
+  import rospy
+
   <<get_yaw>>
   <<to_local_coordinates>>
 
@@ -111,6 +114,29 @@ A super-class for both WaypointTracker and TLDetector
 #+END_SRC
 
 ** get_closest_waypoint
+#+NAME:get_closest_waypoint_hector
+#+BEGIN_SRC python :noweb tangle :tangle
+      def get_closest_waypoint(self, pose):
+
+          closest_len = 100000
+          closest_index = 0
+
+          waypoints = self.base_waypoints
+
+          for i in range(len(waypoints)):
+              waypoint = waypoints[i].pose.pose.position
+              d = self.dist_hector(pose.position, waypoint)
+              if d < closest_len:
+                  closest_len = d
+                  closest_index = i
+              # end of if d < closest_len:
+          # end of for i in range(len(waypoints))
+          return closest_index
+#+END_SRC
+
+Need to have dist_hector to make it working.
+
+It only tries to find the closest in distance, regardless of orientation.
 
 #+NAME:get_closest_waypoint
 #+BEGIN_SRC python :noweb tangle :tangle

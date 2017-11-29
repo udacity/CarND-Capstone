@@ -548,7 +548,7 @@ when the traffic light color is not red, report the negative of the waypoint ind
 #+NAME:determine-velocity-policy
 #+BEGIN_SRC python :noweb tangle :tangle
   if self.traffic_light_red:
-      if self.velocity_policy == self.stop_policy:
+      if self.velocity_policy and (self.velocity_policy == self.stop_policy):
           pass
       elif ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
           self.velocity_policy = self.stop_policy
