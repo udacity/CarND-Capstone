@@ -53,12 +53,39 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        # State
+        self.dbw_enabled = False
+
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
 
         # TODO: Subscribe to all the topics you need to
+        ospy.Subscriber('/current_velocity', TwistStamped, self.velocity_callback)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_callback)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_callback)
 
         self.loop()
+
+    def velocity_callback(self, msg):
+        """
+        /current_velocity topic callback handler.
+        msg : geometry_msgs.msg.TwistStamped
+        """
+        print('current velocity message: ' + msg)
+
+    def dbw_enabled_callback(self, msg):
+        """
+        /vehicle/dbw_enabled topic callback handler.
+        msg: Bool indicates if the the car is under drive-by-wire control(True) or if the driver is controlling the car(False)
+        """
+        self.dbw_enabled = msg
+
+    def twist_callback(self, msg):
+        """
+        /twist_cmd topic callback handler.
+        msg : geometry_msgs.msg.TwistStamped
+        """
+        print('twist command message : ' + msg)
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
