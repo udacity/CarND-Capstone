@@ -5,6 +5,7 @@
 #+DESCRIPTION:
 #+KEYWORDS:
 #+SUBTITLE:
+#+OPTIONS: ^:nil
 #+LATEX_COMPILER: pdflatex
 #+DATE: \today
 
@@ -28,6 +29,7 @@ The full source code can be generated from this literate programming document: [
 If you prefer to read the source code, you can still read them, but there may not be enough comments.
 
 * Plan and Schedule
+Outdated
 
 | Tas                                         | Owner         | Due   | Status         | Remarks               |
 |---------------------------------------------+---------------+-------+----------------+-----------------------|
@@ -50,6 +52,8 @@ the current speed, the desired speed, and dbw_enabled status. For the TwistContr
 there is a PID implementation, but the parameters of P, I, D needs to be determined.
 
 * Questions/Problems
+
+Outdated.
   1. In Waypoint_Updater, for output final_points, how to set the speed? Should we set both the linear and angular speed?
      It seems that only need to set the linear.x, as it's in the my_car's local coordinates, there is only movement on the x-axis.
      There is no movement on the angular z, not even possible on x, and y. It seems that we should also set the angular velocity on z-axis? but how?
@@ -57,10 +61,42 @@ there is a PID implementation, but the parameters of P, I, D needs to be determi
   3. Where to use the lowpass filter, for the inputs to DBW_node or its outputs, or both? Maybe, just the current velocity, as it's the only value from the physical world that might have noise.
   4. What's the physics formula to express the required brake force considering the mass of the vehicle, its current velocities?
 
-* [[file:waypoint_updater.org][Waypoint_Updater]]
+* Major nodes or modules
 
-* [[file:dbw_workbook.org][DBW_Node]]
+The following are the major nodes or modules clicking on the links can
+visit the corresponding design and construction document.
+
+** [[./waypoint_tracker.org]]
+
+This is the supper class abstracting the common treatments to waypoints among
+waypoint_updater and tl_dectector.
+
+It resides in a module called waypoint_lib
+
+To import:
+#+NAME:
+#+BEGIN_SRC python :noweb tangle :tangle
+from waypoint_lib.waypoint_tracker import WaypointTracker
+#+END_SRC
+
+** [[file:waypoint_updater.org][Waypoint_Updater]]
+
+** [[file:dbw_workbook.org][DBW_Node]]
+
+** [[./tl_detector.org]]
+
+** [[./tl-classification.org]]
+
+   This is the wrapper to the deep learning classifer.
+
+   It expects to access the file of the trained module at path: ./ros/src/trained_model/frozen_inference_graph.pb
+   assuming the current directory is the project directory of the Capstone project.
+
+* Overall Architecture
+
+The maximum loop frequencies
+
 
 * TODO TODO
 
-1. Start to design for DBW node
+1.

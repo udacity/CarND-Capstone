@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2017-11-28 Tue 08:33 -->
+<!-- 2017-11-28 Tue 23:09 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>System Integration of Autonomous Vehicle</title>
@@ -234,18 +234,25 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org6d616f8">1. Introduction</a></li>
-<li><a href="#org758cc25">2. Plan and Schedule</a></li>
-<li><a href="#org78aa684">3. Questions/Problems</a></li>
-<li><a href="#org79a3d90">4. Waypoint<sub>Updater</sub></a></li>
-<li><a href="#org52b0cbb">5. DBW<sub>Node</sub></a></li>
-<li><a href="#org3fea1a0">6. <span class="todo TODO">TODO</span> TODO</a></li>
+<li><a href="#org736e048">1. Introduction</a></li>
+<li><a href="#org48fc867">2. Plan and Schedule</a></li>
+<li><a href="#orgcbefc92">3. Questions/Problems</a></li>
+<li><a href="#orgb6ca869">4. Major nodes or modules</a>
+<ul>
+<li><a href="#org8e59658">4.1. ./waypoint_tracker.org</a></li>
+<li><a href="#org4e9534f">4.2. Waypoint<sub>Updater</sub></a></li>
+<li><a href="#org968bc6b">4.3. DBW<sub>Node</sub></a></li>
+<li><a href="#orge98c382">4.4. ./tl_detector.org</a></li>
+<li><a href="#org52ff36f">4.5. ./tl-classification.org</a></li>
+</ul>
+</li>
+<li><a href="#org46bbc5c">5. <span class="todo TODO">TODO</span> TODO</a></li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org6d616f8" class="outline-2">
-<h2 id="org6d616f8"><span class="section-number-2">1</span> Introduction</h2>
+<div id="outline-container-org736e048" class="outline-2">
+<h2 id="org736e048"><span class="section-number-2">1</span> Introduction</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 The document uses <a href="https://en.wikipedia.org/wiki/Literate_programming">literate programming</a> approach to present the
@@ -272,9 +279,13 @@ If you prefer to read the source code, you can still read them, but there may no
 </div>
 </div>
 
-<div id="outline-container-org758cc25" class="outline-2">
-<h2 id="org758cc25"><span class="section-number-2">2</span> Plan and Schedule</h2>
+<div id="outline-container-org48fc867" class="outline-2">
+<h2 id="org48fc867"><span class="section-number-2">2</span> Plan and Schedule</h2>
 <div class="outline-text-2" id="text-2">
+<p>
+Outdated
+</p>
+
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
@@ -370,9 +381,12 @@ there is a PID implementation, but the parameters of P, I, D needs to be determi
 </div>
 </div>
 
-<div id="outline-container-org78aa684" class="outline-2">
-<h2 id="org78aa684"><span class="section-number-2">3</span> Questions/Problems</h2>
+<div id="outline-container-orgcbefc92" class="outline-2">
+<h2 id="orgcbefc92"><span class="section-number-2">3</span> Questions/Problems</h2>
 <div class="outline-text-2" id="text-3">
+<p>
+Outdated.
+</p>
 <ol class="org-ol">
 <li>In Waypoint<sub>Updater</sub>, for output final<sub>points</sub>, how to set the speed? Should we set both the linear and angular speed?
 It seems that only need to set the linear.x, as it's in the my<sub>car</sub>'s local coordinates, there is only movement on the x-axis.
@@ -384,19 +398,72 @@ There is no movement on the angular z, not even possible on x, and y. It seems t
 </div>
 </div>
 
-<div id="outline-container-org79a3d90" class="outline-2">
-<h2 id="org79a3d90"><span class="section-number-2">4</span> <a href="waypoint_updater.html">Waypoint<sub>Updater</sub></a></h2>
+<div id="outline-container-orgb6ca869" class="outline-2">
+<h2 id="orgb6ca869"><span class="section-number-2">4</span> Major nodes or modules</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+The following are the major nodes or modules clicking on the links can
+visit the corresponding design and construction document.
+</p>
 </div>
 
-<div id="outline-container-org52b0cbb" class="outline-2">
-<h2 id="org52b0cbb"><span class="section-number-2">5</span> <a href="dbw_workbook.html">DBW<sub>Node</sub></a></h2>
+<div id="outline-container-org8e59658" class="outline-3">
+<h3 id="org8e59658"><span class="section-number-3">4.1</span> <a href="./waypoint_tracker.html">./waypoint_tracker.html</a></h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+This is the supper class abstracting the common treatments to waypoints among
+waypoint<sub>updater</sub> and tl<sub>dectector</sub>.
+</p>
+
+<p>
+It resides in a module called waypoint<sub>lib</sub>
+</p>
+
+<p>
+To import:
+</p>
+<p>
+==:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">from</span> waypoint_lib.waypoint_tracker <span style="color: #4f97d7; font-weight: bold;">import</span> WaypointTracker
+</pre>
+</div>
+</div>
 </div>
 
-<div id="outline-container-org3fea1a0" class="outline-2">
-<h2 id="org3fea1a0"><span class="section-number-2">6</span> <span class="todo TODO">TODO</span> TODO</h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-org4e9534f" class="outline-3">
+<h3 id="org4e9534f"><span class="section-number-3">4.2</span> <a href="waypoint_updater.html">Waypoint<sub>Updater</sub></a></h3>
+</div>
+
+<div id="outline-container-org968bc6b" class="outline-3">
+<h3 id="org968bc6b"><span class="section-number-3">4.3</span> <a href="dbw_workbook.html">DBW<sub>Node</sub></a></h3>
+</div>
+
+<div id="outline-container-orge98c382" class="outline-3">
+<h3 id="orge98c382"><span class="section-number-3">4.4</span> <a href="./tl_detector.html">./tl_detector.html</a></h3>
+</div>
+
+<div id="outline-container-org52ff36f" class="outline-3">
+<h3 id="org52ff36f"><span class="section-number-3">4.5</span> <a href="./tl-classification.html">./tl-classification.html</a></h3>
+<div class="outline-text-3" id="text-4-5">
+<p>
+This is the wrapper to the deep learning classifer.
+</p>
+
+<p>
+It expects to access the file of the trained module at path: ./ros/src/trained<sub>model</sub>/frozen<sub>inference</sub><sub>graph.pb</sub>
+assuming the current directory is the project directory of the Capstone project.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org46bbc5c" class="outline-2">
+<h2 id="org46bbc5c"><span class="section-number-2">5</span> <span class="todo TODO">TODO</span> TODO</h2>
+<div class="outline-text-2" id="text-5">
 <ol class="org-ol">
-<li>Start to design for DBW node</li>
+<li></li>
 </ol>
 </div>
 </div>
@@ -404,7 +471,7 @@ There is no movement on the angular z, not even possible on x, and y. It seems t
 <div id="postamble" class="status">
 <p class="date">Date: \today</p>
 <p class="author">Author: yu-shen</p>
-<p class="date">Created: 2017-11-28 Tue 08:33</p>
+<p class="date">Created: 2017-11-28 Tue 23:09</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
