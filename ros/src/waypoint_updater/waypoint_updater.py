@@ -41,7 +41,7 @@ def publish_Lane(publisher, waypoints):
         lane.waypoints = waypoints
         publisher.publish(lane)
 # TIME_TO_CRUISE = 20             # seconds, can keep the normal cruise speed
-TIME_TO_SLOWDOWN = 0.3  # seconds, must slowdown in anticipation, regardless of the color of the light
+TIME_TO_SLOWDOWN = 3  # seconds, must slowdown in anticipation, regardless of the color of the light
 TIME_TO_STOP_IF_RED = 0.1        # seconds, must stop if the traffic light is red
 
 class WaypointUpdater(WaypointTracker):
@@ -183,7 +183,7 @@ class WaypointUpdater(WaypointTracker):
                                 pass
                             elif ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
                                 self.velocity_policy = self.stop_policy
-                            elif (time_to_traffic_light < TIME_TO_SLOWDOWN) or distance_to_traffic_light < 20:
+                            elif (time_to_traffic_light < TIME_TO_SLOWDOWN) or distance_to_traffic_light < 30:
                                 self.velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
                             # else: keep the original velocity
                             # end of if self.velocity_policy == self.stop_policy
