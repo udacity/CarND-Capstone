@@ -41,14 +41,12 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         self.ego_pos = msg.pose.position
         if self.wps != 'None':	#Don't proceed until we have received waypoints
-            #return the index of the closest waypoint, given our current position (pose)
-            distances = []	
-            find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)	
-            for i in range(len(self.wps.waypoints)):
-                #find the distance between each waypoint and the current position
-                distances.append(find_dist(self.wps.waypoints[i].pose.pose.position, self.ego_pos))
         
-            #find index of waypoint closet to current position
+            #return the index of the closest waypoint, given our current position (pose)
+            find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+            distances = [find_dist(waypoint.pose.pose.position, self.ego_pos) for waypoint in self.wps.waypoints]
+        
+            #find index of waypoint closest to current position
             closest_wp = distances.index(min(distances))
 
             #Log closest waypoint position
