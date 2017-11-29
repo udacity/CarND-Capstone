@@ -53,8 +53,8 @@ class WaypointUpdater(object):
 
             #Log closest waypoint position
             log_info = 'Current position: ({}; {}) | Closest waypoint idx #{}: ({}; {})'.format(
-                self.wps.waypoints[closest_wp].pose.pose.position.x, self.wps.waypoints[closest_wp].pose.pose.position.y,
-                closest_wp, self.ego_pos.x, self.ego_pos.y)
+                self.ego_pos.x, self.ego_pos.y, closest_wp,
+                self.wps.waypoints[closest_wp].pose.pose.position.x, self.wps.waypoints[closest_wp].pose.pose.position.y)
             rospy.loginfo_throttle(1, log_info) # ensure we don't log more than once per second
 
             #final waypoints is a subset of original set of waypoints
