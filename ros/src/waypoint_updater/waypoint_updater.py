@@ -26,48 +26,44 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
-	rospy.init_node('waypoint_updater')
-	self.ego_pos = 'None'
-	self.wps = 'None'
-	self.final_wps = 'None'
-	self.first_pass = True	
-    rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)	       
-	rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.init_node('waypoint_updater')
+        self.ego_pos = 'None'
+        self.wps = 'None'
+        self.final_wps = 'None'
+        self.first_pass = True
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-    # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-    self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-    rospy.spin()
+        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        rospy.spin()
 
-    def pose_cb(self, msg):        
-	self.ego_pos = msg.pose.position
-	if self.wps != 'None':	#Don't proceed until we have received waypoints
-		#return the index of the closest waypoint, given our current position (pose)
-		distances = []	
-		find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)	
-		for i in range(len(self.wps.waypoints)):
-			#find the distance between each waypoint and the current position
-			distances.append(find_dist(self.wps.waypoints[i].pose.pose.position, self.ego_pos))
-	
-		#find index of waypoint closet to current position
-		closest_wp = distances.index(min(distances))
-		#if self.first_pass == True:		
-#			print("current position")
-#			print(self.wps.waypoints[closest_wp].pose.pose.position.x)
-#			print(self.wps.waypoints[closest_wp].pose.pose.position.y)
-#			print("closest waypoint")
-#			print(self.ego_pos.x) 
-#			print(self.ego_pos.y)
-#			print(closest_wp)
-			#self.first_pass = False
-		#final waypoints is a subset of original set of waypoints
-		self.final_wps.waypoints = self.wps.waypoints[closest_wp:closest_wp+LOOKAHEAD_WPS]
-		self.final_waypoints_pub.publish(self.final_wps)
-	pass
+    def pose_cb(self, msg):
+        self.ego_pos = msg.pose.position
+        if self.wps != 'None':	#Don't proceed until we have received waypoints
+            #return the index of the closest waypoint, given our current position (pose)
+            distances = []	
+            find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)	
+            for i in range(len(self.wps.waypoints)):
+                #find the distance between each waypoint and the current position
+                distances.append(find_dist(self.wps.waypoints[i].pose.pose.position, self.ego_pos))
+        
+            #find index of waypoint closet to current position
+            closest_wp = distances.index(min(distances))
+
+            #Log closest waypoint position
+            log_info = 'Current position: ({}; {}) | Closest waypoint idx #{}: ({}; {})'.format(
+                self.wps.waypoints[closest_wp].pose.pose.position.x, self.wps.waypoints[closest_wp].pose.pose.position.y,
+                closest_wp, self.ego_pos.x, self.ego_pos.y)
+            rospy.loginfo_throttle(1, log_info) # ensure we don't log more than once per second
+
+            #final waypoints is a subset of original set of waypoints
+            self.final_wps.waypoints = self.wps.waypoints[closest_wp:closest_wp+LOOKAHEAD_WPS]
+            self.final_waypoints_pub.publish(self.final_wps)
 
     def waypoints_cb(self, waypoints):
-	self.wps = waypoints
-	self.final_wps = waypoints	
-        pass
+        self.wps = waypoints
+        self.final_wps = waypoints	
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
