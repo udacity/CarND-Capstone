@@ -5,6 +5,7 @@ from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
 import math
+import copy
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -27,21 +28,21 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-        self.ego_pos = 'None'
-        self.wps = 'None'
-        self.final_wps = 'None'
+        self.ego_pos = None
+        self.wps = None
+        self.final_wps = None
         self.first_pass = True
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
         rospy.spin()
 
     def pose_cb(self, msg):
         self.ego_pos = msg.pose.position
-        if self.wps != 'None':	#Don't proceed until we have received waypoints
-        
+        if self.wps is not None:	#Don't proceed until we have received waypoints
+
             #return the index of the closest waypoint, given our current position (pose)
             find_dist = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
             distances = [find_dist(waypoint.pose.pose.position, self.ego_pos) for waypoint in self.wps.waypoints]
@@ -60,8 +61,12 @@ class WaypointUpdater(object):
             self.final_waypoints_pub.publish(self.final_wps)
 
     def waypoints_cb(self, waypoints):
-        self.wps = waypoints
-        self.final_wps = waypoints	
+        # Ensure we only get initial full list of waypoints as simulator keeps publishing
+        # with patial list aftewards
+        if self.wps is None:
+            # We need to get a full copy as otherwise we just get a reference
+            self.wps = copy.copy(waypoints)
+            self.final_wps = copy.copy(waypoints)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
