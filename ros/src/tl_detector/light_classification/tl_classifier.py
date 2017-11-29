@@ -1,13 +1,35 @@
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
+import os
 import rospy
+from functools import partial
+
+def joinfiles(directory, filename):
+    chunksize = 1024
+    maxchunks = 1024 * 5
+    rospy.loginfo("restoring:" + filename +" from directory:" + directory)
+    if os.path.exists(directory):
+        if os.path.exists(filename):
+            os.remove(filename)
+        output = open(filename, 'wb')
+        chunks = os.listdir(directory)
+        chunks.sort()
+        for fname in chunks:
+            fpath = os.path.join(directory, fname)
+            with open(fpath, 'rb') as fileobj:
+                for chunk in iter(partial(fileobj.read, chunksize * maxchunks), ''):
+                    output.write(chunk)
+        output.close()
 
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
-        model_path = "../trained_model/frozen_inference_graph.pb"
+        model_path = '.'
         # the above path is at ros/trained_model parallel to src/tl_dectector
+
+        if not os.path.exists(model_path + '/frozen_inference_graph.pb'):
+            joinfiles('./frozen_model_chunks', model_path + '/frozen_inference_graph.pb')
     
         self.detection_graph = tf.Graph()
     
@@ -15,7 +37,7 @@ class TLClassifier(object):
     
             od_graph_def = tf.GraphDef()
     
-            with tf.gfile.GFile(model_path, 'rb') as fid:
+            with tf.gfile.GFile(model_path + '/frozen_inference_graph.pb', 'rb') as fid:
     
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
