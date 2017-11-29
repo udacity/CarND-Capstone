@@ -275,12 +275,13 @@ class WaypointUpdater(WaypointTracker):
             waypoints[waypoint].twist.twist.linear.x = velocity
     
     def policy_name(self):
-        if self.velocity_policy == self.stop_policy:
+        if self.velocity_policy and (self.velocity_policy == self.stop_policy):
             return "stop"
         elif self.velocity_policy is None:
             return "None"
         else:
             return "deceleration"   # by result of exclusion
+        # end of if self.velocity_policy and (self.velocity_policy == self.stop_policy)
     
 
 if __name__ == '__main__':
