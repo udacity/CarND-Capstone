@@ -132,7 +132,11 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 #+NAME:traffic_image_processing_initialization
 #+BEGIN_SRC python :noweb tangle :tangle
   self.bridge = CvBridge()
-  self.light_classifier = TLClassifier()
+
+  # self.light_classifier = TLClassifier()
+  use_simulator_classifier = rospy.get_param('~traffic_light_classifier_sim')
+  self.light_classifier = TLClassifier(sim = use_simulator_classifier)
+
   self.listener = tf_ros.TransformListener()
 
 #+END_SRC

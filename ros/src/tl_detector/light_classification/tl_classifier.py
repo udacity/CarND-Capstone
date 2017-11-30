@@ -1,13 +1,20 @@
+import os
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
 import rospy
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self, sim):
         #TODO load classifier
-        model_path = "../trained_model/frozen_inference_graph.pb"
+        # model_path = "../trained_model/frozen_inference_graph.pb"
         # the above path is at ros/trained_model parallel to src/tl_dectector
+        curr_dir = os.path.dirname(os.path.realpath(__file__))
+        if sim:
+            model_path = curr_dir + '/src/tl_detector/light_classification/sim_model/frozen_inference_graph.pb'
+        else:
+            model_path = curr_dir + '/src/tl_detector/light_classification/real_model/frozen_inference_graph.pb'
+        # end of if sim
     
         self.detection_graph = tf.Graph()
     
