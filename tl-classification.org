@@ -48,11 +48,11 @@ Top Level
       # the above path is at ros/trained_model parallel to src/tl_dectector
       curr_dir = os.path.dirname(os.path.realpath(__file__))
       if sim:
-          model_path = curr_dir + '/src/tl_detector/light_classification/sim_model/frozen_inference_graph.pb'
+          model_path = curr_dir + '/sim_model/frozen_inference_graph.pb'
       else:
-          model_path = curr_dir + '/src/tl_detector/light_classification/real_model/frozen_inference_graph.pb'
+          model_path = curr_dir + '/real_model/frozen_inference_graph.pb'
       # end of if sim
-
+      #/src/tl_detector/light_classification
       self.detection_graph = tf.Graph()
 
       with self.detection_graph.as_default():
