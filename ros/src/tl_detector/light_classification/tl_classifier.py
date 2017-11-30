@@ -1,3 +1,4 @@
+import os
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
@@ -23,14 +24,17 @@ def joinfiles(directory, filename):
         output.close()
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self, sim):
         #TODO load classifier
-        model_path = '.'
+        # model_path = "../trained_model/frozen_inference_graph.pb"
         # the above path is at ros/trained_model parallel to src/tl_dectector
-
-        if not os.path.exists(model_path + '/frozen_inference_graph.pb'):
-            joinfiles('./frozen_model_chunks', model_path + '/frozen_inference_graph.pb')
-    
+        curr_dir = os.path.dirname(os.path.realpath(__file__))
+        if sim:
+            model_path = curr_dir + '/sim_model/frozen_inference_graph.pb'
+        else:
+            model_path = curr_dir + '/real_model/frozen_inference_graph.pb'
+        # end of if sim
+        #/src/tl_detector/light_classification
         self.detection_graph = tf.Graph()
     
         with self.detection_graph.as_default():
@@ -88,24 +92,6 @@ class TLClassifier(object):
     
         light_color = TrafficLight.UNKNOWN
         color_label = "UNKNOWN"
-    
-        # for i in range(boxes.shape[0]):
-        #     if scores[i] >= 0.70:
-        #         if classes[i] == 1:
-        #             light_color = TrafficLight.GREEN
-        #             color_label = "GREEN"
-        #         elif classes[i] == 2:
-        #             light_color = TrafficLight.RED
-        #             color_label = "RED"
-        #         elif classes[i] == 3:
-        #             light_color = TrafficLight.YELLOW
-        #             color_label = "YELLOW"
-        #         else:
-        #             light_color = TrafficLight.UNKNOWN
-        #             color_label = "UNKNOWN"
-        #         # end of if classes[i] == 1
-        #     # end of if scores[idx] >= 0.70
-        # # end of for i in range(boxes.shape[0])
     
         # find index with the max score[index]
         max_score = scores[0]
