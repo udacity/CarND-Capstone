@@ -3,9 +3,13 @@ import os
 import sys
 from functools import partial
 
+curr_dir = os.path.dirname(os.path.realpath(__file__))
+
 megas = 5
-model_path = '../trained_model/frozen_inference_graph.pb'
-chunks_folder = 'frozen_model_chunks'
+sim = True
+model_path = curr_dir + '/../../trained_model/frozen_inference_graph.pb'
+sim_arg = 'sim'
+
 
 
 # check that we run python 2.7
@@ -13,12 +17,24 @@ assert sys.version_info < (3, 0)
 
 args = sys.argv
 
-if args[1]:
+
+
+if len(args) > 1:
     model_path = args[1]
-if args[2]:
-    chunks_folder = args[2]
-if args[3]:
+if len(args) > 2:
+    sim_arg = args[2]
+if len(args) > 3:
     megas = int(args[3])
+
+
+sim = sim_arg != 'real'
+
+if sim:
+    model_folder = '/sim_model'
+else:
+    model_folder = '/real_model'
+
+chunks_folder = curr_dir + model_folder + '/chunks'
 
 
 if not os.path.exists(chunks_folder):

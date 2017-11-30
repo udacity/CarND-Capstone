@@ -17,6 +17,7 @@ def joinfiles(directory, filename):
         chunks = os.listdir(directory)
         chunks.sort()
         for fname in chunks:
+            rospy.loginfo("Joining " + fname + " out of " + str(len(chunks)))
             fpath = os.path.join(directory, fname)
             with open(fpath, 'rb') as fileobj:
                 for chunk in iter(partial(fileobj.read, chunksize * maxchunks), ''):
@@ -30,18 +31,24 @@ class TLClassifier(object):
         # the above path is at ros/trained_model parallel to src/tl_dectector
         curr_dir = os.path.dirname(os.path.realpath(__file__))
         if sim:
-            model_path = curr_dir + '/sim_model/frozen_inference_graph.pb'
+            model_folder = '/sim_model'
         else:
-            model_path = curr_dir + '/real_model/frozen_inference_graph.pb'
+            model_folder = '/real_model'
+
+        model_path = curr_dir + model_folder + '/frozen_inference_graph.pb'
+        chunk_folder = curr_dir + model_folder + '/chunks'
+        if not os.path.exists(model_path):
+            joinfiles(chunk_folder, model_path)
+
         # end of if sim
-        #/src/tl_detector/light_classification
+        # /src/tl_detector/light_classification
         self.detection_graph = tf.Graph()
     
         with self.detection_graph.as_default():
     
             od_graph_def = tf.GraphDef()
     
-            with tf.gfile.GFile(model_path + '/frozen_inference_graph.pb', 'rb') as fid:
+            with tf.gfile.GFile(model_path, 'rb') as fid:
     
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
