@@ -2,17 +2,21 @@ import os
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
-import os
 import rospy
 from functools import partial
 
 def joinfiles(directory, filename):
+    """
+    directory is the chunks directory
+    filename is the name of assembled file.
+    """
     chunksize = 1024
     maxchunks = 1024 * 5
     rospy.loginfo("restoring:" + filename +" from directory:" + directory)
     if os.path.exists(directory):
         if os.path.exists(filename):
             os.remove(filename)
+        # end of if os.path.exists(filename)
         output = open(filename, 'wb')
         chunks = os.listdir(directory)
         chunks.sort()
@@ -22,7 +26,11 @@ def joinfiles(directory, filename):
             with open(fpath, 'rb') as fileobj:
                 for chunk in iter(partial(fileobj.read, chunksize * maxchunks), ''):
                     output.write(chunk)
+                # end of for chunk in iter(partial(fileobj.read, chunksize * maxchunks), '')
+            # with open(fpath, 'rb') as fileobj
+        # end of for fname in chunks
         output.close()
+    # end of os.path.exists(directory)
 
 class TLClassifier(object):
     def __init__(self, sim):
@@ -34,14 +42,13 @@ class TLClassifier(object):
             model_folder = '/sim_model'
         else:
             model_folder = '/real_model'
-
+        # end of if sim
+    
         model_path = curr_dir + model_folder + '/frozen_inference_graph.pb'
         chunk_folder = curr_dir + model_folder + '/chunks'
         if not os.path.exists(model_path):
             joinfiles(chunk_folder, model_path)
-
-        # end of if sim
-        # /src/tl_detector/light_classification
+    
         self.detection_graph = tf.Graph()
     
         with self.detection_graph.as_default():

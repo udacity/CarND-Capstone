@@ -21,6 +21,8 @@ Top Level
 #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/tl_detector/light_classification/tl_classifier.py
   <<imports>>
 
+  <<joinfiles>>
+
   class TLClassifier(object):
       <<__init__>>
       <<get_classification>>
@@ -36,7 +38,41 @@ Top Level
   import tensorflow as tf
   import numpy as np
   import rospy
+  from functools import partial
 #+END_SRC
+
+** joinfiles
+
+#+NAME:joinfiles
+#+BEGIN_SRC python :noweb tangle :tangle
+  def joinfiles(directory, filename):
+      """
+      directory is the chunks directory
+      filename is the name of assembled file.
+      """
+      chunksize = 1024
+      maxchunks = 1024 * 5
+      rospy.loginfo("restoring:" + filename +" from directory:" + directory)
+      if os.path.exists(directory):
+          if os.path.exists(filename):
+              os.remove(filename)
+          # end of if os.path.exists(filename)
+          output = open(filename, 'wb')
+          chunks = os.listdir(directory)
+          chunks.sort()
+          for fname in chunks:
+              rospy.loginfo("Joining " + fname + " out of " + str(len(chunks)))
+              fpath = os.path.join(directory, fname)
+              with open(fpath, 'rb') as fileobj:
+                  for chunk in iter(partial(fileobj.read, chunksize * maxchunks), ''):
+                      output.write(chunk)
+                  # end of for chunk in iter(partial(fileobj.read, chunksize * maxchunks), '')
+              # with open(fpath, 'rb') as fileobj
+          # end of for fname in chunks
+          output.close()
+      # end of os.path.exists(directory)
+#+END_SRC
+
 
 ** __init__
 
@@ -48,11 +84,16 @@ Top Level
       # the above path is at ros/trained_model parallel to src/tl_dectector
       curr_dir = os.path.dirname(os.path.realpath(__file__))
       if sim:
-          model_path = curr_dir + '/sim_model/frozen_inference_graph.pb'
+          model_folder = '/sim_model'
       else:
-          model_path = curr_dir + '/real_model/frozen_inference_graph.pb'
+          model_folder = '/real_model'
       # end of if sim
-      #/src/tl_detector/light_classification
+
+      model_path = curr_dir + model_folder + '/frozen_inference_graph.pb'
+      chunk_folder = curr_dir + model_folder + '/chunks'
+      if not os.path.exists(model_path):
+          joinfiles(chunk_folder, model_path)
+
       self.detection_graph = tf.Graph()
 
       with self.detection_graph.as_default():
