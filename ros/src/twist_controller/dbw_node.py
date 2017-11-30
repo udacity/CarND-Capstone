@@ -54,7 +54,7 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # Create `TwistController` object
-        self.controller = Controller()
+        self.controller = Controller(steer_ratio)
 
         # Subscribe to all necessary topics
         rospy.Subscriber('/twist_cmd', TwistStamped, self.upd_twist)
@@ -72,17 +72,15 @@ class DBWNode(object):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
 
-            # Get predicted throttle, brake and steering
-            throttle, brake, steering = self.controller.control()
-            #                                                     <proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
+            if all([self.twist_cmd, self.current_velocity, self.dbw_enabled]):    # Ensure values have been initialized
 
-            # Ensure dbw is enabled (not manual mode)
-            if self.dbw_enabled:
-                self.publish(throttle, brake, steering)
+                # Get predicted throttle, brake and steering
+                throttle, brake, steering = self.controller.control(self.twist_cmd.linear.x,
+                    self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled)
+
+                # Ensure dbw is enabled (not manual mode)
+                if self.dbw_enabled:
+                    self.publish(throttle, brake, steering)
 
             rate.sleep()
 
@@ -106,12 +104,20 @@ class DBWNode(object):
 
     def upd_twist(self, msg):
         self.twist_cmd = msg.twist
+        lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
+        loginfo = 'twist_cmd x: {}, y: {}, z: {}\nang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
+        rospy.loginfo_throttle(1, loginfo)
 
     def upd_velocity(self, msg):
         self.current_velocity = msg.twist
+        lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
+        loginfo = 'current_vel x: {}, y: {}, z: {}\nang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
+        rospy.loginfo_throttle(1, loginfo)
 
     def upd_dbw_enabled(self, msg):
         self.dbw_enabled = msg.data
+        loginfo = 'dbw {}'.format(self.dbw_enabled)
+        rospy.loginfo_throttle(1, loginfo)
 
 
 if __name__ == '__main__':
