@@ -85,7 +85,7 @@ class WaypointTracker(object):
         # end of if self.pose is None
         # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
     def get_closest_waypoint(self, pose):
-        if self.base_waypoints_num:
+        if self.base_waypoints_num is not None:
             current_pose = pose.position
             current_orientation = pose.orientation
             yaw = get_yaw(current_orientation)
@@ -96,6 +96,7 @@ class WaypointTracker(object):
             i = self.last_closest_front_waypoint_index - 1
             while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
                 i = (i + 1) # % self.base_waypoints_num
+                rospy.loginfo('index of i, searching for the nearest waypoint in front: %r' % i)
                 waypoint = self.base_waypoints[i]
                 w_pos = waypoint.pose.pose.position
                 local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
@@ -104,7 +105,7 @@ class WaypointTracker(object):
             self.last_closest_front_waypoint_index = i
             # make the update last_closest_front_waypoint_index atomic with the search of the next one.
             return i
-        # end of if self.base_waypoints_num
+        # end of if self.base_waypoints_num is not None
         return None
     def distance(self, wp1, wp2):
         if (wp1 < wp2):

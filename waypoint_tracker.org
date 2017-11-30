@@ -141,7 +141,7 @@ It only tries to find the closest in distance, regardless of orientation.
 #+NAME:get_closest_waypoint
 #+BEGIN_SRC python :noweb tangle :tangle
   def get_closest_waypoint(self, pose):
-      if self.base_waypoints_num:
+      if self.base_waypoints_num is not None:
           current_pose = pose.position
           current_orientation = pose.orientation
           yaw = get_yaw(current_orientation)
@@ -152,6 +152,7 @@ It only tries to find the closest in distance, regardless of orientation.
           i = self.last_closest_front_waypoint_index - 1
           while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
               i = (i + 1) # % self.base_waypoints_num
+              rospy.loginfo('index of i, searching for the nearest waypoint in front: %r' % i)
               waypoint = self.base_waypoints[i]
               w_pos = waypoint.pose.pose.position
               local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
@@ -160,7 +161,7 @@ It only tries to find the closest in distance, regardless of orientation.
           self.last_closest_front_waypoint_index = i
           # make the update last_closest_front_waypoint_index atomic with the search of the next one.
           return i
-      # end of if self.base_waypoints_num
+      # end of if self.base_waypoints_num is not None
       return None
 #+END_SRC
 

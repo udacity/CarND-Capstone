@@ -67,24 +67,6 @@ class TLClassifier(object):
         light_color = TrafficLight.UNKNOWN
         color_label = "UNKNOWN"
     
-        # for i in range(boxes.shape[0]):
-        #     if scores[i] >= 0.70:
-        #         if classes[i] == 1:
-        #             light_color = TrafficLight.GREEN
-        #             color_label = "GREEN"
-        #         elif classes[i] == 2:
-        #             light_color = TrafficLight.RED
-        #             color_label = "RED"
-        #         elif classes[i] == 3:
-        #             light_color = TrafficLight.YELLOW
-        #             color_label = "YELLOW"
-        #         else:
-        #             light_color = TrafficLight.UNKNOWN
-        #             color_label = "UNKNOWN"
-        #         # end of if classes[i] == 1
-        #     # end of if scores[idx] >= 0.70
-        # # end of for i in range(boxes.shape[0])
-    
         # find index with the max score[index]
         max_score = scores[0]
         max_index = 0

@@ -144,7 +144,7 @@ class WaypointUpdater(WaypointTracker):
     def loop(self):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
-            if self.base_waypoints and self.pose:
+            if self.base_waypoints is not None and self.pose is not None:
                 self.get_closest_waypoint(self.pose.pose)  # as side effect stored in self.last_closest_front_waypoint_index =
                 if self.last_closest_front_waypoint_index:
                     # generate final_waypoints
@@ -171,24 +171,22 @@ class WaypointUpdater(WaypointTracker):
                     #               % (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
                 
                     # policy for velocity adjustment in view of traffic light
-                    if (self.current_velocity and (0 < self.current_velocity) and
+                    if (self.current_velocity is not None and (0 < self.current_velocity) and
                         # self.new_traffic_waypoint and
-                        self.traffic_waypoint and (self.last_closest_front_waypoint_index < self.traffic_waypoint)):
+                        (self.traffic_waypoint is not None) and (self.last_closest_front_waypoint_index < self.traffic_waypoint)):
                         distance_to_traffic_light = self.distance(
                             self.last_closest_front_waypoint_index, self.traffic_waypoint)
                         time_to_traffic_light = distance_to_traffic_light/self.current_velocity
                     
                         if self.traffic_light_red:
-                            if self.velocity_policy and (self.velocity_policy == self.stop_policy):
+                            if (self.velocity_policy is not None) and (self.velocity_policy == self.stop_policy):
                                 pass
                             elif ((time_to_traffic_light < TIME_TO_STOP_IF_RED) or distance_to_traffic_light < 5):
                                 self.velocity_policy = self.stop_policy
                             elif (time_to_traffic_light < TIME_TO_SLOWDOWN) or distance_to_traffic_light < 30:
                                 self.velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
                             # else: keep the original velocity
-                            # end of if self.velocity_policy == self.stop_policy
-                        # elif 20 < distance_to_traffic_light and distance_to_traffic_light < 70:
-                        #     self.velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)
+                            # end of if (self.velocity_policy is not None) and (self.velocity_policy == self.stop_policy)
                         else:
                             self.velocity_policy = None  # might want to implement some acceleration here
                         # end of if self.traffic_light_red
@@ -198,10 +196,10 @@ class WaypointUpdater(WaypointTracker):
                                 'current_waypoint: %d; traffic_waypoint: %d; light: RED: %r; Distance to light: %r; Time to light: %d; velocity policy: %s' %
                                 (self.last_closest_front_waypoint_index, self.traffic_waypoint, self.traffic_light_red, distance_to_traffic_light,
                                  time_to_traffic_light, self.policy_name()))
-                        # if self.traffic_light_red
+                        # end of if self.traffic_light_red
                     
                         # apply the policy to each final_waypoints
-                        if self.velocity_policy:
+                        if self.velocity_policy is not None:
                             # for all final waypoints
                             num_affected_waypoints = min(final_waypoints_count, self.traffic_waypoint - self.last_closest_front_waypoint_index)
                             for i in range(num_affected_waypoints):
@@ -218,14 +216,14 @@ class WaypointUpdater(WaypointTracker):
                             #                   (self.policy_name(), i, final_waypoints[i].twist.twist.linear.x))
                             # end of for i in range(final_waypoints_count)
                             pass                    # in place of the above commented out code
-                        # end of if self.velocity_policy
-                    # end of if self.current_velocity and 0 < self.current_velocity and self.traffic_waypoint
+                        # end of if self.velocity_policy is not None
+                    # end of if (self.current_velocity is not None) and (0 < self.current_velocity) and self.traffic_waypoint
                 
                     # publish to /final_waypoints, need to package final_waypoints into Lane message
                     publish_Lane(self.final_waypoints_pub, final_waypoints)
                 # end of if self.last_closest_front_waypoint_index
                 self.pose = None        # indicating this message has been processed
-            # end of if self.base_waypoints and self.pose
+            # end of if self.base_waypoints is not None and self.pose is not None
             rate.sleep()
         # end of while not rospy.is_shutdow()
     def base_waypoints_cb(self, msg):
@@ -275,13 +273,13 @@ class WaypointUpdater(WaypointTracker):
             waypoints[waypoint].twist.twist.linear.x = velocity
     
     def policy_name(self):
-        if self.velocity_policy and (self.velocity_policy == self.stop_policy):
+        if (self.velocity_policy is not None) and (self.velocity_policy == self.stop_policy):
             return "stop"
         elif self.velocity_policy is None:
             return "None"
         else:
             return "deceleration"   # by result of exclusion
-        # end of if self.velocity_policy and (self.velocity_policy == self.stop_policy)
+        # end of if (self.velocity_policy  is not None)and (self.velocity_policy == self.stop_policy)
     
 
 if __name__ == '__main__':
