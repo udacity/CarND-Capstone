@@ -245,3 +245,22 @@ log file: /home/yubrshen/.ros/log/18d1ecb8-d1a1-11e7-91f9-18dbf212c2fb/tl_detect
 127.0.0.1 - - [24/Nov/2017 21:26:40] "GET /socket.io/?EIO=4&transport=websocket HTTP/1.1" 200 0 18.642115
 
 As of<2017-11-24 Fri 21:28> the above problem comes back, after move the processing to a loop with frequency 3 Hz.
+
+* Add trained model for real site into checks
+
+The following has not been tested in code block but similar one has been executed successfully in shell.
+#+BEGIN_SRC shell
+pwd
+mkdir -p ./ros/src/tl_detector/light_classification/real_model/chunks
+python ./ros/src/tl_detector/light_classification/makechunks.py ./frozen_models/frozen_real_inception/frozen_inference_graph.pb real
+ls -lt ./real_model/chunks
+#+END_SRC
+
+Actually this one works in a shell:
+
+#+BEGIN_SRC shell
+cd ./ros/src/tl_detector/light_classification
+mkdir -p real_model/chunks
+python makechunks.py python makechunks.py ../../../../frozen_models/frozen_real_inception/frozen_inference_graph.pb real
+
+#+END_SRC
