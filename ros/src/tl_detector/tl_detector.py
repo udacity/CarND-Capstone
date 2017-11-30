@@ -209,7 +209,7 @@ class TLDetector(WaypointTracker):
             #TODO find the closest visible traffic light (if one exists)
             # the index of the waypoint of the traffic light
             light_index, light_wp = self.waypoint_to_light[self.car_position]
-            FAKED_LIGHT = True
+            FAKED_LIGHT = rospy.get_param('~use_simulator_light_state', 2)
             # when the light_index is None, then is no more light in front
             if light_index is not None:
                 if FAKED_LIGHT:
