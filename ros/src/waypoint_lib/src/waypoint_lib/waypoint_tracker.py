@@ -163,6 +163,15 @@ class WaypointTracker(object):
         self.waypoint_to_light = waypoint_to_light_f(self.lights_to_waypoints, self.base_waypoints_num)
         # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
     
+        # update self.base_waypoints at light_index to accelerate when there is no red light
+        for light_index in self.lights_to_waypoints:
+            if light_index is not None:
+                # self.base_waypoints[light_index-1].twist.twist.linear.x = (
+                #     self.base_waypoints[light_index-1].twist.twist.linear.x * 1.20)
+                self.base_waypoints[light_index].twist.twist.linear.x = (
+                    self.base_waypoints[light_index].twist.twist.linear.x * 1.10)
+            # end of if light_index is not None
+        # end of for light_index in self.lights_to_waypoints
     def current_pose_cb(self, msg):
         # WORKING: Implement
         #

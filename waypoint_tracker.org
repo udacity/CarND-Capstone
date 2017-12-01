@@ -105,6 +105,7 @@ A super-class for both WaypointTracker and TLDetector
 
       <<traffic_lights_to_waypoints>>
 
+      <<add_acceleration_before_traffic_lights>>
 #+END_SRC
 ** traffic_lights_to_waypoints
 
@@ -113,7 +114,6 @@ A super-class for both WaypointTracker and TLDetector
    For each traffic light, find the closest waypoint, record the index of that waypoint.
    Then build a map from the index of a waypoint in front of the car to the waypoint for a traffic light ahead of the waypoint ahead of the car.
    The index of the traffic light should be equal or greater than the index of the waypoint ahead of the car.
-tl_detector/
 
 #+NAME:traffic_lights_to_waypoints
 #+BEGIN_SRC python :noweb tangle :tangle
@@ -166,6 +166,7 @@ tl_detector/
   # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
 #+END_SRC
 
+
 ** waypoint_to_light_f
 
    The function to construct the map between the index of a waypoint and the index of the waypoint nearest to the traffic light.
@@ -202,6 +203,29 @@ tl_detector/
                        9: (4, 10), 10: (5, 15), 11: (5, 15), 12: (5, 15), 13: (5, 15), 14: (5, 15), 15: (None, None), 16: (None, None)})
 #+END_SRC
 
+
+** add_acceleration_before_traffic_lights
+
+It is observed that after a car stopping at the red light, when the light is no longer red, the car's velocity is too small.
+
+This is an experiment to deliberately program the velocity at the base_waypoints before and on the waypoint of the traffic light to be faster,
+so that the car may move faster crossing the light's intersection. This program is permanent with base_waypoints.
+It will only take effect whene there is no red light at the intersection,
+since the velocities of the waypoints would be reprogrammed by temporary waypoint value. Thus it would not have disruptive impact to the
+required deceleration at the red light.
+
+#+NAME:add_acceleration_before_traffic_lights
+#+BEGIN_SRC python :noweb tangle :tangle
+  # update self.base_waypoints at light_index to accelerate when there is no red light
+  for light_index in self.lights_to_waypoints:
+      if light_index is not None:
+          # self.base_waypoints[light_index-1].twist.twist.linear.x = (
+          #     self.base_waypoints[light_index-1].twist.twist.linear.x * 1.20)
+          self.base_waypoints[light_index].twist.twist.linear.x = (
+              self.base_waypoints[light_index].twist.twist.linear.x * 1.10)
+      # end of if light_index is not None
+  # end of for light_index in self.lights_to_waypoints
+#+END_SRC
 
 ** current_pose_cb
     - Subscribe to /current_pose is done in __init__
@@ -382,41 +406,3 @@ Based on experiment, the following does not work.
 #+END_SRC
 
 
-* Scratch
-
-          # update self.base_waypoints at self.traffic_waypoint to accelerate when there is no red light
-          self.base_waypoints[self.traffic_waypoint-1].twist.twist.linear.x = (
-              self.base_waypoints[self.traffic_waypoint-1].twist.twist.linear.x * 1.30)
-          self.base_waypoints[self.traffic_waypoint].twist.twist.linear.x = (
-              self.base_waypoints[self.traffic_waypoint].twist.twist.linear.x * 1.10)
-* Obsoleted
-** traffic_light_waypoint
-
-   This is obsolete. It's been replaced by the computation of
-   self.waypoint_to_light = waypoint_to_light_f(lights_to_waypoints, self.base_waypoints_num) in traffic_lights_to_waypoints
-
-   A function from an index of a waypoint (ahead of the car) to the waypoint index of the traffic light.
-
-   This should be the replacement for self.find_closest_traffic_light
-
-#+NAME:traffic_light_waypoint_obsolete
-#+BEGIN_SRC python :noweb tangle :tangle
-  # construct a function or map from waypoint index in front of a car to the index of the waypoirt for traffic light
-  # I know how to do it with map, but how to do it with function?
-
-  def traffic_light_waypoint(self, waypoint_index):
-      if self.waypoint_to_light is None:
-          # construct the map
-          self.waypoint_to_light = {}
-          waypoint_start = 0
-          for light_index in range(len(self.lights_to_waypoints)):
-              for waypoint_index in range(waypoint_start, self.base_waypoints_num):
-                  if waypoint_index < self.lights_to_waypoints[light_index]:
-                      self.waypoint_to_light[waypoint_index] = self.lights_to_waypoints[light_index]
-                  # end of if waypoint_index <= self.lights_to_waypoints[light_index]
-                  waypoint_start = waypoint_index
-              # end of for i in range(self.base_waypoints_num)
-          # end of for light_index in range(len(self.lights_to_waypoints))
-      # end of if self.waypoint_to_light is None
-      return self.waypoint_to_light[waypoint_index]
-#+END_SRC
