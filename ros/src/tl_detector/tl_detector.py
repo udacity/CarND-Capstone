@@ -13,35 +13,6 @@ from waypoint_lib.waypoint_tracker import WaypointTracker
 import tf as tf_ros
 import math
 import cv2
-import yaml
-def waypoint_to_light_f(lights_to_waypoints, base_waypoints_num):
-    # implementation
-    waypoint_to_light = {}
-    light_next = 0
-
-    for waypoint_index in range(base_waypoints_num):
-        for light_index in range(light_next, len(lights_to_waypoints)):
-            waypoint_index_of_light = lights_to_waypoints[light_index]
-            if waypoint_index < waypoint_index_of_light:
-                waypoint_to_light[waypoint_index] = (light_index, waypoint_index_of_light)
-                break
-            elif lights_to_waypoints[-1] <= waypoint_index:
-                waypoint_to_light[waypoint_index] = (None, None)
-                break
-            # end of if waypoint_index <= waypoint_index_of_light
-            light_next = light_index
-        # end of for light_index in range(len(lights_to_waypoints))
-    # end of for i in range(base_waypoints_num)
-    return waypoint_to_light
-
-# test data:
-lights_to_waypoints = [1, 3, 7, 8, 10, 15]
-base_waypoints_num = 17
-
-y = waypoint_to_light_f(lights_to_waypoints, base_waypoints_num)
-# expected outcome:
-x = (y == {0: (0, 1), 1: (1, 3), 2: (1, 3), 3: (2, 7), 4: (2, 7), 5: (2, 7), 6: (2, 7), 7: (3, 8), 8: (4, 10), 8: (4, 10),
-                     9: (4, 10), 10: (5, 15), 11: (5, 15), 12: (5, 15), 13: (5, 15), 14: (5, 15), 15: (None, None), 16: (None, None)})
 
 STATE_COUNT_THRESHOLD = 2 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
 
@@ -70,8 +41,6 @@ class TLDetector(WaypointTracker):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_array_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_color_cb)
         
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
         # self.previous_traffic_light_position = 0
         # self.number_traffic_lights_passed = 0
 
@@ -98,56 +67,6 @@ class TLDetector(WaypointTracker):
         # to be able to compute distance among any two base_waypoints.
         WaypointTracker.base_waypoints_process(self, msg)
     
-        # Construct the map, self.waypoint_to_light from a waypoint index to the traffic light
-        # in terms of waypoint index
-    
-        # assumption that a traffic light can only have one waypoint close to it.
-        # or one waypoint can have at most one traffic light near it.
-        
-        # implementation:
-        # given a list of coordinates of traffic lights
-        # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
-        light_cursor = 0
-        base_waypoint_search_cursor = 0
-        
-        dl = lambda a, b: math.sqrt((a.x-b[0])**2 + (a.y-b[1])**2)
-        
-        # The list of the waypoint index of the traffic lights
-        lights_to_waypoints = []
-        
-        for light_cursor in range(len(stop_line_positions)):
-            # take, l, the first of the remaining traffic lights coordinates list, self.stop_line_positions
-            if base_waypoint_search_cursor < self.base_waypoints_num:
-                dist_shortest = dl(self.base_waypoints[base_waypoint_search_cursor].pose.pose.position,
-                                    stop_line_positions[light_cursor])
-                light_waypoint_index = base_waypoint_search_cursor
-        
-                # for l to find the closest waypoint in the remaining base_waypoints, w
-                for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num):
-                    dist = dl(self.base_waypoints[i].pose.pose.position,
-                              stop_line_positions[light_cursor])
-                    if dist < dist_shortest:
-                        dist_shortest = dist
-                        light_waypoint_index = i
-                    # end of if dist < d_shortest
-                # end of for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num)
-                # record the mapping from l to w
-                lights_to_waypoints.append(light_waypoint_index)
-                # remove l from the list of traffic lights, and w from the base_points
-                base_waypoint_search_cursor = light_waypoint_index + 1
-            else:
-                # there is extra traffic lights after having found the traffic light for the last waypoint.
-                lights_to_waypoints.append(None)
-            # end of if base_waypoint_search_cursor < self.base_waypoints_num
-        # end of for light_cursor in range(len(self.stop_line_positions))
-        # until there is no more traffic light, or no more waypoint
-        rospy.loginfo('Waypoints for traffic lights: %r' % repr(lights_to_waypoints))
-        
-        # construct the map, self.waypoint_to_light, the map from waypoint index to the index of the
-        # traffic light in terms of the closest waypoint index
-        self.waypoint_to_light = waypoint_to_light_f(lights_to_waypoints, self.base_waypoints_num)
-        # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
     def current_pose_cb(self, msg):
         self.pose = msg
     def traffic_array_cb(self, msg):
@@ -209,7 +128,7 @@ class TLDetector(WaypointTracker):
             #TODO find the closest visible traffic light (if one exists)
             # the index of the waypoint of the traffic light
             light_index, light_wp = self.waypoint_to_light[self.car_position]
-            FAKED_LIGHT = rospy.get_param('~use_simulator_light_state', 2)
+            FAKED_LIGHT = rospy.get_param('~use_simulator_light_state', False)
             # when the light_index is None, then is no more light in front
             if light_index is not None:
                 if FAKED_LIGHT:

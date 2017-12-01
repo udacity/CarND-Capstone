@@ -2,6 +2,8 @@ import copy
 import math
 import rospy
 
+import yaml
+
 import tf as tf_ros                      # This is of ROS geometry, not of TensorFlow!
 def get_yaw(orientation):
     """
@@ -32,13 +34,46 @@ def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
     # assuming the orientation angle clockwise being positive
     return local_x, local_y
 
+def waypoint_to_light_f(lights_to_waypoints, base_waypoints_num):
+    # implementation
+    waypoint_to_light = {}
+    light_next = 0
+
+    for waypoint_index in range(base_waypoints_num):
+        for light_index in range(light_next, len(lights_to_waypoints)):
+            waypoint_index_of_light = lights_to_waypoints[light_index]
+            if waypoint_index < waypoint_index_of_light:
+                waypoint_to_light[waypoint_index] = (light_index, waypoint_index_of_light)
+                break
+            elif lights_to_waypoints[-1] <= waypoint_index:
+                waypoint_to_light[waypoint_index] = (None, None)
+                break
+            # end of if waypoint_index <= waypoint_index_of_light
+            light_next = light_index
+        # end of for light_index in range(len(lights_to_waypoints))
+    # end of for i in range(base_waypoints_num)
+    return waypoint_to_light
+
+# test data:
+lights_to_waypoints = [1, 3, 7, 8, 10, 15]
+base_waypoints_num = 17
+
+y = waypoint_to_light_f(lights_to_waypoints, base_waypoints_num)
+# expected outcome:
+x = (y == {0: (0, 1), 1: (1, 3), 2: (1, 3), 3: (2, 7), 4: (2, 7), 5: (2, 7), 6: (2, 7), 7: (3, 8), 8: (4, 10), 8: (4, 10),
+                     9: (4, 10), 10: (5, 15), 11: (5, 15), 12: (5, 15), 13: (5, 15), 14: (5, 15), 15: (None, None), 16: (None, None)})
+
 class WaypointTracker(object):
     def __init__(self):
         self.base_waypoints = None
         self.base_waypoints_num = None
         self.pose = None
+        self.lights_to_waypoints = []  # The list of the waypoint index of the traffic lights
 
         self.last_closest_front_waypoint_index = 0
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
+
         # this is a super_class, so it will not start loop nor spin()
         # it expects the subclass will implement the appropriate
 
@@ -77,6 +112,57 @@ class WaypointTracker(object):
                 # end of if (dist < self.shortest_dist_to_next_waypoint)
             # end of for i in range(self.base_waypoints_num - 1)
         # end of if self.base_waypoints is None
+        # Construct the map, self.waypoint_to_light from a waypoint index to the traffic light
+        # in terms of waypoint index
+    
+        # assumption that a traffic light can only have one waypoint close to it.
+        # or one waypoint can have at most one traffic light near it.
+        
+        # implementation:
+        # given a list of coordinates of traffic lights
+        # List of positions that correspond to the line to stop in front of for a given intersection
+        stop_line_positions = self.config['stop_line_positions']
+        light_cursor = 0
+        base_waypoint_search_cursor = 0
+        
+        dl = lambda a, b: math.sqrt((a.x-b[0])**2 + (a.y-b[1])**2)
+        
+        # The list of the waypoint index of the traffic lights
+        self.lights_to_waypoints = []
+        
+        for light_cursor in range(len(stop_line_positions)):
+            # take, l, the first of the remaining traffic lights coordinates list, self.stop_line_positions
+            if base_waypoint_search_cursor < self.base_waypoints_num:
+                dist_shortest = dl(self.base_waypoints[base_waypoint_search_cursor].pose.pose.position,
+                                    stop_line_positions[light_cursor])
+                light_waypoint_index = base_waypoint_search_cursor
+        
+                # for l to find the closest waypoint in the remaining base_waypoints, w
+                for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num):
+                    dist = dl(self.base_waypoints[i].pose.pose.position,
+                              stop_line_positions[light_cursor])
+                    if dist < dist_shortest:
+                        dist_shortest = dist
+                        light_waypoint_index = i
+                    # end of if dist < d_shortest
+                # end of for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num)
+                # record the mapping from l to w
+                self.lights_to_waypoints.append(light_waypoint_index)
+                # remove l from the list of traffic lights, and w from the base_points
+                base_waypoint_search_cursor = light_waypoint_index + 1
+            else:
+                # there is extra traffic lights after having found the traffic light for the last waypoint.
+                self.lights_to_waypoints.append(None)
+            # end of if base_waypoint_search_cursor < self.base_waypoints_num
+        # end of for light_cursor in range(len(self.stop_line_positions))
+        # until there is no more traffic light, or no more waypoint
+        rospy.loginfo('Waypoints for traffic lights: %r' % repr(self.lights_to_waypoints))
+        
+        # construct the map, self.waypoint_to_light, the map from waypoint index to the index of the
+        # traffic light in terms of the closest waypoint index
+        self.waypoint_to_light = waypoint_to_light_f(self.lights_to_waypoints, self.base_waypoints_num)
+        # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
+    
     def current_pose_cb(self, msg):
         # WORKING: Implement
         #
