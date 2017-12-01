@@ -254,6 +254,11 @@ then the waypoint is front of my_car.
   TODO (for Yousuf and Aaron): Stopline location for each traffic light.
   '''
   LOOKAHEAD_WPS = 30 # 200 # Number of waypoints we will publish. You can change this number
+  # LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+  MAX_DECEL = 5.0
+  MAX_ACCEL = 1.0
+  SAFE_DIST = 17.0 # 32.0, 25 is good value to stop, but too far from the light
+
   LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
   SAEF_TURNING_SPEED = 3.0       # meters/second
 
@@ -309,6 +314,9 @@ then the waypoint is front of my_car.
       <<deceleration-policy>>
       <<cruise_unless_near_the_end>>
       <<loop>>
+
+      <<decelerate>>
+
       <<base_waypoints_cb>>
       <<traffic_waypoint_cb>>
       <<current_velocity_cb>>
@@ -659,38 +667,134 @@ Process one pose message in self.pose
 First find the next closest waypoint in front of the vehicle.
 Then use that to generate the rest of the final_waypoints.
 
+**** the algorithm to process pose
+#+BEGIN_SRC plantuml :file compute-publish-final-wayponts.png
+@startuml
+if (self.current_pose and self.base_waypoints) then (exist)
+  :compute self.last_closest_front_waypoint_index;
+  :compute min_dist_stop based on self.current_velocity;
+  if (self.traffic_waypoint and self.traffic_light_red) then (exists & valid)
+    :compute tl_dist = the distance between the index of waypoint ahead and the index of the traffic light;
+    if (tl_dist < min_dist_stop) then (close enough to stop)
+      if (there is waypoints ahead before the traffic_waypoint
+        including the traffic light) then (not empty)
+        :prepare waypoints from
+        self.last_closest_front_waypoint_index
+        to the traffic_waypoint;
+        :compute decelerate velocity for the waypoints;
+      endif
+    else (too far for braking)
+      :extract waypoints
+      from next_index for LOOKAHEAD_WPS number;
+    endif
+  else (no traffic light ahead)
+    :extract waypoints
+    from next_index for LOOKAHEAD_WPS number;
+  endif
+  :publish the prepared waypoints;
+endif
+@enduml
+#+END_SRC
+
+#+RESULTS:
+[[file:compute-publish-final-wayponts.png]]
+
+**** Implementation to process pose
+
 #+NAME:process-pose
 #+BEGIN_SRC python :noweb tangle :tangle
-  self.get_closest_waypoint(self.pose.pose)  # as side effect stored in self.last_closest_front_waypoint_index =
-  if self.last_closest_front_waypoint_index:
-      # generate final_waypoints
-      final_waypoints_count = 0
-      lookahead_dist = 0  # the accumulated distance of the looking ahead
-      lookahead_time = 0  # the lookahead time
+  self.get_closest_waypoint(self.pose.pose)  # as side effect stored in self.last_closest_front_waypoint_index
+  if self.last_closest_front_waypoint_index is not None:
+      # compute minimum_stop_dist to consider if need braking
 
-      final_waypoints = []
-      accumulated_turning = 0
-      # dist_to_here_from_current = []
+      if self.current_velocity is not None:
+          min_stop_dist = self.current_velocity**2 / (2.0 * MAX_DECEL) + SAFE_DIST
+      else:
+          min_stop_dist = SAFE_DIST
+      # end of if self.current_velocity is not None
 
-      # modulize the code to be less dependent
-      j = self.last_closest_front_waypoint_index
-      while (# (lookahead_time < LOOKAHEAD_TIME_THRESHOLD) and
-              (final_waypoints_count < LOOKAHEAD_WPS) and
-              (j < self.base_waypoints_num)):
-          waypoint = copy.deepcopy(self.base_waypoints[j])
-          j = (j + 1) # % self.base_waypoints_num
-          final_waypoints_count += 1
-          final_waypoints.append(waypoint)
-      # end of while (LOOKAHEAD_TIME_THRESHOLD <= lookahead_time) or (LOOKAHEAD_WPS <= final_waypoints_count)
-
-      # rospy.loginfo('Lookahead threshold reached: final_waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'
-      #               % (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))
-
-      <<adjust_velocity_for_traffic_light>>
+      if (self.traffic_waypoint is not None) and self.traffic_light_red:
+          tl_dist = self.distance(self.last_closest_front_waypoint_index, self.traffic_waypoint)
+          if (tl_dist < min_stop_dist):
+              if (self.last_closest_front_waypoint_index <= self.traffic_waypoint):
+                  final_waypoints = []
+                  for i in range(self.last_closest_front_waypoint_index, self.traffic_waypoint+1):
+                      final_waypoints.append(copy.deepcopy(self.base_waypoints[i]))
+                  # end of for i in range(self.last_closest_front_waypoint_index, self.traffic_waypoint)
+                  final_waypoints = self.decelerate(self.last_closest_front_waypoint_index, self.traffic_waypoint, final_waypoints)
+              # end of if (self.last_closest_front_waypoint_index < self.traffic_waypoint)
+          else:                   # too far to brake
+              final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index :
+                                                              (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
+          # end of if (tl_dist < min_stop_dist)
+      else:                       # no traffic light ahead
+          final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index :
+                                                          (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
+      # end of if (self.traffic_waypoint is not None) and self.traffic_light_red
 
       # publish to /final_waypoints, need to package final_waypoints into Lane message
       publish_Lane(self.final_waypoints_pub, final_waypoints)
-  # end of if self.last_closest_front_waypoint_index
+  # end of if self.last_closest_front_waypoint_index is not None
+
+#+END_SRC
+
+** decelerate
+
+#+NAME:decelerate
+#+BEGIN_SRC python :noweb tangle :tangle
+  def decelerate(self, start, end, waypoints):
+      """
+      arrange the velocities of the waypoints such that
+      waypoints[-1].linear.x = 0
+      and the deceleration should be smooth.
+      waypoints are an array of waypoints to have velocity reduced.
+      start and end are the index in the self.base_waypoints array
+      for the start and the end of the waypoints.
+      """
+      last = waypoints[-1]
+      last.twist.twist.linear.x = 0.0
+      for i in range(len(waypoints)-2, -1, -1):
+          wp = waypoints[i]
+          dist = self.distance(i+start, end)
+          dist = max(0.0, dist-SAFE_DIST)
+          vel  = math.sqrt(2 * MAX_DECEL * dist)
+          if vel < 1.0:
+              vel = 0.0
+          wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+          rospy.loginfo("wp.twist.twist.linear.x {}".format(wp.twist.twist.linear.x))
+      return waypoints
+
+#+END_SRC
+
+
+#+NAME:experiment
+#+BEGIN_SRC python :noweb tangle :tangle
+  upto = 10+1
+  frm = 3
+  x = range(frm, upto)
+
+  y = range(upto-1, frm-1, -1)
+
+  ws = [0, 1, 2, 3, 4, 5]
+
+
+  for w in ws:
+      print(w)
+
+  for w in ws[:-1]:
+      print(w)
+
+  for w in ws[:-1][::-1]:
+      print(w)
+
+  z = range(-2, 0)
+
+  for i in range(-5, -3):
+      print(ws[i])
+
+
+  for i in range(len(ws)-2, -1, -1):
+      print(i)
 #+END_SRC
 
 *** compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS
