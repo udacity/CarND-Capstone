@@ -14,7 +14,7 @@ import tf as tf_ros
 import math
 import cv2
 
-STATE_COUNT_THRESHOLD = 2 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
+STATE_COUNT_THRESHOLD = 3 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
 
 class TLDetector(WaypointTracker):
     def __init__(self):
@@ -28,6 +28,8 @@ class TLDetector(WaypointTracker):
         self.waypoint_to_light = None
         self.loop_freq = rospy.get_param('~loop_freq', 2)
         self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
+        
+        self.FAKED_LIGHT = rospy.get_param('~use_simulator_light_state', False)
         self.current_pose_sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
         
@@ -128,29 +130,32 @@ class TLDetector(WaypointTracker):
             #TODO find the closest visible traffic light (if one exists)
             # the index of the waypoint of the traffic light
             light_index, light_wp = self.waypoint_to_light[self.car_position]
-            FAKED_LIGHT = rospy.get_param('~use_simulator_light_state', False)
-            # when the light_index is None, then is no more light in front
-            if light_index is not None:
-                if FAKED_LIGHT:
-                    # rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
-                    #     light_index, self.lights[light_index].state,
-                    #     self.lights[light_index].state == TrafficLight.RED))
-                    state = self.lights[light_index].state
-                else:
-                    cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-    
-                    #Get classification
-                    state = self.light_classifier.get_classification(cv_image)
-    
-                # end of if FAKED_LIGHT
+            if (100 < self.distance(self.car_position, light_wp)):  # beyond 100 meters
+                return light_wp, TrafficLight.UNKNOWN
             else:
-                state = TrafficLight.UNKNOWN
-            # end of if light_index is not None
-            # if (state==TrafficLight.RED):
-            #     rospy.loginfo('car index: %r; light_index: %r; light waypoint: %r; light is RED: %r' %
-            #                   (self.car_position, light_index, light_wp, state==TrafficLight.RED))
-            # end of if (state==TrafficLight.RED)
+            # when the light_index is None, then is no more light in front
+                if light_index is not None:
+                    if self.FAKED_LIGHT:
+                        # rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
+                        #     light_index, self.lights[light_index].state,
+                        #     self.lights[light_index].state == TrafficLight.RED))
+                        state = self.lights[light_index].state
+                    else:
+                        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
     
+                        #Get classification
+                        state = self.light_classifier.get_classification(cv_image)
+    
+                    # end of if self.FAKED_LIGHT
+                else:
+                    state = TrafficLight.UNKNOWN
+                    # end of if light_index is not None
+                    # if (state==TrafficLight.RED):
+                    #     rospy.loginfo('car index: %r; light_index: %r; light waypoint: %r; light is RED: %r' %
+                    #                   (self.car_position, light_index, light_wp, state==TrafficLight.RED))
+                    # end of if (state==TrafficLight.RED)
+    
+            # end of if (100 < self.distance(self.car_position, light_wp))
             return light_wp, state
         # end of if (self.pose)
         return None, TrafficLight.UNKNOWN
@@ -159,37 +164,32 @@ class TLDetector(WaypointTracker):
         while not rospy.is_shutdown():
             if self.camera_image is not None:
                 light_wp, state = self.process_traffic_lights()
-                # only consider the traffic image when the car is close enough to the traffic light, say 20 waypoints
-                if ((light_wp is not None) and (light_wp - self.car_position) < 100): # and state:
-                    # Note: state might have value 0 and light_wp and 0 == False!
-                    '''
+                '''
                     Publish upcoming red lights at camera frequency.
                     Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
                     of times till we start using it. Otherwise the previous stable state is
                     used.
                     '''
-                    # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
-                    # (abs(self.last_wp) != light_wp if self.last_wp else True) or
-                    if (self.state is None) or (self.state != state):  # state changed
-                        rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %d' %
-                        (self.state_count, self.state, state, light_wp))
-                        self.state_count = 0
-                        self.state = state
-                        # self.last_state = self.state
-                        # self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
-                    elif self.state_count >= STATE_COUNT_THRESHOLD:
-                        self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
+                # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
+                if (self.state is None) or (self.state != state):  # state changed
+                    rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %d' %
+                                  (self.state_count, self.state, state, light_wp))
+                    self.state_count = 0
+                    self.state = state
+                    # self.last_state = self.state
+                    # self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
+                elif self.state_count >= STATE_COUNT_THRESHOLD:
+                    self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
+                    self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                    rospy.loginfo('stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %d' %
+                                  (self.state_count, self.state, state, self.last_wp))
+                else:
+                    if self.last_wp is not None:
                         self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                        rospy.loginfo('stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %d' %
-                                    (self.state_count, self.state, state, self.last_wp))
-                    else:
-                        if self.last_wp is not None:
-                            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
                         # end of if self.last_wp is not None
                         rospy.loginfo('not enough state change: old state: %r; keep publish the old traffic_waypoint: %r' % (self.state, self.last_wp))
-                    # end of if self.state != state
-                    self.state_count += 1
-                # end of if (light_wp is not None) and state
+                # end of if (self.state is None) or self.state != state
+                self.state_count += 1
                 self.camera_image = None
             # end of if self.camera_image is not None
             rate.sleep()
