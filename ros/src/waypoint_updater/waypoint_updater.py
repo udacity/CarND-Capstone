@@ -31,7 +31,7 @@ LOOKAHEAD_WPS = 30 # 200 # Number of waypoints we will publish. You can change t
 # LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 MAX_DECEL = 5.0
 MAX_ACCEL = 1.0
-SAFE_DIST = 17.0 # 32.0, 25 is good value to stop, but too far from the light
+SAFE_DIST = 27.0 # 32.0, 25 is good value to stop, but too far from the light, 17 is better than 25 before the change of filter only do when non_red_to_red
 
 LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
 SAEF_TURNING_SPEED = 3.0       # meters/second
@@ -69,6 +69,8 @@ class WaypointUpdater(WaypointTracker):
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         self.traffic_waypoint = None
         self.new_traffic_waypoint = False  # whether there is new traffic_waypoint data to process
+        self.traffic_light_red = False
+        self.prev_traffic_light_red = False
 
         self.obstacle_waypoint = None
         self.current_velocity = None
@@ -174,10 +176,10 @@ class WaypointUpdater(WaypointTracker):
                             final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index :
                                                                             (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
                         # end of if (tl_dist < min_stop_dist)
-                    else:                       # no traffic light ahead
+                    else:                       # no traffic light ahead or no turning red light
                         final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index :
                                                                         (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
-                    # end of if (self.traffic_waypoint is not None) and self.traffic_light_red
+                    # end of if (self.traffic_waypoint is not None) and self.non_red_to_red()
                 
                     # publish to /final_waypoints, need to package final_waypoints into Lane message
                     publish_Lane(self.final_waypoints_pub, final_waypoints)
@@ -234,6 +236,7 @@ class WaypointUpdater(WaypointTracker):
     def traffic_waypoint_cb(self, msg):
         if self.traffic_waypoint != msg.data:
             self.new_traffic_waypoint = True
+            self.prev_traffic_light_red = self.traffic_light_red
             self.traffic_waypoint = msg.data
             if msg.data < 0:
                 self.traffic_light_red = False
@@ -246,6 +249,15 @@ class WaypointUpdater(WaypointTracker):
             self.new_traffic_waypoint = False
         # end of if self.traffic_waypoint != msg.data
     
+    def red_to_non_red(self):
+        return (self.new_traffic_waypoint and
+                self.prev_traffic_light_red and
+                (not self.traffic_light_red))
+    
+    def non_red_to_red(self):
+        return (self.new_traffic_waypoint and
+                (not self.prev_traffic_light_red) and
+                self.traffic_light_red)
     def current_velocity_cb(self, msg):
         self.current_velocity = msg.twist.linear.x
     def obstacle_cb(self, msg):

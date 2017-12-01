@@ -146,9 +146,9 @@ class TLDetector(WaypointTracker):
             else:
                 state = TrafficLight.UNKNOWN
             # end of if light_index is not None
-            if (state==TrafficLight.RED):
-                rospy.loginfo('car index: %r; light_index: %r; light waypoint: %r; light is RED: %r' %
-                              (self.car_position, light_index, light_wp, state==TrafficLight.RED))
+            # if (state==TrafficLight.RED):
+            #     rospy.loginfo('car index: %r; light_index: %r; light waypoint: %r; light is RED: %r' %
+            #                   (self.car_position, light_index, light_wp, state==TrafficLight.RED))
             # end of if (state==TrafficLight.RED)
     
             return light_wp, state
@@ -171,8 +171,8 @@ class TLDetector(WaypointTracker):
                     # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
                     # (abs(self.last_wp) != light_wp if self.last_wp else True) or
                     if (self.state is None) or (self.state != state):  # state changed
-                        rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d' %
-                        (self.state_count, self.state, state))
+                        rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %d' %
+                        (self.state_count, self.state, state, light_wp))
                         self.state_count = 0
                         self.state = state
                         # self.last_state = self.state

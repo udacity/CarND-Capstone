@@ -105,7 +105,6 @@ A super-class for both WaypointTracker and TLDetector
 
       <<traffic_lights_to_waypoints>>
 
-      <<add_acceleration_before_traffic_lights>>
 #+END_SRC
 ** traffic_lights_to_waypoints
 
@@ -222,7 +221,7 @@ required deceleration at the red light.
           # self.base_waypoints[light_index-1].twist.twist.linear.x = (
           #     self.base_waypoints[light_index-1].twist.twist.linear.x * 1.20)
           self.base_waypoints[light_index].twist.twist.linear.x = (
-              self.base_waypoints[light_index].twist.twist.linear.x * 1.10)
+              self.base_waypoints[light_index].twist.twist.linear.x * 1.70)
       # end of if light_index is not None
   # end of for light_index in self.lights_to_waypoints
 #+END_SRC
