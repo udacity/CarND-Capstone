@@ -53,11 +53,26 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        # Loop Rate
+        self.loop_frequency = 50 # 50 Hz
+
         # State
         self.dbw_enabled = False
+        self.target_angular_velocity = 0.
+        self.target_linear_velocity = 0.
+
+        self.current_angular_velocity = 0.
+        self.current_linear_velocity = 0.
 
         # TODO: Create `TwistController` object
-        # self.controller = TwistController(<Arguments you wish to provide>)
+        self.controller = TwistController( wheel_base,
+                                           steer_ratio,
+                                           min_speed,
+                                           max_lat_accel,
+                                           max_steer_angle,
+                                           accel_limit,
+                                           decel_limit,
+                                           loop_frequency )
 
         # TODO: Subscribe to all the topics you need to
         ospy.Subscriber('/current_velocity', TwistStamped, self.velocity_callback)
@@ -70,6 +85,10 @@ class DBWNode(object):
         """
         /current_velocity topic callback handler.
         msg : geometry_msgs.msg.TwistStamped
+
+        Updates state:
+        - current_angular_velocity
+        - current_angular_velocity
         """
         print('current velocity message: ' + msg)
 
@@ -77,6 +96,9 @@ class DBWNode(object):
         """
         /vehicle/dbw_enabled topic callback handler.
         msg: Bool indicates if the the car is under drive-by-wire control(True) or if the driver is controlling the car(False)
+
+        Updates state:
+        - dbw_enabled
         """
         self.dbw_enabled = msg
 
@@ -84,21 +106,25 @@ class DBWNode(object):
         """
         /twist_cmd topic callback handler.
         msg : geometry_msgs.msg.TwistStamped
+
+        Updates state:
+        - target_angular_velocity
+        - target_angular_velocity
         """
         print('twist command message : ' + msg)
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(self.loop_frequency)
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            throttle, brake, steering = self.controller.control( self.target_angular_velocity,
+                                                                 self.target_linear_velocity,
+                                                                 self.current_angular_velocity,
+                                                                 self.current_linear_velocity,
+                                                                 self.dbw_enabled )
+            if self.dbw_enabled:
+              self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
