@@ -131,6 +131,10 @@ class TLDetector(WaypointTracker):
             #TODO find the closest visible traffic light (if one exists)
             # the index of the waypoint of the traffic light
             light_index, light_wp = self.waypoint_to_light[self.car_position]
+            if light_wp is None:
+                return light_wp, TrafficLight.UNKNOWN
+            # end of if light_wp is None
+    
             if (self.admissible_distance_for_image < self.distance(self.car_position, light_wp)):  # beyond 100 meters
                 return light_wp, TrafficLight.UNKNOWN
             else:
@@ -173,17 +177,20 @@ class TLDetector(WaypointTracker):
                     '''
                 # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
                 if (self.state is None) or (self.state != state):  # state changed
-                    rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %d' %
+                    rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %r' %
                                   (self.state_count, self.state, state, light_wp))
                     self.state_count = 0
                     self.state = state
                     # self.last_state = self.state
                     # self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
-                elif self.state_count >= STATE_COUNT_THRESHOLD:
+                elif (self.state_count >= STATE_COUNT_THRESHOLD) and light_wp is not None:
                     self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
                     self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                    rospy.loginfo('stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %d' %
-                                  (self.state_count, self.state, state, self.last_wp))
+                    if (state == TrafficLight.RED):
+                        rospy.loginfo(
+                            'stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
+                            (self.state_count, self.state, state, self.last_wp))
+                    # end of if (state == TrafficLight.RED)
                 else:
                     if self.last_wp is not None:
                         self.upcoming_red_light_pub.publish(Int32(self.last_wp))
