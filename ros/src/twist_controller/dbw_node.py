@@ -85,8 +85,9 @@ class DBWNode(object):
                     self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled)
 
                 # Log data for car control analysis
-                self.log_data(self.twist_cmd.linear.x, self.twist_cmd.angular.z, self.current_velocity.linear.x,
-                              self.dbw_enabled, throttle, brake, steering)
+                if self.log_to_csv:
+                    self.log_data(self.twist_cmd.linear.x, self.twist_cmd.angular.z, self.current_velocity.linear.x,
+                                self.dbw_enabled, throttle, brake, steering)
 
                 # Ensure dbw is enabled (not manual mode)
                 if self.dbw_enabled:
