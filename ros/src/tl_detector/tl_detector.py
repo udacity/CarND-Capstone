@@ -14,7 +14,19 @@ import tf as tf_ros
 import math
 import cv2
 
-STATE_COUNT_THRESHOLD = 0 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
+def color_code_to_label(color_code):
+      if color_code == TrafficLight.GREEN:
+          color_label = "GREEN"
+      elif color_code == TrafficLight.RED:
+          color_label = "RED"
+      elif color_code == TrafficLight.YELLOW:
+          color_label = "YELLOW"
+      else:
+          color_label = "UNKNOWN"
+      # end of if color_code == TrafficLight.GREEN
+      return color_label
+
+STATE_COUNT_THRESHOLD = 3 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
 
 class TLDetector(WaypointTracker):
     def __init__(self):
@@ -177,25 +189,34 @@ class TLDetector(WaypointTracker):
                     '''
                 # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
                 if (self.state is None) or (self.state != state):  # state changed
-                    rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %r' %
-                                  (self.state_count, self.state, state, light_wp))
+                    # rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %r' %
+                    #               (self.state_count, self.state, state, light_wp))
+                    rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; changed: state or traffic light index".format(
+                        color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp))
+    
                     self.state_count = 0
                     self.state = state
                     # self.last_state = self.state
                     # self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
                 elif (self.state_count >= STATE_COUNT_THRESHOLD) and light_wp is not None:
-                    self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
-                    self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                    if (state == TrafficLight.RED):
-                        rospy.loginfo(
-                            'stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
-                            (self.state_count, self.state, state, self.last_wp))
+                    if (state != TrafficLight.UNKNOWN):
+                        # rospy.loginfo(
+                        #     'stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
+                        #     (self.state_count, self.state, state, self.last_wp))
+                        self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
+                        self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                        rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; stable; reporting {}".format(
+                            color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
+    
                     # end of if (state == TrafficLight.RED)
                 else:
                     if self.last_wp is not None:
                         self.upcoming_red_light_pub.publish(Int32(self.last_wp))
                         # end of if self.last_wp is not None
-                        rospy.loginfo('not enough state change: old state: %r; keep publish the old traffic_waypoint: %r' % (self.state, self.last_wp))
+                        # rospy.loginfo('not enough state change: old state: %r; keep publish the old traffic_waypoint: %r' % (self.state, self.last_wp))
+                        rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; not yet stable: reporting last state and light traffic index, reporting {}".format(
+                            color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
+    
                 # end of if (self.state is None) or self.state != state
                 self.state_count += 1
                 self.camera_image = None

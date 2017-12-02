@@ -180,14 +180,20 @@ class WaypointTracker(object):
     
             local_x = -1
             i = self.last_closest_front_waypoint_index - 1
-            while ((i < self.base_waypoints_num-1) and (local_x <= 0)):
+            while (((i+1) < (self.base_waypoints_num-1)) and (local_x <= 0)):
                 i = (i + 1) # % self.base_waypoints_num
                 # rospy.loginfo('index of i, searching for the nearest waypoint in front: %r' % i)
-                waypoint = self.base_waypoints[i]
+                try:
+                    waypoint = self.base_waypoints[i]
+                except IndexError as err:
+                    rospy.loginfo("IndexError i = {}, self.base_waypoints_num = {}, len(self.base_waypoints) {}".format(i, self.base_waypoints_num, len(self.base_waypoints)))
+                    raise(err)
+                # end of try
+    
                 w_pos = waypoint.pose.pose.position
                 local_x, local_y = to_local_coordinates(current_pose.x, current_pose.y, yaw,
                                                         w_pos.x, w_pos.y)
-            # end of while (local_x < 0)
+            # end of while (local_x <= 0)
             self.last_closest_front_waypoint_index = i
             # make the update last_closest_front_waypoint_index atomic with the search of the next one.
             return i
