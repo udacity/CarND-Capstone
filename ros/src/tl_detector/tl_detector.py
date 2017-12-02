@@ -14,7 +14,7 @@ import tf as tf_ros
 import math
 import cv2
 
-STATE_COUNT_THRESHOLD = 3 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
+STATE_COUNT_THRESHOLD = 0 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
 
 class TLDetector(WaypointTracker):
     def __init__(self):
@@ -30,6 +30,7 @@ class TLDetector(WaypointTracker):
         self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
         
         self.FAKED_LIGHT = rospy.get_param('~use_simulator_light_state', False)
+        self.admissible_distance_for_image = rospy.get_param('~admissible_distance_for_image', 80)
         self.current_pose_sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
         
@@ -130,7 +131,7 @@ class TLDetector(WaypointTracker):
             #TODO find the closest visible traffic light (if one exists)
             # the index of the waypoint of the traffic light
             light_index, light_wp = self.waypoint_to_light[self.car_position]
-            if (100 < self.distance(self.car_position, light_wp)):  # beyond 100 meters
+            if (self.admissible_distance_for_image < self.distance(self.car_position, light_wp)):  # beyond 100 meters
                 return light_wp, TrafficLight.UNKNOWN
             else:
             # when the light_index is None, then is no more light in front
