@@ -1,4 +1,6 @@
 *.py[cod]
+*.swp
+*.swo
 
 build
 devel
