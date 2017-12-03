@@ -26,7 +26,7 @@
 
    <<color_code_to_label>>
 
-   STATE_COUNT_THRESHOLD = 3 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
+   STATE_COUNT_THRESHOLD = 1 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
 
    class TLDetector(WaypointTracker):
        def __init__(self):
