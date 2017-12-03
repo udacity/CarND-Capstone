@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from tf.transformations import euler_from_quaternion
 
 import math
 
@@ -41,12 +42,18 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+
+        # get nextWaypoint in front of car
+        nextWaypoint = self.getNextWaypoint(msg.pose)
+
+        self.final_waypoints = self.base_waypoints.waypoints[nextWaypoint:(nextWaypoint + LOOKAHEAD_WPS)]
+
+        self.publish()
+
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.base_waypoints = waypoints
+
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -69,6 +76,70 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    def euclidianDistance(self, x1, y1, x2, y2):
+        return math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
+
+
+    def publish(self):
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = self.final_waypoints
+        self.final_waypoints_pub.publish(lane)
+
+
+    def getClosestWaypoint(self, pose):
+
+        closestLen = 100000
+        closestWaypoint = 0
+
+        # get car x and y from pose message
+        car_x = pose.position.x
+        car_y = pose.position.y
+
+        for i in range(len(self.base_waypoints.waypoints)):
+
+            # get x and y for waypoint being processed
+            waypoint_x = self.base_waypoints.waypoints[i].pose.pose.position.x
+            waypoint_y = self.base_waypoints.waypoints[i].pose.pose.position.y
+
+            distance = self.euclidianDistance(car_x, car_y, waypoint_x, waypoint_y)
+
+            if distance < closestLen:
+                closestLen = distance
+                closestWaypoint = i
+
+        return closestWaypoint
+
+
+    def getNextWaypoint(self, pose):
+
+        # car location and heading
+        car_angles = euler_from_quaternion([
+            pose.orientation.x, pose.orientation.y,
+            pose.orientation.z, pose.orientation.w
+        ])
+        car_heading = car_angles[2]
+        car_x = pose.position.x
+        car_y = pose.position.y
+
+        closestWaypoint = self.getClosestWaypoint(pose)
+
+        waypoint_x = self.base_waypoints.waypoints[closestWaypoint].pose.pose.position.x
+        waypoint_y = self.base_waypoints.waypoints[closestWaypoint].pose.pose.position.y
+
+        # this calculates heading between carpoint/position and waypoint in radians
+        heading = math.atan2((waypoint_y - car_y),(waypoint_x - car_x))
+
+        # angle between car heading and heading
+        angle = abs(car_heading - heading)
+
+        if angle > math.pi:
+            closestWaypoint += 1
+
+        return closestWaypoint
+
 
 
 if __name__ == '__main__':
