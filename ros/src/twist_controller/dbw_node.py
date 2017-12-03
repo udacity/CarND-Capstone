@@ -73,10 +73,12 @@ class DBWNode(object):
                                       max_steer_angle,
                                       accel_limit,
                                       decel_limit,
-                                      self.loop_frequency )
+                                      self.loop_frequency,
+                                      vehicle_mass,
+                                      wheel_radius )
 
         # TODO: Subscribe to all the topics you need to
-        ospy.Subscriber('/current_velocity', TwistStamped, self.velocity_callback)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_callback)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_callback)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_callback)
 
@@ -88,10 +90,11 @@ class DBWNode(object):
         msg : geometry_msgs.msg.TwistStamped
 
         Updates state:
-        - current_angular_velocity
+        - current_linear_velocity
         - current_angular_velocity
         """
-        print('current velocity message: ' + msg)
+        self.current_linear_velocity = msg.twist.linear.x
+        self.current_angular_velocity = msg.twist.angular.z
 
     def dbw_enabled_callback(self, msg):
         """
@@ -109,17 +112,18 @@ class DBWNode(object):
         msg : geometry_msgs.msg.TwistStamped
 
         Updates state:
-        - target_angular_velocity
+        - target_linear_velocity
         - target_angular_velocity
         """
-        print('twist command message : ' + msg)
+        self.target_linear_velocity = msg.twist.linear.x
+        self.target_angular_velocity = msg.twist.angular.z
 
     def loop(self):
         rate = rospy.Rate(self.loop_frequency)
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            throttle, brake, steering = self.controller.control( self.target_angular_velocity,
+            throttle, brake, steer = self.controller.control( self.target_angular_velocity,
                                                                  self.target_linear_velocity,
                                                                  self.current_angular_velocity,
                                                                  self.current_linear_velocity,
