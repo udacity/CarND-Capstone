@@ -54,7 +54,7 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # Create `TwistController` object
-        self.controller = Controller(steer_ratio)
+        self.controller = Controller(steer_ratio, decel_limit, accel_limit)
 
         # Subscribe to all necessary topics
         rospy.Subscriber('/twist_cmd', TwistStamped, self.upd_twist)
