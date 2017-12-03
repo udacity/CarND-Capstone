@@ -4,6 +4,8 @@ import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
+from std_msgs.msg import Float32
+import csv
 import math
 
 from twist_controller import Controller
@@ -61,6 +63,10 @@ class DBWNode(object):
                                             ThrottleCmd, queue_size=1)
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
+        self.custom_pub = rospy.Publisher('/vehicle/filt_vel',Float32,queue_size=1)
+        self.custom_pub2 = rospy.Publisher('/vehicle/curr_vel', Float32, queue_size=1)
+
+        self.start_time = rospy.get_time()
 
         # TODO: Create `TwistController` object
         self.controller = Controller(vehicle_mass,
@@ -87,20 +93,34 @@ class DBWNode(object):
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering using `twist_controller`
             # Should only publish the control commands if dbw is enabled
-            throttle, brake, steering = self.controller.control(self.goal_velocity,
+            throttle, brake, steering, filtered = self.controller.control(self.goal_velocity,
                                                                 self.goal_angularv,
                                                                 self.current_velocity,
                                                                 self.current_angularv,
                                                                 self.dbw_enabled)
+            time_index = rospy.get_time() - self.start_time
+            #if time_index < 50: throttle = 1.0
+            #if time_index < 40: throttle = 0.6
+            #if time_index < 30: throttle = 0.8
+            #if time_index < 20: throttle = 0.1
+            #throttle = 0.5
+            #steering = 0.0
+
             if self.dbw_enabled:
-                self.publish(throttle, brake, steering)
+                self.publish(throttle, brake, steering, filtered, float(self.current_velocity))
             rate.sleep()
+            #with open('/tmp/utf.csv', 'ab') as fout:
+            #    writer = csv.writer(fout)
+                #writer.writerow([rospy.get_time(),self.current_velocity, self.goal_velocity, throttle])
+            #    writer.writerow([time_index, throttle, self.current_velocity])
 
     def curr_vel_cb(self,msg):
         # TwistStamped structure from `rosmsg info geometry_msgs/TwistStamped` gives velocities:
         # x is direction of car, y is perpendicular to direction of travel. Right hand rule (RHR) assumed.
         self.current_velocity = msg.twist.linear.x
         self.current_angularv = msg.twist.angular.z
+
+
 
     def twist_cb(self,msg):
         # Same convention as before, same as used in course. x+ in direction of travel, RHR.
@@ -112,7 +132,7 @@ class DBWNode(object):
         #bool data
         self.dbw_enabled = msg.data
 
-    def publish(self, throttle, brake, steer):
+    def publish(self, throttle, brake, steer, filtered, curr_vel):
         tcmd = ThrottleCmd()
         tcmd.enable = True
         tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
@@ -129,6 +149,9 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
+        self.custom_pub.publish(filtered)
+        self.custom_pub2.publish(curr_vel)
 
 
 if __name__ == '__main__':
