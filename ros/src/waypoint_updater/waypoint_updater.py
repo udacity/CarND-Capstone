@@ -173,11 +173,11 @@ class WaypointUpdater(WaypointTracker):
                                 final_waypoints = self.decelerate(self.last_closest_front_waypoint_index, self.traffic_waypoint, final_waypoints)
                             # end of if (self.last_closest_front_waypoint_index < self.traffic_waypoint)
                         else:                   # too far to brake
-                            final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index :
+                            final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index+1 :
                                                                             (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
                         # end of if (tl_dist < min_stop_dist)
                     else:                       # no traffic light ahead or no turning red light
-                        final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index :
+                        final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index+1 :
                                                                         (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
                     # end of if (self.traffic_waypoint is not None) and self.non_red_to_red()
                 
