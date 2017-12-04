@@ -987,3 +987,27 @@ stop
   else:
       print(2)
 #+END_SRC
+
+* How to play rosbag data and visualize it with Self-Driving-Car
+
+First start roscore
+in one shell, may be run it in background.
+May not be necessary, if it's already started.
+#+BEGIN_SRC shell
+roscore &
+#+END_SRC
+
+then start the ROS nodes of Self-Driving-Car
+#+BEGIN_SRC shell
+roslaunch launch/site.launch
+#+END_SRC
+then start plaing the rosbag data
+
+#+BEGIN_SRC shell
+rosbag play -l traffic_light_bag_files/loop_with_traffic_light.bag
+#+END_SRC
+
+To view the image played from rosbag data
+#+BEGIN_SRC shell
+rqt_image_view /image_color
+#+END_SRC
