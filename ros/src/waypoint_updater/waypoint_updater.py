@@ -38,20 +38,25 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
-        rospy.spin()
+        self.loop()
 
-    def pose_cb(self, msg):
-        self.ego_pos = msg.pose
+    def loop(self):
 
-        if self.wps is not None:	#Don't proceed until we have received waypoints
-            
+        rate = rospy.Rate(50)
+
+        while not all([self.wps, self.ego_pos]):
+
+            rate.sleep()
+
+        while not rospy.is_shutdown() and all([self.wps, self.ego_pos]):
+
             # Get car orientation
             car_x, car_y = self.ego_pos.position.x, self.ego_pos.position.y
             quaternion = (self.ego_pos.orientation.x, self.ego_pos.orientation.y,
-                        self.ego_pos.orientation.z, self.ego_pos.orientation.w)
+                          self.ego_pos.orientation.z, self.ego_pos.orientation.w)
             euler = tf.transformations.euler_from_quaternion(quaternion)
             car_yaw = euler[2]
-            
+
             #return the index of the closest waypoint ahead of us
             closest_idx_waypoint = self.closest_waypoint_ahead(car_x, car_y, car_yaw, self.wps.waypoints)
 
@@ -78,6 +83,11 @@ class WaypointUpdater(object):
                 rospy.logwarn("List of /final_waypoints does not contain target number of elements")
 
             self.final_waypoints_pub.publish(self.final_wps)
+
+            rate.sleep()
+
+    def pose_cb(self, msg):
+        self.ego_pos = msg.pose
 
     def waypoints_cb(self, waypoints):
         # Ensure we only get initial full list of waypoints as simulator keeps publishing
