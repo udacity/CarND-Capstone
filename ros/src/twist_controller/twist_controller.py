@@ -22,15 +22,14 @@ class Controller(object):
         # TODO: Implement
         self.wheel_base = wheel_base
         self.steer_ratio = steer_ratio
-        self.min_speed = min_speed
-        self.max_lat_accel = max_lat_accel
         self.max_steer_angle = max_steer_angle
+
         self.vehicle_mass = vehicle_mass
         self.wheel_radius = wheel_radius
 
         self.steering_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
-        self.throttle_controller = PID(0.8, 0.0, 0.0, mn=decel_limit, mx=accel_limit)
+        self.throttle_controller = PID(0.8, 0., 2.0, mn=decel_limit, mx=accel_limit)
 
         self.low_pass_filter = LowPassFilter(2.0 / 1000.0, 1.0 / loop_frequency)
 
@@ -46,12 +45,13 @@ class Controller(object):
             return 0., 0., 0.
 
         steer = self.steering_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity)
-
+        # steer = 0.
         throttle = 0.
         brake = 0.
+
+        current_timestamp = rospy.Time.now()
         if self.last_timestamp != None:
-            current_timestamp = rospy.Time.now()
-            dt =  (current_timestamp - self.last_timestamp).secs
+            dt =  (current_timestamp - self.last_timestamp).nsecs / 1e9
             cte = target_linear_velocity - current_linear_velocity
             acceleration = self.throttle_controller.step(cte, dt)
 
@@ -62,10 +62,11 @@ class Controller(object):
             if acceleration > 0:
                 throttle = acceleration
             else:
-                brake = self.vehicle_mass * (-acceleration) * self.wheel_radius
+                brake = self.vehicle_mass * abs(acceleration) * self.wheel_radius
 
-            self.last_timestamp = current_timestamp
 
+        self.last_timestamp = current_timestamp
+        rospy.loginfo('SENDING - [throttle,brake,steer]:[{},{},{}], [cA,cL]:[{},{}]m [tA, tL]:[{},{}]'.format(throttle, brake, steer,current_angular_velocity, current_linear_velocity,target_angular_velocity, target_linear_velocity))
         return throttle, brake, steer
 
     def reset(self):
