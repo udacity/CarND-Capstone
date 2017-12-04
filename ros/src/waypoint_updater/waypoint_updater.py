@@ -161,7 +161,9 @@ class WaypointUpdater(WaypointTracker):
                     else:
                         min_stop_dist = SAFE_DIST
                     # end of if self.current_velocity is not None
-                
+                    rospy.loginfo(
+                        "self.last_closest_front_waypoint_index {:4} self.traffic_waypoint {:4} traffic light color: {:7} minimum stop distance {:4} current velocity {:5}".format(
+                            self.last_closest_front_waypoint_index, self.traffic_waypoint, "RED" if self.traffic_light_red else "not-RED", min_stop_dist, self.current_velocity))
                     if (self.traffic_waypoint is not None) and self.traffic_light_red:
                         tl_dist = self.distance(self.last_closest_front_waypoint_index, self.traffic_waypoint)
                         if (tl_dist < min_stop_dist):
