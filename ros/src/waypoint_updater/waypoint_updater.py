@@ -31,7 +31,7 @@ LOOKAHEAD_WPS = 30 # 200 # Number of waypoints we will publish. You can change t
 # LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 MAX_DECEL = 5.0
 MAX_ACCEL = 1.0
-SAFE_DIST = 27.0 # 32.0, 25 is good value to stop, but too far from the light, 17 is better than 25 before the change of filter only do when non_red_to_red
+SAFE_DIST = 5 # 27.0 # 32.0, 25 is good value to stop, but too far from the light, 17 is better than 25 before the change of filter only do when non_red_to_red
 
 LOOKAHEAD_TIME_THRESHOLD = 4 # seconds, change from 5 to 4
 SAEF_TURNING_SPEED = 3.0       # meters/second

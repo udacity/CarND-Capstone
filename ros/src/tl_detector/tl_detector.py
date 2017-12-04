@@ -26,7 +26,7 @@ def color_code_to_label(color_code):
       # end of if color_code == TrafficLight.GREEN
       return color_label
 
-STATE_COUNT_THRESHOLD = 1 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
+STATE_COUNT_THRESHOLD = 0 # 3 change to be smaller, as the frequency of processing camara image has reduced from about 10 Hz 3 Hz
 
 class TLDetector(WaypointTracker):
     def __init__(self):
@@ -158,7 +158,8 @@ class TLDetector(WaypointTracker):
                         #     self.lights[light_index].state == TrafficLight.RED))
                         state = self.lights[light_index].state
                     else:
-                        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+                        #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+                        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
     
                         #Get classification
                         state = self.light_classifier.get_classification(cv_image)
