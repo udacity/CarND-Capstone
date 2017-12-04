@@ -755,7 +755,7 @@ final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index+1 :
                                                               (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
 
 add +1 to ensure that the final_waypoints would be empty at the end of the track, to prevent the car of driving off road.
-Without +1, it could be there are still more pose point and finding wrong waypoint in front.
+Without +1, it could be that there are still more pose point and finding wrong waypoint in front.
 
 
 ** decelerate
