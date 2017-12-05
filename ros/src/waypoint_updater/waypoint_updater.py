@@ -47,57 +47,81 @@ class WaypointUpdater(object):
 
         self.base_waypoints = None
 
+        self.current_pose = None
+
+        # Loop Rate
+        self.loop_frequency = 50 # 50 Hz
+
+        # Max velocity
+        self.max_velocity = 10 # 10 mph, I guess....
+
+        self.loop()
+
         rospy.spin()
 
+
+    def loop(self):
+
+        rate = rospy.Rate(self.loop_frequency)
+        while not rospy.is_shutdown():
+            if self.current_pose != None and self.base_waypoints != None:
+                xyz_position = self.current_pose.position
+                quaternion_orientation = self.current_pose.orientation
+
+                p = xyz_position
+                qo = quaternion_orientation
+
+                p_list = [p.x, p.y, p.z]
+                qo_list = [qo.x, qo.y, qo.z, qo.w]
+                euler = euler_from_quaternion(qo_list)
+                yaw_rad = euler[2]
+
+                closest_waypoint_idx = None
+                closest_waypoint_dist = None
+                for idx in range(len(self.base_waypoints)):
+                    waypoint = self.base_waypoints[idx]
+                    wgx = waypoint.pose.pose.position.x
+                    wgy = waypoint.pose.pose.position.y
+                    wcx, wcy = get_car_xy_from_global_xy(p.x, p.y, yaw_rad, wgx, wgy)
+                    if closest_waypoint_idx is None:
+                        closest_waypoint_idx = idx
+                        closest_waypoint_dist = math.sqrt(wcx**2 + wcy**2)
+                    else:
+                        curr_waypoint_dist = math.sqrt(wcx**2 + wcy**2)
+                        if curr_waypoint_dist < closest_waypoint_dist:
+                            closest_waypoint_idx = idx
+                            closest_waypoint_dist = curr_waypoint_dist
+
+                waypoint = self.base_waypoints[closest_waypoint_idx]
+                wgx = waypoint.pose.pose.position.x
+                wgy = waypoint.pose.pose.position.y
+                wcx, wcy = get_car_xy_from_global_xy(p.x, p.y, yaw_rad, wgx, wgy)
+                if wcx < 0:
+                    closest_waypoint_idx = (closest_waypoint_idx + 1) % len(self.base_waypoints)
+
+                next_waypoints = []
+                for loop_idx in range(LOOKAHEAD_WPS):
+                    wp_idx = (loop_idx + closest_waypoint_idx) % len(self.base_waypoints)
+                    next_waypoints.append(self.get_waypoint_to_sent(wp_idx))
+
+                lane = Lane()
+                lane.header.frame_id = '/world'
+                lane.header.stamp = rospy.Time(0)
+                lane.waypoints = next_waypoints
+                self.final_waypoints_pub.publish(lane)
+
+
+            rate.sleep()
+
+    def get_waypoint_to_sent(self, wp_idx):
+        # changes will be here when the red lights are detected.
+        # if the velocity is not set, 11 is set by default.
+        self.set_waypoint_velocity(self.base_waypoints, wp_idx, self.max_velocity)
+        return self.base_waypoints[wp_idx]
+
+
     def pose_cb(self, msg):
-        xyz_position = msg.pose.position
-        quaternion_orientation = msg.pose.orientation
-
-        p = xyz_position
-        qo = quaternion_orientation
-
-        p_list = [p.x, p.y, p.z]
-        qo_list = [qo.x, qo.y, qo.z, qo.w]
-        euler = euler_from_quaternion(qo_list)
-        yaw_rad = euler[2]
-
-        if self.base_waypoints is None:
-            rospy.logwarn("Base_waypoints not set.")
-            return
-
-        closest_waypoint_idx = None
-        closest_waypoint_dist = None
-        for idx in range(len(self.base_waypoints)):
-            waypoint = self.base_waypoints[idx]
-            wgx = waypoint.pose.pose.position.x
-            wgy = waypoint.pose.pose.position.y
-            wcx, wcy = get_car_xy_from_global_xy(p.x, p.y, yaw_rad, wgx, wgy)
-            if closest_waypoint_idx is None:
-                closest_waypoint_idx = idx
-                closest_waypoint_dist = math.sqrt(wcx**2 + wcy**2)
-            else:
-                curr_waypoint_dist = math.sqrt(wcx**2 + wcy**2)
-                if curr_waypoint_dist < closest_waypoint_dist:
-                    closest_waypoint_idx = idx
-                    closest_waypoint_dist = curr_waypoint_dist
-
-        waypoint = self.base_waypoints[closest_waypoint_idx]
-        wgx = waypoint.pose.pose.position.x
-        wgy = waypoint.pose.pose.position.y
-        wcx, wcy = get_car_xy_from_global_xy(p.x, p.y, yaw_rad, wgx, wgy)
-        if wcx < 0:
-            closest_waypoint_idx = (closest_waypoint_idx + 1) % len(self.base_waypoints)
-
-        next_waypoints = []
-        for loop_idx in range(LOOKAHEAD_WPS):
-            wp_idx = (loop_idx + closest_waypoint_idx) % len(self.base_waypoints)
-            next_waypoints.append(self.base_waypoints[wp_idx])
-
-        lane = Lane()
-        lane.header.frame_id = '/world'
-        lane.header.stamp = rospy.Time(0)
-        lane.waypoints = next_waypoints
-        self.final_waypoints_pub.publish(lane)
+        self.current_pose = msg.pose
 
     def waypoints_cb(self, lane):
         self.base_waypoints = lane.waypoints
