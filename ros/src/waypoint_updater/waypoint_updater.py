@@ -6,6 +6,9 @@ from styx_msgs.msg import Lane, Waypoint
 
 import math
 
+import tf
+import numpy as np
+
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
 
@@ -37,15 +40,54 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.base_waypoints = None
+        self.pose = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
         # TODO: Implement
+        self.pose = msg.pose
+        if self.base_waypoints:
+            # Get the position and yaw of the car in euler coordinates
+            car_x = self.pose.position.x
+            car_y = self.pose.position.y
+            car_quaternion = (self.pose.orientation.x, self.pose.orientation.y, self.pose.orientation.z, self.pose.orientation.w)
+            car_euler = tf.transformations.euler_from_quaternion(car_quaternion)
+            car_yaw = car_euler[2] # Radians, not 100% sure of range
+            # Only yaw is considered when answering if a waypoint is ahead of the car.  Even if roll and pitch aren't zero, they should not matter under realistic conditions.
+
+            # Loop through the waypoints to find the closest that is ahead of the car
+            closest_point = None
+            closest_distance = float('inf')
+            for i in range(0, len(self.base_waypoints)):
+                waypoint = self.base_waypoints[i]
+                if self.is_ahead_of(car_x, car_y, car_yaw, waypoint):
+                    distance = math.sqrt((car_x - waypoint.pose.pose.position.x)**2 + (car_y - waypoint.pose.pose.position.y)**2)
+                    if distance < closest_distance:
+                        closest_distance = distance
+                        closest_point = i
+
+            # final_waypoints is the next LOOKAHEAD_WPS waypoints ahead of the car
+            final_waypoints = self.base_waypoints[closest_point:closest_point + LOOKAHEAD_WPS]  # final_waypoints will get shorter as the last waypoint is approached
+
+            # Publish
+            lane = Lane()
+            lane.header.frame_id = '/world'
+            lane.header.stamp = rospy.Time.now()
+            lane.waypoints = final_waypoints
+            self.final_waypoints_pub.publish(lane)
+
         pass
+
+    def is_ahead_of(self, x, y, yaw, waypoint):
+        theta_waypoint = math.atan2(waypoint.pose.pose.position.y - y, waypoint.pose.pose.position.x - x)  # Angle of the waypoint relative to the car
+        dot_product = np.dot(np.array([math.cos(yaw), math.sin(yaw)]), np.array([math.cos(theta_waypoint), math.sin(theta_waypoint)]))  # Calculate the dot product between two unit vectors, which is equal to |A|*|B|*cos(theta)
+        return math.acos(dot_product) < math.pi/2.0
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
+        self.base_waypoints = waypoints.waypoints
         pass
 
     def traffic_cb(self, msg):
