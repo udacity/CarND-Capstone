@@ -700,3 +700,26 @@ expect to see the above messages
 
 - Study how to design TwistController
 - Browse, annotate and absorb the related code
+
+* Verify the /vehicle/*_cmd
+
+According to https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/6
+Here is the procedure to perform the verification, kind of unit testing:
+
+#+BEGIN_QUOTE
+I think https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/3 is a rough guide, but the full steps are something like:
+
+    1. download https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc4
+    2. rename the file to dbw_test.rosbag.bag
+    3. move the dbw_test.rosbag.bag file to the project root’s data folder, e.g. CarND-Capstone/data/dbw_test.rosbag.bag
+    4. Run dbw_test: roslaunch twist_controller dbw_test.launch
+    Compare your results to the dbw_test output logged in ros/src/twist_controller in three files: brakes.csv, steers.csv, throttles.csv
+
+My numbers produced in 5 don’t match the expected output. I think this partially because the bag file (probably) comes from a run on the Carla car, rather than the simulator, and (presumably) the team that wrote the code that generated this bag file tuned their acceleration model to suit the real car rather than the simulator.
+
+But I’m confused by the bag file’s brake values, I’ve opened https://github.com/udacity/sdc-issue-reports/issues/12041 to either understand the brake values better, or fix them if they’re wrong
+#+END_QUOTE
+
+To make it work in our environment, I had to modify the launch file or dbw_test.launch adding the include to waypoint_loader's launch file.
+
+Next, need to do the comparison in the data collected in brakes.csv, steers.csv, and throttles.csv.
