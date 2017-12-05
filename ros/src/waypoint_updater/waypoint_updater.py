@@ -46,7 +46,9 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
+        """Produce and publish a Lane object containing up to LOOKAHEAD_WPS
+        waypoints starting with the closest waypoint that is ahead of the car."""
+        rospy.loginfo("waypoint_updater received a position")
         self.pose = msg.pose
         if self.base_waypoints:
             # Get the position and yaw of the car in euler coordinates
@@ -70,6 +72,7 @@ class WaypointUpdater(object):
 
             # final_waypoints is the next LOOKAHEAD_WPS waypoints ahead of the car
             final_waypoints = self.base_waypoints[closest_point:closest_point + LOOKAHEAD_WPS]  # final_waypoints will get shorter as the last waypoint is approached
+            rospy.loginfo("waypoint_updater closest_point %s, closest_distance %s, len(final_waypoints) %s", closest_point, closest_distance, len(final_waypoints))
 
             # Publish
             lane = Lane()
@@ -81,13 +84,16 @@ class WaypointUpdater(object):
         pass
 
     def is_ahead_of(self, x, y, yaw, waypoint):
+        """Helper function to determine if waypoint lies ahead of the car (i.e., within a 180 deg arc centered in the direction of the car).
+        This is done through the use of the dot product, dotProduct=|A|*|B|*cos(theta), where theta is the angle between two vectors."""
         theta_waypoint = math.atan2(waypoint.pose.pose.position.y - y, waypoint.pose.pose.position.x - x)  # Angle of the waypoint relative to the car
         dot_product = np.dot(np.array([math.cos(yaw), math.sin(yaw)]), np.array([math.cos(theta_waypoint), math.sin(theta_waypoint)]))  # Calculate the dot product between two unit vectors, which is equal to |A|*|B|*cos(theta)
         return math.acos(dot_product) < math.pi/2.0
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
+        """Saves the waypoints topic message without the top header."""
         self.base_waypoints = waypoints.waypoints
+        rospy.loginfo("waypoint_updater base waypoints obtained")
         pass
 
     def traffic_cb(self, msg):
