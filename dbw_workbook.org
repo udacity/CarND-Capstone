@@ -723,3 +723,20 @@ But I’m confused by the bag file’s brake values, I’ve opened https://githu
 To make it work in our environment, I had to modify the launch file or dbw_test.launch adding the include to waypoint_loader's launch file.
 
 Next, need to do the comparison in the data collected in brakes.csv, steers.csv, and throttles.csv.
+
+** Comparison of the control outputs
+
+I'd like to try to use Google sheet to see if would provide some excel sheet like plotting functions.
+
+- brakes
+
+- steers
+
+- throttles
+
+
+https://docs.google.com/spreadsheets/d/10CxvhIyyFZcAHWsAepPvpqeD0AzGneDMp0ZdCSyoKds/edit?usp=sharing
+
+https://docs.google.com/spreadsheets/d/1VuvZIt8m_C0OByGyG2jAAazIPiI_bW8joV3aA7_6R8Q/edit?usp=sharing
+
+https://docs.google.com/spreadsheets/d/1lnr-AFjVcitUdtJtA6JUfCXLfSmjlO_Em0C0jhCmDnw/edit?usp=sharing

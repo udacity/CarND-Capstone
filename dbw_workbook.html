@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2017-11-28 Tue 08:31 -->
+<!-- 2017-12-04 Mon 17:43 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Workbook on Drive-by-Wire Node</title>
@@ -234,67 +234,72 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org0028db0">1. Requirement understanding</a>
+<li><a href="#org89abfe9">1. Requirement understanding</a>
 <ul>
-<li><a href="#orgad2271b">1.1. Input</a></li>
-<li><a href="#org00ba8b8">1.2. Output</a></li>
-<li><a href="#orgabb250f">1.3. Message Types</a>
+<li><a href="#org1bf15cb">1.1. Input</a></li>
+<li><a href="#orgef2baf8">1.2. Output</a></li>
+<li><a href="#org301af72">1.3. Message Types</a>
 <ul>
-<li><a href="#org23f90ee">1.3.1. /current_velocity</a></li>
-<li><a href="#org9ba176d">1.3.2. /twist_cmd</a></li>
-<li><a href="#org2727e31">1.3.3. geometry_msgs/TwistStamped</a></li>
-<li><a href="#org6654adb">1.3.4. /vehicle/dbw_enabled</a></li>
-<li><a href="#org3848f68">1.3.5. Bool</a></li>
-<li><a href="#org88aa30e">1.3.6. /vehicle/throttle_cmd</a></li>
-<li><a href="#orgca9e666">1.3.7. dbw_mkz_msgs/ThrottleCmd</a></li>
-<li><a href="#org00b100a">1.3.8. /vehicle/steering_cmd</a></li>
-<li><a href="#org91f7b26">1.3.9. dbw_mkz_msgs/SteeringCmd</a></li>
-<li><a href="#org5d1cb40">1.3.10. /vehicle/brake_cmd</a></li>
-<li><a href="#orgd9dab47">1.3.11. dbw_mkz_msgs/BrakeCmd</a></li>
+<li><a href="#org7825d0d">1.3.1. /current_velocity</a></li>
+<li><a href="#org09a154d">1.3.2. /twist_cmd</a></li>
+<li><a href="#org36f8d9f">1.3.3. geometry_msgs/TwistStamped</a></li>
+<li><a href="#org6a54ae5">1.3.4. /vehicle/dbw_enabled</a></li>
+<li><a href="#orgad9acde">1.3.5. Bool</a></li>
+<li><a href="#org958fa59">1.3.6. /vehicle/throttle_cmd</a></li>
+<li><a href="#org6b19aea">1.3.7. dbw_mkz_msgs/ThrottleCmd</a></li>
+<li><a href="#org5f16478">1.3.8. /vehicle/steering_cmd</a></li>
+<li><a href="#orgfb3bf8e">1.3.9. dbw_mkz_msgs/SteeringCmd</a></li>
+<li><a href="#orgca7757b">1.3.10. /vehicle/brake_cmd</a></li>
+<li><a href="#org9db8bb6">1.3.11. dbw_mkz_msgs/BrakeCmd</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a href="#org6b1454a">2. Architecture discussion</a></li>
-<li><a href="#orgc5fdc9f">3. TwistController</a></li>
-<li><a href="#org8f98f76">4. Source Code Decomposition and Assembly</a>
+<li><a href="#orgd2752e5">2. Architecture discussion</a></li>
+<li><a href="#org02ac9fc">3. TwistController</a></li>
+<li><a href="#orgfc641bf">4. Source Code Decomposition and Assembly</a>
 <ul>
-<li><a href="#org7628f59">4.1. Top level assembly</a></li>
-<li><a href="#orgf00bc1a">4.2. control_logic</a></li>
-<li><a href="#orgf5e4f7c">4.3. twist_controller</a>
+<li><a href="#orgf96f4e8">4.1. Top level assembly</a></li>
+<li><a href="#org016b30b">4.2. control_logic</a></li>
+<li><a href="#orgcb36776">4.3. twist_controller</a>
 <ul>
-<li><a href="#org652be78">4.3.1. Some more leads on twist controller design</a></li>
+<li><a href="#org1377b55">4.3.1. Some more leads on twist controller design</a></li>
 </ul>
 </li>
-<li><a href="#orgadc8dea">4.4. subscribe_to_get_update</a></li>
-<li><a href="#org8eef15c">4.5. dbw_states</a></li>
-<li><a href="#org6df1710">4.6. callbacks</a></li>
-<li><a href="#org5a3b1c3">4.7. publish</a></li>
-<li><a href="#orgda78660">4.8. publishers</a></li>
-<li><a href="#org155639b">4.9. vehicle_parameters</a></li>
-<li><a href="#orgbb15eef">4.10. preamble</a></li>
+<li><a href="#org52a7549">4.4. subscribe_to_get_update</a></li>
+<li><a href="#orgbf80c35">4.5. dbw_states</a></li>
+<li><a href="#org47a5ddc">4.6. callbacks</a></li>
+<li><a href="#org0d41a9d">4.7. publish</a></li>
+<li><a href="#orgf2ec0c1">4.8. publishers</a></li>
+<li><a href="#org3559b6d">4.9. vehicle_parameters</a></li>
+<li><a href="#org7617a9b">4.10. preamble</a></li>
 </ul>
 </li>
-<li><a href="#org015d69f">5. Validations</a></li>
-<li><a href="#orgf7f723d">6. Some other interesting message</a>
+<li><a href="#org729fcc8">5. Validations</a></li>
+<li><a href="#org329722c">6. Some other interesting message</a>
 <ul>
-<li><a href="#orgf790de8">6.1. /tf Traffic Light (message)?</a></li>
-<li><a href="#org21e9bfc">6.2. /tf_static</a></li>
-<li><a href="#orgd4e4b83">6.3. /traffic_waypoint</a></li>
+<li><a href="#org656ba28">6.1. /tf Traffic Light (message)?</a></li>
+<li><a href="#org82a7f8e">6.2. /tf_static</a></li>
+<li><a href="#orgd386a3a">6.3. /traffic_waypoint</a></li>
 </ul>
 </li>
-<li><a href="#org33e9256">7. Questions</a></li>
-<li><a href="#org7d9ad80">8. <span class="todo TODO">TODO</span> TODO</a></li>
+<li><a href="#org4870609">7. Questions</a></li>
+<li><a href="#org9fa8d72">8. <span class="todo TODO">TODO</span> TODO</a></li>
+<li><a href="#orgab9249d">9. Verify the /vehicle/*_cmd</a>
+<ul>
+<li><a href="#org7e8cebd">9.1. Comparison of the control outputs</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org0028db0" class="outline-2">
-<h2 id="org0028db0"><span class="section-number-2">1</span> Requirement understanding</h2>
+<div id="outline-container-org89abfe9" class="outline-2">
+<h2 id="org89abfe9"><span class="section-number-2">1</span> Requirement understanding</h2>
 <div class="outline-text-2" id="text-1">
 </div>
-<div id="outline-container-orgad2271b" class="outline-3">
-<h3 id="orgad2271b"><span class="section-number-3">1.1</span> Input</h3>
+<div id="outline-container-org1bf15cb" class="outline-3">
+<h3 id="org1bf15cb"><span class="section-number-3">1.1</span> Input</h3>
 <div class="outline-text-3" id="text-1-1">
 <ul class="org-ul">
 <li>Input: /current_velocity</li>
@@ -308,8 +313,8 @@ for the JavaScript code in this tag.
 </div>
 </div>
 
-<div id="outline-container-org00ba8b8" class="outline-3">
-<h3 id="org00ba8b8"><span class="section-number-3">1.2</span> Output</h3>
+<div id="outline-container-orgef2baf8" class="outline-3">
+<h3 id="orgef2baf8"><span class="section-number-3">1.2</span> Output</h3>
 <div class="outline-text-3" id="text-1-2">
 <ul class="org-ul">
 <li>Output: /vehicle/throttle_cmd</li>
@@ -324,12 +329,12 @@ based on its current speed, and the desired speed at the current waypoint, and t
 </div>
 </div>
 
-<div id="outline-container-orgabb250f" class="outline-3">
-<h3 id="orgabb250f"><span class="section-number-3">1.3</span> Message Types</h3>
+<div id="outline-container-org301af72" class="outline-3">
+<h3 id="org301af72"><span class="section-number-3">1.3</span> Message Types</h3>
 <div class="outline-text-3" id="text-1-3">
 </div>
-<div id="outline-container-org23f90ee" class="outline-4">
-<h4 id="org23f90ee"><span class="section-number-4">1.3.1</span> /current_velocity</h4>
+<div id="outline-container-org7825d0d" class="outline-4">
+<h4 id="org7825d0d"><span class="section-number-4">1.3.1</span> /current_velocity</h4>
 <div class="outline-text-4" id="text-1-3-1">
 <pre class="example">
 $ rostopic info /current_velocity
@@ -345,8 +350,8 @@ Subscribers:
 </div>
 </div>
 
-<div id="outline-container-org9ba176d" class="outline-4">
-<h4 id="org9ba176d"><span class="section-number-4">1.3.2</span> /twist_cmd</h4>
+<div id="outline-container-org09a154d" class="outline-4">
+<h4 id="org09a154d"><span class="section-number-4">1.3.2</span> /twist_cmd</h4>
 <div class="outline-text-4" id="text-1-3-2">
 <pre class="example">
 $ rostopic info /twist_cmd
@@ -362,8 +367,8 @@ Subscribers: None
 </div>
 
 
-<div id="outline-container-org2727e31" class="outline-4">
-<h4 id="org2727e31"><span class="section-number-4">1.3.3</span> geometry_msgs/TwistStamped</h4>
+<div id="outline-container-org36f8d9f" class="outline-4">
+<h4 id="org36f8d9f"><span class="section-number-4">1.3.3</span> geometry_msgs/TwistStamped</h4>
 <div class="outline-text-4" id="text-1-3-3">
 <p>
 Both /current_velocity and /twist_cmd are of this message type.
@@ -393,8 +398,8 @@ geometry_msgs/Twist twist
 </div>
 </div>
 
-<div id="outline-container-org6654adb" class="outline-4">
-<h4 id="org6654adb"><span class="section-number-4">1.3.4</span> /vehicle/dbw_enabled</h4>
+<div id="outline-container-org6a54ae5" class="outline-4">
+<h4 id="org6a54ae5"><span class="section-number-4">1.3.4</span> /vehicle/dbw_enabled</h4>
 <div class="outline-text-4" id="text-1-3-4">
 <pre class="example">
 $ rostopic info /vehicle/dbw_enabled
@@ -409,8 +414,8 @@ Subscribers: None
 </div>
 </div>
 
-<div id="outline-container-org3848f68" class="outline-4">
-<h4 id="org3848f68"><span class="section-number-4">1.3.5</span> Bool</h4>
+<div id="outline-container-orgad9acde" class="outline-4">
+<h4 id="orgad9acde"><span class="section-number-4">1.3.5</span> Bool</h4>
 <div class="outline-text-4" id="text-1-3-5">
 <p>
 This is the type for /vehicle/dbw_enabled
@@ -424,8 +429,8 @@ bool data
 </div>
 </div>
 
-<div id="outline-container-org88aa30e" class="outline-4">
-<h4 id="org88aa30e"><span class="section-number-4">1.3.6</span> /vehicle/throttle_cmd</h4>
+<div id="outline-container-org958fa59" class="outline-4">
+<h4 id="org958fa59"><span class="section-number-4">1.3.6</span> /vehicle/throttle_cmd</h4>
 <div class="outline-text-4" id="text-1-3-6">
 <pre class="example">
 $ rostopic info /vehicle/throttle_cmd
@@ -441,8 +446,8 @@ Subscribers:
 </div>
 </div>
 
-<div id="outline-container-orgca9e666" class="outline-4">
-<h4 id="orgca9e666"><span class="section-number-4">1.3.7</span> dbw_mkz_msgs/ThrottleCmd</h4>
+<div id="outline-container-org6b19aea" class="outline-4">
+<h4 id="org6b19aea"><span class="section-number-4">1.3.7</span> dbw_mkz_msgs/ThrottleCmd</h4>
 <div class="outline-text-4" id="text-1-3-7">
 <p>
 Where can I find more information on how to program dbw_mkz_msgs/ThrottleCmd?
@@ -483,8 +488,8 @@ uint8 count
 </div>
 </div>
 
-<div id="outline-container-org00b100a" class="outline-4">
-<h4 id="org00b100a"><span class="section-number-4">1.3.8</span> /vehicle/steering_cmd</h4>
+<div id="outline-container-org5f16478" class="outline-4">
+<h4 id="org5f16478"><span class="section-number-4">1.3.8</span> /vehicle/steering_cmd</h4>
 <div class="outline-text-4" id="text-1-3-8">
 <pre class="example">
 $ rostopic info /vehicle/steering_cmd
@@ -500,8 +505,8 @@ Subscribers:
 </div>
 </div>
 
-<div id="outline-container-org91f7b26" class="outline-4">
-<h4 id="org91f7b26"><span class="section-number-4">1.3.9</span> dbw_mkz_msgs/SteeringCmd</h4>
+<div id="outline-container-orgfb3bf8e" class="outline-4">
+<h4 id="orgfb3bf8e"><span class="section-number-4">1.3.9</span> dbw_mkz_msgs/SteeringCmd</h4>
 <div class="outline-text-4" id="text-1-3-9">
 <p>
 How to program the values in the following fields?
@@ -530,8 +535,8 @@ uint8 count
 </div>
 </div>
 
-<div id="outline-container-org5d1cb40" class="outline-4">
-<h4 id="org5d1cb40"><span class="section-number-4">1.3.10</span> /vehicle/brake_cmd</h4>
+<div id="outline-container-orgca7757b" class="outline-4">
+<h4 id="orgca7757b"><span class="section-number-4">1.3.10</span> /vehicle/brake_cmd</h4>
 <div class="outline-text-4" id="text-1-3-10">
 <pre class="example">
 $ rostopic info /vehicle/brake_cmd
@@ -547,8 +552,8 @@ Subscribers:
 </div>
 </div>
 
-<div id="outline-container-orgd9dab47" class="outline-4">
-<h4 id="orgd9dab47"><span class="section-number-4">1.3.11</span> dbw_mkz_msgs/BrakeCmd</h4>
+<div id="outline-container-org9db8bb6" class="outline-4">
+<h4 id="org9db8bb6"><span class="section-number-4">1.3.11</span> dbw_mkz_msgs/BrakeCmd</h4>
 <div class="outline-text-4" id="text-1-3-11">
 <p>
 This is similar to ThrottleCmd, but with some additional/different fields.
@@ -577,8 +582,8 @@ uint8 count
 </div>
 
 
-<div id="outline-container-org6b1454a" class="outline-2">
-<h2 id="org6b1454a"><span class="section-number-2">2</span> Architecture discussion</h2>
+<div id="outline-container-orgd2752e5" class="outline-2">
+<h2 id="orgd2752e5"><span class="section-number-2">2</span> Architecture discussion</h2>
 <div class="outline-text-2" id="text-2">
 <p>
 Moving the processing of /current_pose message in Waypoint_Updater from a callback to a loop with 2Hz frequency made the car drive
@@ -620,8 +625,8 @@ loop_frequency for dbw_node tested:
 </div>
 
 
-<div id="outline-container-orgc5fdc9f" class="outline-2">
-<h2 id="orgc5fdc9f"><span class="section-number-2">3</span> TwistController</h2>
+<div id="outline-container-org02ac9fc" class="outline-2">
+<h2 id="org02ac9fc"><span class="section-number-2">3</span> TwistController</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 This is the core of the control logic to produce control parameters to control the vehicle based
@@ -635,8 +640,8 @@ The rest of the code just provides the communication and execution infrastructur
 </div>
 
 
-<div id="outline-container-org8f98f76" class="outline-2">
-<h2 id="org8f98f76"><span class="section-number-2">4</span> Source Code Decomposition and Assembly</h2>
+<div id="outline-container-orgfc641bf" class="outline-2">
+<h2 id="orgfc641bf"><span class="section-number-2">4</span> Source Code Decomposition and Assembly</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 It's my practice of understanding and building source code and explain to myself and other readers.
@@ -649,8 +654,8 @@ while getting the whole picture of what the overall program is doing.
 </p>
 </div>
 
-<div id="outline-container-org7628f59" class="outline-3">
-<h3 id="org7628f59"><span class="section-number-3">4.1</span> Top level assembly</h3>
+<div id="outline-container-orgf96f4e8" class="outline-3">
+<h3 id="orgf96f4e8"><span class="section-number-3">4.1</span> Top level assembly</h3>
 <div class="outline-text-3" id="text-4-1">
 <p>
 This assembly shows the architecture of the source code.
@@ -720,8 +725,8 @@ This will significantly reduce the CPU load.
 </div>
 </div>
 
-<div id="outline-container-orgf00bc1a" class="outline-3">
-<h3 id="orgf00bc1a"><span class="section-number-3">4.2</span> control_logic</h3>
+<div id="outline-container-org016b30b" class="outline-3">
+<h3 id="org016b30b"><span class="section-number-3">4.2</span> control_logic</h3>
 <div class="outline-text-3" id="text-4-2">
 <p>
 In the context of loop and executed once a rate period, to determine the commands and pubilsh commands to vehicle.
@@ -749,8 +754,8 @@ In the context of loop and executed once a rate period, to determine the command
 </div>
 </div>
 
-<div id="outline-container-orgf5e4f7c" class="outline-3">
-<h3 id="orgf5e4f7c"><span class="section-number-3">4.3</span> twist_controller</h3>
+<div id="outline-container-orgcb36776" class="outline-3">
+<h3 id="orgcb36776"><span class="section-number-3">4.3</span> twist_controller</h3>
 <div class="outline-text-3" id="text-4-3">
 <p>
 Based on the current velocity, and the desired velocity in both linear and angular, compute their delta, then use PID to control.
@@ -863,8 +868,8 @@ The message processing should be regulated, only process the most recent one.
 </div>
 </div>
 
-<div id="outline-container-org652be78" class="outline-4">
-<h4 id="org652be78"><span class="section-number-4">4.3.1</span> Some more leads on twist controller design</h4>
+<div id="outline-container-org1377b55" class="outline-4">
+<h4 id="org1377b55"><span class="section-number-4">4.3.1</span> Some more leads on twist controller design</h4>
 <div class="outline-text-4" id="text-4-3-1">
 <p>
 Need to digest further the below info.
@@ -912,8 +917,8 @@ Also: before you do anything else, search the Slack channel for everything by Al
 </div>
 </div>
 
-<div id="outline-container-orgadc8dea" class="outline-3">
-<h3 id="orgadc8dea"><span class="section-number-3">4.4</span> subscribe_to_get_update</h3>
+<div id="outline-container-org52a7549" class="outline-3">
+<h3 id="org52a7549"><span class="section-number-3">4.4</span> subscribe_to_get_update</h3>
 <div class="outline-text-3" id="text-4-4">
 <p>
 In the context of <span class="underline"><span class="underline">init</span></span>, subscribe to message to get needed updates.
@@ -932,8 +937,8 @@ rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d957
 </div>
 
 
-<div id="outline-container-org8eef15c" class="outline-3">
-<h3 id="org8eef15c"><span class="section-number-3">4.5</span> dbw_states</h3>
+<div id="outline-container-orgbf80c35" class="outline-3">
+<h3 id="orgbf80c35"><span class="section-number-3">4.5</span> dbw_states</h3>
 <div class="outline-text-3" id="text-4-5">
 <p>
 In the context of <span class="underline"><span class="underline">init</span></span>, declared the initial values of the states required for dbw control.
@@ -951,8 +956,8 @@ In the context of <span class="underline"><span class="underline">init</span></s
 </div>
 </div>
 
-<div id="outline-container-org6df1710" class="outline-3">
-<h3 id="org6df1710"><span class="section-number-3">4.6</span> callbacks</h3>
+<div id="outline-container-org47a5ddc" class="outline-3">
+<h3 id="org47a5ddc"><span class="section-number-3">4.6</span> callbacks</h3>
 <div class="outline-text-3" id="text-4-6">
 <p>
 In the context of <span class="underline"><span class="underline">init</span></span>, defines the callback functions for the subscription processing.
@@ -990,8 +995,8 @@ Place the control logic in twist_cmd_cb to save CPU load.
 </div>
 </div>
 
-<div id="outline-container-org5a3b1c3" class="outline-3">
-<h3 id="org5a3b1c3"><span class="section-number-3">4.7</span> publish</h3>
+<div id="outline-container-org0d41a9d" class="outline-3">
+<h3 id="org0d41a9d"><span class="section-number-3">4.7</span> publish</h3>
 <div class="outline-text-3" id="text-4-7">
 <p>
 In the context of publish function, perform the message fabrications and the acts of publishing.
@@ -1022,8 +1027,8 @@ In the context of publish function, perform the message fabrications and the act
 </div>
 </div>
 
-<div id="outline-container-orgda78660" class="outline-3">
-<h3 id="orgda78660"><span class="section-number-3">4.8</span> publishers</h3>
+<div id="outline-container-orgf2ec0c1" class="outline-3">
+<h3 id="orgf2ec0c1"><span class="section-number-3">4.8</span> publishers</h3>
 <div class="outline-text-3" id="text-4-8">
 <p>
 In the context of <span class="underline"><span class="underline">init</span></span>, creates the needed publishers.
@@ -1046,8 +1051,8 @@ In the context of <span class="underline"><span class="underline">init</span></s
 </div>
 </div>
 
-<div id="outline-container-org155639b" class="outline-3">
-<h3 id="org155639b"><span class="section-number-3">4.9</span> vehicle_parameters</h3>
+<div id="outline-container-org3559b6d" class="outline-3">
+<h3 id="org3559b6d"><span class="section-number-3">4.9</span> vehicle_parameters</h3>
 <div class="outline-text-3" id="text-4-9">
 <p>
 In the context of <span class="underline"><span class="underline">init</span></span>, retrieve parameters of vehicle with default provision.
@@ -1079,8 +1084,8 @@ The parameters might be needed for vehicle commands.
 </div>
 </div>
 
-<div id="outline-container-orgbb15eef" class="outline-3">
-<h3 id="orgbb15eef"><span class="section-number-3">4.10</span> preamble</h3>
+<div id="outline-container-org7617a9b" class="outline-3">
+<h3 id="org7617a9b"><span class="section-number-3">4.10</span> preamble</h3>
 <div class="outline-text-3" id="text-4-10">
 <p>
 header, imports, and comments.
@@ -1131,8 +1136,8 @@ header, imports, and comments.
 </div>
 
 
-<div id="outline-container-org015d69f" class="outline-2">
-<h2 id="org015d69f"><span class="section-number-2">5</span> Validations</h2>
+<div id="outline-container-org729fcc8" class="outline-2">
+<h2 id="org729fcc8"><span class="section-number-2">5</span> Validations</h2>
 <div class="outline-text-2" id="text-5">
 <ul class="org-ul">
 <li>Start roscore</li>
@@ -1161,12 +1166,12 @@ expect to see the above messages
 </div>
 </div>
 
-<div id="outline-container-orgf7f723d" class="outline-2">
-<h2 id="orgf7f723d"><span class="section-number-2">6</span> Some other interesting message</h2>
+<div id="outline-container-org329722c" class="outline-2">
+<h2 id="org329722c"><span class="section-number-2">6</span> Some other interesting message</h2>
 <div class="outline-text-2" id="text-6">
 </div>
-<div id="outline-container-orgf790de8" class="outline-3">
-<h3 id="orgf790de8"><span class="section-number-3">6.1</span> /tf Traffic Light (message)?</h3>
+<div id="outline-container-org656ba28" class="outline-3">
+<h3 id="org656ba28"><span class="section-number-3">6.1</span> /tf Traffic Light (message)?</h3>
 <div class="outline-text-3" id="text-6-1">
 <p>
 Based on the abbrevation and the subscriber, it might be related to traffic light.
@@ -1209,22 +1214,22 @@ geometry_msgs/TransformStamped[] transforms
 </div>
 </div>
 
-<div id="outline-container-org21e9bfc" class="outline-3">
-<h3 id="org21e9bfc"><span class="section-number-3">6.2</span> /tf_static</h3>
+<div id="outline-container-org82a7f8e" class="outline-3">
+<h3 id="org82a7f8e"><span class="section-number-3">6.2</span> /tf_static</h3>
 </div>
 
-<div id="outline-container-orgd4e4b83" class="outline-3">
-<h3 id="orgd4e4b83"><span class="section-number-3">6.3</span> /traffic_waypoint</h3>
+<div id="outline-container-orgd386a3a" class="outline-3">
+<h3 id="orgd386a3a"><span class="section-number-3">6.3</span> /traffic_waypoint</h3>
 </div>
 </div>
 
 
-<div id="outline-container-org33e9256" class="outline-2">
-<h2 id="org33e9256"><span class="section-number-2">7</span> Questions</h2>
+<div id="outline-container-org4870609" class="outline-2">
+<h2 id="org4870609"><span class="section-number-2">7</span> Questions</h2>
 </div>
 
-<div id="outline-container-org7d9ad80" class="outline-2">
-<h2 id="org7d9ad80"><span class="section-number-2">8</span> <span class="todo TODO">TODO</span> TODO</h2>
+<div id="outline-container-org9fa8d72" class="outline-2">
+<h2 id="org9fa8d72"><span class="section-number-2">8</span> <span class="todo TODO">TODO</span> TODO</h2>
 <div class="outline-text-2" id="text-8">
 <ul class="org-ul">
 <li>Study how to design TwistController</li>
@@ -1232,11 +1237,83 @@ geometry_msgs/TransformStamped[] transforms
 </ul>
 </div>
 </div>
+
+<div id="outline-container-orgab9249d" class="outline-2">
+<h2 id="orgab9249d"><span class="section-number-2">9</span> Verify the /vehicle/*_cmd</h2>
+<div class="outline-text-2" id="text-9">
+<p>
+According to <a href="https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/6">https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/6</a>
+Here is the procedure to perform the verification, kind of unit testing:
+</p>
+
+<blockquote>
+<p>
+I think <a href="https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/3">https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/3</a> is a rough guide, but the full steps are something like:
+</p>
+
+<ol class="org-ol">
+<li>download <a href="https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc4">https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc4</a></li>
+<li>rename the file to dbw_test.rosbag.bag</li>
+<li>move the dbw_test.rosbag.bag file to the project root’s data folder, e.g. CarND-Capstone/data/dbw_test.rosbag.bag</li>
+<li>Run dbw_test: roslaunch twist_controller dbw_test.launch</li>
+</ol>
+<p>
+Compare your results to the dbw_test output logged in ros/src/twist_controller in three files: brakes.csv, steers.csv, throttles.csv
+</p>
+
+<p>
+My numbers produced in 5 don’t match the expected output. I think this partially because the bag file (probably) comes from a run on the Carla car, rather than the simulator, and (presumably) the team that wrote the code that generated this bag file tuned their acceleration model to suit the real car rather than the simulator.
+</p>
+
+<p>
+But I’m confused by the bag file’s brake values, I’ve opened <a href="https://github.com/udacity/sdc-issue-reports/issues/12041">https://github.com/udacity/sdc-issue-reports/issues/12041</a> to either understand the brake values better, or fix them if they’re wrong
+</p>
+</blockquote>
+
+<p>
+To make it work in our environment, I had to modify the launch file or dbw_test.launch adding the include to waypoint_loader's launch file.
+</p>
+
+<p>
+Next, need to do the comparison in the data collected in brakes.csv, steers.csv, and throttles.csv.
+</p>
+</div>
+
+<div id="outline-container-org7e8cebd" class="outline-3">
+<h3 id="org7e8cebd"><span class="section-number-3">9.1</span> Comparison of the control outputs</h3>
+<div class="outline-text-3" id="text-9-1">
+<p>
+I'd like to try to use Google sheet to see if would provide some excel sheet like plotting functions.
+</p>
+
+<ul class="org-ul">
+<li>brakes</li>
+
+<li>steers</li>
+
+<li>throttles</li>
+</ul>
+
+
+<p>
+<a href="https://docs.google.com/spreadsheets/d/10CxvhIyyFZcAHWsAepPvpqeD0AzGneDMp0ZdCSyoKds/edit?usp=sharing">https://docs.google.com/spreadsheets/d/10CxvhIyyFZcAHWsAepPvpqeD0AzGneDMp0ZdCSyoKds/edit?usp=sharing</a>
+</p>
+
+<p>
+<a href="https://docs.google.com/spreadsheets/d/1VuvZIt8m_C0OByGyG2jAAazIPiI_bW8joV3aA7_6R8Q/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1VuvZIt8m_C0OByGyG2jAAazIPiI_bW8joV3aA7_6R8Q/edit?usp=sharing</a>
+</p>
+
+<p>
+<a href="https://docs.google.com/spreadsheets/d/1lnr-AFjVcitUdtJtA6JUfCXLfSmjlO_Em0C0jhCmDnw/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1lnr-AFjVcitUdtJtA6JUfCXLfSmjlO_Em0C0jhCmDnw/edit?usp=sharing</a>
+</p>
+</div>
+</div>
+</div>
 </div>
 <div id="postamble" class="status">
 <p class="date">Date: \today</p>
 <p class="author">Author: yu-shen</p>
-<p class="date">Created: 2017-11-28 Tue 08:31</p>
+<p class="date">Created: 2017-12-04 Mon 17:43</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
