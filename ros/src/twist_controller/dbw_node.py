@@ -119,18 +119,18 @@ class DBWNode(object):
         self.twist_cmd = msg.twist
         lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
         loginfo = 'twist_cmd x: {}, y: {}, z: {}, ang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
-        rospy.loginfo_throttle(1, loginfo)
+        rospy.logdebug_throttle(1, loginfo)
 
     def upd_velocity(self, msg):
         self.current_velocity = msg.twist
         lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
         loginfo = 'current_vel x: {}, y: {}, z: {}, ang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
-        rospy.loginfo_throttle(1, loginfo)
+        rospy.logdebug_throttle(1, loginfo)
 
     def upd_dbw_enabled(self, msg):
         self.dbw_enabled = msg.data
         loginfo = 'dbw {}'.format(self.dbw_enabled)
-        rospy.loginfo_throttle(1, loginfo)
+        rospy.logdebug_throttle(1, loginfo)
 
     def log_init(self, log_path):
         log_handle = open(log_path,'w')
