@@ -29,7 +29,7 @@ class Controller(object):
 
         self.steering_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
-        self.throttle_controller = PID(0.8, 0., 2.0, mn=decel_limit, mx=accel_limit)
+        self.throttle_controller = PID(0.15, 0.0, 0.05, mn=decel_limit, mx=accel_limit)
 
         self.low_pass_filter = LowPassFilter(2.0 / 1000.0, 1.0 / loop_frequency)
 
@@ -66,7 +66,7 @@ class Controller(object):
 
 
         self.last_timestamp = current_timestamp
-        rospy.loginfo('SENDING - [throttle,brake,steer]:[{},{},{}], [cA,cL]:[{},{}]m [tA, tL]:[{},{}]'.format(throttle, brake, steer,current_angular_velocity, current_linear_velocity,target_angular_velocity, target_linear_velocity))
+        rospy.loginfo('SENDING - [throttle,brake,steer]:[{:.4f},{:.4f},{:.4f}], [cA,cL]:[{:.4f},{:.4f}]m [tA, tL]:[{:.4f},{:.4f}]'.format(throttle, brake, steer,current_angular_velocity, current_linear_velocity,target_angular_velocity, target_linear_velocity))
         return throttle, brake, steer
 
     def reset(self):

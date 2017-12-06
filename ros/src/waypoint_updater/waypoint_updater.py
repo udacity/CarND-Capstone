@@ -22,7 +22,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 
 def get_car_xy_from_global_xy(car_x, car_y, yaw_rad, global_x, global_y):
     # Translate global point by car's position
@@ -50,10 +50,10 @@ class WaypointUpdater(object):
         self.current_pose = None
 
         # Loop Rate
-        self.loop_frequency = 50 # 50 Hz
+        self.loop_frequency = 2 # Hz
 
         # Max velocity
-        self.max_velocity = 10 # 10 mph, I guess....
+        self.max_velocity = 4.5 # mph
 
         self.loop()
 

@@ -55,7 +55,7 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # Loop Rate
-        self.loop_frequency = 50 # 50 Hz
+        self.loop_frequency = 15 # Hz
 
         # State
         self.dbw_enabled = False
