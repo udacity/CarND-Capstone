@@ -64,7 +64,7 @@ class DBWNode(object):
         # Record data from subscribers
         self.twist_cmd = None
         self.current_velocity = None
-        self.dbw_enabled = None
+        self.dbw_enabled = False
 
         self.loop()
 
@@ -73,7 +73,7 @@ class DBWNode(object):
         while not rospy.is_shutdown():
 
             if all([self.twist_cmd, self.current_velocity, self.dbw_enabled]):    # Ensure values have been initialized
-
+                print self.current_velocity.angular.z,
                 # Get predicted throttle, brake and steering
                 throttle, brake, steering = self.controller.control(self.twist_cmd.linear.x,
                     self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled)
@@ -81,7 +81,7 @@ class DBWNode(object):
                 # Ensure dbw is enabled (not manual mode)
                 if self.dbw_enabled:
                     self.publish(throttle, brake, steering)
-
+                 
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -106,18 +106,18 @@ class DBWNode(object):
         self.twist_cmd = msg.twist
         lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
         loginfo = 'twist_cmd x: {}, y: {}, z: {}\nang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
-        rospy.loginfo_throttle(1, loginfo)
+        rospy.logdebug(1, loginfo)
 
     def upd_velocity(self, msg):
         self.current_velocity = msg.twist
         lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
         loginfo = 'current_vel x: {}, y: {}, z: {}\nang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
-        rospy.loginfo_throttle(1, loginfo)
+        rospy.logdebug(1, loginfo)
 
     def upd_dbw_enabled(self, msg):
         self.dbw_enabled = msg.data
         loginfo = 'dbw {}'.format(self.dbw_enabled)
-        rospy.loginfo_throttle(1, loginfo)
+        rospy.logdebug(1, loginfo)
 
 
 if __name__ == '__main__':
