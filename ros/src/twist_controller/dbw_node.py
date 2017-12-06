@@ -66,6 +66,13 @@ class DBWNode(object):
         self.current_velocity = None
         self.dbw_enabled = None
 
+        # Logging data in csv file
+        self.log_to_csv = True
+        if self.log_to_csv:
+            self.log_handle = self.log_init('CarND_performance.csv')
+
+        self.time_init = rospy.get_rostime()
+
         self.loop()
 
     def loop(self):
@@ -77,6 +84,12 @@ class DBWNode(object):
                 # Get predicted throttle, brake and steering
                 throttle, brake, steering = self.controller.control(self.twist_cmd.linear.x,
                     self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled)
+
+                # Log data for car control analysis
+                if self.log_to_csv:
+                    timestamp = rospy.get_rostime() - self.time_init
+                    self.log_data(timestamp.to_sec(), self.twist_cmd.linear.x, self.twist_cmd.angular.z,
+                                  self.current_velocity.linear.x, self.dbw_enabled, throttle, brake, steering)
 
                 # Ensure dbw is enabled (not manual mode)
                 if self.dbw_enabled:
@@ -105,19 +118,28 @@ class DBWNode(object):
     def upd_twist(self, msg):
         self.twist_cmd = msg.twist
         lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
-        loginfo = 'twist_cmd x: {}, y: {}, z: {}\nang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
-        rospy.loginfo_throttle(1, loginfo)
+        loginfo = 'twist_cmd x: {}, y: {}, z: {}, ang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
+        rospy.logdebug_throttle(1, loginfo)
 
     def upd_velocity(self, msg):
         self.current_velocity = msg.twist
         lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
-        loginfo = 'current_vel x: {}, y: {}, z: {}\nang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
-        rospy.loginfo_throttle(1, loginfo)
+        loginfo = 'current_vel x: {}, y: {}, z: {}, ang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
+        rospy.logdebug_throttle(1, loginfo)
 
     def upd_dbw_enabled(self, msg):
         self.dbw_enabled = msg.data
         loginfo = 'dbw {}'.format(self.dbw_enabled)
-        rospy.loginfo_throttle(1, loginfo)
+        rospy.logdebug_throttle(1, loginfo)
+
+    def log_init(self, log_path):
+        log_handle = open(log_path,'w')
+        headers = ','.join(["Time", "Target speed", "Target yaw", "Current speed", "DBW status", "Throttle", "Brake", "Steering"])
+        log_handle.write(headers + '\n')
+        return log_handle
+        
+    def log_data(self, *args):
+        self.log_handle.write(','.join(str(arg) for arg in args) + '\n')
 
 
 if __name__ == '__main__':
