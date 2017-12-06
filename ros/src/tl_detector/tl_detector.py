@@ -33,11 +33,10 @@ class TLDetector(WaypointTracker):
         WaypointTracker.__init__(self)
 
         rospy.init_node('tl_detector')
-        self.pose = None
-        self.waypoints = None
+        # self.pose = None # defined in the supper class
+        # self.waypoints = None # redundent should be removed
         self.camera_image = None
         self.lights = []
-        self.waypoint_to_light = None
         self.loop_freq = rospy.get_param('~loop_freq', 2)
         self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
         
@@ -63,7 +62,6 @@ class TLDetector(WaypointTracker):
 
         self.bridge = CvBridge()
         
-        # self.light_classifier = TLClassifier()
         use_simulator_classifier = rospy.get_param('~traffic_light_classifier_sim')
         self.light_classifier = TLClassifier(sim = use_simulator_classifier)
         
@@ -119,7 +117,7 @@ class TLDetector(WaypointTracker):
         #     self.prev_light_loc = None
         #     return None
     
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
     
         #Get classification
         return self.light_classifier.get_classification(cv_image)

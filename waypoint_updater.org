@@ -320,6 +320,7 @@ then the waypoint is front of my_car.
       <<decelerate>>
 
       <<base_waypoints_cb>>
+      <<current_pose_cb>>
       <<traffic_waypoint_cb>>
       <<current_velocity_cb>>
       <<obstacle_cb>>
@@ -398,6 +399,26 @@ but it may not matter as the modification is still constant through the life cyc
       # end of for i in range(LOOKAHEAD_WPS)
 #+END_SRC
 
+*** current_pose_cb
+     - Subscribe to /current_pose is done in __init__
+
+     - 11/6 ::
+     change pose_cb only update the self.pose message, moving the function of generating waypoints ahead to self.loop.
+     This is to make the call back more time responsive to improve overall system predictability.
+     Only accept message when Waypoint_Updater is ready to process, otherwise reject /current_pose update to avoid delay.
+
+ #+NAME:current_pose_cb
+ #+BEGIN_SRC python :noweb tangle :tangle
+   def current_pose_cb(self, msg):
+       # WORKING: Implement
+       #
+       if self.pose is None:       # ready to process message
+           self.pose = msg
+       # end of if self.pose is None
+       # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
+ #+END_SRC
+
+
 *** velocity-policy
 
     Velocity policies are functions that take input of the distance to a reference point,
@@ -473,31 +494,28 @@ the input, the velocity should be the normal velocity as specified. The decrease
 
 #+NAME:traffic_waypoint_cb
 #+BEGIN_SRC python :noweb tangle :tangle
-  def traffic_waypoint_cb(self, msg):
-      if self.traffic_waypoint != msg.data:
-          self.new_traffic_waypoint = True
-          self.prev_traffic_light_red = self.traffic_light_red
-          self.traffic_waypoint = msg.data
-          if msg.data < 0:
-              self.traffic_light_red = False
-              self.traffic_waypoint = -msg.data
-          else:
-              self.traffic_light_red = True
-              self.traffic_waypoint = msg.data
-          # end of if msg.data < 0
-      else:
-          self.new_traffic_waypoint = False
-      # end of if self.traffic_waypoint != msg.data
+    def traffic_waypoint_cb(self, msg):
+        existing_traffic_waypoint = (self.traffic_waypoint * (1 if self.traffic_light_red else -1)
+                                     if self.traffic_waypoint is not None else 0)
+        if existing_traffic_waypoint != msg.data:
+            self.new_traffic_waypoint = True
+            self.prev_traffic_light_red = self.traffic_light_red
+            self.traffic_light_red = (0 <= msg.data)
+            self.traffic_waypoint = abs(msg.data)
+        else:
+            self.new_traffic_waypoint = False
+        # end of if self.traffic_waypoint != msg.data
+        rospy.loginfo("self.traffic_light_red: {} msg.data {} in traffic_waypoint_cb".format(self.traffic_light_red, msg.data))
 
-  def red_to_non_red(self):
-      return (self.new_traffic_waypoint and
-              self.prev_traffic_light_red and
-              (not self.traffic_light_red))
+    def red_to_non_red(self):
+        return (self.new_traffic_waypoint and
+                self.prev_traffic_light_red and
+                (not self.traffic_light_red))
 
-  def non_red_to_red(self):
-      return (self.new_traffic_waypoint and
-              (not self.prev_traffic_light_red) and
-              self.traffic_light_red)
+    def non_red_to_red(self):
+        return (self.new_traffic_waypoint and
+                (not self.prev_traffic_light_red) and
+                self.traffic_light_red)
 #+END_SRC
 
 *** adjust_velocity_for_traffic_light
@@ -724,11 +742,12 @@ endif
       else:
           min_stop_dist = SAFE_DIST
       # end of if self.current_velocity is not None
-      rospy.loginfo(
-          "self.last_closest_front_waypoint_index {:4} self.traffic_waypoint {:4} traffic light color: {:7} minimum stop distance {:4} current velocity {:5}".format(
-              self.last_closest_front_waypoint_index, self.traffic_waypoint, "RED" if self.traffic_light_red else "not-RED", min_stop_dist, self.current_velocity))
-      if (self.traffic_waypoint is not None) and self.traffic_light_red:
-          tl_dist = self.distance(self.last_closest_front_waypoint_index, self.traffic_waypoint)
+
+      tl_dist = tl_dist = self.distance(self.last_closest_front_waypoint_index, self.traffic_waypoint) if ((self.traffic_waypoint is not None) and self.last_closest_front_waypoint_index is not None) else 99999  # impossibly large
+      if ((self.traffic_waypoint is not None) and
+          (self.last_closest_front_waypoint_index < self.traffic_waypoint) and
+          self.traffic_light_red):
+          # tl_dist = self.distance(self.last_closest_front_waypoint_index, self.traffic_waypoint)
           if (tl_dist < min_stop_dist):
               if (self.last_closest_front_waypoint_index <= self.traffic_waypoint):
                   final_waypoints = []
@@ -737,13 +756,24 @@ endif
                   # end of for i in range(self.last_closest_front_waypoint_index, self.traffic_waypoint)
                   final_waypoints = self.decelerate(self.last_closest_front_waypoint_index, self.traffic_waypoint, final_waypoints)
               # end of if (self.last_closest_front_waypoint_index < self.traffic_waypoint)
+              rospy.loginfo(
+                  "self.last_closest_front_waypoint_index {:4} self.traffic_waypoint {:4} light color: {:7} dist. to light: {:4} minimum stop distance {:4.2} current velocity {:.3}; within stop dist., decelerate".format(
+                      self.last_closest_front_waypoint_index, self.traffic_waypoint, "RED" if self.traffic_light_red else "not-RED", tl_dist, min_stop_dist, self.current_velocity))
+
           else:                   # too far to brake
               final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index+1 :
                                                               (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
+              rospy.loginfo(
+                  "self.last_closest_front_waypoint_index {:4} self.traffic_waypoint {:4} light color: {:7} dist. to light: {:4} minimum stop distance {:4.2} current velocity {:.3}; too far to break, no slow down".format(
+                      self.last_closest_front_waypoint_index, self.traffic_waypoint, "RED" if self.traffic_light_red else "not-RED", tl_dist, min_stop_dist, self.current_velocity))
+
           # end of if (tl_dist < min_stop_dist)
       else:                       # no traffic light ahead or no turning red light
           final_waypoints = self.base_waypoints[self.last_closest_front_waypoint_index+1 :
                                                           (self.last_closest_front_waypoint_index + LOOKAHEAD_WPS)]
+          rospy.loginfo(
+                  "self.last_closest_front_waypoint_index {:4} self.traffic_waypoint {:4} light color: {:7} dist. to light: {:4} minimum stop distance {:4.2} current velocity {:.3}; no red traffic light ahead, keep the current velocity".format(
+                      self.last_closest_front_waypoint_index, self.traffic_waypoint, "RED" if self.traffic_light_red else "not-RED", tl_dist, min_stop_dist, self.current_velocity))
       # end of if (self.traffic_waypoint is not None) and self.non_red_to_red()
 
       # publish to /final_waypoints, need to package final_waypoints into Lane message
@@ -1013,3 +1043,7 @@ To view the image played from rosbag data
 #+BEGIN_SRC shell
 rqt_image_view /image_color
 #+END_SRC
+
+* Notes
+
+After changing velocity to 10 from 40 in waypoint_loader.launch, now the car becomes stuck at the first light.

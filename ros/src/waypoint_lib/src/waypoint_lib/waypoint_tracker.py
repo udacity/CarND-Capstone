@@ -34,34 +34,35 @@ def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
     # assuming the orientation angle clockwise being positive
     return local_x, local_y
 
-def waypoint_to_light_f(lights_to_waypoints, base_waypoints_num):
+def waypoint_to_light_f(lights_to_waypoint_indices, base_waypoints_num):
     # implementation
     waypoint_to_light = {}
     light_next = 0
 
     for waypoint_index in range(base_waypoints_num):
-        for light_index in range(light_next, len(lights_to_waypoints)):
-            waypoint_index_of_light = lights_to_waypoints[light_index]
-            if waypoint_index < waypoint_index_of_light:
-                waypoint_to_light[waypoint_index] = (light_index, waypoint_index_of_light)
+        for light_i in range(light_next, len(lights_to_waypoint_indices)):
+            waypoint_index_of_light = lights_to_waypoint_indices[light_i]
+            if waypoint_index <= waypoint_index_of_light:
+                # the car's waypoint index may be the same as that of the traffic light in front of it.
+                waypoint_to_light[waypoint_index] = (light_i, waypoint_index_of_light)
                 break
-            elif lights_to_waypoints[-1] <= waypoint_index:
+            elif lights_to_waypoint_indices[-1] <= waypoint_index:
                 waypoint_to_light[waypoint_index] = (None, None)
                 break
             # end of if waypoint_index <= waypoint_index_of_light
-            light_next = light_index
-        # end of for light_index in range(len(lights_to_waypoints))
-    # end of for i in range(base_waypoints_num)
+            light_next = light_i
+        # end of for light_i in range(len(lights_to_waypoint_indices))
+    # end of for waypoint_index in range(base_waypoints_num)
     return waypoint_to_light
 
 # test data:
-lights_to_waypoints = [1, 3, 7, 8, 10, 15]
+lights_to_waypoint_indices = [1, 3, 7, 8, 10, 15]
 base_waypoints_num = 17
 
-y = waypoint_to_light_f(lights_to_waypoints, base_waypoints_num)
+y12 = waypoint_to_light_f(lights_to_waypoint_indices, base_waypoints_num)
 # expected outcome:
-x = (y == {0: (0, 1), 1: (1, 3), 2: (1, 3), 3: (2, 7), 4: (2, 7), 5: (2, 7), 6: (2, 7), 7: (3, 8), 8: (4, 10), 8: (4, 10),
-                     9: (4, 10), 10: (5, 15), 11: (5, 15), 12: (5, 15), 13: (5, 15), 14: (5, 15), 15: (None, None), 16: (None, None)})
+x = (y12 == {0: (0, 1), 1: (0, 1), 2: (1, 3), 3: (1, 3), 4: (2, 7), 5: (2, 7), 6: (2, 7), 7: (2, 7), 8: (3, 8),
+             9: (4, 10), 10: (4, 10), 11: (5, 15), 12: (5, 15), 13: (5, 15), 14: (5, 15), 15: (None, None), 16: (None, None)})
 
 class WaypointTracker(object):
     def __init__(self):
@@ -69,6 +70,7 @@ class WaypointTracker(object):
         self.base_waypoints_num = None
         self.pose = None
         self.lights_to_waypoints = []  # The list of the waypoint index of the traffic lights
+        self.waypoint_to_light = None
 
         self.last_closest_front_waypoint_index = 0
         config_string = rospy.get_param("/traffic_light_config")
@@ -163,13 +165,6 @@ class WaypointTracker(object):
         self.waypoint_to_light = waypoint_to_light_f(self.lights_to_waypoints, self.base_waypoints_num)
         # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
     
-    def current_pose_cb(self, msg):
-        # WORKING: Implement
-        #
-        if self.pose is None:       # ready to process message
-            self.pose = msg
-        # end of if self.pose is None
-        # otherwise, the current message is being processed, rejected the coming message and expect to receive more updated next one.
     def get_closest_waypoint(self, pose):
         if self.base_waypoints_num is not None:
             current_pose = pose.position

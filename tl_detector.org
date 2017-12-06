@@ -86,11 +86,10 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 
 #+NAME:attributes-initialization
 #+BEGIN_SRC python :noweb tangle :tangle
-  self.pose = None
-  self.waypoints = None
+  # self.pose = None # defined in the supper class
+  # self.waypoints = None # redundent should be removed
   self.camera_image = None
   self.lights = []
-  self.waypoint_to_light = None
   self.loop_freq = rospy.get_param('~loop_freq', 2)
   self.car_position = None        # the waypoint index in the base_waypoints of the waypoint in front of the car
 
@@ -134,7 +133,6 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 #+BEGIN_SRC python :noweb tangle :tangle
   self.bridge = CvBridge()
 
-  # self.light_classifier = TLClassifier()
   use_simulator_classifier = rospy.get_param('~traffic_light_classifier_sim')
   self.light_classifier = TLClassifier(sim = use_simulator_classifier)
 
@@ -159,7 +157,7 @@ self.lights is from TrafficLightArray.lights, the position and state of traffic 
 ** current_pose_cb
 
    - Determine the location of the car by locating the nearest waypoint in front of the car
-   -
+   - This is overriding that of the superclass, WaypointTracker
 #+NAME:current_pose_cb
 #+BEGIN_SRC python :noweb tangle :tangle
   def current_pose_cb(self, msg):
@@ -312,7 +310,7 @@ when the traffic light color is not red, report the negative of the waypoint ind
       return None, TrafficLight.UNKNOWN
 #+END_SRC
 
-** find-closest-traffic-light
+** obsolete: find-closest-traffic-light
 
 Based on the current car_position, and the previous_traffic_light_position, find the next traffic_light_position
 #+NAME:find-closest-traffic-light
@@ -356,28 +354,7 @@ Based on the current car_position, and the previous_traffic_light_position, find
       # end of self.number_traffic_lights_passed < len(self.stop_line_positions)-1
 #+END_SRC
 
-** get_closest_waypoint
-
-Use the implementation of the super-class, WaypointTracker.
-
-#+NAME:get_closest_waypoint
-#+BEGIN_SRC python :noweb tangle :tangle
-  # def get_closest_waypoint(self, pose):
-  #     """Identifies the closest path waypoint to the given position
-  #         https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
-  #     Args:
-  #         pose (Pose): position to match a waypoint to
-
-  #     Returns:
-  #         int: index of the closest waypoint in self.waypoints
-
-  #     """
-  #     #TODO implement
-  #     return 0
-
-#+END_SRC
-
-** get_light_state
+** obsolete: get_light_state
 
 I assume/design the light parameter is the index of the nearest traffic light in the list of traffic lights.
 #+NAME:get_light_state
@@ -404,7 +381,7 @@ I assume/design the light parameter is the index of the nearest traffic light in
       #     self.prev_light_loc = None
       #     return None
 
-      cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+      cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
       #Get classification
       return self.light_classifier.get_classification(cv_image)
