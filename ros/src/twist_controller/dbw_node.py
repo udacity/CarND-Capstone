@@ -7,7 +7,6 @@ from geometry_msgs.msg import TwistStamped
 import math
 
 from twist_controller import Controller
-import os.path  # For log path of car control commands
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -70,7 +69,9 @@ class DBWNode(object):
         # Logging data in csv file
         self.log_to_csv = True
         if self.log_to_csv:
-            self.log_handle = self.log_init('~/CarND_performance.csv')
+            self.log_handle = self.log_init('CarND_performance.csv')
+
+        self.time_init = rospy.get_rostime()
 
         self.loop()
 
@@ -86,8 +87,9 @@ class DBWNode(object):
 
                 # Log data for car control analysis
                 if self.log_to_csv:
-                    self.log_data(self.twist_cmd.linear.x, self.twist_cmd.angular.z, self.current_velocity.linear.x,
-                                self.dbw_enabled, throttle, brake, steering)
+                    timestamp = rospy.get_rostime() - self.time_init
+                    self.log_data(timestamp.to_sec(), self.twist_cmd.linear.x, self.twist_cmd.angular.z,
+                                  self.current_velocity.linear.x, self.dbw_enabled, throttle, brake, steering)
 
                 # Ensure dbw is enabled (not manual mode)
                 if self.dbw_enabled:
@@ -116,13 +118,13 @@ class DBWNode(object):
     def upd_twist(self, msg):
         self.twist_cmd = msg.twist
         lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
-        loginfo = 'twist_cmd x: {}, y: {}, z: {}\nang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
+        loginfo = 'twist_cmd x: {}, y: {}, z: {}, ang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
         rospy.loginfo_throttle(1, loginfo)
 
     def upd_velocity(self, msg):
         self.current_velocity = msg.twist
         lin, ang = self.twist_cmd.linear, self.twist_cmd.angular
-        loginfo = 'current_vel x: {}, y: {}, z: {}\nang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
+        loginfo = 'current_vel x: {}, y: {}, z: {}, ang x: {}, y: {}, z: {}'.format(lin.x, lin.y, lin.z, ang.x, ang.y, ang.z)
         rospy.loginfo_throttle(1, loginfo)
 
     def upd_dbw_enabled(self, msg):
@@ -131,9 +133,8 @@ class DBWNode(object):
         rospy.loginfo_throttle(1, loginfo)
 
     def log_init(self, log_path):
-        log_path = os.path.expanduser(log_path)    # if home directory "~" is used
         log_handle = open(log_path,'w')
-        headers = ','.join(["Target speed", "Target yaw", "Current speed", "DBW status", "Throttle", "Brake", "Steering"])
+        headers = ','.join(["Time", "Target speed", "Target yaw", "Current speed", "DBW status", "Throttle", "Brake", "Steering"])
         log_handle.write(headers + '\n')
         return log_handle
         
