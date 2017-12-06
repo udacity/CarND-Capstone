@@ -31,7 +31,7 @@ class Controller(object):
 
         self.throttle_controller = PID(0.15, 0.0, 0.05, mn=decel_limit, mx=accel_limit)
 
-        self.low_pass_filter = LowPassFilter(2.0 / 1000.0, 1.0 / loop_frequency)
+        self.low_pass_filter = LowPassFilter(10, 1)
 
         self.last_timestamp = None
 
@@ -55,9 +55,9 @@ class Controller(object):
             cte = target_linear_velocity - current_linear_velocity
             acceleration = self.throttle_controller.step(cte, dt)
 
-            # filtvalue = self.low_pass_filter.filt(acceleration)
+            # filtvalue = self.low_pass_filter.filt(steer)
             # if self.low_pass_filter.ready:
-            #     acceleration = self.low_pass_filter.get()
+            #     steer = self.low_pass_filter.get()
 
             if acceleration > 0:
                 throttle = acceleration
