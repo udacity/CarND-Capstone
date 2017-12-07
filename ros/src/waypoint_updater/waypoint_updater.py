@@ -45,6 +45,7 @@ class WaypointUpdater(object):
         self.waypoints_count = 0
         self.pose = None
         self.poses = 0
+        self.traffic_waypoint = -1
 
         rospy.spin()
 
@@ -64,7 +65,7 @@ class WaypointUpdater(object):
             self.final_waypoints_pub.publish(pub)
             self.poses += 1
             if self.poses%50 == 0:
-                rospy.logwarn("{} poses parsed (nearest_waypoint={}).".format(self.poses, nearest_waypoint))
+                rospy.logwarn("{:,} poses parsed (nearest_waypoint={:,}).".format(self.poses, nearest_waypoint))
         else:
             rospy.logerr("/current_pose received before /base_waypoints.")
 
@@ -77,11 +78,11 @@ class WaypointUpdater(object):
         # Extend waypoints to include the 'wraparound' required for a circular track
         # as a once-off process here.
         self.waypoints += self.waypoints[:LOOKAHEAD_WPS]
-        rospy.logwarn("{} waypoints received from /base_waypoints.".format(self.waypoints_count))
+        rospy.logwarn("{:,} waypoints received from /base_waypoints.".format(self.waypoints_count))
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.traffic_waypoint = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
