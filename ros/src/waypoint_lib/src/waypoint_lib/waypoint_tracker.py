@@ -17,6 +17,7 @@ def get_yaw(orientation):
         orientation.w])
     yaw = euler[2]
     return yaw
+
 def to_local_coordinates(local_origin_x, local_origin_y, rotation, x, y):
     """
     compute the local coordinates for the global x, y coordinates values,
@@ -87,18 +88,16 @@ class WaypointTracker(object):
             # unsubscribe to the waypoint messages, no longer needed
             self.base_waypoints_sub.unregister()
             self.subscriber_waypoints = None
-    
             self.base_waypoints = msg.waypoints # changed, equivalent
             self.base_waypoints_num = len(self.base_waypoints) # changed, equivalent
             rospy.loginfo(("the number of elements in self.base_waypoints: {}"+
                           " when received and processed the /base_waypoints message").format(len(self.base_waypoints)))
         # end of if self.base_waypoints is None
+
     def preprocess(self):
         if self.base_waypoints:
             # process the waypoints here
             self.dist_to_here_from_start = []
-    
-            # self.base_waypoints = []  # changed, no longer needed
     
             dist = 0
             dist_so_far = 0
@@ -106,13 +105,6 @@ class WaypointTracker(object):
             for i in range(self.base_waypoints_num):
                 dist_so_far += dist
                 self.dist_to_here_from_start.append(dist_so_far)
-    
-                # do a deep copy of the data, to keep the data from lose
-                # just to be safe, simply do shallow copy seems still working
-                # by self.base_waypoints = waypoints
-    
-                # self.base_waypoints.append(copy.deepcopy(waypoints[i]))  # changed, no longer needed
-    
                 # distance to the next waypoint
                 if (i < self.base_waypoints_num-1):
                     dist = (
@@ -176,6 +168,7 @@ class WaypointTracker(object):
             # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
     
         # end of if self.base_waypoints
+
     def get_closest_waypoint(self, pose):
         if self.base_waypoints_num is not None:
             current_pose = pose.position
@@ -205,6 +198,7 @@ class WaypointTracker(object):
             return i
         # end of if self.base_waypoints_num is not None
         return None
+
     def distance(self, wp1, wp2):
         if (wp1 < wp2):
             start, end = wp1, wp2
@@ -214,6 +208,7 @@ class WaypointTracker(object):
     
         dist = self.dist_to_here_from_start[end] - self.dist_to_here_from_start[start]
         return dist
+
     def distance_two_indices(self, waypoints, i, j):
       a = waypoints[i].pose.pose.position
       b = waypoints[j].pose.pose.position

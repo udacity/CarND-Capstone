@@ -27,6 +27,7 @@ A super-class for both WaypointTracker and TLDetector
   import yaml
 
   <<get_yaw>>
+
   <<to_local_coordinates>>
 
   <<waypoint_to_light_f>>
@@ -49,9 +50,13 @@ A super-class for both WaypointTracker and TLDetector
           # it expects the subclass will implement the appropriate
 
       <<base_waypoints_process>>
+
       <<pre-process-base-waypoints>>
+
       <<get_closest_waypoint>>
+
       <<distance>>
+
       <<distance_two_indices>>
 #+END_SRC
 
@@ -74,7 +79,6 @@ A super-class for both WaypointTracker and TLDetector
           # unsubscribe to the waypoint messages, no longer needed
           self.base_waypoints_sub.unregister()
           self.subscriber_waypoints = None
-
           self.base_waypoints = msg.waypoints # changed, equivalent
           self.base_waypoints_num = len(self.base_waypoints) # changed, equivalent
           rospy.loginfo(("the number of elements in self.base_waypoints: {}"+
@@ -94,21 +98,12 @@ the time allowed to the callback of message.
           # process the waypoints here
           self.dist_to_here_from_start = []
 
-          # self.base_waypoints = []  # changed, no longer needed
-
           dist = 0
           dist_so_far = 0
           self.shortest_dist_to_next_waypoint = 0
           for i in range(self.base_waypoints_num):
               dist_so_far += dist
               self.dist_to_here_from_start.append(dist_so_far)
-
-              # do a deep copy of the data, to keep the data from lose
-              # just to be safe, simply do shallow copy seems still working
-              # by self.base_waypoints = waypoints
-
-              # self.base_waypoints.append(copy.deepcopy(waypoints[i]))  # changed, no longer needed
-
               # distance to the next waypoint
               if (i < self.base_waypoints_num-1):
                   dist = (
