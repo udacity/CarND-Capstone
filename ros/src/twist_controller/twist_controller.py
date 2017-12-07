@@ -26,9 +26,9 @@ class Controller(object):
         if dbw_status:
 
             # Update DT
-            new_time = rospy.get_rostime().to_sec()
+            new_time = rospy.get_rostime()
             if self.last_time:  # The first time, we are not able to calculate DT
-                self.DT = new_time - self.last_time
+                self.DT = (new_time - self.last_time).to_sec()
             self.last_time = new_time
 
             velocity_error = target_linear_velocity - current_linear_velocity

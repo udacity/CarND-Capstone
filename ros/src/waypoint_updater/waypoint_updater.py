@@ -141,7 +141,7 @@ class WaypointUpdater(object):
                                + (wpidx[1].pose.pose.position.y - self.ego_pos.position.y) ** 2)
         closest_index = closest_waypoint[0]
         loginfo += '| Closest waypoint index: {}'.format(closest_index)
-        rospy.loginfo_throttle(1, loginfo)
+        rospy.logdebug_throttle(1, loginfo)
 
         return closest_index
 
