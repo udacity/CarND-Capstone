@@ -173,16 +173,16 @@ class WaypointUpdater(WaypointTracker):
                 
                     if ((self.traffic_waypoint is not None) and
                         (self.last_closest_front_waypoint_index <= self.traffic_waypoint) and
-                        self.traffic_light_red):
+                        (self.traffic_light_red or (light_index_or_last == (len(self.base_waypoints)-1)))):
                         # tl_dist = self.distance(self.last_closest_front_waypoint_index, self.traffic_waypoint)
                         if (tl_dist < min_stop_dist):
-                            if (self.last_closest_front_waypoint_index <= self.traffic_waypoint):
+                            if (self.last_closest_front_waypoint_index <= light_index_or_last):
                                 final_waypoints = []
-                                for i in range(self.last_closest_front_waypoint_index, self.traffic_waypoint+1):
+                                for i in range(self.last_closest_front_waypoint_index, light_index_or_last+1):
                                     final_waypoints.append(copy.deepcopy(self.base_waypoints[i]))
                                 # end of for i in range(self.last_closest_front_waypoint_index, self.traffic_waypoint)
-                                final_waypoints = self.decelerate(self.last_closest_front_waypoint_index, self.traffic_waypoint, final_waypoints)
-                            # end of if (self.last_closest_front_waypoint_index < self.traffic_waypoint)
+                                final_waypoints = self.decelerate(self.last_closest_front_waypoint_index, light_index_or_last, final_waypoints)
+                            # end of if (self.last_closest_front_waypoint_index <= light_index_or_last)
                             label = ("car index {:4} " +
                                      "light index {:4} " +
                                      "curr. light color: {:7} " +
@@ -192,7 +192,7 @@ class WaypointUpdater(WaypointTracker):
                                      "within stop dist., decelerate")
                             rospy.loginfo(label.format(
                                 self.last_closest_front_waypoint_index,
-                                self.traffic_waypoint,
+                                light_index_or_last,
                                 "RED" if self.traffic_light_red else "not-RED",
                                 tl_dist, min_stop_dist,
                                 self.current_velocity))
@@ -212,7 +212,7 @@ class WaypointUpdater(WaypointTracker):
                                      "too far to brake, no slow down")
                             rospy.loginfo(label.format(
                                 self.last_closest_front_waypoint_index,
-                                self.traffic_waypoint,
+                                light_index_or_last,
                                 "RED" if self.traffic_light_red else "not-RED",
                                 tl_dist, min_stop_dist,
                                 self.current_velocity))
@@ -234,11 +234,13 @@ class WaypointUpdater(WaypointTracker):
                                  "no red traffic light ahead, keep the curr. vel.")
                         rospy.loginfo(label.format(
                             self.last_closest_front_waypoint_index,
-                            self.traffic_waypoint,
+                            light_index_or_last,
                             "RED" if self.traffic_light_red else "not-RED",
                             tl_dist, min_stop_dist,
                             self.current_velocity))
-                    # end of if (self.traffic_waypoint is not None) and self.non_red_to_red()
+                    # end of ((self.traffic_waypoint is not None) and
+                    # (self.last_closest_front_waypoint_index <= self.traffic_waypoint) and
+                    # (self.traffic_light_red or (light_index_or_last == (len(self.base_waypoints)-1))))
                 
                     # publish to /final_waypoints, need to package final_waypoints into Lane message
                     publish_Lane(self.final_waypoints_pub, final_waypoints)
