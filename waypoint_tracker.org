@@ -43,10 +43,13 @@ A super-class for both WaypointTracker and TLDetector
           config_string = rospy.get_param("/traffic_light_config")
           self.config = yaml.load(config_string)
 
+          self.ready = False      # overall flag, whether the object is ready to proceed its main function
+
           # this is a super_class, so it will not start loop nor spin()
           # it expects the subclass will implement the appropriate
 
       <<base_waypoints_process>>
+      <<pre-process-base-waypoints>>
       <<get_closest_waypoint>>
       <<distance>>
       <<distance_two_indices>>
@@ -67,17 +70,32 @@ A super-class for both WaypointTracker and TLDetector
 #+BEGIN_SRC python :noweb tangle :tangle
   def base_waypoints_process(self, msg):
       # DONE: Implement
-      waypoints = msg.waypoints
       if self.base_waypoints is None:
           # unsubscribe to the waypoint messages, no longer needed
           self.base_waypoints_sub.unregister()
           self.subscriber_waypoints = None
 
-          self.base_waypoints_num = len(waypoints)
+          self.base_waypoints = msg.waypoints # changed, equivalent
+          self.base_waypoints_num = len(self.base_waypoints) # changed, equivalent
+          rospy.loginfo(("the number of elements in self.base_waypoints: {}"+
+                        " when received and processed the /base_waypoints message").format(len(self.base_waypoints)))
+      # end of if self.base_waypoints is None
+#+END_SRC
 
+** pre-process-base-waypoints
+
+This is the treatment to the base waypoints required before the object can function, but it's beyond
+the time allowed to the callback of message.
+
+#+NAME:pre-process-base-waypoints
+#+BEGIN_SRC python :noweb tangle :tangle
+  def preprocess(self):
+      if self.base_waypoints:
           # process the waypoints here
           self.dist_to_here_from_start = []
-          self.base_waypoints = []
+
+          # self.base_waypoints = []  # changed, no longer needed
+
           dist = 0
           dist_so_far = 0
           self.shortest_dist_to_next_waypoint = 0
@@ -88,24 +106,25 @@ A super-class for both WaypointTracker and TLDetector
               # do a deep copy of the data, to keep the data from lose
               # just to be safe, simply do shallow copy seems still working
               # by self.base_waypoints = waypoints
-              self.base_waypoints.append(copy.deepcopy(waypoints[i]))
+
+              # self.base_waypoints.append(copy.deepcopy(waypoints[i]))  # changed, no longer needed
+
               # distance to the next waypoint
               if (i < self.base_waypoints_num-1):
                   dist = (
-                      self.distance_two_indices(waypoints,  # the (i+1)_th element has not been copied yet
+                      self.distance_two_indices(self.base_waypoints,
                                                 i, (i+1) % self.base_waypoints_num))
               # end of if (i < self.base_waypoints_num-1)
               if (dist < self.shortest_dist_to_next_waypoint):
                   self.shortest_dist_to_next_waypoint = dist
               # end of if (dist < self.shortest_dist_to_next_waypoint)
           # end of for i in range(self.base_waypoints_num - 1)
-      # end of if self.base_waypoints is None
-      # Construct the map, self.waypoint_to_light from a waypoint index to the traffic light
-      # in terms of waypoint index
 
-      <<traffic_lights_to_waypoints>>
+          <<traffic_lights_to_waypoints>>
 
+      # end of if self.base_waypoints
 #+END_SRC
+
 ** traffic_lights_to_waypoints
 
    Identify waypoint index with traffic lights once.
@@ -116,6 +135,9 @@ A super-class for both WaypointTracker and TLDetector
 
 #+NAME:traffic_lights_to_waypoints
 #+BEGIN_SRC python :noweb tangle :tangle
+  # Construct the map, self.waypoint_to_light from a waypoint index to the traffic light
+  # in terms of waypoint index
+
   # assumption that a traffic light can only have one waypoint close to it.
   # or one waypoint can have at most one traffic light near it.
 

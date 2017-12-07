@@ -80,6 +80,10 @@ class TLDetector(WaypointTracker):
         # to be able to compute distance among any two base_waypoints.
         WaypointTracker.base_waypoints_process(self, msg)
     
+    def preprocess(self):
+        if self.base_waypoints:
+            WaypointTracker.preprocess(self)
+            self.ready = True
     def current_pose_cb(self, msg):
         self.pose = msg
     def traffic_array_cb(self, msg):
@@ -178,48 +182,51 @@ class TLDetector(WaypointTracker):
     def loop(self):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
-            if self.camera_image is not None:
-                light_wp, state = self.process_traffic_lights()
-                '''
-                    Publish upcoming red lights at camera frequency.
-                    Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-                    of times till we start using it. Otherwise the previous stable state is
-                    used.
+            if not self.ready:
+                self.preprocess()
+            else:
+                if self.camera_image is not None:
+                    light_wp, state = self.process_traffic_lights()
                     '''
-                # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
-                if (self.state is None) or (self.state != state):  # state changed
-                    # rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %r' %
-                    #               (self.state_count, self.state, state, light_wp))
-                    rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; changed: state or traffic light index".format(
-                        color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp))
+                        Publish upcoming red lights at camera frequency.
+                        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+                        of times till we start using it. Otherwise the previous stable state is
+                        used.
+                        '''
+                    # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
+                    if (self.state is None) or (self.state != state):  # state changed
+                        # rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %r' %
+                        #               (self.state_count, self.state, state, light_wp))
+                        rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; changed: state or traffic light index".format(
+                            color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp))
     
-                    self.state_count = 0
-                    self.state = state
-                    # self.last_state = self.state
-                    # self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
-                elif (self.state_count >= STATE_COUNT_THRESHOLD) and light_wp is not None:
-                    if (state != TrafficLight.UNKNOWN):
-                        # rospy.loginfo(
-                        #     'stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
-                        #     (self.state_count, self.state, state, self.last_wp))
-                        self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
-                        self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                        rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; stable; reporting {}".format(
-                            color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
+                        self.state_count = 0
+                        self.state = state
+                        # self.last_state = self.state
+                        # self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
+                    elif (self.state_count >= STATE_COUNT_THRESHOLD) and light_wp is not None:
+                        if (state != TrafficLight.UNKNOWN):
+                            # rospy.loginfo(
+                            #     'stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
+                            #     (self.state_count, self.state, state, self.last_wp))
+                            self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
+                            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                            rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; stable; reporting {}".format(
+                                color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
     
-                    # end of if (state == TrafficLight.RED)
-                else:
-                    if self.last_wp is not None:
-                        self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                        # end of if self.last_wp is not None
-                        # rospy.loginfo('not enough state change: old state: %r; keep publish the old traffic_waypoint: %r' % (self.state, self.last_wp))
-                        rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; not yet stable: reporting last state and light traffic index, reporting {}".format(
-                            color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
+                        # end of if (state == TrafficLight.RED)
+                    else:
+                        if self.last_wp is not None:
+                            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                            # end of if self.last_wp is not None
+                            # rospy.loginfo('not enough state change: old state: %r; keep publish the old traffic_waypoint: %r' % (self.state, self.last_wp))
+                            rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; not yet stable: reporting last state and light traffic index, reporting {}".format(
+                                color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
     
-                # end of if (self.state is None) or self.state != state
-                self.state_count += 1
-                self.camera_image = None
-            # end of if self.camera_image is not None
+                    # end of if (self.state is None) or self.state != state
+                    self.state_count += 1
+                    self.camera_image = None
+                # end of if self.camera_image is not None
             rate.sleep()
         # end of while not rospy.is_shutdow()
 

@@ -76,22 +76,30 @@ class WaypointTracker(object):
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
+        self.ready = False      # overall flag, whether the object is ready to proceed its main function
+
         # this is a super_class, so it will not start loop nor spin()
         # it expects the subclass will implement the appropriate
 
     def base_waypoints_process(self, msg):
         # DONE: Implement
-        waypoints = msg.waypoints
         if self.base_waypoints is None:
             # unsubscribe to the waypoint messages, no longer needed
             self.base_waypoints_sub.unregister()
             self.subscriber_waypoints = None
     
-            self.base_waypoints_num = len(waypoints)
-    
+            self.base_waypoints = msg.waypoints # changed, equivalent
+            self.base_waypoints_num = len(self.base_waypoints) # changed, equivalent
+            rospy.loginfo(("the number of elements in self.base_waypoints: {}"+
+                          " when received and processed the /base_waypoints message").format(len(self.base_waypoints)))
+        # end of if self.base_waypoints is None
+    def preprocess(self):
+        if self.base_waypoints:
             # process the waypoints here
             self.dist_to_here_from_start = []
-            self.base_waypoints = []
+    
+            # self.base_waypoints = []  # changed, no longer needed
+    
             dist = 0
             dist_so_far = 0
             self.shortest_dist_to_next_waypoint = 0
@@ -102,69 +110,72 @@ class WaypointTracker(object):
                 # do a deep copy of the data, to keep the data from lose
                 # just to be safe, simply do shallow copy seems still working
                 # by self.base_waypoints = waypoints
-                self.base_waypoints.append(copy.deepcopy(waypoints[i]))
+    
+                # self.base_waypoints.append(copy.deepcopy(waypoints[i]))  # changed, no longer needed
+    
                 # distance to the next waypoint
                 if (i < self.base_waypoints_num-1):
                     dist = (
-                        self.distance_two_indices(waypoints,  # the (i+1)_th element has not been copied yet
+                        self.distance_two_indices(self.base_waypoints,
                                                   i, (i+1) % self.base_waypoints_num))
                 # end of if (i < self.base_waypoints_num-1)
                 if (dist < self.shortest_dist_to_next_waypoint):
                     self.shortest_dist_to_next_waypoint = dist
                 # end of if (dist < self.shortest_dist_to_next_waypoint)
             # end of for i in range(self.base_waypoints_num - 1)
-        # end of if self.base_waypoints is None
-        # Construct the map, self.waypoint_to_light from a waypoint index to the traffic light
-        # in terms of waypoint index
     
-        # assumption that a traffic light can only have one waypoint close to it.
-        # or one waypoint can have at most one traffic light near it.
-        
-        # implementation:
-        # given a list of coordinates of traffic lights
-        # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
-        light_cursor = 0
-        base_waypoint_search_cursor = 0
-        
-        dl = lambda a, b: math.sqrt((a.x-b[0])**2 + (a.y-b[1])**2)
-        
-        # The list of the waypoint index of the traffic lights
-        self.lights_to_waypoints = []
-        
-        for light_cursor in range(len(stop_line_positions)):
-            # take, l, the first of the remaining traffic lights coordinates list, self.stop_line_positions
-            if base_waypoint_search_cursor < self.base_waypoints_num:
-                dist_shortest = dl(self.base_waypoints[base_waypoint_search_cursor].pose.pose.position,
-                                    stop_line_positions[light_cursor])
-                light_waypoint_index = base_waypoint_search_cursor
-        
-                # for l to find the closest waypoint in the remaining base_waypoints, w
-                for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num):
-                    dist = dl(self.base_waypoints[i].pose.pose.position,
-                              stop_line_positions[light_cursor])
-                    if dist < dist_shortest:
-                        dist_shortest = dist
-                        light_waypoint_index = i
-                    # end of if dist < d_shortest
-                # end of for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num)
-                # record the mapping from l to w
-                self.lights_to_waypoints.append(light_waypoint_index)
-                # remove l from the list of traffic lights, and w from the base_points
-                base_waypoint_search_cursor = light_waypoint_index + 1
-            else:
-                # there is extra traffic lights after having found the traffic light for the last waypoint.
-                self.lights_to_waypoints.append(None)
-            # end of if base_waypoint_search_cursor < self.base_waypoints_num
-        # end of for light_cursor in range(len(self.stop_line_positions))
-        # until there is no more traffic light, or no more waypoint
-        rospy.loginfo('Waypoints for traffic lights: %r' % repr(self.lights_to_waypoints))
-        
-        # construct the map, self.waypoint_to_light, the map from waypoint index to the index of the
-        # traffic light in terms of the closest waypoint index
-        self.waypoint_to_light = waypoint_to_light_f(self.lights_to_waypoints, self.base_waypoints_num)
-        # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
+            # Construct the map, self.waypoint_to_light from a waypoint index to the traffic light
+            # in terms of waypoint index
+            
+            # assumption that a traffic light can only have one waypoint close to it.
+            # or one waypoint can have at most one traffic light near it.
+            
+            # implementation:
+            # given a list of coordinates of traffic lights
+            # List of positions that correspond to the line to stop in front of for a given intersection
+            stop_line_positions = self.config['stop_line_positions']
+            light_cursor = 0
+            base_waypoint_search_cursor = 0
+            
+            dl = lambda a, b: math.sqrt((a.x-b[0])**2 + (a.y-b[1])**2)
+            
+            # The list of the waypoint index of the traffic lights
+            self.lights_to_waypoints = []
+            
+            for light_cursor in range(len(stop_line_positions)):
+                # take, l, the first of the remaining traffic lights coordinates list, self.stop_line_positions
+                if base_waypoint_search_cursor < self.base_waypoints_num:
+                    dist_shortest = dl(self.base_waypoints[base_waypoint_search_cursor].pose.pose.position,
+                                        stop_line_positions[light_cursor])
+                    light_waypoint_index = base_waypoint_search_cursor
+            
+                    # for l to find the closest waypoint in the remaining base_waypoints, w
+                    for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num):
+                        dist = dl(self.base_waypoints[i].pose.pose.position,
+                                  stop_line_positions[light_cursor])
+                        if dist < dist_shortest:
+                            dist_shortest = dist
+                            light_waypoint_index = i
+                        # end of if dist < d_shortest
+                    # end of for i in range(base_waypoint_search_cursor+1, self.base_waypoints_num)
+                    # record the mapping from l to w
+                    self.lights_to_waypoints.append(light_waypoint_index)
+                    # remove l from the list of traffic lights, and w from the base_points
+                    base_waypoint_search_cursor = light_waypoint_index + 1
+                else:
+                    # there is extra traffic lights after having found the traffic light for the last waypoint.
+                    self.lights_to_waypoints.append(None)
+                # end of if base_waypoint_search_cursor < self.base_waypoints_num
+            # end of for light_cursor in range(len(self.stop_line_positions))
+            # until there is no more traffic light, or no more waypoint
+            rospy.loginfo('Waypoints for traffic lights: %r' % repr(self.lights_to_waypoints))
+            
+            # construct the map, self.waypoint_to_light, the map from waypoint index to the index of the
+            # traffic light in terms of the closest waypoint index
+            self.waypoint_to_light = waypoint_to_light_f(self.lights_to_waypoints, self.base_waypoints_num)
+            # rospy.loginfo('test using self.waypoint_to_light[237]: %r' % self.waypoint_to_light[237])
     
+        # end of if self.base_waypoints
     def get_closest_waypoint(self, pose):
         if self.base_waypoints_num is not None:
             current_pose = pose.position
