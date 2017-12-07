@@ -10,10 +10,17 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
+from operator import itemgetter
 
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
+    dl = lambda self, a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
+    # Details from src/styx_msgs/msg/TrafficLight.msg
+    state_txt = { 0: 'RED', 1: 'YELLOW', 2: 'GREEN', 4: 'UNKNOWN' }
+
     def __init__(self):
         rospy.init_node('tl_detector')
 
@@ -21,6 +28,8 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.lights = []
+        self.light_waypoints = []
+        self.light_visible = False
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -48,6 +57,8 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.waypoints = None
+        self.waypoints_count = 0
 
         rospy.spin()
 
@@ -55,10 +66,18 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        # /base_waypoints should only be passed once at initialisation
+        if self.waypoints:
+            rospy.logerr("/base_waypoints message received multiple times!")
+        self.waypoints = waypoints.waypoints
+        self.waypoints_count = len(self.waypoints)
+        rospy.logwarn("{:,} waypoints received from /base_waypoints.".format(self.waypoints_count))
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        if self.light_waypoints==[] and self.waypoints:
+            self.light_waypoints = [self.get_closest_waypoint(light.pose.pose) for light in self.lights]
+            rospy.logwarn("traffic light waypoints calculated as {}.".format(self.light_waypoints))
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -100,8 +119,12 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        # Process if the waypoints list exists (from /base_waypoints)
+        if self.waypoints:
+            distances = [self.dl(pose.position, waypoint.pose.pose.position) for waypoint in self.waypoints]
+            return min(enumerate(distances), key=itemgetter(1))[0]
+        else:
+            return 0
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -113,6 +136,9 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        # TODO: Temporary data from simulator until image processing is complete. 
+        return self.lights[light].state
+
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -131,19 +157,26 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
-
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
+        lights = [waypoint for waypoint in self.light_waypoints if waypoint>=car_position and waypoint<=car_position+200]
+        light_waypoint = None if len(lights)==0 else lights[0]
 
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
+        if light_waypoint:
+            if light_waypoint in self.light_waypoints:
+                light = self.light_waypoints.index(light_waypoint)
+                state = self.get_light_state(light)
+                if not self.light_visible:
+                    rospy.logwarn("traffic light approaching - {}.".format(self.state_txt[state]))
+                    self.light_visible = True
+                return light_waypoint, state
+        if self.light_visible:
+            rospy.logwarn("traffic light passed.")
+            self.light_visible = False
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
