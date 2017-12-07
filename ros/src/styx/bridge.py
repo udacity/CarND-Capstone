@@ -3,7 +3,7 @@ import rospy
 
 import tf
 from geometry_msgs.msg import PoseStamped, Quaternion, TwistStamped
-from dbw_mkz_msgs.msg import SteeringReport, ThrottleCmd, BrakeCmd, SteeringCmd
+from dbw_mkz_msgs.msg import ThrottleCmd, BrakeCmd, SteeringCmd
 from std_msgs.msg import Float32 as Float
 from std_msgs.msg import Bool
 from sensor_msgs.msg import PointCloud2
@@ -26,7 +26,6 @@ TYPE = {
     'pose': PoseStamped,
     'pcl': PointCloud2,
     'twist': TwistStamped,
-    'steer': SteeringReport,
     'trafficlights': TrafficLightArray,
     'steer_cmd': SteeringCmd,
     'brake_cmd': BrakeCmd,
@@ -95,13 +94,6 @@ class Bridge(object):
         tw.twist.angular.z = angular
         return tw
 
-    def create_steer(self, val):
-        st = SteeringReport()
-        st.steering_wheel_angle_cmd = val * math.pi/180.
-        st.enabled = True
-        st.speed = self.vel
-        return st
-
     def calc_angular(self, yaw):
         angular_vel = 0.
         if self.yaw is not None:
@@ -136,13 +128,6 @@ class Bridge(object):
         self.vel = data['velocity']* 0.44704
         self.angular = self.calc_angular(data['yaw'] * math.pi/180.)
         self.publishers['current_velocity'].publish(self.create_twist(self.vel, self.angular))
-
-
-    def publish_controls(self, data):
-        steering, throttle, brake = data['steering_angle'], data['throttle'], data['brake']
-        self.publishers['steering_report'].publish(self.create_steer(steering))
-        self.publishers['throttle_report'].publish(self.create_float(throttle))
-        self.publishers['brake_report'].publish(self.create_float(brake))
 
     def publish_obstacles(self, data):
         for obs in data['obstacles']:
