@@ -152,8 +152,11 @@ class WaypointUpdater(WaypointTracker):
         rate = rospy.Rate(self.loop_freq)
         while not rospy.is_shutdown():
             if self.base_waypoints is not None and self.pose is not None:
-                self.get_closest_waypoint(self.pose.pose)  # as side effect stored in self.last_closest_front_waypoint_index
+                self.last_closest_front_waypoint_index = self.get_closest_waypoint(self.pose.pose)
+                # as side effect stored in self.last_closest_front_waypoint_index
+                
                 if self.last_closest_front_waypoint_index is not None:
+                    _, self.traffic_waypoint = self.waypoint_to_light[self.last_closest_front_waypoint_index]
                     # compute minimum_stop_dist to consider if need braking
                 
                     if self.current_velocity is not None:
@@ -162,7 +165,12 @@ class WaypointUpdater(WaypointTracker):
                         min_stop_dist = SAFE_DIST
                     # end of if self.current_velocity is not None
                 
-                    tl_dist = tl_dist = self.distance(self.last_closest_front_waypoint_index, self.traffic_waypoint) if ((self.traffic_waypoint is not None) and self.last_closest_front_waypoint_index is not None) else 99999  # impossibly large
+                    tl_dist = (self.distance(self.last_closest_front_waypoint_index,
+                                             self.traffic_waypoint)
+                               if ((self.traffic_waypoint is not None) and
+                                   self.last_closest_front_waypoint_index is not None)
+                               else self.dist_to_here_from_start[len(self.base_waypoints)-1])
+                    # The larger than any distance between two adjust waypoints
                     if ((self.traffic_waypoint is not None) and
                         (self.last_closest_front_waypoint_index <= self.traffic_waypoint) and
                         self.traffic_light_red):
