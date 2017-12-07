@@ -302,10 +302,10 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
           # DONE: Subscribe to all the topics you need to
           <<dbw_states>>
+
           <<subscribe_to_get_update>>
 
           self.loop()
-          #rospy.spin()
 
       def loop(self):
           rate = rospy.Rate(self.loop_freq) # from 50Hz to 2Hz
@@ -332,16 +332,8 @@ In the context of loop and executed once a rate period, to determine the command
 
 #+NAME:control_logic
 #+BEGIN_SRC python :noweb tangle :tangle
-  # TODO: Get predicted throttle, brake, and steering using `twist_controller`
+  # DONE: Get predicted throttle, brake, and steering using `twist_controller`
   # You should only publish the control commands if dbw is enabled
-  # desired_linear_velocity = self.desired_velocity.linear.x
-  # desired_angular_velocity = self.desired_velocity.angular.z
-  # current_linear_velocity = self.current_velocity.linear.x
-  # current_angular_velocity = self.current_velocity.angular.z
-
-  # throttle, brake, steering = self.controller.control(
-  #   desired_linear_velocity, desired_angular_velocity,
-  #   current_linear_velocity, current_angular_velocity)
 
   if self.dbw_enabled:
       throttle, brake, steering = self.controller.control(self.desired_velocity,
@@ -407,8 +399,17 @@ It causes problem that the car would not be able to come to full stop at the tra
                                               max_lat_accel, max_steer_angle)
 
       def control(self, twist, current_velocity, dt):
+          """
+          twist is for the desired velocity
+          """
           # Return throttle, brake, steer
-          velocity_cte = twist.twist.linear.x - current_velocity.twist.linear.x
+          velocity_cte = abs(twist.twist.linear.x) - current_velocity.twist.linear.x
+          # much discussion that there might be a bug in pure_pursuit (waypoint_follower)
+          # that the twist.twist.linear might be negative:
+          # https://carnd.slack.com/archives/C6NVDVAQ3/p1512659466000795
+          # take abs to avoid the problem, assuming the magnitude is more reliable
+          # Verified with casual running the simulator, it showed no negative impact.
+
           acceleration = self.velocity_pid.step(velocity_cte, dt)
           steer = self.yaw_controller.get_steering(twist.twist.linear.x,
                                                    twist.twist.angular.z,
