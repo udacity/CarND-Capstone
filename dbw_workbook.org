@@ -334,7 +334,6 @@ In the context of loop and executed once a rate period, to determine the command
 #+BEGIN_SRC python :noweb tangle :tangle
   # DONE: Get predicted throttle, brake, and steering using `twist_controller`
   # You should only publish the control commands if dbw is enabled
-
   if self.dbw_enabled:
       throttle, brake, steering = self.controller.control(self.desired_velocity,
                                                           self.current_velocity,
@@ -596,14 +595,6 @@ Place the control logic in twist_cmd_cb to save CPU load.
 
   def twist_cmd_cb(self, msg):
     self.desired_velocity = msg # .twist
-    # if self.current_velocity:
-    #   <<control_logic>>
-    #   self.current_velocity = None
-    # if self.current_velocity
-
-    # if self.desired_velocity is None:
-    #       self.desired_velocity = msg.twist
-    # # end of if self.desired_velocity is None
 
   def dbw_enabled_cb(self, msg):
       self.dbw_enabled = msg.data
@@ -645,8 +636,6 @@ In the context of __init__, creates the needed publishers.
                                       ThrottleCmd, queue_size=1)
   self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                    BrakeCmd, queue_size=1)
-
-
 #+END_SRC
 
 ** vehicle_parameters
