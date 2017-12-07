@@ -9,9 +9,6 @@ conf = AttrDict({
     'publishers': [
         {'topic': '/current_pose', 'type': 'pose', 'name': 'current_pose'},
         {'topic': '/current_velocity', 'type': 'twist', 'name': 'current_velocity'},
-        {'topic': '/vehicle/steering_report', 'type': 'steer', 'name': 'steering_report'},
-        {'topic': '/vehicle/throttle_report', 'type': 'float', 'name': 'throttle_report'},
-        {'topic': '/vehicle/brake_report', 'type': 'float', 'name': 'brake_report'},
         {'topic': '/vehicle/obstacle', 'type': 'pose', 'name': 'obstacle'},
         {'topic': '/vehicle/obstacle_points', 'type': 'pcl', 'name': 'obstacle_points'},
         {'topic': '/vehicle/lidar', 'type': 'pcl', 'name': 'lidar'},

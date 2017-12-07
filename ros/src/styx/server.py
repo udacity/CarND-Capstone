@@ -37,10 +37,6 @@ def telemetry(sid, data):
         topic, data = msgs.pop(0)
         sio.emit(topic, data=data, skip_sid=True)
 
-@sio.on('control')
-def control(sid, data):
-    bridge.publish_controls(data)
-
 @sio.on('obstacle')
 def obstacle(sid, data):
     bridge.publish_obstacles(data)
