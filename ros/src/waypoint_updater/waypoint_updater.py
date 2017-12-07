@@ -186,9 +186,9 @@ class WaypointUpdater(WaypointTracker):
                             label = ("car index {:4} " +
                                      "light index {:4} " +
                                      "curr. light color: {:7} " +
-                                     "dist. to light: {:4} " +
-                                     "min. stop dist. {:4.2} " +
-                                     "curr. vel. {:3}; " +
+                                     "dist. to light: {:7.2} " +
+                                     "min. stop dist. {:7.2} " +
+                                     "curr. vel. {:7.2}; " +
                                      "within stop dist., decelerate")
                             rospy.loginfo(label.format(
                                 self.last_closest_front_waypoint_index,
@@ -206,9 +206,9 @@ class WaypointUpdater(WaypointTracker):
                             label = ("car index {:4} " +
                                      "light index {:4} " +
                                      "curr. light color: {:7} " +
-                                     "dist. to light: {:4} " +
-                                     "min. stop dist. {:4.2} " +
-                                     "curr. vel. {:3}; " +
+                                     "dist. to light: {:7.2} " +
+                                     "min. stop dist. {:7.2} " +
+                                     "curr. vel. {:7.2}; " +
                                      "too far to brake, no slow down")
                             rospy.loginfo(label.format(
                                 self.last_closest_front_waypoint_index,
@@ -228,9 +228,9 @@ class WaypointUpdater(WaypointTracker):
                         label = ("car index {:4} " +
                                  "light index {:4} " +
                                  "curr. light color: {:7} " +
-                                 "dist. to light: {:4} " +
-                                 "min. stop dist. {:4.2} " +
-                                 "curr. vel. {:3}; " +
+                                 "dist. to light: {:7.2} " +
+                                 "min. stop dist. {:7.2} " +
+                                 "curr. vel. {:7.2}; " +
                                  "no red traffic light ahead, keep the curr. vel.")
                         rospy.loginfo(label.format(
                             self.last_closest_front_waypoint_index,
