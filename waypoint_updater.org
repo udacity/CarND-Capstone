@@ -746,12 +746,12 @@ endif
           min_stop_dist = SAFE_DIST
       # end of if self.current_velocity is not None
 
+      light_index_or_last = (self.traffic_waypoint if self.traffic_waypoint is not None
+                             else len(self.base_waypoints)-1)
+
       tl_dist = (self.distance(self.last_closest_front_waypoint_index,
-                               self.traffic_waypoint)
-                 if ((self.traffic_waypoint is not None) and
-                     self.last_closest_front_waypoint_index is not None)
-                 else self.dist_to_here_from_start[len(self.base_waypoints)-1])
-      # The larger than any distance between two adjust waypoints
+                               light_index_or_last))
+
       if ((self.traffic_waypoint is not None) and
           (self.last_closest_front_waypoint_index <= self.traffic_waypoint) and
           self.traffic_light_red):
