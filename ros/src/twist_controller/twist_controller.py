@@ -57,8 +57,7 @@ class Controller(object):
             brake = 0
             steering = 0
             rospy.loginfo("dbw_status false")
-        
-        print rospy.get_time(), throttle, brake, steering, target_linear_velocity, target_angular_velocity,current_linear_velocity, int(dbw_status)
+
         return throttle, brake, steering
 
     def is_change_acc(self, velocity_error):

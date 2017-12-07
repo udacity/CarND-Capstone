@@ -59,7 +59,6 @@ class WaypointUpdater(object):
 
             #return the index of the closest waypoint ahead of us
             closest_idx_waypoint = self.closest_waypoint_ahead(car_x, car_y, car_yaw, self.wps.waypoints)
-            print rospy.get_time(), car_x, car_y, closest_idx_waypoint, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.x, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.y
 
             #final waypoints is a subset of original set of waypoints
             self.final_wps.waypoints = self.wps.waypoints[closest_idx_waypoint:closest_idx_waypoint+LOOKAHEAD_WPS]
@@ -142,7 +141,7 @@ class WaypointUpdater(object):
                                + (wpidx[1].pose.pose.position.y - self.ego_pos.position.y) ** 2)
         closest_index = closest_waypoint[0]
         loginfo += '| Closest waypoint index: {}'.format(closest_index)
-        rospy.logdebug(1, loginfo)
+        rospy.loginfo_throttle(1, loginfo)
 
         return closest_index
 
