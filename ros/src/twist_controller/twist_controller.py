@@ -1,77 +1,62 @@
+import rospy
 from pid import PID
 from yaw_controller import YawController
 from lowpass import LowPassFilter
-import time
-import rospy
 
 GAS_DENSITY = 2.858
-# ONE_MPH = 0.44704               # 1 miles/hour in meters/second
+ONE_MPH = 0.44704
+STOP_VELOCITY = 0.277778 # 1 km/h
 
 class TwistController(object):
-    def __init__(self, wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle,
-                 max_braking_percentage, max_throttle_percentage, max_vel_mps):
-        # TODO: Implement
-        self.sample_time = 0.03  # based on observation the interval is always around 0.03 seconds
-        # self.throttle_controller = PID(2.0, 0.01, 0.02, mn=0.0, mx=1.0)
-        self.yaw_controller = YawController(
-            wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-        self.lowpass_filter = LowPassFilter(0.15, self.sample_time)
-        # change the past component coefficient from 0.5 to 0.15 to be more responsive
-        self.brake_coefficient = 10.0  # tentative guess
+    def __init__(self, vehicle_mass, fuel_capacity,
+                 brake_deadband, decel_limit, accel_limit,
+                 wheel_radius, wheel_base,
+                 steer_ratio, max_lat_accel,
+                 max_steer_angle):
+        # init members
         self.vehicle_mass = vehicle_mass
-        self.prev_time = None
+        self.fuel_capacity = fuel_capacity
+        self.brake_deadband = brake_deadband
+        self.decel_limit = decel_limit
+        self.accel_limit = accel_limit
+        self.wheel_radius = wheel_radius
+        self.wheel_base = wheel_base
         self.steer_ratio = steer_ratio
-        self.max_braking_percentage = max_braking_percentage
-        self.max_throttle_percentage = max_throttle_percentage
-        self.max_vel_mps = max_vel_mps
+        self.max_lat_accel = max_lat_accel
+        self.max_steer_angle = max_steer_angle
 
-    def control(self, desired_linear_velocity, desired_angular_velocity,
-                current_linear_velocity, current_angular_velocity):
-        # TODO: Change the arg, kwarg list to suit your needs
+        # init controllers
+        self.velocity_pid = PID(0.65, 0.0, 0.0,
+                                mn=decel_limit, mx=accel_limit)
+        self.yaw_controller = YawController(wheel_base, steer_ratio, 1,
+                                            max_lat_accel, max_steer_angle)
+
+    def control(self, twist, current_velocity, dt):
         # Return throttle, brake, steer
-        # if self.prev_time is None:
-        #     self.prev_time = time.time()
-        #     return 0., 0., 0.
+        velocity_cte = twist.twist.linear.x - current_velocity.twist.linear.x
+        acceleration = self.velocity_pid.step(velocity_cte, dt)
+        steer = self.yaw_controller.get_steering(twist.twist.linear.x,
+                                                 twist.twist.angular.z,
+                                                 current_velocity.twist.linear.x)
 
-        desired_linear_velocity_modulated = min(self.max_vel_mps, desired_linear_velocity)
-        throttle, brake = 0.0, 0.0
-        error_linear_velocity = (desired_linear_velocity_modulated - current_linear_velocity)
-        # according to the forum:
-        if desired_linear_velocity > current_linear_velocity:
-            if error_linear_velocity / desired_linear_velocity > 0.3:
-                throttle = self.max_throttle_percentage
-            else:
-                throttle = max(
-                    (error_linear_velocity / desired_linear_velocity)/0.3*self.max_throttle_percentage,
-                    self.max_throttle_percentage)
-            # end of if error_linear_velocity / desired_linear_velocity > 0.3
-        elif current_linear_velocity > 1:
-            brake = 3250*self.max_braking_percentage*-1
+        throttle = 0.0
+        brake = 0.0
+
+        # Note that throttle values passed to publish should be in the range 0 to 1.
+        if twist.twist.linear.x < STOP_VELOCITY:
+            brake = self.calc_torque(abs(self.decel_limit))
         else:
-            brake = 3250*0.01
-        # end of if desired_linear_velocity > current_linear_velocity
+            if acceleration < 0.0:
+                deceleration = -acceleration
+                if deceleration < self.brake_deadband:
+                    brake = 0.0
+                else:
+                    brake = self.calc_torque(deceleration)
+            else:
+                throttle = acceleration
 
-        # rospy.loginfo('throttle: %f; brake: %f' % (throttle, brake))
-
-        error_angular_velocity = desired_angular_velocity - current_angular_velocity
-
-        desired_steer = self.yaw_controller.get_steering(
-            desired_linear_velocity_modulated, desired_angular_velocity,
-            current_linear_velocity)
-
-        current_steer = self.yaw_controller.get_steering(
-            desired_linear_velocity_modulated, current_angular_velocity,
-            current_linear_velocity)
-
-        steer = self.lowpass_filter.filt((desired_steer - current_steer)) # *self.steer_ratio
-
-        # rospy.loginfo('desired_steer: %f; current_steer: %f; steer: %f' % (desired_steer, current_steer, steer))
-
-        # self.prev_time = time.time()
         return throttle, brake, steer
 
-    # def brake(self, error_in_linear_velocity, current_linear_velocity, vehicle_mass):
-    #     # might be more fine tuned, might consider vehicle's mass, and the current velocity, etc.
-    #     # might use another PID.
-    #     brake_v = -self.brake_coefficient * error_in_linear_velocity  # assume the brake_v should be positive
-    #     return max(brake_v, 1.0)
+    def calc_torque(self, acceleration):
+
+        return acceleration * (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * self.wheel_radius

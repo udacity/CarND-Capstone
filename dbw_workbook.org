@@ -284,25 +284,32 @@ This is similar to ThrottleCmd, but with some additional/different fields.
 
           # DONE: Create `TwistController` object
 
-          self.controller = TwistController(wheel_base=self.wheel_base,
-                                            vehicle_mass=self.vehicle_mass,
+          self.controller = TwistController(vehicle_mass=self.vehicle_mass,
+                                            fuel_capacity=self.fuel_capacity,
+                                            brake_deadband=self.brake_deadband,
+                                            decel_limit=self.decel_limit,
+                                            accel_limit=self.accel_limit,
+                                            wheel_radius=self.wheel_radius,
+                                            wheel_base=self.wheel_base,
                                             steer_ratio=self.steer_ratio,
-                                            min_speed=self.min_speed,
                                             max_lat_accel=self.max_lat_accel,
-                                            max_steer_angle=self.max_steer_angle,
-                                            max_braking_percentage=self.max_braking_percentage,
-                                            max_throttle_percentage=self.max_throttle_percentage,
-                                            max_vel_mps=self.max_vel_mps)
+                                            max_steer_angle=self.max_steer_angle)
+                                            # min_speed=self.min_speed,
+                                            # ,
+                                            # max_braking_percentage=self.max_braking_percentage,
+                                            # max_throttle_percentage=self.max_throttle_percentage,
+                                            # max_vel_mps=self.max_vel_mps
 
           # DONE: Subscribe to all the topics you need to
           <<dbw_states>>
           <<subscribe_to_get_update>>
 
-          #self.loop()
-          rospy.spin()
+          self.loop()
+          #rospy.spin()
 
       def loop(self):
           rate = rospy.Rate(self.loop_freq) # from 50Hz to 2Hz
+          dt = 1. / self.loop_freq
           while not rospy.is_shutdown():
               if self.desired_velocity and self.current_velocity:
                   <<control_logic>>
@@ -327,16 +334,20 @@ In the context of loop and executed once a rate period, to determine the command
 #+BEGIN_SRC python :noweb tangle :tangle
   # TODO: Get predicted throttle, brake, and steering using `twist_controller`
   # You should only publish the control commands if dbw is enabled
-  desired_linear_velocity = self.desired_velocity.linear.x
-  desired_angular_velocity = self.desired_velocity.angular.z
-  current_linear_velocity = self.current_velocity.linear.x
-  current_angular_velocity = self.current_velocity.angular.z
+  # desired_linear_velocity = self.desired_velocity.linear.x
+  # desired_angular_velocity = self.desired_velocity.angular.z
+  # current_linear_velocity = self.current_velocity.linear.x
+  # current_angular_velocity = self.current_velocity.angular.z
 
-  throttle, brake, steering = self.controller.control(
-    desired_linear_velocity, desired_angular_velocity,
-    current_linear_velocity, current_angular_velocity)
+  # throttle, brake, steering = self.controller.control(
+  #   desired_linear_velocity, desired_angular_velocity,
+  #   current_linear_velocity, current_angular_velocity)
+
   if self.dbw_enabled:
-    self.publish(throttle, brake, steering)
+      throttle, brake, steering = self.controller.control(self.desired_velocity,
+                                                          self.current_velocity,
+                                                          dt)
+      self.publish(throttle, brake, steering)
   # end of self.dbw_enabled
  #+END_SRC
 
@@ -356,8 +367,81 @@ I'm using to smooth the current linear velocity for now.
 Also need to implement the mechanism only process the latest message, to avoid stalled command. Callback should be simple.
 The message processing should be regulated, only process the most recent one.
 
+On Dec. 6, 2017, we decide to try Hector's twist_controller, as my old design's heuristics seems hard to understand, and not very well in low velocity deceleration.
+It causes problem that the car would not be able to come to full stop at the traffic light.
+
 #+NAME:twist_controller
 #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/twist_controller/twist_controller.py
+
+  import rospy
+  from pid import PID
+  from yaw_controller import YawController
+  from lowpass import LowPassFilter
+
+  GAS_DENSITY = 2.858
+  ONE_MPH = 0.44704
+  STOP_VELOCITY = 0.277778 # 1 km/h
+
+  class TwistController(object):
+      def __init__(self, vehicle_mass, fuel_capacity,
+                   brake_deadband, decel_limit, accel_limit,
+                   wheel_radius, wheel_base,
+                   steer_ratio, max_lat_accel,
+                   max_steer_angle):
+          # init members
+          self.vehicle_mass = vehicle_mass
+          self.fuel_capacity = fuel_capacity
+          self.brake_deadband = brake_deadband
+          self.decel_limit = decel_limit
+          self.accel_limit = accel_limit
+          self.wheel_radius = wheel_radius
+          self.wheel_base = wheel_base
+          self.steer_ratio = steer_ratio
+          self.max_lat_accel = max_lat_accel
+          self.max_steer_angle = max_steer_angle
+
+          # init controllers
+          self.velocity_pid = PID(0.65, 0.0, 0.0,
+                                  mn=decel_limit, mx=accel_limit)
+          self.yaw_controller = YawController(wheel_base, steer_ratio, 1,
+                                              max_lat_accel, max_steer_angle)
+
+      def control(self, twist, current_velocity, dt):
+          # Return throttle, brake, steer
+          velocity_cte = twist.twist.linear.x - current_velocity.twist.linear.x
+          acceleration = self.velocity_pid.step(velocity_cte, dt)
+          steer = self.yaw_controller.get_steering(twist.twist.linear.x,
+                                                   twist.twist.angular.z,
+                                                   current_velocity.twist.linear.x)
+
+          throttle = 0.0
+          brake = 0.0
+
+          # Note that throttle values passed to publish should be in the range 0 to 1.
+          if twist.twist.linear.x < STOP_VELOCITY:
+              brake = self.calc_torque(abs(self.decel_limit))
+          else:
+              if acceleration < 0.0:
+                  deceleration = -acceleration
+                  if deceleration < self.brake_deadband:
+                      brake = 0.0
+                  else:
+                      brake = self.calc_torque(deceleration)
+              else:
+                  throttle = acceleration
+
+          return throttle, brake, steer
+
+      def calc_torque(self, acceleration):
+
+          return acceleration * (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * self.wheel_radius
+
+#+END_SRC
+
+
+
+#+NAME:twist_controller
+#+BEGIN_SRC python :noweb tangle :tangle ./ros/src/twist_controller/twist_controller_old.py
   from pid import PID
   from yaw_controller import YawController
   from lowpass import LowPassFilter
@@ -505,15 +589,15 @@ Place the control logic in twist_cmd_cb to save CPU load.
 #+BEGIN_SRC python :noweb tangle :tangle
   def current_velocity_cb(self, msg):
     if self.current_velocity is None:
-        self.current_velocity = msg.twist
+        self.current_velocity = msg # .twist
     # end of if self.current_velocity is None:
     # self.current_velocity = msg.twist
 
   def twist_cmd_cb(self, msg):
-    self.desired_velocity = msg.twist
-    if self.current_velocity:
-      <<control_logic>>
-      self.current_velocity = None
+    self.desired_velocity = msg # .twist
+    # if self.current_velocity:
+    #   <<control_logic>>
+    #   self.current_velocity = None
     # if self.current_velocity
 
     # if self.desired_velocity is None:
