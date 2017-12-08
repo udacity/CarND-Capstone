@@ -88,6 +88,12 @@ class DBWNode(object):
         self.dbw = status.data
         rospy.logwarn("DBW status changed to '{}'.".format(self.dbw))
 
+	# reset the PID controllers if DBW is deactivated so that if DWB is reactivated
+	# the controllers don't have historical error
+	if not self.dbw:
+		self.controller.reset()
+		rospy.logwarn("Vehicle controllers have been reset.")
+
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
