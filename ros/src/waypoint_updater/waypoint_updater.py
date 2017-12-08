@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+from tf.transformations import euler_from_quaternion
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -21,8 +22,17 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 
+def get_car_xy_from_global_xy(car_x, car_y, yaw_rad, global_x, global_y):
+    # Translate global point by car's position
+    xg_trans_c = global_x - car_x
+    yg_trans_c = global_y - car_y
+    # Perform rotation to finish mapping
+    # from global coords to car coords
+    x = xg_trans_c * math.cos(0 - yaw_rad) - yg_trans_c * math.sin(0 - yaw_rad)
+    y = xg_trans_c * math.sin(0 - yaw_rad) + yg_trans_c * math.cos(0 - yaw_rad)
+    return (x, y)
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -33,20 +43,96 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        self.base_waypoints = None
+
+        self.current_pose = None
+
+        # Loop Rate
+        self.loop_frequency = 2 # Hz
+
+        # Max velocity
+        self.max_velocity = 10 # mph
+
+        self.loop()
 
         rospy.spin()
 
-    def pose_cb(self, msg):
-        # TODO: Implement
-        pass
 
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+    def loop(self):
+
+        rate = rospy.Rate(self.loop_frequency)
+        while not rospy.is_shutdown():
+            if self.current_pose != None and self.base_waypoints != None:
+                xyz_position = self.current_pose.position
+                quaternion_orientation = self.current_pose.orientation
+
+                p = xyz_position
+                qo = quaternion_orientation
+
+                p_list = [p.x, p.y, p.z]
+                qo_list = [qo.x, qo.y, qo.z, qo.w]
+                euler = euler_from_quaternion(qo_list)
+                yaw_rad = euler[2]
+
+                closest_waypoint_idx = None
+                closest_waypoint_dist = None
+                for idx in range(len(self.base_waypoints)):
+                    wcx, wcy = self.get_on_car_waypoint_x_y(p, yaw_rad, idx)
+                    if closest_waypoint_idx is None:
+                        closest_waypoint_idx = idx
+                        closest_waypoint_dist = math.sqrt(wcx**2 + wcy**2)
+                    else:
+                        curr_waypoint_dist = math.sqrt(wcx**2 + wcy**2)
+                        if curr_waypoint_dist < closest_waypoint_dist: #
+                            closest_waypoint_idx = idx
+                            closest_waypoint_dist = curr_waypoint_dist
+
+
+
+                wcx, wcy = self.get_on_car_waypoint_x_y(p, yaw_rad, closest_waypoint_idx)
+                while wcx < 0.:
+                    closest_waypoint_idx = (closest_waypoint_idx + 1) % len(self.base_waypoints)
+                    wcx, wcy = self.get_on_car_waypoint_x_y(p, yaw_rad, closest_waypoint_idx)
+
+                next_waypoints = []
+                for loop_idx in range(LOOKAHEAD_WPS):
+                    wp_idx = (loop_idx + closest_waypoint_idx) % len(self.base_waypoints)
+                    next_waypoints.append(self.get_waypoint_to_sent(wp_idx))
+
+                rospy.loginfo('INDEX {} wc [{:.3f},{:.3f}]'.format(closest_waypoint_idx, wcx, wcy))
+                lane = Lane()
+                lane.header.frame_id = '/world'
+                lane.header.stamp = rospy.Time(0)
+                lane.waypoints = next_waypoints
+                self.final_waypoints_pub.publish(lane)
+
+
+            rate.sleep()
+
+    def get_on_car_waypoint_x_y(self, current_possition, yaw_rad, index):
+        wgx, wgy = self.get_waypoint_x_y(index)
+        return get_car_xy_from_global_xy(current_possition.x, current_possition.y, yaw_rad, wgx, wgy)
+
+    def get_waypoint_x_y(self, index):
+        waypoint = self.base_waypoints[index]
+        x = waypoint.pose.pose.position.x
+        y = waypoint.pose.pose.position.y
+        return x, y
+
+    def get_waypoint_to_sent(self, wp_idx):
+        # changes will be here when the red lights are detected.
+        # if the velocity is not set, 11 is set by default.
+        self.set_waypoint_velocity(self.base_waypoints, wp_idx, self.max_velocity)
+        return self.base_waypoints[wp_idx]
+
+
+    def pose_cb(self, msg):
+        self.current_pose = msg.pose
+
+    def waypoints_cb(self, lane):
+        self.base_waypoints = lane.waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement

@@ -1,6 +1,10 @@
 *.py[cod]
+*.swp
+*.swo
 
 build
 devel
 
 profile.tmp
+
+/container_logs/*
