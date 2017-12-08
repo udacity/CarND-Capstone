@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <node pkg="waypoint_updater" type="waypoint_updater.py" output="screen" name="waypoint_updater">
+  <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater">
     <param name="loop_freq" value="50" />
   </node>
 </launch>
