@@ -16,7 +16,8 @@ Sahil Juneja           | sahiljuneja17@gmail.com  |
 Hector Sanchez Pajares | hector.spc@gmail.com     |
 
 
-The project bases on the architecture proposed by Udacity. It uses ROS as the implementation framework. The project implements the following ROS nodes:
+The project bases on the architecture proposed by Udacity. It uses ROS as the implementation framework. 
+The project implements the following ROS nodes:
 
 - waypoint_updater
 - tl_detector
