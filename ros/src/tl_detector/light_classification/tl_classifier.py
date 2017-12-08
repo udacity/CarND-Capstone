@@ -1,5 +1,5 @@
 import rospy
-from styx_msgs.msg import TrafficLight
+from styx_msgs.msg import TrafficLightState
 import numpy as np
 from keras.models import model_from_json
 from keras import backend as K
@@ -60,8 +60,10 @@ class TLClassifier(object):
         img = np.array([cropped_img])
         prediction = self.model.predict(img)[0]
 
-        prediction_labels = [TrafficLight.GREEN, TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.UNKNOWN]
+        prediction_labels = [TrafficLightState.GREEN, TrafficLightState.RED, TrafficLightState.YELLOW, TrafficLightState.UNKNOWN]
         labels_names = ['GREEN', 'RED', 'YELLOW', 'UNKNOWN']
+
+        print(prediction)
 
         light_state = prediction_labels[prediction.argmax()]       
 

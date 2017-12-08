@@ -38,8 +38,8 @@ class TLDetector(object):
         self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
+        self.state = TrafficLightState.UNKNOWN
+        self.last_state = TrafficLightState.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
         self.waypoints = None
@@ -147,8 +147,6 @@ class TLDetector(object):
         """
         # TODO: Temporary data from simulator until image processing is complete.
         #return self.lights[light].state.state
-
-        rospy.logwarn('get_light_state')
         
         if(not self.has_image):
             self.prev_light_loc = None
