@@ -1,0 +1,529 @@
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE: \today
+
+#+OPTIONS: ^:nil
+
+#+TITLE: Design and Construction of tl_detector (traffic light detector)
+
+
+* Source Code
+
+** Top level
+
+ Here we construct the source code from top to bottom.
+
+ #+NAME:tl_dectector
+ #+BEGIN_SRC python :noweb tangle :tangle ./ros/src/tl_detector/tl_detector.py
+   #!/usr/bin/env python
+   <<imports>>
+
+   <<color_code_to_label>>
+
+   STATE_COUNT_THRESHOLD = 0
+   # It works with value zero, effectively an event will be considered stable
+   # the second time received the same.
+   # Be careful, it cannot be too large to avoid lose of event being reported.
+
+   class TLDetector(WaypointTracker):
+       def __init__(self):
+           WaypointTracker.__init__(self)
+
+           rospy.init_node('tl_detector')
+
+           <<attributes-initialization>>
+
+           <<subscribers>>
+
+           self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+
+           <<traffic_image_processing_initialization>>
+
+           <<traffic_light_initialization>>
+
+           self.loop()
+
+       <<base_waypoints_cb>>
+
+       <<preprocess>>
+
+       <<current_pose_cb>>
+
+       <<traffic_array_cb>>
+
+       <<image_color_cb>>
+
+       <<process_traffic_lights>>
+
+       <<loop>>
+
+   if __name__ == '__main__':
+       try:
+           TLDetector()
+       except rospy.ROSInterruptException:
+           rospy.logerr('Could not start traffic node.')
+ #+END_SRC
+
+** imports
+
+#+NAME:imports
+#+BEGIN_SRC python :noweb tangle :tangle
+  import rospy
+  from std_msgs.msg import Int32
+  from geometry_msgs.msg import PoseStamped, Pose
+  from styx_msgs.msg import TrafficLightArray, TrafficLight
+  from styx_msgs.msg import Lane
+  from sensor_msgs.msg import Image
+  from cv_bridge import CvBridge
+
+  from light_classification.tl_classifier import TLClassifier
+  from waypoint_lib.waypoint_tracker import WaypointTracker
+
+  import tf as tf_ros
+  import math
+  import cv2
+#+END_SRC
+
+** attributes-initialization
+
+self.lights is from TrafficLightArray.lights, the position and state of traffic lights.
+
+#+NAME:attributes-initialization
+#+BEGIN_SRC python :noweb tangle :tangle
+  self.camera_image = None
+  self.lights = []
+  self.loop_freq = rospy.get_param('~loop_freq', 2)
+  self.car_index = None
+  # the waypoint index in the base_waypoints of the waypoint in front of the car
+
+  self.FAKED_LIGHT = rospy.get_param('~use_simulator_light_state', False)
+  self.admissible_distance_for_image = rospy.get_param('~admissible_distance_for_image', 80)
+#+END_SRC
+
+** subscribers
+
+#+NAME:subscribers
+#+BEGIN_SRC python :noweb tangle :tangle
+  self.current_pose_sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb)
+  self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_cb)
+
+  '''
+  /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
+  helps you acquire an accurate ground truth data source for the traffic light
+  classifier by sending the current color state of all traffic lights in the
+  simulator. When testing on the vehicle, the color state will not be available. You'll need to
+  rely on the position of the light and the camera image to predict it.
+  '''
+  sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_array_cb)
+  sub6 = rospy.Subscriber('/image_color', Image, self.image_color_cb)
+#+END_SRC
+
+** traffic_light_initialization
+
+#+NAME:traffic_light_initialization
+#+BEGIN_SRC python :noweb tangle :tangle
+  self.state = TrafficLight.UNKNOWN
+  self.last_wp = None
+  self.state_count = 0
+#+END_SRC
+
+** traffic_image_processing_initialization
+
+#+NAME:traffic_image_processing_initialization
+#+BEGIN_SRC python :noweb tangle :tangle
+  self.bridge = CvBridge()
+
+  use_simulator_classifier = rospy.get_param('~traffic_light_classifier_sim')
+  self.light_classifier = TLClassifier(sim = use_simulator_classifier)
+
+  self.listener = tf_ros.TransformListener()
+#+END_SRC
+
+** base_waypoints_cb
+
+   So far, it only need to digest and process the base_points and store them. This has been implemented in the
+   super-class.
+
+#+NAME:base_waypoints_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+  def base_waypoints_cb(self, msg):
+      # copy the base_waypoints, compute the distance from the start to each base_waypoint,
+      # to be able to compute distance among any two base_waypoints.
+      WaypointTracker.base_waypoints_process(self, msg)
+#+END_SRC
+
+** preprocess
+
+This the required treatment to base waypoints but it's beyond the time allowed for the callback of a message.
+
+#+NAME:preprocess
+#+BEGIN_SRC python :noweb tangle :tangle
+  def preprocess(self):
+      if self.base_waypoints:
+          WaypointTracker.preprocess(self)
+          self.ready = True
+#+END_SRC
+
+** current_pose_cb
+
+   - Determine the location of the car by locating the nearest waypoint in front of the car
+   - This is overriding that of the superclass, WaypointTracker
+#+NAME:current_pose_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+  def current_pose_cb(self, msg):
+      self.pose = msg
+#+END_SRC
+
+** traffic_array_cb
+
+#+NAME:traffic_array_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+  def traffic_array_cb(self, msg):
+      self.lights = msg.lights
+#+END_SRC
+
+** image_color_cb
+
+   Delegate the processing of the image, recognition to self.process_traffic_lights
+
+   Publish stable recognition outcome in terms of /traffic_waypoint (index)
+- Frequency of /image_color::
+It's about 10 Hz by observing through ==rostopic hz /image_color==
+
+MAJOR CHANGE of the protocol between waypoints_updater and tl_detector ::
+when the traffic light color is not red, report the negative of the waypoint index instead of just report -1, to take advantage of the computation of the waypoint index of the traffic light, saving waypoint_updater from computing it.
+
+#+NAME:image_color_cb
+#+BEGIN_SRC python :noweb tangle :tangle
+  def image_color_cb(self, msg):
+      """Identifies red lights in the incoming camera image and publishes the index
+              of the waypoint closest to the red light's stop line to /traffic_waypoint
+
+          Args:
+              msg (Image): image from car-mounted camera
+
+      """
+      self.has_image = True
+      self.camera_image = msg
+#+END_SRC
+
+** loop to process camara image to classify traffic light
+
+#+NAME:loop
+#+BEGIN_SRC python :noweb tangle :tangle
+  def loop(self):
+      rate = rospy.Rate(self.loop_freq)
+      while not rospy.is_shutdown():
+          if not self.ready:
+              self.preprocess()
+          else:
+              if self.camera_image is not None:
+                  light_wp, state = self.process_traffic_lights()
+                  '''
+                      Publish upcoming red lights at camera frequency.
+                      Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+                      of times till we start using it. Otherwise the previous stable state is
+                      used.
+                      '''
+                  # rospy.loginfo('light_wp %d; state: %r, self.state: %r' % (light_wp, state, self.state))
+                  if (self.state is None) or (self.state != state):  # state changed
+                      # rospy.loginfo('state changed: old state count: %r; old state: %r; new state: %d; light_waypoint: %r' %
+                      #               (self.state_count, self.state, state, light_wp))
+                      rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; changed: state or traffic light index".format(
+                          color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp))
+
+                      self.state_count = 0
+                      self.state = state
+                  elif (self.state_count >= STATE_COUNT_THRESHOLD) and light_wp is not None:
+                      if (state != TrafficLight.UNKNOWN):
+                          # rospy.loginfo(
+                          #     'stable state threshold reached: state count: %d; old state: %d; new state: %d; new traffic_waypoint: %r' %
+                          #     (self.state_count, self.state, state, self.last_wp))
+                          self.last_wp = light_wp if (state == TrafficLight.RED) else -light_wp
+                          self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                          rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; stable; reporting {}".format(
+                              color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
+
+                      # end of if (state == TrafficLight.RED)
+                  else:
+                      if self.last_wp is not None:
+                          self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                      # end of if self.last_wp is not None
+                      # rospy.loginfo('not enough state change: old state: %r; keep publish the old traffic_waypoint: %r' % (self.state, self.last_wp))
+                      rospy.loginfo("from {:7} to {:7} state counter {:3} light at {:7}; not yet stable: reporting last state and light traffic index, reporting {}".format(
+                          color_code_to_label(self.state), color_code_to_label(state), self.state_count, light_wp, self.last_wp))
+
+                  # end of if (self.state is None) or (self.state != state)
+                  self.state_count += 1
+                  self.camera_image = None
+              # end of if self.camera_image is not None
+          rate.sleep()
+      # end of while not rospy.is_shutdow()
+#+END_SRC
+
+** process_traffic_lights
+
+#+NAME:process_traffic_lights
+#+BEGIN_SRC python :noweb tangle :tangle
+  def process_traffic_lights(self):
+      """Finds closest visible traffic light, if one exists, and determines its
+          location and color
+
+      Returns:
+          int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
+          int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+
+      """
+      light = None
+
+      if ((self.base_waypoints is not None) and
+          (self.waypoint_to_light is not None) and
+          (self.pose is not None)):
+          self.car_index = self.get_closest_waypoint(self.pose.pose)
+          # DONE find the closest visible traffic light (if one exists)
+          # the index of the waypoint of the traffic light
+          light_index, light_wp = self.waypoint_to_light[self.car_index]
+          if light_wp is None:
+              return light_wp, TrafficLight.UNKNOWN
+          # end of if light_wp is None
+
+          if (self.admissible_distance_for_image < self.distance(self.car_index, light_wp)):  # beyond 150 meters
+              return light_wp, TrafficLight.UNKNOWN
+          else:
+          # when the light_index is None, then is no more light in front
+              if light_index is not None:
+                  if self.FAKED_LIGHT:
+                      # rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
+                      #     light_index, self.lights[light_index].state,
+                      #     self.lights[light_index].state == TrafficLight.RED))
+                      state = self.lights[light_index].state
+                  else:
+                      cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+
+                      # Get classification
+                      state = self.light_classifier.get_classification(cv_image)
+
+                  # end of if self.FAKED_LIGHT
+              else:
+                  state = TrafficLight.UNKNOWN
+              # end of if light_index is not None
+              # if (state==TrafficLight.RED):
+              #     rospy.loginfo('car index: %r; light_index: %r; light waypoint: %r; light is RED: %r' %
+              #                   (self.car_index, light_index, light_wp, state==TrafficLight.RED))
+              # end of if (state==TrafficLight.RED)
+
+          # end of if (self.admissible_distance_for_image < self.distance(self.car_index, light_wp))
+          return light_wp, state
+      # end of if ((self.base_waypoints is not None) and
+          # (self.waypoint_to_light is not None) and
+          # (self.pose is not None))
+      return None, TrafficLight.UNKNOWN
+#+END_SRC
+
+** obsolete: find-closest-traffic-light
+
+Based on the current car_index, and the previous_traffic_light_position, find the next traffic_light_position
+#+NAME:find-closest-traffic-light
+#+BEGIN_SRC python :noweb tangle :tangle
+  def find_closest_traffic_light(self, car_index_index):
+      # remaining_traffic_ligths = len(self.stop_line_positions)-self.number_traffic_lights_passed
+      if self.number_traffic_lights_passed < len(self.stop_line_positions)-1:
+          dl = lambda a, b: math.sqrt((a.x-b[0])**2 + (a.y-b[1])**2)
+          # find the closest traffic light to the car's position
+          traffic_light_index = self.previous_traffic_light_position
+          d_shortest = dl(self.base_waypoints[car_index_index].pose.pose.position,
+                          self.stop_line_positions[self.previous_traffic_light_position])
+
+          for i in range(self.previous_traffic_light_position+1, len(self.stop_line_positions)):
+              d = dl(self.base_waypoints[car_index_index].pose.pose.position,
+                     self.stop_line_positions[i])
+              if d < d_shortest:  # found the closest
+                  d_shortest = d
+                  traffic_light_index = i
+              # end of if d < d_shortest
+          # end of for i in range(self.previous_traffic_light_position+1, len(self.stop_line_positions))
+          self.previous_traffic_light_position = traffic_light_index
+          # self.number_traffic_lights_passed += 1
+
+          # find the closest base_waypoint to the found traffic light.
+          nearest_waypoint_for_the_light = car_position_index
+          d_shortest = dl(self.base_waypoints[car_position_index].pose.pose.position,
+                          self.stop_line_positions[traffic_light_index])
+
+          for j in range(car_position_index + 1, len(self.base_waypoints)):
+              d = dl(self.base_waypoints[j].pose.pose.position,
+                     self.stop_line_positions[traffic_light_index])
+              if d < d_shortest:
+                  d_shortest = d
+                  nearest_waypoint_for_the_light = j
+              # end of if d < d_shortest
+          # end of for j in range(car_position_index, len(self.base_waypoints)-car_position_index)
+          return traffic_light_index, nearest_waypoint_for_the_light
+      else:
+          return None, None
+      # end of self.number_traffic_lights_passed < len(self.stop_line_positions)-1
+#+END_SRC
+
+** obsolete: get_light_state
+
+I assume/design the light parameter is the index of the nearest traffic light in the list of traffic lights.
+#+NAME:get_light_state
+#+BEGIN_SRC python :noweb tangle :tangle
+  def get_light_state(self, light_index):
+      """Determines the current color of the traffic light
+
+      Args:
+          light_index (TrafficLight): light to classify
+
+      Returns:
+          int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+
+      """
+      # FAKED_LIGHT = False
+      # if FAKED_LIGHT:
+      #     rospy.loginfo('light_index: %d; state: %d; the light is RED: %r' % (
+      #         light_index, self.lights[light_index].state,
+      #         self.lights[light_index].state == TrafficLight.RED))
+      #     return self.lights[light_index].state
+      # end of if FAKED_LIGHT
+
+      # if(not self.has_image):
+      #     self.prev_light_loc = None
+      #     return None
+
+      cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+
+      #Get classification
+      return self.light_classifier.get_classification(cv_image)
+
+#+END_SRC
+
+* Utilities
+
+#+NAME:color_code_to_label
+#+BEGIN_SRC python :noweb tangle :tangle
+  def color_code_to_label(color_code):
+        if color_code == TrafficLight.GREEN:
+            color_label = "GREEN"
+        elif color_code == TrafficLight.RED:
+            color_label = "RED"
+        elif color_code == TrafficLight.YELLOW:
+            color_label = "YELLOW"
+        else:
+            color_label = "UNKNOWN"
+        # end of if color_code == TrafficLight.GREEN
+        return color_label
+#+END_SRC
+
+** Current problems
+Traceback (most recent call last):
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 272, in <module>
+    TLDetector()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 90, in __init__
+    self.loop()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 233, in loop
+    light_wp, state = self.process_traffic_lights()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 213, in process_traffic_lights
+    state = self.lights[light_index].state
+TypeError: list indices must be integers, not NoneType
+[tl_detector-2] process has died [pid 13902, exit code 1, cmd /home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py __name:=tl_detector __log:=/home/yubrshen/.ros/log/491be1a6-d53b-11e7-a096-18dbf212c2fb/tl_detector-2.log].
+
+** Sketch of Traffic Light Classification
+
+#+BEGIN_SRC plantuml :file traffic-classification.png
+@startuml
+:receive camera image:
+image_processing_call_back_start;
+:determine the car's current position:
+get_closest_waypoint(self.pose.pose);
+:find the nearest traffic light to the car:
+light_index, light_wp = self.waypoint_to_light[car_index];
+:classify the color of the light:
+light_classifier.get_classification(cv_image);
+:bounce treatment of light state;
+:publish /traffic_waypoint;
+@enduml
+#+END_SRC
+
+#+RESULTS:
+[[file:traffic-classification.png]]
+
+#results:
+
+*** logic of velocity adjustment
+Here is one with potential improvement, as of <2017-11-27 Mon 21:58>
+#+BEGIN_SRC plantuml :file velocity-adjustment-improved.png
+@startuml
+if (Light is RED) then (red)
+  if (current policy) then (already
+STOP)
+    :do nothing;
+  elseif (time or distance ) then (too close)
+    :STOP;
+  elseif (time or distance) then (close enough
+to decelerate)
+    :DECELERATE;
+  elseif (time or distance) then (far enough
+to cruise)
+    :cruise
+(polycy <- None);
+  else
+  :nothing;
+  endif
+else
+:policy <- None;
+note right
+  after turning green from red,
+  it seems that
+  the originally programmed
+  velocity is too slow.
+  It might need some acceleration.
+  To be discussed.
+end note
+endif
+#+END_SRC
+
+#+RESULTS:
+[[file:velocity-adjustment-improved.png]]
+
+
+Here is the original.
+#+BEGIN_SRC plantuml :file velocity-adjustment.png
+@startuml
+if (Light is RED) then (red)
+  if (current policy) then (already
+STOP)
+    :do nothing;
+  elseif (time or distance ) then (too close)
+    :STOP;
+  elseif (time or distance) then (close enough
+to decelerate)
+    :DECELERATE;
+  elseif (time or distance) then (far enough
+to cruise)
+    :cruise;
+  else
+  :nothing;
+  endif
+elseif (distance or time is) then (Light is not red
+but time or distance
+is large enough but
+close enough
+for the next cycle red)
+:DECELERATE;
+else
+:nothing;
+endif
+#+END_SRC
+
+#+RESULTS:
+[[file:velocity-adjustment.png]]
+
+
+For the next cycle of red, how large the distance should be, and how close enough it should be?

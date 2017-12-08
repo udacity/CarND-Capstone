@@ -1,0 +1,264 @@
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS:
+#+LATEX_HEADER:
+#+LATEX_HEADER_EXTRA:
+#+DESCRIPTION:
+#+KEYWORDS:
+#+SUBTITLE:
+#+LATEX_COMPILER: pdflatex
+#+DATE: \today
+
+#+TITLE: Traffic Light Classifier (Inference)
+
+This is the ingestion of the implementation from SJ and Sumanth's implementation.
+
+
+* Code
+
+Top Level
+
+#+NAME:tl-classifier
+#+BEGIN_SRC python :noweb tangle :tangle ./ros/src/tl_detector/light_classification/tl_classifier.py
+  <<imports>>
+
+  <<joinfiles>>
+
+  class TLClassifier(object):
+      <<__init__>>
+
+      <<get_classification>>
+#+END_SRC
+
+** imports
+
+#+NAME:imports
+#+BEGIN_SRC python :noweb tangle :tangle
+  import os
+  from styx_msgs.msg import TrafficLight
+  import tensorflow as tf
+  import numpy as np
+  import rospy
+  from functools import partial
+#+END_SRC
+
+** joinfiles
+
+#+NAME:joinfiles
+#+BEGIN_SRC python :noweb tangle :tangle
+  def joinfiles(directory, filename):
+      """
+      directory is the chunks directory
+      filename is the name of assembled file.
+      """
+      chunksize = 1024
+      maxchunks = 1024 * 5
+      rospy.loginfo("restoring:" + filename +" from directory:" + directory)
+      if os.path.exists(directory):
+          if os.path.exists(filename):
+              os.remove(filename)
+          # end of if os.path.exists(filename)
+          output = open(filename, 'wb')
+          chunks = os.listdir(directory)
+          chunks.sort()
+          for fname in chunks:
+              rospy.loginfo("Joining " + fname + " out of " + str(len(chunks)))
+              fpath = os.path.join(directory, fname)
+              with open(fpath, 'rb') as fileobj:
+                  for chunk in iter(partial(fileobj.read, chunksize * maxchunks), ''):
+                      output.write(chunk)
+                  # end of for chunk in iter(partial(fileobj.read, chunksize * maxchunks), '')
+              # with open(fpath, 'rb') as fileobj
+          # end of for fname in chunks
+          output.close()
+      # end of os.path.exists(directory)
+#+END_SRC
+
+
+** __init__
+
+#+NAME:__init__
+#+BEGIN_SRC python :noweb tangle :tangle
+  def __init__(self, sim):
+      #DONE load classifier
+      curr_dir = os.path.dirname(os.path.realpath(__file__))
+      if sim:
+          model_folder = '/sim_model'
+      else:
+          model_folder = '/real_model'
+      # end of if sim
+
+      model_path = curr_dir + model_folder + '/frozen_inference_graph.pb'
+      chunk_folder = curr_dir + model_folder + '/chunks'
+      if not os.path.exists(model_path):
+          joinfiles(chunk_folder, model_path)
+
+      self.detection_graph = tf.Graph()
+
+      with self.detection_graph.as_default():
+
+          od_graph_def = tf.GraphDef()
+
+          with tf.gfile.GFile(model_path, 'rb') as fid:
+
+              serialized_graph = fid.read()
+              od_graph_def.ParseFromString(serialized_graph)
+              tf.import_graph_def(od_graph_def, name='')
+          # end of with tf.gfile.GFile(model_path, 'rb') as fid:
+      # with self.detection_graph.as_default():
+      self.session = tf.Session(graph=self.detection_graph)
+
+      self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
+      self.detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
+      self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
+      self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
+      self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
+#+END_SRC
+
+#+RESULTS: __init__
+: None
+
+** get_classification
+
+#+NAME:get_classification
+#+BEGIN_SRC python :noweb tangle :tangle
+  def convert_class_to_color(self, class_value):
+      if class_value == 1:
+          light_color = TrafficLight.GREEN
+          color_label = "GREEN"
+      elif class_value == 2:
+          light_color = TrafficLight.RED
+          color_label = "RED"
+      elif class_value == 3:
+          light_color = TrafficLight.YELLOW
+          color_label = "YELLOW"
+      else:
+          light_color = TrafficLight.UNKNOWN
+          color_label = "UNKNOWN"
+      # end of if class_value == 1
+      return (light_color, color_label)
+
+  def get_classification(self, image):
+      """Determines the color of the traffic light in the image
+        Args:
+            image (cv::Mat): image containing the traffic light
+        Returns:
+            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+        """
+      #DONE implement light color prediction
+      image_expanded = np.expand_dims(image, axis=0)
+      (boxes, scores, classes, num_det) = self.session.run(
+          [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
+          feed_dict={self.image_tensor: image_expanded})
+
+      boxes = np.squeeze(boxes)
+      classes = np.squeeze(classes).astype(np.int32)
+      scores = np.squeeze(scores)
+
+      # Print class based on best score
+
+      light_color = TrafficLight.UNKNOWN
+      color_label = "UNKNOWN"
+
+      # find index with the max score[index]
+      max_score = scores[0]
+      max_index = 0
+      for i in range(1, boxes.shape[0]):
+          if max_score < scores[i]:
+              max_score = scores[i]
+              max_index = i
+          # end of if max_score < scores[i]
+      # end of for i in range(1, boxes.shape[0])
+
+      light_color, color_label = self.convert_class_to_color(classes[max_index])
+      if max_score < 0.5: # used to be 0.7
+          light_color, color_label = TrafficLight.UNKNOWN, "UNKNOWN"
+      # end of if max_score < 0.7
+      # rospy.loginfo("Traffic Light Color value: %r, label: %s; score: %f" %
+      #               (light_color, color_label, max_score))
+      return light_color
+#+END_SRC
+
+* Sketches
+
+#+BEGIN_SRC plantuml :file traffic-light-classification.png
+@startuml
+:TLDetector:get_light_state(light_index);
+:TLClassifier:get_classification(image);
+@enduml
+#+END_SRC
+
+#+RESULTS:
+[[file:traffic-light-classification.png]]
+
+#results:
+
+* Existing problems
+2017-11-24 21:26:34.884851: E tensorflow/stream_executor/cuda/cuda_blas.cc:366] failed to create cublas handle: CUBLAS_STATUS_NOT_INITIALIZED
+2017-11-24 21:26:34.884883: W tensorflow/stream_executor/stream.cc:1756] attempting to perform BLAS operation using StreamExecutor without BLAS support
+Traceback (most recent call last):
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 237, in <module>
+    TLDetector()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 89, in __init__
+    self.loop()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 209, in loop
+    light_wp, state = self.process_traffic_lights()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 200, in process_traffic_lights
+    state = self.get_light_state(light_index)
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 176, in get_light_state
+    return self.light_classifier.get_classification(cv_image)
+  File "/media/yubrshen/DATA/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/light_classification/tl_classifier.py", line 43, in get_classification
+    feed_dict={self.image_tensor: image_expanded})
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 895, in run
+    run_metadata_ptr)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 1124, in _run
+    feed_dict_tensor, options, run_metadata)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 1321, in _do_run
+    options, run_metadata)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/client/session.py", line 1340, in _do_call
+    raise type(e)(node_def, op, message)
+tensorflow.python.framework.errors_impl.InternalError: Blas SGEMM launch failed : m=30000, n=256, k=64
+	 [[Node: FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/Conv2D = Conv2D[T=DT_FLOAT, data_format="NHWC", padding="SAME", strides=[1, 1, 1, 1], use_cudnn_on_gpu=true, _device="/job:localhost/replica:0/task:0/gpu:0"](FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/pool1/MaxPool, FirstStageFeatureExtractor/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/weights/read)]]
+	 [[Node: SecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/MultiClassNonMaxSuppression/ChangeCoordinateFrame/Scale/concat/_145 = _Recv[client_terminated=false, recv_device="/job:localhost/replica:0/task:0/cpu:0", send_device="/job:localhost/replica:0/task:0/gpu:0", send_device_incarnation=1, tensor_name="edge_3497_SecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/MultiClassNonMaxSuppression/ChangeCoordinateFrame/Scale/concat", tensor_type=DT_FLOAT, _device="/job:localhost/replica:0/task:0/cpu:0"](^_cloopSecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/strided_slice/stack_2/_6)]]
+
+Caused by op u'FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/Conv2D', defined at:
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 237, in <module>
+    TLDetector()
+  File "/home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py", line 80, in __init__
+    self.light_classifier = TLClassifier()
+  File "/media/yubrshen/DATA/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/light_classification/tl_classifier.py", line 22, in __init__
+    tf.import_graph_def(od_graph_def, name='')
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/framework/importer.py", line 313, in import_graph_def
+    op_def=op_def)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/framework/ops.py", line 2630, in create_op
+    original_op=self._default_original_op, op_def=op_def)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/framework/ops.py", line 1204, in __init__
+    self._traceback = self._graph._extract_stack()  # pylint: disable=protected-access
+
+InternalError (see above for traceback): Blas SGEMM launch failed : m=30000, n=256, k=64
+	 [[Node: FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/Conv2D = Conv2D[T=DT_FLOAT, data_format="NHWC", padding="SAME", strides=[1, 1, 1, 1], use_cudnn_on_gpu=true, _device="/job:localhost/replica:0/task:0/gpu:0"](FirstStageFeatureExtractor/resnet_v1_101/resnet_v1_101/pool1/MaxPool, FirstStageFeatureExtractor/resnet_v1_101/block1/unit_1/bottleneck_v1/shortcut/weights/read)]]
+	 [[Node: SecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/MultiClassNonMaxSuppression/ChangeCoordinateFrame/Scale/concat/_145 = _Recv[client_terminated=false, recv_device="/job:localhost/replica:0/task:0/cpu:0", send_device="/job:localhost/replica:0/task:0/gpu:0", send_device_incarnation=1, tensor_name="edge_3497_SecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/MultiClassNonMaxSuppression/ChangeCoordinateFrame/Scale/concat", tensor_type=DT_FLOAT, _device="/job:localhost/replica:0/task:0/cpu:0"](^_cloopSecondStagePostprocessor/BatchMultiClassNonMaxSuppression/map/while/strided_slice/stack_2/_6)]]
+
+[tl_detector-8] process has died [pid 7469, exit code 1, cmd /home/yubrshen/ai-study/sdc/term3/projects/CarND-Capstone/ros/src/tl_detector/tl_detector.py __name:=tl_detector __log:=/home/yubrshen/.ros/log/18d1ecb8-d1a1-11e7-91f9-18dbf212c2fb/tl_detector-8.log].
+log file: /home/yubrshen/.ros/log/18d1ecb8-d1a1-11e7-91f9-18dbf212c2fb/tl_detector-8*.log
+127.0.0.1 - - [24/Nov/2017 21:26:40] "GET /socket.io/?EIO=4&transport=websocket HTTP/1.1" 200 0 18.642115
+
+As of<2017-11-24 Fri 21:28> the above problem comes back, after move the processing to a loop with frequency 3 Hz.
+
+* Add trained model for real site into checks
+
+The following has not been tested in code block but similar one has been executed successfully in shell.
+#+BEGIN_SRC shell
+pwd
+mkdir -p ./ros/src/tl_detector/light_classification/real_model/chunks
+python ./ros/src/tl_detector/light_classification/makechunks.py ./frozen_models/frozen_real_inception/frozen_inference_graph.pb real
+ls -lt ./real_model/chunks
+#+END_SRC
+
+Actually this one works in a shell:
+
+#+BEGIN_SRC shell
+cd ./ros/src/tl_detector/light_classification
+mkdir -p real_model/chunks
+python makechunks.py python makechunks.py ../../../../frozen_models/frozen_real_inception/frozen_inference_graph.pb real
+
+#+END_SRC

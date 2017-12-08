@@ -1,0 +1,1481 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2017-11-28 Tue 13:55 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>&lrm;</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="yu-shen" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2017 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgb7bb544">1. High level requirements</a></li>
+<li><a href="#orgc385201">2. Use Case: Waypoint Updater providing final_waypoints</a>
+<ul>
+<li><a href="#org58a0eb6">2.1. Work-flow</a></li>
+<li><a href="#org152f38d">2.2. Experience sharing</a></li>
+<li><a href="#org6dffbfe">2.3. messages involved</a>
+<ul>
+<li><a href="#org4e72754">2.3.1. Message types</a></li>
+<li><a href="#orgbe31720">2.3.2. /base_waypoints : input</a></li>
+<li><a href="#orgbc5e9c3">2.3.3. /current_pose : input</a></li>
+<li><a href="#org8d5ada5">2.3.4. /final_waypoints : output</a></li>
+</ul>
+</li>
+<li><a href="#orga302ee2">2.4. Design Sketch for producing final_wayponts</a></li>
+<li><a href="#org3cb91e5">2.5. Code construction</a>
+<ul>
+<li><a href="#org0f3a6ce">2.5.1. Waypoint_Uploader integration</a></li>
+<li><a href="#org594ff8f">2.5.2. imports</a></li>
+<li><a href="#orgd8a8a92">2.5.3. base_waypoints_cb</a></li>
+<li><a href="#orgf70c09a">2.5.4. velocity-policy</a></li>
+<li><a href="#orga54bf91">2.5.5. traffic_waypoint_cb</a></li>
+<li><a href="#org920ce24">2.5.6. adjust_velocity_for_traffic_light</a></li>
+</ul>
+</li>
+<li><a href="#orgdceb216">2.6. determine-velocity-policy</a>
+<ul>
+<li><a href="#orgf3c986e">2.6.1. cruise_unless_near_the_end</a></li>
+<li><a href="#org46dc9ea">2.6.2. traffic_lights_cb</a></li>
+<li><a href="#orgef83e16">2.6.3. current_velocity_cb</a></li>
+<li><a href="#org5fbf6f1">2.6.4. obstacle_cb</a></li>
+<li><a href="#org108b41c">2.6.5. loop</a></li>
+<li><a href="#org11a0453">2.6.6. process-pose</a></li>
+<li><a href="#org7b0e664">2.6.7. compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS</a></li>
+<li><a href="#org7ab3501">2.6.8. select waypoints for /final_waypoints</a></li>
+<li><a href="#org46ce908">2.6.9. determine the velocity for waypoints</a></li>
+<li><a href="#orge6f1424">2.6.10. Discussion on the appropriate value of LOOKAHEAD_WPS</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#org200a2ad">3. Use case: Stop at the red traffic light or at the end</a>
+<ul>
+<li><a href="#orgf3b7ebc">3.1. Design Considerations for Traffic Light Treatment</a></li>
+</ul>
+</li>
+<li><a href="#orgcf79485">4. Support functions</a></li>
+<li><a href="#orgc90d637">5. Message Sequence Charts</a></li>
+<li><a href="#orgf8b3783">6. Sketch of Waypoint_Updater:loop</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgb7bb544" class="outline-2">
+<h2 id="orgb7bb544"><span class="section-number-2">1</span> High level requirements</h2>
+<div class="outline-text-2" id="text-1">
+<ul class="org-ul">
+<li>The car should stop at the end of the base_waypoints, i.e. the end of the track. (So no looping around is needed.)</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-orgc385201" class="outline-2">
+<h2 id="orgc385201"><span class="section-number-2">2</span> Use Case: Waypoint Updater providing final_waypoints</h2>
+<div class="outline-text-2" id="text-2">
+</div>
+<div id="outline-container-org58a0eb6" class="outline-3">
+<h3 id="org58a0eb6"><span class="section-number-3">2.1</span> Work-flow</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+To build Waypoint_Updater:
+</p>
+
+<p>
+==:
+</p>
+<div class="org-src-container">
+<pre class="src src-shell"><span style="color: #4f97d7;">cd</span> ros
+catkin_make
+</pre>
+</div>
+
+<p>
+In a separate shell:
+</p>
+<p>
+==:
+</p>
+<div class="org-src-container">
+<pre class="src src-shell"><span style="color: #4f97d7;">source</span> devel/setup.sh
+rostopic echo /final_waypoints
+</pre>
+</div>
+<p>
+expect to see the published final_waypoints.
+</p>
+
+<p>
+In a separate shell:
+</p>
+<p>
+==:
+</p>
+<div class="org-src-container">
+<pre class="src src-shell"><span style="color: #4f97d7;">source</span> devel/setup.sh
+roslaunch launch/styx.launch
+</pre>
+</div>
+
+<p>
+In a separate shell, start the car simulator:
+</p>
+
+<p>
+==:
+</p>
+<div class="org-src-container">
+<pre class="src src-shell"><span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">!/bin/</span><span style="color: #4f97d7; font-weight: bold;">bash</span>
+<span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">[</span><span style="color: #bc6ec5;">[</span> <span style="color: #a45bad;">!</span> <span style="color: #fa8072;">`pidof -s term3_sim.x86_64`</span> <span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">]</span>; <span style="color: #4f97d7; font-weight: bold;">then</span>
+    /home/yubrshen/ai-study/sdc/term3/linux_sys_int/system_integration.x86_64
+<span style="color: #4f97d7; font-weight: bold;">fi</span>
+</pre>
+</div>
+
+<p>
+Note, one need to customize for the path for the simulator executable.
+</p>
+
+<p>
+Eventually, after the working of dbw_node, we should see the car's movement in the simulator.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org152f38d" class="outline-3">
+<h3 id="org152f38d"><span class="section-number-3">2.2</span> Experience sharing</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+   It's quite time consuming to fix bugs, as there are a lots of print-outs in the shell for Waypoint_Updater, one has to
+scroll back to figure out what when wrong. Often, only one error would be reported, and one has to repeat the above work-flow for
+every iterations.
+</p>
+
+<p>
+If you know bettor work-flow or tools, please share.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org6dffbfe" class="outline-3">
+<h3 id="org6dffbfe"><span class="section-number-3">2.3</span> messages involved</h3>
+<div class="outline-text-3" id="text-2-3">
+</div>
+<div id="outline-container-org4e72754" class="outline-4">
+<h4 id="org4e72754"><span class="section-number-4">2.3.1</span> Message types</h4>
+<div class="outline-text-4" id="text-2-3-1">
+</div>
+<ol class="org-ol">
+<li><a id="orge9130af"></a>geometry_msgs/PoseStamped<br />
+<div class="outline-text-5" id="text-2-3-1-1">
+<pre class="example">
+$ rosmsg info geometry_msgs/PoseStamped
+std_msgs/Header header
+uint32 seq
+time stamp
+string frame_id
+geometry_msgs/Pose pose
+geometry_msgs/Point position
+float64 x
+float64 y
+float64 z
+geometry_msgs/Quaternion orientation
+float64 x
+float64 y
+float64 z
+float64 w
+
+</pre>
+<p>
+Characterize the position and orientation of a waypoint, used in styx_msg/Lane for waypoints
+</p>
+
+<p>
+Example of access/manipulation in Python:
+</p>
+
+<p>
+See the example for styx_msgs/Lane.
+</p>
+</div>
+</li>
+
+<li><a id="orgdb110e8"></a>styx_msgs/Lane<br />
+<div class="outline-text-5" id="text-2-3-1-2">
+<p>
+List of waypoints, used to for /base_waypoints and /final_waypoints
+</p>
+
+<pre class="example">
+std_msgs/Header header
+uint32 seq
+time stamp
+string frame_id
+styx_msgs/Waypoint[] waypoints
+geometry_msgs/PoseStamped pose
+std_msgs/Header header
+uint32 seq
+time stamp
+string frame_id
+geometry_msgs/Pose pose
+geometry_msgs/Point position
+float64 x
+float64 y
+float64 z
+geometry_msgs/Quaternion orientation
+float64 x
+float64 y
+float64 z
+float64 w
+geometry_msgs/TwistStamped twist
+std_msgs/Header header
+uint32 seq
+time stamp
+string frame_id
+geometry_msgs/Twist twist
+geometry_msgs/Vector3 linear
+float64 x
+float64 y
+float64 z
+geometry_msgs/Vector3 angular
+float64 x
+float64 y
+float64 z
+</pre>
+
+<p>
+Example of access/manipulation in Python:
+</p>
+</div>
+</li>
+</ol>
+</div>
+
+<div id="outline-container-orgbe31720" class="outline-4">
+<h4 id="orgbe31720"><span class="section-number-4">2.3.2</span> /base_waypoints : input</h4>
+<div class="outline-text-4" id="text-2-3-2">
+<p>
+All the waypoints on the track.
+Note, this is only published once, so it must be stored by the Waypoint_Updater.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgbc5e9c3" class="outline-4">
+<h4 id="orgbc5e9c3"><span class="section-number-4">2.3.3</span> /current_pose : input</h4>
+<div class="outline-text-4" id="text-2-3-3">
+<p>
+The current position of the car, with orientation.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org8d5ada5" class="outline-4">
+<h4 id="org8d5ada5"><span class="section-number-4">2.3.4</span> /final_waypoints : output</h4>
+<div class="outline-text-4" id="text-2-3-4">
+<p>
+The positions to be for the car after the current position, with the specified speed in
+the fields of twist.
+</p>
+
+<p>
+We only need to set the speed for the linear.x dimension. It's based on the information: <a href="https://discussions.udacity.com/t/what-is-the-meaning-of-the-various-waypoint-fields/406030/2">waypoint field definitions</a>
+</p>
+
+<p>
+The angular speed on z dimension might be needed for turning? Not quite sure about it.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga302ee2" class="outline-3">
+<h3 id="orga302ee2"><span class="section-number-3">2.4</span> Design Sketch for producing final_wayponts</h3>
+<div class="outline-text-3" id="text-2-4">
+<ol class="org-ol">
+<li>Subscribe for /base_points to get all the available waypoints
+Note: need to store the base_points, as it's only published once.</li>
+
+<li><p>
+Subscribe for /current_pose to trigger the generation of the final_waypoints (waypoints forward) up to LOOKAHEAD_WPS
+</p>
+
+<p>
+Here is the algorithm to generate:
+</p>
+<ul class="org-ul">
+<li>only select those that are ahead of the current_pose</li>
+
+<li>determine the speed required for the selected waypoints</li>
+
+<li>published the computed waypoint forward to /final_waypoints</li>
+</ul></li>
+
+<li>How to tell if a waypont is ahead of the my_car, given my_car's position.</li>
+</ol>
+
+<p>
+   Convert the waypoint's global coordinates to my_car's coordinates, waypoint_local_x, waypoint_local_y,
+   if 0 &lt;= waypoint_local_x, and the angle between the local_x-axis (my_car's orientation)
+   and the line from the local coordinate origin (my_car's current position) to the waypoint's coordinates is not too large,
+   that is, it's not too much of side-way movement.
+then the waypoint is front of my_car.
+</p>
+
+<p>
+Those eligible waypoints should be sorted increasing by waypoint_local_x value, for the same waypoint_local_x,
+only choose the one with the smallest waypont_local_y.
+</p>
+
+<p>
+I'm not clear whether it's OK to miss some waypoints along the path of my_car in the publishing the /final_points?
+For example, there are waypoints on the track ahead of my_car, A, B, C, is it OK to just publish A, and C?  For example, for some reason, by program consider B is not a valid waypoint ahead.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org3cb91e5" class="outline-3">
+<h3 id="org3cb91e5"><span class="section-number-3">2.5</span> Code construction</h3>
+<div class="outline-text-3" id="text-2-5">
+<p>
+This section provides the detailed design and construction of the code for Waypoint_Updater.
+</p>
+</div>
+<div id="outline-container-org0f3a6ce" class="outline-4">
+<h4 id="org0f3a6ce"><span class="section-number-4">2.5.1</span> Waypoint_Uploader integration</h4>
+<div class="outline-text-4" id="text-2-5-1">
+<p>
+This is the full source code for ./ros/src/waypoint_updater/waypoint_updater.py
+</p>
+
+<dl class="org-dl">
+<dt>11/6</dt><dd></dd>
+</dl>
+<p>
+change LOOKAHEAD_TIME_THRESHOLD from 5 to 4 seconds, as I found that in pure_pursuit,
+it only look ahead about 20 meters, with velocity of 10 mps, it will only take about 2 seconds.
+So 4 seconds should be enough.
+</p>
+
+<dl class="org-dl">
+<dt>11/6</dt><dd></dd>
+</dl>
+<p>
+add queue_size=1 to both Subscriber to /current_pose and /base_waypoints. This is to limit to process the most recent message.
+Any message that Waypoint_Update has no time to update would be discarded.
+</p>
+
+<dl class="org-dl">
+<dt>11/6</dt><dd></dd>
+</dl>
+<p>
+Change the logic of processing /current_pose from call_back to separate loop to ensure regular time interval processing.
+</p>
+<dl class="org-dl">
+<dt>11/7</dt><dd></dd>
+</dl>
+<p>
+add self.last_closest_front_waypoint_index to record the index of last the closet waypoint in front of the vehicle.
+This would be the index to search next time, to save computing. (Beware of index wrapping in index increment arithmetic!)
+</p>
+
+<dl class="org-dl">
+<dt>11/7</dt><dd></dd>
+</dl>
+<p>
+reduce LOOKAHEAD_WPS to 50 and do away from distance calculation to save computing effort. It seems that 50 is enough
+for normal driving.
+</p>
+
+<dl class="org-dl">
+<dt>11/8</dt><dd></dd>
+</dl>
+<p>
+Need to consider to reduce the speed when there is significant turn.
+</p>
+
+<p>
+How to characterize the turn? I might use the local coordinate transformation.
+Relative to a waypoint A, From the next waypoint's coordinates, x, y in the local coordinate of A,
+one can compute the angle between A's x-axis, and the direction AB by atan2(y, x). The larger the angle,
+the sharper the turn at A would be, so the speed at the A should be reduced.
+</p>
+
+<p>
+I may just calculate just the first a few, say 5 from the closest waypoint in front to save computing effort.
+</p>
+
+<dl class="org-dl">
+<dt>11/12</dt><dd></dd>
+</dl>
+<p>
+Add temporarily subscribe to /vehicle/traffic_lights, to simulate the detection of the traffic lights.
+</p>
+
+<p>
+<code>waypont_updater</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">!/usr/bin/env python</span>
+&lt;&lt;imports&gt;&gt;
+
+<span style="color: #2d9574;">'''</span>
+<span style="color: #2d9574;">This node will publish waypoints from the car's current position to some `x` distance ahead.</span>
+
+<span style="color: #2d9574;">As mentioned in the doc, you should ideally first implement a version which does not care</span>
+<span style="color: #2d9574;">about traffic lights or obstacles.</span>
+
+<span style="color: #2d9574;">Once you have created dbw_node, you will update this node to use the status of traffic lights too.</span>
+
+<span style="color: #2d9574;">Please note that our simulator also provides the exact location of traffic lights and their</span>
+<span style="color: #2d9574;">current status in `/vehicle/traffic_lights` message. You can use this message to build this node</span>
+<span style="color: #2d9574;">as well as to verify your TL classifier.</span>
+
+<span style="color: #cc9393;">TODO</span><span style="color: #2d9574;"> (for Yousuf and Aaron): Stopline location for each traffic light.</span>
+<span style="color: #2d9574;">'''</span>
+<span style="color: #7590db;">LOOKAHEAD_WPS</span> = <span style="color: #a45bad;">30</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">200 # Number of waypoints we will publish. You can change this number</span>
+<span style="color: #7590db;">LOOKAHEAD_TIME_THRESHOLD</span> = <span style="color: #a45bad;">4</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">seconds, change from 5 to 4</span>
+<span style="color: #7590db;">SAEF_TURNING_SPEED</span> = <span style="color: #a45bad;">3</span>.<span style="color: #a45bad;">0</span>       <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">meters/second</span>
+
+<span style="color: #7590db;">DANGER_TURNING_ANGLE</span> = math.pi/<span style="color: #a45bad;">4</span>  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">30 degree</span>
+<span style="color: #7590db;">MPH_to_MPS</span> = <span style="color: #a45bad;">1609</span>.<span style="color: #a45bad;">344</span>/<span style="color: #a45bad;">3600</span>.<span style="color: #a45bad;">0</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">1 mile = 1609.344 1 hour = 3600 seconds</span>
+
+&lt;&lt;publish_Lane&gt;&gt;
+&lt;&lt;velocity-timing-constants&gt;&gt;
+
+<span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">WaypointUpdater</span><span style="color: #4f97d7;">(</span>WaypointTracker<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">__init__</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">f = open("~/.ros/log/stderr.log", "w+") # not working here</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.original_stderr = sys.stderr</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">sys.stderr = f</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.stopped = False</span>
+        rospy.init_node<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'waypoint_updater'</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.max_vel_mps = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'waypoint_loader/velocity'</span><span style="color: #4f97d7;">)</span>*MPH_to_MPS
+        rospy.loginfo<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'max_vel_mps: %f'</span> % <span style="color: #4f97d7; font-weight: bold;">self</span>.max_vel_mps<span style="color: #4f97d7;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.loop_freq = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~loop_freq'</span>, <span style="color: #a45bad;">2</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the frequency to process vehicle messages</span>
+
+        WaypointTracker.__init__<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.current_pose_sub = rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/current_pose'</span>, PoseStamped, <span style="color: #4f97d7; font-weight: bold;">self</span>.current_pose_cb<span style="color: #4f97d7;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_sub = rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/base_waypoints'</span>, Lane, <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_cb<span style="color: #4f97d7;">)</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #cc9393;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;">: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint = <span style="color: #a45bad;">None</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.new_traffic_waypoint = <span style="color: #a45bad;">False</span>  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">whether there is new traffic_waypoint data to process</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.obstacle_waypoint = <span style="color: #a45bad;">None</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity = <span style="color: #a45bad;">None</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy = <span style="color: #a45bad;">None</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.traffic_lights = None</span>
+        rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/traffic_waypoint'</span>, Int32, <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint_cb<span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)</span>
+
+        rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/current_velocity'</span>, TwistStamped, <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity_cb<span style="color: #4f97d7;">)</span>
+        rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/obstacle_waypoint'</span>, Int32, <span style="color: #4f97d7; font-weight: bold;">self</span>.obstacle_cb<span style="color: #4f97d7;">)</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.final_waypoints_pub = rospy.Publisher<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'final_waypoints'</span>, Lane, queue_size=<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #cc9393;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;">: Add other member variables you need below</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.base_waypoints = None  # indicating the base_waypoints is not yet available</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.pose = None            # indicating that there is no message to process</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.loop<span style="color: #4f97d7;">()</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">rospy.spin()</span>
+
+    &lt;&lt;constant-policy&gt;&gt;
+    &lt;&lt;deceleration-policy&gt;&gt;
+    &lt;&lt;cruise_unless_near_the_end&gt;&gt;
+    &lt;&lt;loop&gt;&gt;
+    &lt;&lt;base_waypoints_cb&gt;&gt;
+    &lt;&lt;traffic_waypoint_cb&gt;&gt;
+    &lt;&lt;current_velocity_cb&gt;&gt;
+    &lt;&lt;obstacle_cb&gt;&gt;
+
+    &lt;&lt;support_functions&gt;&gt;
+
+<span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">__name__</span> == <span style="color: #2d9574;">'__main__'</span>:
+    <span style="color: #4f97d7; font-weight: bold;">try</span>:
+        WaypointUpdater<span style="color: #4f97d7;">()</span>
+    <span style="color: #4f97d7; font-weight: bold;">except</span> rospy.ROSInterruptException:
+        rospy.logerr<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'Could not start waypoint updater node.'</span><span style="color: #4f97d7;">)</span>
+
+</pre>
+</div>
+
+<p>
+The following are the implementations.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org594ff8f" class="outline-4">
+<h4 id="org594ff8f"><span class="section-number-4">2.5.2</span> imports</h4>
+<div class="outline-text-4" id="text-2-5-2">
+<p>
+<code>imports</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">import</span> sys                      <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">for redirect stderr</span>
+<span style="color: #4f97d7; font-weight: bold;">import</span> rospy
+
+<span style="color: #4f97d7; font-weight: bold;">import</span> copy                     <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">for deepcopy</span>
+<span style="color: #4f97d7; font-weight: bold;">import</span> numpy <span style="color: #4f97d7; font-weight: bold;">as</span> np              <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">for polyfit and poly1d</span>
+
+<span style="color: #4f97d7; font-weight: bold;">import</span> math
+
+<span style="color: #4f97d7; font-weight: bold;">from</span> std_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> Int32
+<span style="color: #4f97d7; font-weight: bold;">from</span> geometry_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> PoseStamped, TwistStamped
+<span style="color: #4f97d7; font-weight: bold;">from</span> styx_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> Lane, Waypoint
+<span style="color: #4f97d7; font-weight: bold;">from</span> styx_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> TrafficLightArray
+<span style="color: #4f97d7; font-weight: bold;">from</span> waypoint_lib.waypoint_tracker <span style="color: #4f97d7; font-weight: bold;">import</span> WaypointTracker
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgd8a8a92" class="outline-4">
+<h4 id="orgd8a8a92"><span class="section-number-4">2.5.3</span> base_waypoints_cb</h4>
+<div class="outline-text-4" id="text-2-5-3">
+<p>
+In the following code of modifying global variable may not be a good idea:
+</p>
+
+<p>
+<code>potential-improvement</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">global</span> LOOKAHEAD_WPS        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">might update it</span>
+<span style="color: #7590db;">LOOKAHEAD_WPS</span> = <span style="color: #4f97d7;">min</span><span style="color: #4f97d7;">(</span>LOOKAHEAD_WPS, <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+
+<p>
+It may be to compute a new member attribute of WaypointUpdater:
+</p>
+
+<p>
+<code>improvement-to-LOOKAHEAD_WPS</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.lookahead = <span style="color: #4f97d7;">min</span><span style="color: #4f97d7;">(</span>LOOKAHEAD_WPS, <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+<p>
+and to replace LOOKAHEAD_WPS in the body of WaypointUpdater by self.lookahead
+but it may not matter as the modification is still constant through the life cycle of program.
+</p>
+
+<p>
+<code>base_waypoints_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">base_waypoints_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    WaypointTracker.base_waypoints_process<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">global</span> LOOKAHEAD_WPS        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">might update it</span>
+    <span style="color: #7590db;">LOOKAHEAD_WPS</span> = <span style="color: #4f97d7;">min</span><span style="color: #4f97d7;">(</span>LOOKAHEAD_WPS, <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #4f97d7;">)</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">construct the velocity policy</span>
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.cruise_policy = <span style="color: #4f97d7; font-weight: bold;">self</span>.constant_policy_f<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.max_vel_mps, LOOKAHEAD_WPS<span style="color: #4f97d7;">)</span>
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_policy = <span style="color: #4f97d7; font-weight: bold;">self</span>.constant_policy_f<span style="color: #4f97d7;">(</span>-<span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">01</span>, LOOKAHEAD_WPS<span style="color: #4f97d7;">)</span>
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.deceleration_policy = <span style="color: #4f97d7; font-weight: bold;">self</span>.decleration_policy_f<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.max_vel_mps,
+                                                         LOOKAHEAD_WPS<span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">set the deceleration when approaching the end of the track</span>
+    <span style="color: #7590db;">total_length</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start<span style="color: #4f97d7;">[</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num-<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">]</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the total distance from the start to finish</span>
+    <span style="color: #4f97d7; font-weight: bold;">for</span> i <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span>LOOKAHEAD_WPS<span style="color: #4f97d7;">)</span>:
+        <span style="color: #7590db;">last_ith</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num - <span style="color: #a45bad;">1</span> - LOOKAHEAD_WPS+i
+        <span style="color: #7590db;">dist_to_the_end</span> = <span style="color: #4f97d7;">(</span>total_length - <span style="color: #4f97d7; font-weight: bold;">self</span>.dist_to_here_from_start<span style="color: #bc6ec5;">[</span>last_ith<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #7590db;">expected_velocity</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.deceleration_policy<span style="color: #4f97d7;">(</span>dist_to_the_end<span style="color: #4f97d7;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #4f97d7;">[</span>last_ith<span style="color: #4f97d7;">]</span><span style="color: #7590db;">.twist.twist.linear.x</span> = expected_velocity
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(LOOKAHEAD_WPS)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgf70c09a" class="outline-4">
+<h4 id="orgf70c09a"><span class="section-number-4">2.5.4</span> velocity-policy</h4>
+<div class="outline-text-4" id="text-2-5-4">
+<p>
+Velocity policies are functions that take input of the distance to a reference point,
+in this context of vehicle control, it's the point where the car should reach
+certain velocity, e.g. 0.0.
+</p>
+
+<p>
+The construction of such policies are in terms of the starting velocity, and the range of the input to the policies.
+</p>
+
+<p>
+For constant policy, the velocity would be the constant value across all input range.
+</p>
+
+<p>
+<code>constant-policy</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">constant_policy_f</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, velocity, bound<span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">xs</span> = <span style="color: #4f97d7;">[</span>-bound,   <span style="color: #a45bad;">0</span>.,       bound<span style="color: #4f97d7;">]</span>
+    <span style="color: #7590db;">ys</span> = <span style="color: #4f97d7;">[</span>velocity, velocity, velocity<span style="color: #4f97d7;">]</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> np.poly1d<span style="color: #4f97d7;">(</span>np.polyfit<span style="color: #bc6ec5;">(</span>np.array<span style="color: #2d9574;">(</span>xs<span style="color: #2d9574;">)</span>, np.array<span style="color: #2d9574;">(</span>ys<span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">2</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+
+<p>
+For deceleration policy, at input value of 0, the velocity should be 0, and the positive boundary of
+the input, the velocity should be the normal velocity as specified. The decrease should be smooth.
+</p>
+
+<p>
+<code>deceleration-policy</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">decleration_policy_f</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, ref_vel, bound<span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">xs</span> = <span style="color: #4f97d7;">[]</span>
+    <span style="color: #7590db;">ys</span> = <span style="color: #4f97d7;">[]</span>
+
+    xs.append<span style="color: #4f97d7;">(</span>-bound<span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span>-<span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+
+    xs.append<span style="color: #4f97d7;">(</span><span style="color: #a45bad;">0</span>.<span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span>-<span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">2</span><span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">5 meters away</span>
+    xs.append<span style="color: #4f97d7;">(</span><span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span>MPH_to_MPS*.<span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">10 meters away</span>
+    xs.append<span style="color: #4f97d7;">(</span><span style="color: #a45bad;">10</span><span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span>MPH_to_MPS*<span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">16 meters away</span>
+    xs.append<span style="color: #4f97d7;">(</span><span style="color: #a45bad;">16</span><span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span>MPH_to_MPS*<span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">2 seconds away or 24 meters away, whichever longer</span>
+    xs.append<span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">max</span><span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">[</span>ref_vel*<span style="color: #a45bad;">2</span>, <span style="color: #a45bad;">24</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">max</span><span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">[</span>ref_vel*.<span style="color: #a45bad;">2</span>, MPH_to_MPS*<span style="color: #a45bad;">5</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">4 seconds away or 45 meters away, whichever longer</span>
+    xs.append<span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">max</span><span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">[</span>ref_vel*<span style="color: #a45bad;">4</span>, <span style="color: #a45bad;">45</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">max</span><span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">[</span>ref_vel*.<span style="color: #a45bad;">3</span>, MPH_to_MPS*<span style="color: #a45bad;">6</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">6 seconds away or 65 meters away, whichever longer</span>
+    xs.append<span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">max</span><span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">[</span>ref_vel*<span style="color: #a45bad;">6</span>, <span style="color: #a45bad;">65</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">max</span><span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">[</span>ref_vel*.<span style="color: #a45bad;">5</span>, MPH_to_MPS*<span style="color: #a45bad;">10</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">8 seconds away, normal speed</span>
+    xs.append<span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">max</span><span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">[</span>ref_vel*<span style="color: #a45bad;">8</span>, <span style="color: #a45bad;">85</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span>ref_vel<span style="color: #4f97d7;">)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">at the beginning, normal speed</span>
+    xs.append<span style="color: #4f97d7;">(</span>bound<span style="color: #4f97d7;">)</span>
+    ys.append<span style="color: #4f97d7;">(</span>ref_vel<span style="color: #4f97d7;">)</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> np.poly1d<span style="color: #4f97d7;">(</span>np.polyfit<span style="color: #bc6ec5;">(</span>np.array<span style="color: #2d9574;">(</span>xs<span style="color: #2d9574;">)</span>, np.array<span style="color: #2d9574;">(</span>ys<span style="color: #2d9574;">)</span>, <span style="color: #a45bad;">3</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga54bf91" class="outline-4">
+<h4 id="orga54bf91"><span class="section-number-4">2.5.5</span> traffic_waypoint_cb</h4>
+<div class="outline-text-4" id="text-2-5-5">
+<p>
+Store the published /traffic_waypoint data. It's expected to be utilized in the
+main loop of the traffic waypoint data.
+</p>
+
+<p>
+<code>traffic_waypoint_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">traffic_waypoint_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint != msg.data:
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.new_traffic_waypoint = <span style="color: #a45bad;">True</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint = msg.data
+        <span style="color: #4f97d7; font-weight: bold;">if</span> msg.data &lt; <span style="color: #a45bad;">0</span>:
+            <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_light_red = <span style="color: #a45bad;">False</span>
+            <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint = -msg.data
+        <span style="color: #4f97d7; font-weight: bold;">else</span>:
+            <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_light_red = <span style="color: #a45bad;">True</span>
+            <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint = msg.data
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if msg.data &lt; 0</span>
+    <span style="color: #4f97d7; font-weight: bold;">else</span>:
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.new_traffic_waypoint = <span style="color: #a45bad;">False</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.traffic_waypoint != msg.data</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org920ce24" class="outline-4">
+<h4 id="org920ce24"><span class="section-number-4">2.5.6</span> adjust_velocity_for_traffic_light</h4>
+<div class="outline-text-4" id="text-2-5-6">
+<p>
+In the context of loop for processing the /pose message, determine the velocity policy,
+and adjust the velocity for each final_waypoints
+</p>
+
+<p>
+By the current logic, tl_detector will only publish /traffic_waypoint if there is a red traffic light detected.
+</p>
+
+<p>
+There might be another case that the car should slow down,
+where it's close to next traffic light, regardless of the traffic light's color.
+To implement this, we need to have the capability to know distance to the next traffic light.
+It seems to me that this might be an abstraction
+should be done in WaypointTracker.
+</p>
+
+<p>
+MAJOR CHANGE of the protocol between waypoints_updater and tl_detector ::
+when the traffic light color is not red, report the negative of the waypoint index instead of just report -1, to take advantage of the computation of the waypoint index of the traffic light, saving waypoint_updater from computing it.
+</p>
+
+<p>
+<code>adjust_velocity_for_traffic_light</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">policy for velocity adjustment in view of traffic light</span>
+<span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">0</span> &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity<span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold;">and</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.new_traffic_waypoint and</span>
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">distance_to_traffic_light</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.distance<span style="color: #4f97d7;">(</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index, <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint<span style="color: #4f97d7;">)</span>
+    <span style="color: #7590db;">time_to_traffic_light</span> = distance_to_traffic_light/<span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity
+
+    &lt;&lt;determine-velocity-policy&gt;&gt;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_light_red:
+        rospy.loginfo<span style="color: #4f97d7;">(</span>
+            <span style="color: #2d9574;">'current_waypoint: %d; traffic_waypoint: %d; light: RED: %r; Distance to light: %r; Time to light: %d; velocity policy: %s'</span> %
+            <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index, <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint, <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_light_red, distance_to_traffic_light,
+             time_to_traffic_light, <span style="color: #4f97d7; font-weight: bold;">self</span>.policy_name<span style="color: #2d9574;">()</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">if self.traffic_light_red</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">apply the policy to each final_waypoints</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy:
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">for all final waypoints</span>
+        <span style="color: #7590db;">num_affected_waypoints</span> = <span style="color: #4f97d7;">min</span><span style="color: #4f97d7;">(</span>final_waypoints_count, <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint - <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index<span style="color: #4f97d7;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">for</span> i <span style="color: #4f97d7; font-weight: bold;">in</span> <span style="color: #4f97d7;">range</span><span style="color: #4f97d7;">(</span>num_affected_waypoints<span style="color: #4f97d7;">)</span>:
+            <span style="color: #7590db;">j</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index + i
+            <span style="color: #7590db;">waypoint</span> = final_waypoints<span style="color: #4f97d7;">[</span>i<span style="color: #4f97d7;">]</span>
+            <span style="color: #7590db;">distance_to_traffic_light</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.distance<span style="color: #4f97d7;">(</span>j, <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_waypoint<span style="color: #4f97d7;">)</span>
+            <span style="color: #7590db;">waypoint.twist.twist.linear.x</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy<span style="color: #4f97d7;">(</span>distance_to_traffic_light<span style="color: #4f97d7;">)</span>
+            rospy.loginfo<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'velocity policy: %s; index away from current pose: %d; linear.x: %f'</span> %
+                          <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.policy_name<span style="color: #2d9574;">()</span>, i, waypoint.twist.twist.linear.x<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(num_affected_waypoints)</span>
+    <span style="color: #4f97d7; font-weight: bold;">else</span>:
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">for i in range(final_waypoints_count):</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.loginfo('velocity policy: %s; index away from current pose: %d; linear.x: %f' %</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">#                   </span><span style="color: #2aa1ae; background-color: #292e34;">(self.policy_name(), i, final_waypoints[i].twist.twist.linear.x))</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of for i in range(final_waypoints_count)</span>
+        <span style="color: #4f97d7; font-weight: bold;">pass</span>                    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">in place of the above commented out code</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.velocity_policy</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.current_velocity and 0 &lt; self.current_velocity and self.traffic_waypoint</span>
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgdceb216" class="outline-3">
+<h3 id="orgdceb216"><span class="section-number-3">2.6</span> determine-velocity-policy</h3>
+<div class="outline-text-3" id="text-2-6">
+<p>
+<code>velocity-timing-constants</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">TIME_TO_CRUISE = 20             # seconds, can keep the normal cruise speed</span>
+<span style="color: #7590db;">TIME_TO_SLOWDOWN</span> = <span style="color: #a45bad;">1</span>  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">seconds, must slowdown in anticipation, regardless of the color of the light</span>
+<span style="color: #7590db;">TIME_TO_STOP_IF_RED</span> = <span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">5</span>        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">seconds, must stop if the traffic light is red</span>
+</pre>
+</div>
+
+<p>
+<code>determine-velocity-policy</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_light_red:
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy == <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_policy:
+        <span style="color: #4f97d7; font-weight: bold;">pass</span>
+    <span style="color: #4f97d7; font-weight: bold;">elif</span> <span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>time_to_traffic_light &lt; TIME_TO_STOP_IF_RED<span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold;">or</span> distance_to_traffic_light &lt; <span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span>:
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy = <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_policy
+    <span style="color: #4f97d7; font-weight: bold;">elif</span> <span style="color: #4f97d7;">(</span>time_to_traffic_light &lt; TIME_TO_SLOWDOWN<span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">or</span> distance_to_traffic_light &lt; <span style="color: #a45bad;">50</span>:
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy = <span style="color: #4f97d7; font-weight: bold;">self</span>.decleration_policy_f<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity, distance_to_traffic_light<span style="color: #4f97d7;">)</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">else: keep the original velocity</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.velocity_policy == self.stop_policy</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">elif 20 &lt; distance_to_traffic_light and distance_to_traffic_light &lt; 70:</span>
+<span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">self.velocity_policy = self.decleration_policy_f(self.current_velocity, distance_to_traffic_light)</span>
+<span style="color: #4f97d7; font-weight: bold;">else</span>:
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy = <span style="color: #a45bad;">None</span>  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">might want to implement some acceleration here</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.traffic_light_red</span>
+</pre>
+</div>
+
+<p>
+Need to make sure the policy be reset to NONE when the light is no longer red.
+</p>
+
+<p>
+<code>determine-velocity-policy-old</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_light_red <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>time_to_traffic_light &lt; TIME_TO_STOP_IF_RED<span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold;">or</span> distance_to_traffic_light &lt; <span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">velocity_policy</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_policy
+<span style="color: #4f97d7; font-weight: bold;">elif</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_light_red <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #4f97d7;">(</span>time_to_traffic_light &lt; TIME_TO_SLOWDOWN<span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">velocity_policy</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.decleration_policy_f<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity, distance_to_traffic_light<span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">elif</span> <span style="color: #4f97d7;">(</span>time_to_traffic_light &lt; TIME_TO_CRUISE<span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">velocity_policy</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.decleration_policy_f<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity, distance_to_traffic_light<span style="color: #4f97d7;">)</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.traffic_light_red and ((time_to_traffic_light &lt; TIME_TO_STOP_IF_RED) or distance_to_traffic_light &lt; 5)</span>
+
+
+</pre>
+</div>
+</div>
+
+
+<div id="outline-container-orgf3c986e" class="outline-4">
+<h4 id="orgf3c986e"><span class="section-number-4">2.6.1</span> cruise_unless_near_the_end</h4>
+<div class="outline-text-4" id="text-2-6-1">
+<p>
+Use cruise policy, unless it's close to the end of the track (base_waypoints). When approaching the end,
+the velocitise have been calculated, thus no need to have the policy to calculate.
+</p>
+
+<p>
+<code>cruise_unless_near_the_end</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">cruise_unless_near_the_end</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num - <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index<span style="color: #4f97d7;">)</span> &lt; LOOKAHEAD_WPS:
+        <span style="color: #7590db;">velocity_policy</span> = <span style="color: #a45bad;">None</span>
+    <span style="color: #4f97d7; font-weight: bold;">else</span>:
+        <span style="color: #7590db;">velocity_policy</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.cruise_policy
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if (self.base_waypoints_num - self.last_closest_front_waypoint_index) &lt; LOOKAHEAD_WPS</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> velocity_policy
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org46dc9ea" class="outline-4">
+<h4 id="org46dc9ea"><span class="section-number-4">2.6.2</span> traffic_lights_cb</h4>
+<div class="outline-text-4" id="text-2-6-2">
+<p>
+<code>traffic_lights_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">traffic_lights_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.traffic_lights = msg.lights
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgef83e16" class="outline-4">
+<h4 id="orgef83e16"><span class="section-number-4">2.6.3</span> current_velocity_cb</h4>
+<div class="outline-text-4" id="text-2-6-3">
+<p>
+<code>current_velocity_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">current_velocity_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity = msg.twist.linear.x
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org5fbf6f1" class="outline-4">
+<h4 id="org5fbf6f1"><span class="section-number-4">2.6.4</span> obstacle_cb</h4>
+<div class="outline-text-4" id="text-2-6-4">
+<p>
+<code>obstacle_cb</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">obstacle_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.obstacle_waypoint = msg.data
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org108b41c" class="outline-4">
+<h4 id="org108b41c"><span class="section-number-4">2.6.5</span> loop</h4>
+<div class="outline-text-4" id="text-2-6-5">
+<p>
+The loop for processing the /current_pose message
+</p>
+
+<p>
+The design that the waypoints provided by the Waypoint_Uploader is consecutive, maintaining the geometry adjacency.
+</p>
+
+<p>
+Note, the generation for /final_waypoints may be conditional to the availability of the base_waypoints.
+</p>
+
+<p>
+The function may need other routine to compare between waypoints to determine if a waypoint is ahead of the current_pose within the LOOKAHEAD_WPS
+</p>
+
+<p>
+also compute the desired velocity for the eligible waypoints.
+</p>
+
+<p>
+try to control the time of looking ahead instead of just control the number of look ahead waypoints.
+to be adaptive so that it does not waste computing resource to produce too many waypoints.
+</p>
+
+<p>
+On Nov. 3, I experimented that the waypoints ahead generation can be simplified as follows
+without any negative impact:
+</p>
+<ul class="org-ul">
+<li>no more angle checking</li>
+<li>no more sorted needed</li>
+</ul>
+
+
+<p>
+<code>loop</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">loop</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">rate</span> = rospy.Rate<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.loop_freq<span style="color: #4f97d7;">)</span>
+    <span style="color: #4f97d7; font-weight: bold;">while</span> <span style="color: #4f97d7; font-weight: bold;">not</span> rospy.is_shutdown<span style="color: #4f97d7;">()</span>:
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.pose:
+            &lt;&lt;process-pose&gt;&gt;
+            <span style="color: #4f97d7; font-weight: bold;">self</span>.pose = <span style="color: #a45bad;">None</span>        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">indicating this message has been processed</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.base_waypoints and self.pose</span>
+        rate.sleep<span style="color: #4f97d7;">()</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of while not rospy.is_shutdow()</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org11a0453" class="outline-4">
+<h4 id="org11a0453"><span class="section-number-4">2.6.6</span> process-pose</h4>
+<div class="outline-text-4" id="text-2-6-6">
+<p>
+Process one pose message in self.pose
+</p>
+
+<p>
+First find the next closest waypoint in front of the vehicle.
+Then use that to generate the rest of the final_waypoints.
+</p>
+
+<p>
+<code>process-pose</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index = <span style="color: #4f97d7; font-weight: bold;">self</span>.get_closest_waypoint<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.pose.pose<span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index:
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">generate final_waypoints</span>
+    <span style="color: #7590db;">final_waypoints_count</span> = <span style="color: #a45bad;">0</span>
+    <span style="color: #7590db;">lookahead_dist</span> = <span style="color: #a45bad;">0</span>  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the accumulated distance of the looking ahead</span>
+    <span style="color: #7590db;">lookahead_time</span> = <span style="color: #a45bad;">0</span>  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the lookahead time</span>
+
+    <span style="color: #7590db;">final_waypoints</span> = <span style="color: #4f97d7;">[]</span>
+    <span style="color: #7590db;">accumulated_turning</span> = <span style="color: #a45bad;">0</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">dist_to_here_from_current = []</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">modulize the code to be less dependent</span>
+    <span style="color: #7590db;">j</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.last_closest_front_waypoint_index
+    <span style="color: #4f97d7; font-weight: bold;">while</span> <span style="color: #4f97d7;">(</span><span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">(lookahead_time &lt; LOOKAHEAD_TIME_THRESHOLD) and</span>
+            <span style="color: #bc6ec5;">(</span>final_waypoints_count &lt; LOOKAHEAD_WPS<span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold;">and</span>
+            <span style="color: #bc6ec5;">(</span>j &lt; <span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints_num<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>:
+        <span style="color: #7590db;">waypoint</span> = copy.deepcopy<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.base_waypoints<span style="color: #bc6ec5;">[</span>j<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #7590db;">j</span> = <span style="color: #4f97d7;">(</span>j + <span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">% self.base_waypoints_num</span>
+        <span style="color: #7590db;">final_waypoints_count</span> += <span style="color: #a45bad;">1</span>
+        final_waypoints.append<span style="color: #4f97d7;">(</span>waypoint<span style="color: #4f97d7;">)</span>
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of while (LOOKAHEAD_TIME_THRESHOLD &lt;= lookahead_time) or (LOOKAHEAD_WPS &lt;= final_waypoints_count)</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.loginfo('Lookahead threshold reached: final_waypoints_count: %d; lookahead_time: %d; self.last_closest_front_waypoint_index: %d'</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#               </span><span style="color: #2aa1ae; background-color: #292e34;">% (final_waypoints_count, lookahead_time, self.last_closest_front_waypoint_index))</span>
+
+    &lt;&lt;adjust_velocity_for_traffic_light&gt;&gt;
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">publish to /final_waypoints, need to package final_waypoints into Lane message</span>
+    publish_Lane<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.final_waypoints_pub, final_waypoints<span style="color: #4f97d7;">)</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.last_closest_front_waypoint_index</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7b0e664" class="outline-4">
+<h4 id="org7b0e664"><span class="section-number-4">2.6.7</span> compare two pose, a and b, if a is ahead of b, considering the parameter of LOOKAHEAD_WPS</h4>
+<div class="outline-text-4" id="text-2-6-7">
+<p>
+Compare between two pose if one is ahead of the other within the range of LOOKAHEAD_WPS
+</p>
+
+<p>
+This problem is solved by converting the waypoint to the local coordinates of my_car.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org7ab3501" class="outline-4">
+<h4 id="org7ab3501"><span class="section-number-4">2.6.8</span> select waypoints for /final_waypoints</h4>
+<div class="outline-text-4" id="text-2-6-8">
+<p>
+A loop or list expression to generate the list of eligible waypoints for /final_waypoints.
+It's implemented in the pose_cb.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org46ce908" class="outline-4">
+<h4 id="org46ce908"><span class="section-number-4">2.6.9</span> determine the velocity for waypoints</h4>
+<div class="outline-text-4" id="text-2-6-9">
+<p>
+Compute the desired velocity for waypoints: for now, it's stab as constant. This is to be done (TBD).
+</p>
+</div>
+</div>
+
+<div id="outline-container-orge6f1424" class="outline-4">
+<h4 id="orge6f1424"><span class="section-number-4">2.6.10</span> Discussion on the appropriate value of LOOKAHEAD_WPS</h4>
+<div class="outline-text-4" id="text-2-6-10">
+<p>
+The value of LOOKAHEAD_WPS might impact the system work load. It should be sufficient large. But not too large.
+</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org200a2ad" class="outline-2">
+<h2 id="org200a2ad"><span class="section-number-2">3</span> Use case: Stop at the red traffic light or at the end</h2>
+<div class="outline-text-2" id="text-3">
+</div>
+<div id="outline-container-orgf3b7ebc" class="outline-3">
+<h3 id="orgf3b7ebc"><span class="section-number-3">3.1</span> Design Considerations for Traffic Light Treatment</h3>
+<div class="outline-text-3" id="text-3-1">
+<dl class="org-dl">
+<dt>The time away from the traffic light</dt><dd></dd>
+</dl>
+<p>
+It's the distance away from the traffic light divided by the current velocity of the car.
+</p>
+
+<p>
+This concept determines the velocity policy:
+</p>
+
+<p>
+The intuition: the closer, the car should be the slower, when it's approaching, the car should have 0 velocity.
+</p>
+
+<p>
+Let's start with the following threshold to experiment:
+</p>
+
+<p>
+Three threshold:
+</p>
+
+<p>
+Ignore: above 5 seconds
+</p>
+
+<p>
+Slow Down: within 3 seconds
+</p>
+
+<p>
+Must stop: within 2 seconds
+</p>
+
+<p>
+Based on the above consideration, here is the implementation:
+</p>
+
+<ol class="org-ol">
+<li>In the call back for traffic_waypoint, compute the time away from the traffic light</li>
+<li>Based the time away, implement the above policy</li>
+<li>To have the current velocity, need to subscribe and store the current velocity.</li>
+</ol>
+</div>
+
+<ol class="org-ol">
+<li><a id="org6318426"></a>Simulation of Detection of Traffic Lights<br />
+<div class="outline-text-5" id="text-3-1-0-1">
+<p>
+In the simulator, use of traffic lights data from the simulator, to
+tell whether there is a traffic light in red in front of the car in near distance.
+</p>
+</div>
+
+
+<ol class="org-ol">
+<li><a id="org0f3cdf3"></a>message type: styx_msgs/TrafficLightArray<br />
+<div class="outline-text-6" id="text-3-1-0-1-1">
+<pre class="example">
+styx_msgs/TrafficLightArray
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+styx_msgs/TrafficLight[] lights
+  uint8 UNKNOWN=4
+  uint8 GREEN=2
+  uint8 YELLOW=1
+  uint8 RED=0
+  std_msgs/Header header
+    uint32 seq
+    time stamp
+    string frame_id
+  geometry_msgs/PoseStamped pose
+    std_msgs/Header header
+      uint32 seq
+      time stamp
+      string frame_id
+    geometry_msgs/Pose pose
+      geometry_msgs/Point position
+        float64 x
+        float64 y
+        float64 z
+      geometry_msgs/Quaternion orientation
+        float64 x
+        float64 y
+        float64 z
+        float64 w
+  uint8 state
+
+</pre>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orgcf79485" class="outline-2">
+<h2 id="orgcf79485"><span class="section-number-2">4</span> Support functions</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+<code>publish_Lane</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">publish_Lane</span><span style="color: #4f97d7;">(</span>publisher, waypoints<span style="color: #4f97d7;">)</span>:
+        <span style="color: #7590db;">lane</span> = Lane<span style="color: #4f97d7;">()</span>
+        <span style="color: #7590db;">lane.header.frame_id</span> = <span style="color: #2d9574;">'/world'</span>
+        <span style="color: #7590db;">lane.header.stamp</span> = rospy.Time<span style="color: #4f97d7;">(</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #7590db;">lane.waypoints</span> = waypoints
+        publisher.publish<span style="color: #4f97d7;">(</span>lane<span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+
+<p>
+<code>support_functions</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">get_waypoint_velocity</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, waypoint<span style="color: #4f97d7;">)</span>:
+        <span style="color: #4f97d7; font-weight: bold;">return</span> waypoint.twist.twist.linear.x
+
+<span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">set_waypoint_velocity</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, waypoints, waypoint, velocity<span style="color: #4f97d7;">)</span>:
+        waypoints<span style="color: #4f97d7;">[</span>waypoint<span style="color: #4f97d7;">]</span><span style="color: #7590db;">.twist.twist.linear.x</span> = velocity
+
+<span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">policy_name</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy == <span style="color: #4f97d7; font-weight: bold;">self</span>.stop_policy:
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #2d9574;">"stop"</span>
+    <span style="color: #4f97d7; font-weight: bold;">elif</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.velocity_policy <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #a45bad;">None</span>:
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #2d9574;">"None"</span>
+    <span style="color: #4f97d7; font-weight: bold;">else</span>:
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #2d9574;">"deceleration"</span>   <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">by result of exclusion</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgc90d637" class="outline-2">
+<h2 id="orgc90d637"><span class="section-number-2">5</span> Message Sequence Charts</h2>
+<div class="outline-text-2" id="text-5">
+
+<div class="figure">
+<p><img src="traffic_light_report.png" alt="traffic_light_report.png" />
+</p>
+</div>
+
+<p>
+#results:
+</p>
+
+
+<div class="figure">
+<p><img src="uml.png" alt="uml.png" />
+</p>
+</div>
+
+<p>
+#results:
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-orgf8b3783" class="outline-2">
+<h2 id="orgf8b3783"><span class="section-number-2">6</span> Sketch of Waypoint_Updater:loop</h2>
+<div class="outline-text-2" id="text-6">
+
+<div class="figure">
+<p><img src="waypoint-updater-loop.png" alt="waypoint-updater-loop.png" />
+</p>
+</div>
+
+<p>
+#results:
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: \today</p>
+<p class="author">Author: yu-shen</p>
+<p class="date">Created: 2017-11-28 Tue 13:55</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

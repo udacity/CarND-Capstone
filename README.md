@@ -1,4 +1,42 @@
-This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
+
+This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: 
+Programming a Real Self-Driving Car. 
+
+The project is successfully delivered by the team of "Cruising-by-the-Bay" of Udacity Self-Driving-Car students. 
+
+Here are the team members:
+
+
+Name                   | email                    | Role
+-----------------------|--------------------------|-------
+Yu Shen                | yubrshen@gmail.com       | team lead
+Peng Zhang             | zpactfc@gmail.com        | 
+Sumanth Reddy Kaliki   | sumanth818@gmail.com     |
+Sahil Juneja           | sahiljuneja17@gmail.com  |
+Hector Sanchez Pajares | hector.spc@gmail.com     |
+
+
+The project bases on the architecture proposed by Udacity. It uses ROS as the implementation framework. 
+The project implements the following ROS nodes:
+
+- waypoint_updater
+- tl_detector
+- dbw_node
+
+It also implements a deep learning classifier to classify traffic light's colors. By learning from examples, the classifier can classify 
+traffic light samples in both the simulated environment, and real traffic light images. Experiements shows that the classification can provide 
+sufficient level of correctness for traffic light color classification. 
+
+Extensive experiments have shown that the system can drive a car autonomously correctly on the simulated track
+following the traffic light signals. Based the requirements, the car should stop at the end of the 
+track. The system is designed, built to drive real car. Tests will be conducted to drive real car in a parking lot of Udacity. 
+
+Besides adhering to the established architecture, special care is made to pre-compute and store required distance computation, 
+so that the real-time computation is minimized, which may improve the responsiveness, and reliability of the Self-Driving-Car system.
+
+For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
+
+To review the design artifacts (design document and source code), goto [Design in Literate Programming](./capstone-workbook.org)
 
 ### Native Installation
 

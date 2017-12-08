@@ -1,0 +1,1320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2017-12-04 Mon 17:43 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Workbook on Drive-by-Wire Node</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="yu-shen" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2017 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Workbook on Drive-by-Wire Node</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org89abfe9">1. Requirement understanding</a>
+<ul>
+<li><a href="#org1bf15cb">1.1. Input</a></li>
+<li><a href="#orgef2baf8">1.2. Output</a></li>
+<li><a href="#org301af72">1.3. Message Types</a>
+<ul>
+<li><a href="#org7825d0d">1.3.1. /current_velocity</a></li>
+<li><a href="#org09a154d">1.3.2. /twist_cmd</a></li>
+<li><a href="#org36f8d9f">1.3.3. geometry_msgs/TwistStamped</a></li>
+<li><a href="#org6a54ae5">1.3.4. /vehicle/dbw_enabled</a></li>
+<li><a href="#orgad9acde">1.3.5. Bool</a></li>
+<li><a href="#org958fa59">1.3.6. /vehicle/throttle_cmd</a></li>
+<li><a href="#org6b19aea">1.3.7. dbw_mkz_msgs/ThrottleCmd</a></li>
+<li><a href="#org5f16478">1.3.8. /vehicle/steering_cmd</a></li>
+<li><a href="#orgfb3bf8e">1.3.9. dbw_mkz_msgs/SteeringCmd</a></li>
+<li><a href="#orgca7757b">1.3.10. /vehicle/brake_cmd</a></li>
+<li><a href="#org9db8bb6">1.3.11. dbw_mkz_msgs/BrakeCmd</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#orgd2752e5">2. Architecture discussion</a></li>
+<li><a href="#org02ac9fc">3. TwistController</a></li>
+<li><a href="#orgfc641bf">4. Source Code Decomposition and Assembly</a>
+<ul>
+<li><a href="#orgf96f4e8">4.1. Top level assembly</a></li>
+<li><a href="#org016b30b">4.2. control_logic</a></li>
+<li><a href="#orgcb36776">4.3. twist_controller</a>
+<ul>
+<li><a href="#org1377b55">4.3.1. Some more leads on twist controller design</a></li>
+</ul>
+</li>
+<li><a href="#org52a7549">4.4. subscribe_to_get_update</a></li>
+<li><a href="#orgbf80c35">4.5. dbw_states</a></li>
+<li><a href="#org47a5ddc">4.6. callbacks</a></li>
+<li><a href="#org0d41a9d">4.7. publish</a></li>
+<li><a href="#orgf2ec0c1">4.8. publishers</a></li>
+<li><a href="#org3559b6d">4.9. vehicle_parameters</a></li>
+<li><a href="#org7617a9b">4.10. preamble</a></li>
+</ul>
+</li>
+<li><a href="#org729fcc8">5. Validations</a></li>
+<li><a href="#org329722c">6. Some other interesting message</a>
+<ul>
+<li><a href="#org656ba28">6.1. /tf Traffic Light (message)?</a></li>
+<li><a href="#org82a7f8e">6.2. /tf_static</a></li>
+<li><a href="#orgd386a3a">6.3. /traffic_waypoint</a></li>
+</ul>
+</li>
+<li><a href="#org4870609">7. Questions</a></li>
+<li><a href="#org9fa8d72">8. <span class="todo TODO">TODO</span> TODO</a></li>
+<li><a href="#orgab9249d">9. Verify the /vehicle/*_cmd</a>
+<ul>
+<li><a href="#org7e8cebd">9.1. Comparison of the control outputs</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org89abfe9" class="outline-2">
+<h2 id="org89abfe9"><span class="section-number-2">1</span> Requirement understanding</h2>
+<div class="outline-text-2" id="text-1">
+</div>
+<div id="outline-container-org1bf15cb" class="outline-3">
+<h3 id="org1bf15cb"><span class="section-number-3">1.1</span> Input</h3>
+<div class="outline-text-3" id="text-1-1">
+<ul class="org-ul">
+<li>Input: /current_velocity</li>
+<li>Input: /twist_cmd</li>
+<li>input: /vehicle/dbw_enabled</li>
+</ul>
+
+<p>
+/twist_cmd is the representation of the required the target linear and angular velocity.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgef2baf8" class="outline-3">
+<h3 id="orgef2baf8"><span class="section-number-3">1.2</span> Output</h3>
+<div class="outline-text-3" id="text-1-2">
+<ul class="org-ul">
+<li>Output: /vehicle/throttle_cmd</li>
+<li>Output: /vehicle/steering_cmd</li>
+<li>Output: /vehicle/brake_cmd</li>
+</ul>
+
+<p>
+The requirement is to output the above commands so that the vehicle can drive correctly on the track,
+based on its current speed, and the desired speed at the current waypoint, and the state of dbw_enabled.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org301af72" class="outline-3">
+<h3 id="org301af72"><span class="section-number-3">1.3</span> Message Types</h3>
+<div class="outline-text-3" id="text-1-3">
+</div>
+<div id="outline-container-org7825d0d" class="outline-4">
+<h4 id="org7825d0d"><span class="section-number-4">1.3.1</span> /current_velocity</h4>
+<div class="outline-text-4" id="text-1-3-1">
+<pre class="example">
+$ rostopic info /current_velocity
+Type: geometry_msgs/TwistStamped
+
+Publishers:
+ * /styx_server (http://yushen:44449/)
+
+Subscribers:
+ * /pure_pursuit (http://yushen:45192/)
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org09a154d" class="outline-4">
+<h4 id="org09a154d"><span class="section-number-4">1.3.2</span> /twist_cmd</h4>
+<div class="outline-text-4" id="text-1-3-2">
+<pre class="example">
+$ rostopic info /twist_cmd
+Type: geometry_msgs/TwistStamped
+
+Publishers:
+ * /pure_pursuit (http://yushen:45192/)
+
+Subscribers: None
+
+</pre>
+</div>
+</div>
+
+
+<div id="outline-container-org36f8d9f" class="outline-4">
+<h4 id="org36f8d9f"><span class="section-number-4">1.3.3</span> geometry_msgs/TwistStamped</h4>
+<div class="outline-text-4" id="text-1-3-3">
+<p>
+Both /current_velocity and /twist_cmd are of this message type.
+</p>
+
+<p>
+Have both the linear and angular velocity in 3D.
+</p>
+
+<pre class="example">
+$ rosmsg info geometry_msgs/TwistStamped
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+geometry_msgs/Twist twist
+  geometry_msgs/Vector3 linear
+    float64 x
+    float64 y
+    float64 z
+  geometry_msgs/Vector3 angular
+    float64 x
+    float64 y
+    float64 z
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org6a54ae5" class="outline-4">
+<h4 id="org6a54ae5"><span class="section-number-4">1.3.4</span> /vehicle/dbw_enabled</h4>
+<div class="outline-text-4" id="text-1-3-4">
+<pre class="example">
+$ rostopic info /vehicle/dbw_enabled
+Type: std_msgs/Bool
+
+Publishers:
+ * /styx_server (http://yushen:44449/)
+
+Subscribers: None
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgad9acde" class="outline-4">
+<h4 id="orgad9acde"><span class="section-number-4">1.3.5</span> Bool</h4>
+<div class="outline-text-4" id="text-1-3-5">
+<p>
+This is the type for /vehicle/dbw_enabled
+</p>
+
+<pre class="example">
+$ rosmsg info std_msgs/Bool
+bool data
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org958fa59" class="outline-4">
+<h4 id="org958fa59"><span class="section-number-4">1.3.6</span> /vehicle/throttle_cmd</h4>
+<div class="outline-text-4" id="text-1-3-6">
+<pre class="example">
+$ rostopic info /vehicle/throttle_cmd
+Type: dbw_mkz_msgs/ThrottleCmd
+
+Publishers:
+ * /dbw_node (http://yushen:38983/)
+
+Subscribers:
+ * /styx_server (http://yushen:44449/)
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org6b19aea" class="outline-4">
+<h4 id="org6b19aea"><span class="section-number-4">1.3.7</span> dbw_mkz_msgs/ThrottleCmd</h4>
+<div class="outline-text-4" id="text-1-3-7">
+<p>
+Where can I find more information on how to program dbw_mkz_msgs/ThrottleCmd?
+</p>
+
+<p>
+In the provided source code of <code>dbw_node.py</code> there is a pubilsh method which encapsulates the code required to
+prepare proper messages of ThrottleCmd, SteeringCmd, and BrakeCmd. Therefore, there is no more need to answer the above question.
+</p>
+
+<p>
+It seems that the pedal_cmd_type may have the value of the following:
+</p>
+<ul class="org-ul">
+<li>CMD_NONE=0</li>
+<li>CMD_PEDAL=1</li>
+<li>CMD_PERCENT=2</li>
+</ul>
+
+<p>
+while pedal_cmd may have the actual command value for the mode of CMD_PERCENT, for example, the percent value.
+I'm not sure what would be meaning of the value for pedal_cmd in the mode of CMD_PEDAL, or CMD_NONE. I guess for the mode of CMD_NONE, there is no value needed.
+</p>
+
+<pre class="example">
+$ rosmsg info dbw_mkz_msgs/ThrottleCmd
+uint8 CMD_NONE=0
+uint8 CMD_PEDAL=1
+uint8 CMD_PERCENT=2
+float32 pedal_cmd
+uint8 pedal_cmd_type
+bool enable
+bool clear
+bool ignore
+uint8 count
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org5f16478" class="outline-4">
+<h4 id="org5f16478"><span class="section-number-4">1.3.8</span> /vehicle/steering_cmd</h4>
+<div class="outline-text-4" id="text-1-3-8">
+<pre class="example">
+$ rostopic info /vehicle/steering_cmd
+Type: dbw_mkz_msgs/SteeringCmd
+
+Publishers:
+ * /dbw_node (http://yushen:38983/)
+
+Subscribers:
+ * /styx_server (http://yushen:44449/)
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgfb3bf8e" class="outline-4">
+<h4 id="orgfb3bf8e"><span class="section-number-4">1.3.9</span> dbw_mkz_msgs/SteeringCmd</h4>
+<div class="outline-text-4" id="text-1-3-9">
+<p>
+How to program the values in the following fields?
+</p>
+
+<ul class="org-ul">
+<li>steering_wheel_angle_cmd might be the desired steering angle in radius</li>
+<li>steering_wheel_angle_velocity might be the velocity of the steering</li>
+</ul>
+
+<p>
+how about the other fields?
+</p>
+
+<pre class="example">
+$ rosmsg info dbw_mkz_msgs/SteeringCmd
+float32 steering_wheel_angle_cmd
+float32 steering_wheel_angle_velocity
+bool enable
+bool clear
+bool ignore
+bool quiet
+uint8 count
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-orgca7757b" class="outline-4">
+<h4 id="orgca7757b"><span class="section-number-4">1.3.10</span> /vehicle/brake_cmd</h4>
+<div class="outline-text-4" id="text-1-3-10">
+<pre class="example">
+$ rostopic info /vehicle/brake_cmd
+Type: dbw_mkz_msgs/BrakeCmd
+
+Publishers:
+ * /dbw_node (http://yushen:38983/)
+
+Subscribers:
+ * /styx_server (http://yushen:44449/)
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org9db8bb6" class="outline-4">
+<h4 id="org9db8bb6"><span class="section-number-4">1.3.11</span> dbw_mkz_msgs/BrakeCmd</h4>
+<div class="outline-text-4" id="text-1-3-11">
+<p>
+This is similar to ThrottleCmd, but with some additional/different fields.
+</p>
+
+<pre class="example">
+$ rosmsg info dbw_mkz_msgs/BrakeCmd
+uint8 CMD_NONE=0
+uint8 CMD_PEDAL=1
+uint8 CMD_PERCENT=2
+uint8 CMD_TORQUE=3
+float32 TORQUE_BOO=520
+float32 TORQUE_MAX=3412
+float32 pedal_cmd
+uint8 pedal_cmd_type
+bool boo_cmd
+bool enable
+bool clear
+bool ignore
+uint8 count
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgd2752e5" class="outline-2">
+<h2 id="orgd2752e5"><span class="section-number-2">2</span> Architecture discussion</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Moving the processing of /current_pose message in Waypoint_Updater from a callback to a loop with 2Hz frequency made the car drive
+much longer distance before veering off the road.
+</p>
+
+<p>
+Did the same with the processing of curreent_velocity and desired_velocity in dbw_node, however make the car veer off to the right
+at the same spot, the sharp left turn after the second traffic light. Increasing the frequency from 2 to 10, recover the better driving
+as the time when only changing the processing of /current_pos message.
+</p>
+
+<p>
+This shows that the alignment and synchronization of message processing is crucial.
+</p>
+
+<p>
+The message should be processed as soon as possible but should not block the processing of the messages.
+</p>
+
+<p>
+It would be interesting to test if the frequency 10 can be further reduced.
+</p>
+
+<p>
+loop_frequency for dbw_node tested:
+</p>
+<ul class="org-ul">
+<li>15, seems better than 10, slightly, the best so far</li>
+<li>10, good</li>
+<li>7,  as good as 10, but not as good as 15</li>
+<li>5, better than 3, worse than 10</li>
+<li></li>
+
+<li>3, no good</li>
+<li>2, no good</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-org02ac9fc" class="outline-2">
+<h2 id="org02ac9fc"><span class="section-number-2">3</span> TwistController</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+This is the core of the control logic to produce control parameters to control the vehicle based
+on the inputs of the current velocity, the desired velocity, and the state of dbw_enabled state.
+</p>
+
+<p>
+The rest of the code just provides the communication and execution infrastructure.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-orgfc641bf" class="outline-2">
+<h2 id="orgfc641bf"><span class="section-number-2">4</span> Source Code Decomposition and Assembly</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+It's my practice of understanding and building source code and explain to myself and other readers.
+</p>
+
+<p>
+I'd decompose the source code into code blocks and them assemble then in terms of such blocks.
+This helps me to focus on each block,
+while getting the whole picture of what the overall program is doing.
+</p>
+</div>
+
+<div id="outline-container-orgf96f4e8" class="outline-3">
+<h3 id="orgf96f4e8"><span class="section-number-3">4.1</span> Top level assembly</h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+This assembly shows the architecture of the source code.
+</p>
+
+<p>
+Experiment to try not using loop, but just control from twist_cmd_cb. It seems still working.
+As long as the control logic does not take too long, it should work.
+</p>
+
+<p>
+Also, experiment showed even using loop, the frequency can be reduced to 2Hz from 50Hz.
+This will significantly reduce the CPU load.
+</p>
+<p>
+<code>dbw_node</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python">&lt;&lt;preamble&gt;&gt;
+<span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">DBWNode</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">object</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">__init__</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+        rospy.init_node<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'dbw_node'</span><span style="color: #4f97d7;">)</span>
+
+        &lt;&lt;vehicle_parametres&gt;&gt;
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.desired_velocity, <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity = <span style="color: #a45bad;">None</span>, <span style="color: #a45bad;">None</span>
+
+        &lt;&lt;publishers&gt;&gt;
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #afd8af;">DONE</span><span style="color: #2aa1ae; background-color: #292e34;">: Create `TwistController` object</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.controller = TwistController<span style="color: #4f97d7;">(</span>wheel_base=<span style="color: #4f97d7; font-weight: bold;">self</span>.wheel_base,
+                                          vehicle_mass=<span style="color: #4f97d7; font-weight: bold;">self</span>.vehicle_mass,
+                                          steer_ratio=<span style="color: #4f97d7; font-weight: bold;">self</span>.steer_ratio,
+                                          min_speed=<span style="color: #4f97d7; font-weight: bold;">self</span>.min_speed,
+                                          max_lat_accel=<span style="color: #4f97d7; font-weight: bold;">self</span>.max_lat_accel,
+                                          max_steer_angle=<span style="color: #4f97d7; font-weight: bold;">self</span>.max_steer_angle,
+                                          max_braking_percentage=<span style="color: #4f97d7; font-weight: bold;">self</span>.max_braking_percentage,
+                                          max_throttle_percentage=<span style="color: #4f97d7; font-weight: bold;">self</span>.max_throttle_percentage,
+                                          max_vel_mps=<span style="color: #4f97d7; font-weight: bold;">self</span>.max_vel_mps<span style="color: #4f97d7;">)</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #afd8af;">DONE</span><span style="color: #2aa1ae; background-color: #292e34;">: Subscribe to all the topics you need to</span>
+        &lt;&lt;dbw_states&gt;&gt;
+        &lt;&lt;subscribe_to_get_update&gt;&gt;
+
+        <span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">self.loop()</span>
+        rospy.spin<span style="color: #4f97d7;">()</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">loop</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span><span style="color: #4f97d7;">)</span>:
+        <span style="color: #7590db;">rate</span> = rospy.Rate<span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.loop_freq<span style="color: #4f97d7;">)</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">from 50Hz to 2Hz</span>
+        <span style="color: #4f97d7; font-weight: bold;">while</span> <span style="color: #4f97d7; font-weight: bold;">not</span> rospy.is_shutdown<span style="color: #4f97d7;">()</span>:
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.desired_velocity <span style="color: #4f97d7; font-weight: bold;">and</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity:
+                &lt;&lt;control_logic&gt;&gt;
+                <span style="color: #4f97d7; font-weight: bold;">self</span>.desired_velocity, <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity = <span style="color: #a45bad;">None</span>, <span style="color: #a45bad;">None</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.desired_velocity and self.current_velocity</span>
+            rate.sleep<span style="color: #4f97d7;">()</span>
+
+    &lt;&lt;callbacks&gt;&gt;
+
+    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">publish</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, throttle, brake, steer<span style="color: #4f97d7;">)</span>:
+        &lt;&lt;publish&gt;&gt;
+
+<span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">__name__</span> == <span style="color: #2d9574;">'__main__'</span>:
+    DBWNode<span style="color: #4f97d7;">()</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org016b30b" class="outline-3">
+<h3 id="org016b30b"><span class="section-number-3">4.2</span> control_logic</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+In the context of loop and executed once a rate period, to determine the commands and pubilsh commands to vehicle.
+</p>
+
+<p>
+<code>control_logic</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #cc9393;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;">: Get predicted throttle, brake, and steering using `twist_controller`</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">You should only publish the control commands if dbw is enabled</span>
+<span style="color: #7590db;">desired_linear_velocity</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.desired_velocity.linear.x
+<span style="color: #7590db;">desired_angular_velocity</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.desired_velocity.angular.z
+<span style="color: #7590db;">current_linear_velocity</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity.linear.x
+<span style="color: #7590db;">current_angular_velocity</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity.angular.z
+
+<span style="color: #7590db;">throttle</span>, <span style="color: #7590db;">brake</span>, <span style="color: #7590db;">steering</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.controller.control<span style="color: #4f97d7;">(</span>
+  desired_linear_velocity, desired_angular_velocity,
+  current_linear_velocity, current_angular_velocity<span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.dbw_enabled:
+  <span style="color: #4f97d7; font-weight: bold;">self</span>.publish<span style="color: #4f97d7;">(</span>throttle, brake, steering<span style="color: #4f97d7;">)</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of self.dbw_enabled</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgcb36776" class="outline-3">
+<h3 id="orgcb36776"><span class="section-number-3">4.3</span> twist_controller</h3>
+<div class="outline-text-3" id="text-4-3">
+<p>
+Based on the current velocity, and the desired velocity in both linear and angular, compute their delta, then use PID to control.
+</p>
+
+<p>
+There is a PID implementation, but the parameters of P, I, D needs to be determined. I'm guessing the parameters for now.
+</p>
+
+<p>
+For the steering, it seems that the implementation of YawController can be used as is.
+</p>
+
+<p>
+The lowpass filter is an average mechanism. I'm not where to use it. With the input of the inputs of
+the current and the desired velocity, or the output of the throttle, steering, and brake?
+I'm using to smooth the current linear velocity for now.
+</p>
+
+<dl class="org-dl">
+<dt>11/6</dt><dd></dd>
+</dl>
+<p>
+Also need to implement the mechanism only process the latest message, to avoid stalled command. Callback should be simple.
+The message processing should be regulated, only process the most recent one.
+</p>
+
+<p>
+<code>twist_controller</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">from</span> pid <span style="color: #4f97d7; font-weight: bold;">import</span> PID
+<span style="color: #4f97d7; font-weight: bold;">from</span> yaw_controller <span style="color: #4f97d7; font-weight: bold;">import</span> YawController
+<span style="color: #4f97d7; font-weight: bold;">from</span> lowpass <span style="color: #4f97d7; font-weight: bold;">import</span> LowPassFilter
+<span style="color: #4f97d7; font-weight: bold;">import</span> time
+<span style="color: #4f97d7; font-weight: bold;">import</span> rospy
+
+<span style="color: #7590db;">GAS_DENSITY</span> = <span style="color: #a45bad;">2</span>.<span style="color: #a45bad;">858</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">ONE_MPH = 0.44704               # 1 miles/hour in meters/second</span>
+
+<span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">TwistController</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7;">object</span><span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">__init__</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, wheel_base, vehicle_mass, steer_ratio, min_speed, max_lat_accel, max_steer_angle,
+                 max_braking_percentage, max_throttle_percentage, max_vel_mps<span style="color: #4f97d7;">)</span>:
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #cc9393;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;">: Implement</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.sample_time = <span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">03</span>  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">based on observation the interval is always around 0.03 seconds</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.throttle_controller = PID(2.0, 0.01, 0.02, mn=0.0, mx=1.0)</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.yaw_controller = YawController<span style="color: #4f97d7;">(</span>
+            wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle<span style="color: #4f97d7;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.lowpass_filter = LowPassFilter<span style="color: #4f97d7;">(</span><span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">15</span>, <span style="color: #4f97d7; font-weight: bold;">self</span>.sample_time<span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">change the past component coefficient from 0.5 to 0.15 to be more responsive</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.brake_coefficient = <span style="color: #a45bad;">10</span>.<span style="color: #a45bad;">0</span>  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">tentative guess</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.vehicle_mass = vehicle_mass
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.prev_time = <span style="color: #a45bad;">None</span>
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.steer_ratio = steer_ratio
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.max_braking_percentage = max_braking_percentage
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.max_throttle_percentage = max_throttle_percentage
+        <span style="color: #4f97d7; font-weight: bold;">self</span>.max_vel_mps = max_vel_mps
+
+    <span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">control</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, desired_linear_velocity, desired_angular_velocity,
+                current_linear_velocity, current_angular_velocity<span style="color: #4f97d7;">)</span>:
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #cc9393;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;">: Change the arg, kwarg list to suit your needs</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">Return throttle, brake, steer</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">if self.prev_time is None:</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">self.prev_time = time.time()</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">return 0., 0., 0.</span>
+
+        <span style="color: #7590db;">desired_linear_velocity_modulated</span> = <span style="color: #4f97d7;">min</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>.max_vel_mps, desired_linear_velocity<span style="color: #4f97d7;">)</span>
+        <span style="color: #7590db;">throttle</span>, <span style="color: #7590db;">brake</span> = <span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">0</span>, <span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">0</span>
+        <span style="color: #7590db;">error_linear_velocity</span> = <span style="color: #4f97d7;">(</span>desired_linear_velocity_modulated - current_linear_velocity<span style="color: #4f97d7;">)</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">according to the forum:</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> desired_linear_velocity &gt; current_linear_velocity:
+            <span style="color: #4f97d7; font-weight: bold;">if</span> error_linear_velocity / desired_linear_velocity &gt; <span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">3</span>:
+                <span style="color: #7590db;">throttle</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.max_throttle_percentage
+            <span style="color: #4f97d7; font-weight: bold;">else</span>:
+                <span style="color: #7590db;">throttle</span> = <span style="color: #4f97d7;">max</span><span style="color: #4f97d7;">(</span>
+                    <span style="color: #bc6ec5;">(</span>error_linear_velocity / desired_linear_velocity<span style="color: #bc6ec5;">)</span>/<span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">3</span>*<span style="color: #4f97d7; font-weight: bold;">self</span>.max_throttle_percentage,
+                    <span style="color: #4f97d7; font-weight: bold;">self</span>.max_throttle_percentage<span style="color: #4f97d7;">)</span>
+            <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if error_linear_velocity / desired_linear_velocity &gt; 0.3</span>
+        <span style="color: #4f97d7; font-weight: bold;">elif</span> current_linear_velocity &gt; <span style="color: #a45bad;">1</span>:
+            <span style="color: #7590db;">brake</span> = <span style="color: #a45bad;">3250</span>*<span style="color: #4f97d7; font-weight: bold;">self</span>.max_braking_percentage*-<span style="color: #a45bad;">1</span>
+        <span style="color: #4f97d7; font-weight: bold;">else</span>:
+            <span style="color: #7590db;">brake</span> = <span style="color: #a45bad;">3250</span>*<span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">01</span>
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if desired_linear_velocity &gt; current_linear_velocity</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.loginfo('throttle: %f; brake: %f' % (throttle, brake))</span>
+
+        <span style="color: #7590db;">error_angular_velocity</span> = desired_angular_velocity - current_angular_velocity
+
+        <span style="color: #7590db;">desired_steer</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.yaw_controller.get_steering<span style="color: #4f97d7;">(</span>
+            desired_linear_velocity_modulated, desired_angular_velocity,
+            current_linear_velocity<span style="color: #4f97d7;">)</span>
+
+        <span style="color: #7590db;">current_steer</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.yaw_controller.get_steering<span style="color: #4f97d7;">(</span>
+            desired_linear_velocity_modulated, current_angular_velocity,
+            current_linear_velocity<span style="color: #4f97d7;">)</span>
+
+        <span style="color: #7590db;">steer</span> = <span style="color: #4f97d7; font-weight: bold;">self</span>.lowpass_filter.filt<span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>desired_steer - current_steer<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">*self.steer_ratio</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">rospy.loginfo('desired_steer: %f; current_steer: %f; steer: %f' % (desired_steer, current_steer, steer))</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.prev_time = time.time()</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> throttle, brake, steer
+
+    <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">def brake(self, error_in_linear_velocity, current_linear_velocity, vehicle_mass):</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;"># might be more fine tuned, might consider vehicle's mass, and the current velocity, etc.</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;"># might use another PID.</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">brake_v = -self.brake_coefficient * error_in_linear_velocity  # assume the brake_v should be positive</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">#     </span><span style="color: #2aa1ae; background-color: #292e34;">return max(brake_v, 1.0)</span>
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org1377b55" class="outline-4">
+<h4 id="org1377b55"><span class="section-number-4">4.3.1</span> Some more leads on twist controller design</h4>
+<div class="outline-text-4" id="text-4-3-1">
+<p>
+Need to digest further the below info.
+</p>
+
+<p>
+Based on communication from the Slack channel #system-integration:
+</p>
+<pre class="example">
+C S [2 months ago]
+@ddigges @wsteiner This worked for me: pass the yaw from twist_cmd through a low-pass filter and then into the provided YawController, except that when creating the YawController you need to multiply the provided steer_ratio by 8 or so.  And if you are want to go fast, you need to increase max_lat_accel accordingly.  In general, this gives a nice, non-nausea-inducing result.  The problem is that at high speeds, twist_cmd steers the way a racing car would, drifting into the inside lane in order to reduce lateral forces.  But it is, um, mostly ok at 40 mph.
+</pre>
+
+<p>
+Here is some discussion on the controller:
+</p>
+
+<pre class="example">
+1, the unit transformation is automatically done by Udacity project default.
+2, the difference between current velocity and designed velocity should be input to PID and will output throttle as percent.  This is project default solution.  I give up pid control since it is not easy to tune for carla.
+3,  the brake default unit is Nm. you need calcuate it with: Brake torque = (vehicle_mass + fuel_capacity * GAS_DENSITY) * deceleration * wheel_radius
+
+https://github.com/xfqbuaa/Cargo-CarND-Capstone
+</pre>
+<p>
+It seems that for steering, no PID needed, but need to "multiply the provided steer_ratio by 8 or so".
+</p>
+
+<p>
+Here is another piece on the solution (<a href="https://discussions.udacity.com/t/solved-compute-cte-without-car-position/364383/6">https://discussions.udacity.com/t/solved-compute-cte-without-car-position/364383/6</a>) :
+</p>
+<pre class="example">
+That isn’t quite right. The CTE is the difference between the car’s actual position, and the position where the car should have been at that time. In other words, it is the distance between the car and the desired path. So to calculate the CTE, you need the car’s current position, and then you need to do a geometrical calculation to find the distance to the linear path interpolated along the waypoints.
+
+However, I have had success using a completely different approach. The twist_cmd topic is generated by a fancy piece of software called pure_pursuit, which is in the waypoint_follower directory. pure_pursuit uses the current car position, and the waypoints, to calculate the yaw angle that the car needs to follow in order to get onto, and to stay on, the desired path (the waypoint path). This yaw angle is published in the twist_cmd topic. Then another piece of software, twist_controller/yaw_controller.py, converts the yaw angle to a steering setting that you can send to the vehicle. No need for you to compute the CTE yourself, nor to write a PID controller.
+
+So you can do this in dbw_node.py: extract the yaw angle from twist_cmd, put it through a low-pass filter (because it may be a bit jittery), put that through yaw_controller, and publish the result (the steering value) in the “loop” section of dbw_node.py. But one thing to be aware of, that I learned through trial and error. When you set up YawController, you need to pass it several parameters that have been provided by Udacity. But the Udacity steer_ratio is too low; you need to multiply it by a factor of 8. But then it works pretty well.
+
+Note that this is just for steering control; you need to follow a different process (probably with a PID controller) to control the velocity. For testing, however, you can just publish a constant throttle value; 0.5 makes the car go about 40 mph, at least on my machine.
+
+Also: before you do anything else, search the Slack channel for everything by Alexey Makurin. His set of simple parameter changes: https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c88ec1c39d5043 will improve the performance of your code immensely.
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org52a7549" class="outline-3">
+<h3 id="org52a7549"><span class="section-number-3">4.4</span> subscribe_to_get_update</h3>
+<div class="outline-text-3" id="text-4-4">
+<p>
+In the context of <span class="underline"><span class="underline">init</span></span>, subscribe to message to get needed updates.
+</p>
+
+<p>
+<code>subscribe_to_get_update</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python">rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/current_velocity'</span>, TwistStamped, <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity_cb, queue_size=<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/twist_cmd'</span>, TwistStamped, <span style="color: #4f97d7; font-weight: bold;">self</span>.twist_cmd_cb, queue_size=<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+rospy.Subscriber<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/vehicle/dbw_enabled'</span>, Bool, <span style="color: #4f97d7; font-weight: bold;">self</span>.dbw_enabled_cb, queue_size=<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgbf80c35" class="outline-3">
+<h3 id="orgbf80c35"><span class="section-number-3">4.5</span> dbw_states</h3>
+<div class="outline-text-3" id="text-4-5">
+<p>
+In the context of <span class="underline"><span class="underline">init</span></span>, declared the initial values of the states required for dbw control.
+</p>
+
+<p>
+<code>dbw_states</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.dbw_enabled = <span style="color: #a45bad;">False</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity = <span style="color: #a45bad;">None</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.desired_velocity = <span style="color: #a45bad;">None</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org47a5ddc" class="outline-3">
+<h3 id="org47a5ddc"><span class="section-number-3">4.6</span> callbacks</h3>
+<div class="outline-text-3" id="text-4-6">
+<p>
+In the context of <span class="underline"><span class="underline">init</span></span>, defines the callback functions for the subscription processing.
+</p>
+
+<p>
+Place the control logic in twist_cmd_cb to save CPU load.
+</p>
+
+<p>
+<code>callbacks</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">current_velocity_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity <span style="color: #4f97d7; font-weight: bold;">is</span> <span style="color: #a45bad;">None</span>:
+      <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity = msg.twist
+  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">end of if self.current_velocity is None:</span>
+  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">self.current_velocity = msg.twist</span>
+
+<span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">twist_cmd_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+  <span style="color: #4f97d7; font-weight: bold;">self</span>.desired_velocity = msg.twist
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity:
+    &lt;&lt;control_logic&gt;&gt;
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.current_velocity = <span style="color: #a45bad;">None</span>
+  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">if self.current_velocity</span>
+
+  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">if self.desired_velocity is None:</span>
+  <span style="color: #2aa1ae; background-color: #292e34;">#       </span><span style="color: #2aa1ae; background-color: #292e34;">self.desired_velocity = msg.twist</span>
+  <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;"># end of if self.desired_velocity is None</span>
+
+<span style="color: #4f97d7; font-weight: bold;">def</span> <span style="color: #bc6ec5; font-weight: bold;">dbw_enabled_cb</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">self</span>, msg<span style="color: #4f97d7;">)</span>:
+    <span style="color: #4f97d7; font-weight: bold;">self</span>.dbw_enabled = msg.data
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0d41a9d" class="outline-3">
+<h3 id="org0d41a9d"><span class="section-number-3">4.7</span> publish</h3>
+<div class="outline-text-3" id="text-4-7">
+<p>
+In the context of publish function, perform the message fabrications and the acts of publishing.
+</p>
+
+<p>
+<code>publish</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #7590db;">tcmd</span> = ThrottleCmd<span style="color: #4f97d7;">()</span>
+<span style="color: #7590db;">tcmd.enable</span> = <span style="color: #a45bad;">True</span>
+<span style="color: #7590db;">tcmd.pedal_cmd_type</span> = ThrottleCmd.CMD_PERCENT
+<span style="color: #7590db;">tcmd.pedal_cmd</span> = throttle
+<span style="color: #4f97d7; font-weight: bold;">self</span>.throttle_pub.publish<span style="color: #4f97d7;">(</span>tcmd<span style="color: #4f97d7;">)</span>
+
+<span style="color: #7590db;">scmd</span> = SteeringCmd<span style="color: #4f97d7;">()</span>
+<span style="color: #7590db;">scmd.enable</span> = <span style="color: #a45bad;">True</span>
+<span style="color: #7590db;">scmd.steering_wheel_angle_cmd</span> = steer
+<span style="color: #4f97d7; font-weight: bold;">self</span>.steer_pub.publish<span style="color: #4f97d7;">(</span>scmd<span style="color: #4f97d7;">)</span>
+
+<span style="color: #7590db;">bcmd</span> = BrakeCmd<span style="color: #4f97d7;">()</span>
+<span style="color: #7590db;">bcmd.enable</span> = <span style="color: #a45bad;">True</span>
+<span style="color: #7590db;">bcmd.pedal_cmd_type</span> = BrakeCmd.CMD_TORQUE
+<span style="color: #7590db;">bcmd.pedal_cmd</span> = brake
+<span style="color: #4f97d7; font-weight: bold;">self</span>.brake_pub.publish<span style="color: #4f97d7;">(</span>bcmd<span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgf2ec0c1" class="outline-3">
+<h3 id="orgf2ec0c1"><span class="section-number-3">4.8</span> publishers</h3>
+<div class="outline-text-3" id="text-4-8">
+<p>
+In the context of <span class="underline"><span class="underline">init</span></span>, creates the needed publishers.
+</p>
+
+<p>
+<code>publishers</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.steer_pub = rospy.Publisher<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/vehicle/steering_cmd'</span>,
+                                 SteeringCmd, queue_size=<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.throttle_pub = rospy.Publisher<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/vehicle/throttle_cmd'</span>,
+                                    ThrottleCmd, queue_size=<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.brake_pub = rospy.Publisher<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'/vehicle/brake_cmd'</span>,
+                                 BrakeCmd, queue_size=<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org3559b6d" class="outline-3">
+<h3 id="org3559b6d"><span class="section-number-3">4.9</span> vehicle_parameters</h3>
+<div class="outline-text-3" id="text-4-9">
+<p>
+In the context of <span class="underline"><span class="underline">init</span></span>, retrieve parameters of vehicle with default provision.
+The parameters might be needed for vehicle commands.
+</p>
+
+<p>
+<code>vehicle_parametres</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">self</span>.vehicle_mass = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~vehicle_mass'</span>, <span style="color: #a45bad;">1736</span>.<span style="color: #a45bad;">35</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.fuel_capacity = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~fuel_capacity'</span>, <span style="color: #a45bad;">13</span>.<span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.brake_deadband = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~brake_deadband'</span>, .<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.decel_limit = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~decel_limit'</span>, -<span style="color: #a45bad;">5</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.accel_limit = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~accel_limit'</span>, <span style="color: #a45bad;">1</span>.<span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.wheel_radius = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~wheel_radius'</span>, <span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">2413</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.wheel_base = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~wheel_base'</span>, <span style="color: #a45bad;">2</span>.<span style="color: #a45bad;">8498</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.steer_ratio = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~steer_ratio'</span>, <span style="color: #a45bad;">14</span>.<span style="color: #a45bad;">8</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.max_lat_accel = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~max_lat_accel'</span>, <span style="color: #a45bad;">3</span>.<span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.max_steer_angle = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~max_steer_angle'</span>, <span style="color: #a45bad;">8</span>.<span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.min_speed = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~min_speed'</span>, <span style="color: #a45bad;">4</span>.*<span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">44704</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.max_throttle_percentage = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~max_throttle_percentage'</span>, <span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.max_braking_percentage = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~max_braking_percentage'</span>, -<span style="color: #a45bad;">0</span>.<span style="color: #a45bad;">1</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7; font-weight: bold;">self</span>.max_vel_mps = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'waypoint_loader/velocity'</span><span style="color: #4f97d7;">)</span>*MPH_to_MPS
+<span style="color: #4f97d7; font-weight: bold;">self</span>.loop_freq = rospy.get_param<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">'~loop_freq'</span>, <span style="color: #a45bad;">2</span><span style="color: #4f97d7;">)</span>
+<span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">the frequency to process vehicle messages</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7617a9b" class="outline-3">
+<h3 id="org7617a9b"><span class="section-number-3">4.10</span> preamble</h3>
+<div class="outline-text-3" id="text-4-10">
+<p>
+header, imports, and comments.
+</p>
+<p>
+<code>preamble</code>:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">!/usr/bin/env python</span>
+
+<span style="color: #4f97d7; font-weight: bold;">import</span> rospy
+<span style="color: #4f97d7; font-weight: bold;">from</span> std_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> Bool
+<span style="color: #4f97d7; font-weight: bold;">from</span> dbw_mkz_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
+<span style="color: #4f97d7; font-weight: bold;">from</span> geometry_msgs.msg <span style="color: #4f97d7; font-weight: bold;">import</span> TwistStamped
+<span style="color: #4f97d7; font-weight: bold;">import</span> math
+
+<span style="color: #4f97d7; font-weight: bold;">from</span> twist_controller <span style="color: #4f97d7; font-weight: bold;">import</span> TwistController
+
+<span style="color: #2d9574;">'''</span>
+<span style="color: #2d9574;">You can build this node only after you have built (or partially built) the `waypoint_updater` node.</span>
+
+<span style="color: #2d9574;">You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.</span>
+<span style="color: #2d9574;">You can subscribe to any other message that you find important or refer to the document for list</span>
+<span style="color: #2d9574;">of messages subscribed to by the reference implementation of this node.</span>
+
+<span style="color: #2d9574;">One thing to keep in mind while building this node and the `twist_controller` class is the status</span>
+<span style="color: #2d9574;">of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will</span>
+<span style="color: #2d9574;">not be the case. This may cause your PID controller to accumulate error because the car could</span>
+<span style="color: #2d9574;">temporarily be driven by a human instead of your controller.</span>
+
+<span style="color: #2d9574;">We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,</span>
+<span style="color: #2d9574;">wheel_base) etc should not be altered in these files.</span>
+
+<span style="color: #2d9574;">We have also provided some reference implementations for PID controller and other utility classes.</span>
+<span style="color: #2d9574;">You are free to use them or build your own.</span>
+
+<span style="color: #2d9574;">Once you have the proposed throttle, brake, and steer values, publish it on the various publishers</span>
+<span style="color: #2d9574;">that we have created in the `__init__` function.</span>
+
+<span style="color: #2d9574;">'''</span>
+
+<span style="color: #7590db;">MPH_to_MPS</span> = <span style="color: #a45bad;">1609</span>.<span style="color: #a45bad;">344</span>/<span style="color: #a45bad;">3600</span>.<span style="color: #a45bad;">0</span> <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">1 mile = 1609.344 1 hour = 3600 seconds</span>
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org729fcc8" class="outline-2">
+<h2 id="org729fcc8"><span class="section-number-2">5</span> Validations</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li>Start roscore</li>
+
+<li>echo the publishing of
+<ul class="org-ul">
+<li>/vehicle/throttle_cmd</li>
+
+<li>/vehicle/steering_cmd</li>
+
+<li>/vehicle/brake_cmd</li>
+</ul></li>
+</ul>
+
+<p>
+expect to see the above messages
+</p>
+
+<ul class="org-ul">
+<li>start the simulator
+<ul class="org-ul">
+<li>making sure the manual operation is off</li>
+<li>select and go</li>
+</ul></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org329722c" class="outline-2">
+<h2 id="org329722c"><span class="section-number-2">6</span> Some other interesting message</h2>
+<div class="outline-text-2" id="text-6">
+</div>
+<div id="outline-container-org656ba28" class="outline-3">
+<h3 id="org656ba28"><span class="section-number-3">6.1</span> /tf Traffic Light (message)?</h3>
+<div class="outline-text-3" id="text-6-1">
+<p>
+Based on the abbrevation and the subscriber, it might be related to traffic light.
+</p>
+
+<p>
+Still don't quite understand the meaning of the fields.
+</p>
+<pre class="example">
+rostopic info /tf
+Type: tf2_msgs/TFMessage
+
+Publishers: None
+
+Subscribers:
+* /tl_detector (http://yushen:43555/)
+
+</pre>
+
+<pre class="example">
+rosmsg info tf2_msgs/TFMessage
+geometry_msgs/TransformStamped[] transforms
+  std_msgs/Header header
+    uint32 seq
+    time stamp
+    string frame_id
+  string child_frame_id
+  geometry_msgs/Transform transform
+    geometry_msgs/Vector3 translation
+      float64 x
+      float64 y
+      float64 z
+    geometry_msgs/Quaternion rotation
+      float64 x
+      float64 y
+      float64 z
+      float64 w
+
+</pre>
+</div>
+</div>
+
+<div id="outline-container-org82a7f8e" class="outline-3">
+<h3 id="org82a7f8e"><span class="section-number-3">6.2</span> /tf_static</h3>
+</div>
+
+<div id="outline-container-orgd386a3a" class="outline-3">
+<h3 id="orgd386a3a"><span class="section-number-3">6.3</span> /traffic_waypoint</h3>
+</div>
+</div>
+
+
+<div id="outline-container-org4870609" class="outline-2">
+<h2 id="org4870609"><span class="section-number-2">7</span> Questions</h2>
+</div>
+
+<div id="outline-container-org9fa8d72" class="outline-2">
+<h2 id="org9fa8d72"><span class="section-number-2">8</span> <span class="todo TODO">TODO</span> TODO</h2>
+<div class="outline-text-2" id="text-8">
+<ul class="org-ul">
+<li>Study how to design TwistController</li>
+<li>Browse, annotate and absorb the related code</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgab9249d" class="outline-2">
+<h2 id="orgab9249d"><span class="section-number-2">9</span> Verify the /vehicle/*_cmd</h2>
+<div class="outline-text-2" id="text-9">
+<p>
+According to <a href="https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/6">https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/6</a>
+Here is the procedure to perform the verification, kind of unit testing:
+</p>
+
+<blockquote>
+<p>
+I think <a href="https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/3">https://discussions.udacity.com/t/cant-find-the-rosbag-which-dbw-test-used-for-testing/390138/3</a> is a rough guide, but the full steps are something like:
+</p>
+
+<ol class="org-ol">
+<li>download <a href="https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc4">https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc4</a></li>
+<li>rename the file to dbw_test.rosbag.bag</li>
+<li>move the dbw_test.rosbag.bag file to the project root’s data folder, e.g. CarND-Capstone/data/dbw_test.rosbag.bag</li>
+<li>Run dbw_test: roslaunch twist_controller dbw_test.launch</li>
+</ol>
+<p>
+Compare your results to the dbw_test output logged in ros/src/twist_controller in three files: brakes.csv, steers.csv, throttles.csv
+</p>
+
+<p>
+My numbers produced in 5 don’t match the expected output. I think this partially because the bag file (probably) comes from a run on the Carla car, rather than the simulator, and (presumably) the team that wrote the code that generated this bag file tuned their acceleration model to suit the real car rather than the simulator.
+</p>
+
+<p>
+But I’m confused by the bag file’s brake values, I’ve opened <a href="https://github.com/udacity/sdc-issue-reports/issues/12041">https://github.com/udacity/sdc-issue-reports/issues/12041</a> to either understand the brake values better, or fix them if they’re wrong
+</p>
+</blockquote>
+
+<p>
+To make it work in our environment, I had to modify the launch file or dbw_test.launch adding the include to waypoint_loader's launch file.
+</p>
+
+<p>
+Next, need to do the comparison in the data collected in brakes.csv, steers.csv, and throttles.csv.
+</p>
+</div>
+
+<div id="outline-container-org7e8cebd" class="outline-3">
+<h3 id="org7e8cebd"><span class="section-number-3">9.1</span> Comparison of the control outputs</h3>
+<div class="outline-text-3" id="text-9-1">
+<p>
+I'd like to try to use Google sheet to see if would provide some excel sheet like plotting functions.
+</p>
+
+<ul class="org-ul">
+<li>brakes</li>
+
+<li>steers</li>
+
+<li>throttles</li>
+</ul>
+
+
+<p>
+<a href="https://docs.google.com/spreadsheets/d/10CxvhIyyFZcAHWsAepPvpqeD0AzGneDMp0ZdCSyoKds/edit?usp=sharing">https://docs.google.com/spreadsheets/d/10CxvhIyyFZcAHWsAepPvpqeD0AzGneDMp0ZdCSyoKds/edit?usp=sharing</a>
+</p>
+
+<p>
+<a href="https://docs.google.com/spreadsheets/d/1VuvZIt8m_C0OByGyG2jAAazIPiI_bW8joV3aA7_6R8Q/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1VuvZIt8m_C0OByGyG2jAAazIPiI_bW8joV3aA7_6R8Q/edit?usp=sharing</a>
+</p>
+
+<p>
+<a href="https://docs.google.com/spreadsheets/d/1lnr-AFjVcitUdtJtA6JUfCXLfSmjlO_Em0C0jhCmDnw/edit?usp=sharing">https://docs.google.com/spreadsheets/d/1lnr-AFjVcitUdtJtA6JUfCXLfSmjlO_Em0C0jhCmDnw/edit?usp=sharing</a>
+</p>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: \today</p>
+<p class="author">Author: yu-shen</p>
+<p class="date">Created: 2017-12-04 Mon 17:43</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

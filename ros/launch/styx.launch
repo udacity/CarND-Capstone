@@ -1,10 +1,13 @@
 <?xml version="1.0"?>
 <launch>
-    <!-- Simulator Bridge -->
-    <include file="$(find styx)/launch/server.launch" />
+    <!--Traffic Light Locations and Camera Config -->
+    <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
 
-    <!--DBW Node -->
-    <include file="$(find twist_controller)/launch/dbw_sim.launch"/>
+    <!--Traffic Light Detector Node -->
+    <include file="$(find tl_detector)/launch/tl_detector.launch"/>
+
+    <!--Waypoint Updater Node -->
+    <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
 
     <!--Waypoint Loader -->
     <include file="$(find waypoint_loader)/launch/waypoint_loader.launch"/>
@@ -12,12 +15,10 @@
     <!--Waypoint Follower Node -->
     <include file="$(find waypoint_follower)/launch/pure_pursuit.launch"/>
 
-    <!--Waypoint Updater Node -->
-    <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
+    <!-- Simulator Bridge -->
+    <include file="$(find styx)/launch/server.launch" />
 
-    <!--Traffic Light Detector Node -->
-    <include file="$(find tl_detector)/launch/tl_detector.launch"/>
+    <!--DBW Node -->
+    <include file="$(find twist_controller)/launch/dbw_sim.launch"/>
 
-    <!--Traffic Light Locations and Camera Config -->
-    <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
 </launch>

@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2017-11-28 Tue 23:09 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>System Integration of Autonomous Vehicle</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="yu-shen" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2017 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">System Integration of Autonomous Vehicle</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org736e048">1. Introduction</a></li>
+<li><a href="#org48fc867">2. Plan and Schedule</a></li>
+<li><a href="#orgcbefc92">3. Questions/Problems</a></li>
+<li><a href="#orgb6ca869">4. Major nodes or modules</a>
+<ul>
+<li><a href="#org8e59658">4.1. ./waypoint_tracker.org</a></li>
+<li><a href="#org4e9534f">4.2. Waypoint<sub>Updater</sub></a></li>
+<li><a href="#org968bc6b">4.3. DBW<sub>Node</sub></a></li>
+<li><a href="#orge98c382">4.4. ./tl_detector.org</a></li>
+<li><a href="#org52ff36f">4.5. ./tl-classification.org</a></li>
+</ul>
+</li>
+<li><a href="#org46bbc5c">5. <span class="todo TODO">TODO</span> TODO</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org736e048" class="outline-2">
+<h2 id="org736e048"><span class="section-number-2">1</span> Introduction</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+The document uses <a href="https://en.wikipedia.org/wiki/Literate_programming">literate programming</a> approach to present the
+design and implementation. It presents software construction as prose of writing natural language narrative.
+The key distinction is that all text are comments to code, while code are presented in special code block.
+For details of it, please check the link for it.
+With this style of narrative, key chunks of code relevant to higher level design are presented with
+much more thought process presented. This would make the source code much more understandable, removing the challenges of providing
+updated and appropriate comments to the source code.
+</p>
+
+<p>
+In this document, <code>&lt;&lt;to_local_coordinates&gt;&gt;</code> standards for the named source code block to be inserted in the place.
+</p>
+
+<p>
+In this design document, "my<sub>car</sub>" refers to the car being controlled by the path planner.
+</p>
+
+<p>
+The full source code can be generated from this literate programming document: <a href="./capstone-workbook.html">./capstone-workbook.html</a>
+If you prefer to read the source code, you can still read them, but there may not be enough comments.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org48fc867" class="outline-2">
+<h2 id="org48fc867"><span class="section-number-2">2</span> Plan and Schedule</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+Outdated
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Tas</th>
+<th scope="col" class="org-left">Owner</th>
+<th scope="col" class="org-left">Due</th>
+<th scope="col" class="org-left">Status</th>
+<th scope="col" class="org-left">Remarks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">Waypoint<sub>Updater</sub> (initial)</td>
+<td class="org-left">Yu</td>
+<td class="org-left">11/1</td>
+<td class="org-left">Verified 10/31</td>
+<td class="org-left">Learning curve of ROS</td>
+</tr>
+
+<tr>
+<td class="org-left">Traffic Light Detection &amp; Classification</td>
+<td class="org-left">Reddy &amp; Sahil</td>
+<td class="org-left">11/15</td>
+<td class="org-left">Start 11/6</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">DBW to issue control</td>
+<td class="org-left">Eric? &amp; ?</td>
+<td class="org-left">11/5</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">Waypoint<sub>Updater</sub> (deceleration/acceleration</td>
+<td class="org-left">Patrick &amp; Yu</td>
+<td class="org-left">11/20</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">Integration</td>
+<td class="org-left">Yu &amp; ?</td>
+<td class="org-left">11/25</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">Verification and tuning</td>
+<td class="org-left">? &amp; all</td>
+<td class="org-left">11/30</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+This is a rather rough schedule. It shows that it's already very tight for 11/30 to complete.
+</p>
+
+<p>
+For Waypoint<sub>Updater</sub>, the remaining work is to subscribe to traffic light waypoints, and decide appropriate deceleration at the red/yellow light
+and subsequent acceleration after getting green light.
+</p>
+
+<p>
+The traffic light detection should pubilsh message of traffic light (being red, greee, maybe yellow).
+</p>
+
+<p>
+For DBW<sub>node</sub>, the key remaining piece is TwistController, producing the appropriate throttle, steering, brake values based on
+the current speed, the desired speed, and dbw<sub>enabled</sub> status. For the TwistController,
+there is a PID implementation, but the parameters of P, I, D needs to be determined.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgcbefc92" class="outline-2">
+<h2 id="orgcbefc92"><span class="section-number-2">3</span> Questions/Problems</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+Outdated.
+</p>
+<ol class="org-ol">
+<li>In Waypoint<sub>Updater</sub>, for output final<sub>points</sub>, how to set the speed? Should we set both the linear and angular speed?
+It seems that only need to set the linear.x, as it's in the my<sub>car</sub>'s local coordinates, there is only movement on the x-axis.
+There is no movement on the angular z, not even possible on x, and y. It seems that we should also set the angular velocity on z-axis? but how?</li>
+<li>How to tune the parameters of PID?</li>
+<li>Where to use the lowpass filter, for the inputs to DBW<sub>node</sub> or its outputs, or both? Maybe, just the current velocity, as it's the only value from the physical world that might have noise.</li>
+<li>What's the physics formula to express the required brake force considering the mass of the vehicle, its current velocities?</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orgb6ca869" class="outline-2">
+<h2 id="orgb6ca869"><span class="section-number-2">4</span> Major nodes or modules</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+The following are the major nodes or modules clicking on the links can
+visit the corresponding design and construction document.
+</p>
+</div>
+
+<div id="outline-container-org8e59658" class="outline-3">
+<h3 id="org8e59658"><span class="section-number-3">4.1</span> <a href="./waypoint_tracker.html">./waypoint_tracker.html</a></h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+This is the supper class abstracting the common treatments to waypoints among
+waypoint<sub>updater</sub> and tl<sub>dectector</sub>.
+</p>
+
+<p>
+It resides in a module called waypoint<sub>lib</sub>
+</p>
+
+<p>
+To import:
+</p>
+<p>
+==:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold;">from</span> waypoint_lib.waypoint_tracker <span style="color: #4f97d7; font-weight: bold;">import</span> WaypointTracker
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org4e9534f" class="outline-3">
+<h3 id="org4e9534f"><span class="section-number-3">4.2</span> <a href="waypoint_updater.html">Waypoint<sub>Updater</sub></a></h3>
+</div>
+
+<div id="outline-container-org968bc6b" class="outline-3">
+<h3 id="org968bc6b"><span class="section-number-3">4.3</span> <a href="dbw_workbook.html">DBW<sub>Node</sub></a></h3>
+</div>
+
+<div id="outline-container-orge98c382" class="outline-3">
+<h3 id="orge98c382"><span class="section-number-3">4.4</span> <a href="./tl_detector.html">./tl_detector.html</a></h3>
+</div>
+
+<div id="outline-container-org52ff36f" class="outline-3">
+<h3 id="org52ff36f"><span class="section-number-3">4.5</span> <a href="./tl-classification.html">./tl-classification.html</a></h3>
+<div class="outline-text-3" id="text-4-5">
+<p>
+This is the wrapper to the deep learning classifer.
+</p>
+
+<p>
+It expects to access the file of the trained module at path: ./ros/src/trained<sub>model</sub>/frozen<sub>inference</sub><sub>graph.pb</sub>
+assuming the current directory is the project directory of the Capstone project.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org46bbc5c" class="outline-2">
+<h2 id="org46bbc5c"><span class="section-number-2">5</span> <span class="todo TODO">TODO</span> TODO</h2>
+<div class="outline-text-2" id="text-5">
+<ol class="org-ol">
+<li></li>
+</ol>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: \today</p>
+<p class="author">Author: yu-shen</p>
+<p class="date">Created: 2017-11-28 Tue 23:09</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

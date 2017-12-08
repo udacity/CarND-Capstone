@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
+  <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" cwd="node">
+    <param name="traffic_light_classifier_sim" value="true" type="bool"/>
+    <param name="loop_freq" value="10" />
+    <param name="admissible_distance_for_image" value="150" />
+    <param name="use_simulator_light_state" value="false" type="bool"/>
+  </node>
 </launch>
