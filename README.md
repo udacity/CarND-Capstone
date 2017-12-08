@@ -10,10 +10,10 @@ Here are the team members:
 Name                   | email                    | Role
 -----------------------|--------------------------|-------
 Yu Shen                | yubrshen@gmail.com       | team lead
-Patrick Zhang          |                          | 
-Sumanth Reddy Kaliki   |                          |
-Sahil Juneja           |                          |
-Hector Sanchez Pajares |                          |
+Peng Zhang             | zpactfc@gmail.com        | 
+Sumanth Reddy Kaliki   | sumanth818@gmail.com     |
+Sahil Juneja           | sahiljuneja17@gmail.com  |
+Hector Sanchez Pajares | hector.spc@gmail.com     |
 
 
 The project bases on the architecture proposed by Udacity. It uses ROS as the implementation framework. The project implements the following ROS nodes:
