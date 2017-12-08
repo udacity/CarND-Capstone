@@ -4,3 +4,8 @@ build
 devel
 
 profile.tmp
+
+# Traffic Light
+traffic-light/data
+*.ipynb_checkpoints
+.DS_Store
