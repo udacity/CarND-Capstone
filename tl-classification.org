@@ -25,9 +25,9 @@ Top Level
 
   class TLClassifier(object):
       <<__init__>>
+
       <<get_classification>>
 #+END_SRC
-
 
 ** imports
 
@@ -79,9 +79,7 @@ Top Level
 #+NAME:__init__
 #+BEGIN_SRC python :noweb tangle :tangle
   def __init__(self, sim):
-      #TODO load classifier
-      # model_path = "../trained_model/frozen_inference_graph.pb"
-      # the above path is at ros/trained_model parallel to src/tl_dectector
+      #DONE load classifier
       curr_dir = os.path.dirname(os.path.realpath(__file__))
       if sim:
           model_folder = '/sim_model'
@@ -141,12 +139,12 @@ Top Level
 
   def get_classification(self, image):
       """Determines the color of the traffic light in the image
-      Args:
-          image (cv::Mat): image containing the traffic light
-      Returns:
-          int: ID of traffic light color (specified in styx_msgs/TrafficLight)
-      """
-      #TODO implement light color prediction
+        Args:
+            image (cv::Mat): image containing the traffic light
+        Returns:
+            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+        """
+      #DONE implement light color prediction
       image_expanded = np.expand_dims(image, axis=0)
       (boxes, scores, classes, num_det) = self.session.run(
           [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],

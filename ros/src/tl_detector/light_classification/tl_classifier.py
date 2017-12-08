@@ -34,9 +34,7 @@ def joinfiles(directory, filename):
 
 class TLClassifier(object):
     def __init__(self, sim):
-        #TODO load classifier
-        # model_path = "../trained_model/frozen_inference_graph.pb"
-        # the above path is at ros/trained_model parallel to src/tl_dectector
+        #DONE load classifier
         curr_dir = os.path.dirname(os.path.realpath(__file__))
         if sim:
             model_folder = '/sim_model'
@@ -69,6 +67,7 @@ class TLClassifier(object):
         self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
         self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
+
     def convert_class_to_color(self, class_value):
         if class_value == 1:
             light_color = TrafficLight.GREEN
@@ -87,12 +86,12 @@ class TLClassifier(object):
     
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
-        Args:
-            image (cv::Mat): image containing the traffic light
-        Returns:
-            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
-        """
-        #TODO implement light color prediction
+          Args:
+              image (cv::Mat): image containing the traffic light
+          Returns:
+              int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+          """
+        #DONE implement light color prediction
         image_expanded = np.expand_dims(image, axis=0)
         (boxes, scores, classes, num_det) = self.session.run(
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
