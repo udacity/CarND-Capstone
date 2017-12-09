@@ -38,6 +38,11 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
+        # Logging data in csv file
+        self.log_to_csv = True
+        if self.log_to_csv:
+            self.log_handle = self.log_init('waypoint_updater.csv')
+
         self.loop()
 
     def loop(self):
@@ -83,7 +88,11 @@ class WaypointUpdater(object):
                 rospy.logwarn("List of /final_waypoints does not contain target number of elements")
 
             self.final_waypoints_pub.publish(self.final_wps)
-
+            
+            if self.log_to_csv:
+                    self.log_data(rospy.get_time(), car_x, car_y, closest_idx_waypoint, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.x, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.y)
+ 
+            
             rate.sleep()
 
     def pose_cb(self, msg):
@@ -144,6 +153,13 @@ class WaypointUpdater(object):
         rospy.logdebug_throttle(1, loginfo)
 
         return closest_index
+
+    def log_init(self, log_path):
+        log_handle = open(log_path,'w')
+        return log_handle
+
+    def log_data(self, *args):
+        self.log_handle.write(','.join(str(arg) for arg in args) + '\n')
 
 
 if __name__ == '__main__':

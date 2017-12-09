@@ -20,7 +20,7 @@ class Controller(object):
         self.DT = DT
 
     def control(self, target_linear_velocity, target_angular_velocity,
-                current_linear_velocity, dbw_status):
+                current_linear_velocity, dbw_status, log_handle):
         '''Defines target throttle, brake and steering values'''
 
         if dbw_status:
@@ -51,6 +51,8 @@ class Controller(object):
             steering = self.steer_ratio * target_angular_velocity
 
             self.last_velocity_error = velocity_error
+            #args = velocity_error
+            self.log_data(log_handle, velocity_error, DT)
 
         else:
             throttle = 0
@@ -66,3 +68,7 @@ class Controller(object):
         is_switch_acc = (self.last_velocity_error <= 0) and (velocity_error > 0)
 
         return is_switch_brake or is_switch_acc
+    
+    def log_data(self, log_handle, *args):
+        #log_handle.write(','.join(str(arg) for arg in args)+',' )
+        log_handle.write(','.join(str(arg) for arg in args) + ',')

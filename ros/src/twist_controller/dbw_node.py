@@ -69,7 +69,7 @@ class DBWNode(object):
         # Logging data in csv file
         self.log_to_csv = True
         if self.log_to_csv:
-            self.log_handle = self.log_init('CarND_performance.csv')
+            self.log_handle = self.log_init('dbw_node.csv')
 
         self.time_init = rospy.get_rostime()
 
@@ -83,18 +83,18 @@ class DBWNode(object):
 
                 # Get predicted throttle, brake and steering
                 throttle, brake, steering = self.controller.control(self.twist_cmd.linear.x,
-                    self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled)
+                    self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled, self.log_handle)
 
                 # Log data for car control analysis
                 if self.log_to_csv:
-                    timestamp = rospy.get_rostime() - self.time_init
-                    self.log_data(timestamp.to_sec(), self.twist_cmd.linear.x, self.twist_cmd.angular.z,
-                                  self.current_velocity.linear.x, self.dbw_enabled, throttle, brake, steering)
+                    #timestamp = rospy.get_rostime() - self.time_init
+                    self.log_data(rospy.get_rostime(), self.twist_cmd.linear.x, self.twist_cmd.angular.z,
+                                  self.current_velocity.linear.x, self.current_velocity.angular.z, int(self.dbw_enabled), throttle, brake, steering)
 
                 # Ensure dbw is enabled (not manual mode)
                 if self.dbw_enabled:
                     self.publish(throttle, brake, steering)
-
+            
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -135,7 +135,7 @@ class DBWNode(object):
     def log_init(self, log_path):
         log_handle = open(log_path,'w')
         headers = ','.join(["Time", "Target speed", "Target yaw", "Current speed", "DBW status", "Throttle", "Brake", "Steering"])
-        log_handle.write(headers + '\n')
+        #log_handle.write(headers + '\n')
         return log_handle
         
     def log_data(self, *args):
