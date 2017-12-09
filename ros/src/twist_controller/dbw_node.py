@@ -71,7 +71,7 @@ class DBWNode(object):
         if self.log_to_csv:
             self.log_handle = self.log_init('dbw_node.csv')
 
-        self.time_init = rospy.get_rostime()
+        #self.time_init = rospy.get_rostime()
 
         self.loop()
 

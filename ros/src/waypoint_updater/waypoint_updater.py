@@ -90,7 +90,7 @@ class WaypointUpdater(object):
             self.final_waypoints_pub.publish(self.final_wps)
             
             if self.log_to_csv:
-                    self.log_data(rospy.get_time(), car_x, car_y, closest_idx_waypoint, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.x, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.y)
+                    self.log_data(rospy.get_rostime(), car_x, car_y, closest_idx_waypoint, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.x, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.y)
  
             
             rate.sleep()

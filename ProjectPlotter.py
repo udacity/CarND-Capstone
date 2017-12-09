@@ -11,9 +11,13 @@ wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv'
 velocity_error, DT, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True) 
 
 
-
+print dbw_time[0]
+print dbw_time[1]
 start_time = wu_time[0]
+print start_time
 dbw_time = dbw_time - start_time
+print dbw_time[0]
+print dbw_time[1]
 wu_time = wu_time - start_time
 
 
