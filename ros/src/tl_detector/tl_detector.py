@@ -55,7 +55,11 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        # Ensure we only get initial full list of waypoints as simulator keeps publishing
+        # with patial list aftewards
+        if self.waypoints is None:
+            # We need to get a full copy as otherwise we just get a reference
+            self.waypoints = copy.copy(waypoints)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
