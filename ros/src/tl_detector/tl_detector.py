@@ -22,6 +22,7 @@ class TLDetector(object):
         self.pose = None
         self.waypoints = None
         self.camera_image = None
+        self.light_classifier = None
         self.lights = []
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -74,6 +75,10 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        # Ensure all required parameters have been initialized
+        if not all([self.waypoints, self.pose, self.light_classifier]):
+            return
+
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
@@ -151,10 +156,15 @@ class TLDetector(object):
         if(not self.has_image):
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        # Detect traffic light
+        traffic_state = self.light_classifier.get_classification(cv_image)
+
+        if traffic_state == 'red':
+            return True
+        else:
+            return False
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
