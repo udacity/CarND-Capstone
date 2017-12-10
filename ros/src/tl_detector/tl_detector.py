@@ -5,13 +5,15 @@ from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
 import math
+from time import sleep
 from operator import itemgetter
+import uuid
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -43,6 +45,7 @@ class TLDetector(object):
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub7 = rospy.Subscriber('/image_color', Image, self.record_training_data_callback, queue_size=1)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -60,7 +63,39 @@ class TLDetector(object):
         self.waypoints = None
         self.waypoints_count = 0
 
+
+
         rospy.spin()
+
+    def record_training_data_callback(self, msg):
+        light_wp, line_wp, state = self.process_traffic_lights()
+        print(state)
+        try:
+            # Convert your ROS Image message to OpenCV2
+            cv2_img = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            resize_image = cv2.resize(cv2_img, (277, 303))
+            cropped_image = resize_image[26:303, 0:277]
+        except CvBridgeError, e:
+            print(e)
+        else:
+            if state == 0:
+                # cv2.imwrite('training/red/red_image_raw%s.jpeg' % (str(uuid.uuid4())), cv2_img)
+                # cv2.imwrite('training/red/red_image_resize%s.jpeg' % (str(uuid.uuid4())), resize_image)
+                cv2.imwrite('training/red/red_image_crop_%s.jpeg' % (str(uuid.uuid4())), cropped_image)
+                sleep(1)
+            if state == 1:
+                # cv2.imwrite('training/yellow/yellow_image_raw%s.jpeg' % (str(uuid.uuid4())), cv2_img)
+                # cv2.imwrite('training/yellow/yellow_image_resize%s.jpeg' % (str(uuid.uuid4())), resize_image)
+                cv2.imwrite('training/yellow/yellow_image_crop_%s.jpeg' % (str(uuid.uuid4())), cropped_image)
+            if state == 2:
+                # cv2.imwrite('training/green/green_image_raw%s.jpeg' % (str(uuid.uuid4())), cv2_img)
+                # cv2.imwrite('training/green/green_image_resize%s.jpeg' % (str(uuid.uuid4())), resize_image)
+                cv2.imwrite('training/green/green_image_crop_%s.jpeg' % (str(uuid.uuid4())), cropped_image)
+            if state == 4:
+                # cv2.imwrite('training/unknown/unknown_image_raw%s.jpeg' % (str(uuid.uuid4())), cv2_img)
+                # cv2.imwrite('training/unknown/unknown_image_resize%s.jpeg' % (str(uuid.uuid4())), resize_image)
+                cv2.imwrite('training/unknown/unknown_image_crop_%s.jpeg' % (str(uuid.uuid4())), cropped_image)
+                sleep(1)
 
     def pose_cb(self, msg):
         self.pose = msg
