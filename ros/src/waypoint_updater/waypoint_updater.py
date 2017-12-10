@@ -97,6 +97,7 @@ class WaypointUpdater(object):
 
             else:
 
+                # if the red traffic light is detect, set velocity to zero.
                 n_waypoint = self.red_light_wp_idx - closest_idx_waypoint
 
                 if n_waypoint > LOOKAHEAD_WPS:
@@ -105,9 +106,8 @@ class WaypointUpdater(object):
 
                 waypoints = self.wps.waypoints[closest_idx_waypoint:closest_idx_waypoint+n_waypoint]
 
-                for wp, s in zip(waypoints, np.linspace(40, 0, n_waypoint)):
-
-                    wp.twist.twist.linear.x = 0
+                for wp, v in zip(waypoints, np.linspace(40, 0, n_waypoint)):
+                    wp.twist.twist.linear.x = v
 
                 self.final_wps.waypoints = waypoints
 
@@ -127,6 +127,7 @@ class WaypointUpdater(object):
             self.final_wps = copy.copy(waypoints)
 
     def traffic_cb(self, msg):
+        # red_light_wp_idx is representing red traffic light waypoint ahead of current vehicle position.
         self.red_light_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
