@@ -25,7 +25,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -46,7 +46,7 @@ class WaypointUpdater(object):
 
     def loop(self):
 
-        rate = rospy.Rate(50)
+        rate = rospy.Rate(2)
 
         while not all([self.wps, self.ego_pos]):
 
@@ -92,7 +92,7 @@ class WaypointUpdater(object):
 
             else:
 
-                # if the red traffic light is detected, set velocity to zero.
+                # if the red traffic light is detected, reduce velocity to zero.
                 n_waypoint = self.red_light_wp_idx - closest_idx_waypoint
 
                 if n_waypoint > LOOKAHEAD_WPS:
@@ -124,6 +124,9 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # red_light_wp_idx is representing red traffic light waypoint ahead of current vehicle position.
         self.red_light_wp_idx = msg.data
+
+        #TODO remove
+        rospy.logwarn("{}".format(msg.data))
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
