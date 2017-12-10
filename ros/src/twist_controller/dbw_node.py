@@ -71,7 +71,7 @@ class DBWNode(object):
         if self.log_to_csv:
             self.log_handle = self.log_init('dbw_node.csv')
 
-        #self.time_init = rospy.get_rostime()
+        self.time_init = rospy.get_time()
 
         self.loop()
 
@@ -80,15 +80,26 @@ class DBWNode(object):
         while not rospy.is_shutdown():
 
             if all([self.twist_cmd, self.current_velocity, self.dbw_enabled]):    # Ensure values have been initialized
-
+                
+                if rospy.get_time() - self.time_init < 30:
+                    speed_command = 13
+                elif rospy.get_time() - self.time_init < 60:
+                    speed_command = 0    
+                elif rospy.get_time() - self.time_init < 90:
+                    speed_command = 8   
+                elif rospy.get_time() - self.time_init < 120:
+                    speed_command = 0  
+                else: 
+                    speed_command = 11
+                 
                 # Get predicted throttle, brake and steering
-                throttle, brake, steering = self.controller.control(self.twist_cmd.linear.x,
-                    self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled, self.log_handle)
+                throttle, brake, steering = self.controller.control(speed_command,
+                    self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled, self.log_handle) #self.twist_cmd.linear.x
 
                 # Log data for car control analysis
                 if self.log_to_csv:
                     #timestamp = rospy.get_rostime() - self.time_init
-                    self.log_data(rospy.get_rostime(), self.twist_cmd.linear.x, self.twist_cmd.angular.z,
+                    self.log_data(rospy.get_rostime(), speed_command, self.twist_cmd.angular.z,
                                   self.current_velocity.linear.x, self.current_velocity.angular.z, int(self.dbw_enabled), throttle, brake, steering)
 
                 # Ensure dbw is enabled (not manual mode)

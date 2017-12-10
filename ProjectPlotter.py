@@ -1,26 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-#ff, proportional, integral, dbw_time, speed_setpoint, current_speed, error, throttle_command, steer_command, yawrate_setpoint, yawrate, dbw_bool = np.loadtxt('dbw.txt', unpack = True)
-#wu_time, wp, cx, cy, x, y, count = np.loadtxt('waypointUpdater.txt', unpack = True)
-
-#rospy.get_time(), car_x, car_y, closest_idx_waypoint, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.x, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.y
-
 wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv',  delimiter=',', unpack = True)
-velocity_error, DT, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True) 
+
+p_effort, i_effort, d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True) 
 
 
-print dbw_time[0]
-print dbw_time[1]
 start_time = wu_time[0]
-print start_time
 dbw_time = dbw_time - start_time
-print dbw_time[0]
-print dbw_time[1]
 wu_time = wu_time - start_time
-
-
+dbw_time = dbw_time*1E-9
+wu_time = wu_time*1E-9
 
 #lateral control
 f, axx = plt.subplots(2,3)
@@ -56,19 +46,39 @@ for xy in zip(cx, cy):
 f, ax = plt.subplots(2,2)
 ax[0, 0].plot(dbw_time, target_linear_velocity, label="setpoint")
 ax[0, 0].plot(dbw_time, current_linear_velocity, label="actual")
-ax[0, 0].legend()
+ax[0, 0].legend(loc=4)
 ax[0, 0].grid()
 ax[0, 0].set_title('speed')
 ax[1, 0].plot(dbw_time, throttle, label="throttle cmd")
 ax[1, 0].set_title('throttle cmd')
-ax[1, 0].set_ylim(0, 2)
+ax[1, 0].set_ylim(-0.1, 1.1)
 ax[1, 0].grid()
+
 ax[0, 1].plot(dbw_time, brake, label="brale_cmd")
 ax[0, 1].set_title('brale cmd')
 ax[0, 1].grid()
-ax[1, 1].plot(dbw_time, dbw_status, label="dbw")
-ax[1, 1].set_title('dbw enabled')
+ax[1, 0].plot(dbw_time, p_effort, label="p")
+ax[1, 0].plot(dbw_time, i_effort, label="i")
+ax[1, 0].plot(dbw_time, d_effort, label="d")
+ax[1, 0].plot(dbw_time, feedforward_throttle, label="SteadyStateFF")
+ax[1, 0].legend()
+#ax[1, 1].plot(dbw_time, dbw_status, label="dbw")
+ax[1, 1].set_title('acceleration')
+
+span = 50
+current_linear_accel = np.zeros(len(dbw_time)-span)
+
+#print len(current_linear_velocity)
+#print len(dbw_time)
+
+for i in range (len(current_linear_velocity)-span):
+    current_linear_accel[i]=((current_linear_velocity[i+span]-current_linear_velocity[i])/(dbw_time[i+span]-dbw_time[i]))
+#print len(dbw_time[span:])
+#print len(current_linear_accel)
+
+ax[1, 1].plot(dbw_time[span:], current_linear_accel, label="actual")
 ax[1, 1].grid()
+
 
 
 

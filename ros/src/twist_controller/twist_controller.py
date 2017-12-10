@@ -13,8 +13,8 @@ class Controller(object):
         self.decel_limit = decel_limit
         self.accel_limit = accel_limit
 
-        self.throttle_pid = PID(1, 0.1, 0.1, self.decel_limit, self.accel_limit)
-        self.brake_pid = PID(1, 0.1, 0.1, self.decel_limit, self.accel_limit)
+        self.throttle_pid = PID(.03, 0, 0, self.decel_limit, self.accel_limit)
+        self.brake_pid = PID(.1, 0.1, 0, self.decel_limit, self.accel_limit)
         self.last_velocity_error = 0
         self.last_time = 0
         self.DT = DT
@@ -33,26 +33,35 @@ class Controller(object):
 
             velocity_error = target_linear_velocity - current_linear_velocity
 
-            if self.is_change_acc(velocity_error):
-                self.throttle_pid.reset()
-                self.brake_pid.reset()
+
 
             # implement throttle controller
-            if velocity_error >= 0:
-                throttle = self.throttle_pid.step(velocity_error, DT)
-                brake = 0
+#            if velocity_error >= 0:
+            pid_throttle = self.throttle_pid.step(velocity_error, DT, log_handle)
+            feedforward_throttle = target_linear_velocity*.01888
+            throttle = pid_throttle + feedforward_throttle
+            accel_limit = 1 #mps2
+            maxThrottle = 0.1962*accel_limit+0.083 # max throttle allowed for a given acceleration limit
+            
+            if throttle > maxThrottle:
+                self.throttle_pid.reset()
+                #self.brake_pid.reset()
+            
+            
+            throttle = min(throttle, maxThrottle)
+            brake = 0
 
             # implement brake controller
-            else:
-                throttle = 0
-                brake = self.brake_pid.step(-velocity_error, DT)
+#            else:
+#                throttle = 0
+#                brake = self.brake_pid.step(-velocity_error, DT, log_handle)
 
             # implement steering controller
             steering = self.steer_ratio * target_angular_velocity
 
             self.last_velocity_error = velocity_error
             #args = velocity_error
-            self.log_data(log_handle, velocity_error, DT)
+            self.log_data(log_handle, pid_throttle, feedforward_throttle, velocity_error, DT)
 
         else:
             throttle = 0
@@ -70,5 +79,4 @@ class Controller(object):
         return is_switch_brake or is_switch_acc
     
     def log_data(self, log_handle, *args):
-        #log_handle.write(','.join(str(arg) for arg in args)+',' )
         log_handle.write(','.join(str(arg) for arg in args) + ',')
