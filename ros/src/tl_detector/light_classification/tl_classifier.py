@@ -55,6 +55,6 @@ class TLClassifier(object):
                            {self.input_operation.outputs[0]: normalized_image})
         results = np.squeeze(results)
         prediction_idx = np.argmax(results)
-        prediction = self.labels[prediction_idx])
+        prediction = self.labels[prediction_idx]
 
         return prediction
