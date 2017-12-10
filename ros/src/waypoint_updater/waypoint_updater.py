@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -33,8 +34,10 @@ class WaypointUpdater(object):
         self.wps = None
         self.final_wps = None
         self.first_pass = True
+        self.red_light_wp_idx = -1 # -1 is representing traffic light is red
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
@@ -60,27 +63,36 @@ class WaypointUpdater(object):
             #return the index of the closest waypoint ahead of us
             closest_idx_waypoint = self.closest_waypoint_ahead(car_x, car_y, car_yaw, self.wps.waypoints)
 
-            #final waypoints is a subset of original set of waypoints
-            self.final_wps.waypoints = self.wps.waypoints[closest_idx_waypoint:closest_idx_waypoint+LOOKAHEAD_WPS]
+            rospy.loginfo("red_light_wp_idx:{}".format(self.red_light_wp_idx))
 
-            #check we didn't reach the end of the list and otherwise loopback to start of the list
-            if len(self.final_wps.waypoints) < LOOKAHEAD_WPS:
-                extra_points_needed = LOOKAHEAD_WPS - len(self.final_wps.waypoints)
+            # if traffic light is not red
+            if self.red_light_wp_idx is -1:
 
-                # we need to get points from the start of the list ensuring next point is closest ahead
-                last_x = self.wps.waypoints[-1].pose.pose.position.x
-                last_y = self.wps.waypoints[-1].pose.pose.position.y
-                last_x2 = self.wps.waypoints[-2].pose.pose.position.x
-                last_y2 = self.wps.waypoints[-2].pose.pose.position.y
-                last_yaw = math.atan2(last_y - last_y2, last_x - last_x2)
-                # we don't include last points of the list to ensure we go back to the beginning of the list
-                first_extra_point = self.closest_waypoint_ahead(last_x, last_y, last_yaw, self.wps.waypoints[0:-10])
+                #final waypoints is a subset of original set of waypoints
+                self.final_wps.waypoints = self.wps.waypoints[closest_idx_waypoint:closest_idx_waypoint+LOOKAHEAD_WPS]
 
-                #we complete our list to desired number of points
-                self.final_wps.waypoints.extend(self.wps.waypoints[first_extra_point:first_extra_point+extra_points_needed])
+                #check we didn't reach the end of the list and otherwise loopback to start of the list
+                if len(self.final_wps.waypoints) < LOOKAHEAD_WPS:
+                    extra_points_needed = LOOKAHEAD_WPS - len(self.final_wps.waypoints)
 
-            if len(self.final_wps.waypoints) != LOOKAHEAD_WPS:
-                rospy.logwarn("List of /final_waypoints does not contain target number of elements")
+                    # we need to get points from the start of the list ensuring next point is closest ahead
+                    last_x = self.wps.waypoints[-1].pose.pose.position.x
+                    last_y = self.wps.waypoints[-1].pose.pose.position.y
+                    last_x2 = self.wps.waypoints[-2].pose.pose.position.x
+                    last_y2 = self.wps.waypoints[-2].pose.pose.position.y
+                    last_yaw = math.atan2(last_y - last_y2, last_x - last_x2)
+                    # we don't include last points of the list to ensure we go back to the beginning of the list
+                    first_extra_point = self.closest_waypoint_ahead(last_x, last_y, last_yaw, self.wps.waypoints[0:-10])
+
+                    #we complete our list to desired number of points
+                    self.final_wps.waypoints.extend(self.wps.waypoints[first_extra_point:first_extra_point+extra_points_needed])
+
+                if len(self.final_wps.waypoints) != LOOKAHEAD_WPS:
+                    rospy.logwarn("List of /final_waypoints does not contain target number of elements")
+
+            else:
+
+                rospy.loginfo("light is red")
 
             self.final_waypoints_pub.publish(self.final_wps)
 
@@ -98,8 +110,7 @@ class WaypointUpdater(object):
             self.final_wps = copy.copy(waypoints)
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.red_light_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
