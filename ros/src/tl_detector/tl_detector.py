@@ -109,9 +109,9 @@ class TLDetector(object):
             if self.last_state != self.state:
                 rospy.logwarn("traffic light: {}.".format(self.state_txt[self.state]))
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLightState.RED else -1
-            line_wp = line_wp if state == TrafficLightState.RED else -1
-            self.last_wp = light_wp
+            light_wp = light_wp if state in (TrafficLightState.RED, TrafficLightState.YELLOW) else -1
+            line_wp = line_wp if state in (TrafficLightState.RED, TrafficLightState.YELLOW) else -1
+            self.last_wp = line_wp
             self.upcoming_red_light_pub.publish(TrafficLightWaypoint(line_wp, TrafficLightState(self.state)))
         else:
             self.upcoming_red_light_pub.publish(TrafficLightWaypoint(self.last_wp, TrafficLightState(self.state)))
