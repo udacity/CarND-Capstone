@@ -74,12 +74,21 @@ class TLDetector(object):
         rospy.logwarn("{:,} waypoints received from /base_waypoints.".format(self.waypoints_count))
 
     def traffic_cb(self, msg):
+        """
+        Use the vehicle's location and the (x, y) coordinates for traffic light
+            stop lines to find the nearest visible traffic light ahead of the vehicle.
+        You will want to use the get_closest_waypoint method to find the closest
+            waypoints to the vehicle and lights.
+        Using these waypoint indices, you can determine which light is ahead of
+            the vehicle along the list of waypoints.
+        """
         self.lights = msg.lights
         if self.light_waypoints==[] and self.waypoints:
             # Create waypoints for the traffic signals and also the associated stop lines.
             self.light_waypoints = [self.get_closest_waypoint(light.pose.pose) for light in self.lights]
             rospy.logwarn("traffic light waypoints calculated as {}.".format(self.light_waypoints))
-            self.stopline_waypoints = [self.get_closest_waypoint(Pose(Point(x,y,0.0),Quaternion(0.0,0.0,0.0,0.0))) for (x, y) in self.config['stop_line_positions']]
+            self.stopline_waypoints = \
+                [ self.get_closest_waypoint(Pose(Point(x,y,0.0),Quaternion(0.0,0.0,0.0,0.0))) for (x, y) in self.config['stop_line_positions'] ]
             rospy.logwarn("traffic light stopline waypoints calculated as {}.".format(self.stopline_waypoints))
 
     def image_cb(self, msg):
