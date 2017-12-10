@@ -35,7 +35,7 @@ class WaypointUpdater(object):
         self.wps = None
         self.final_wps = None
         self.first_pass = True
-        self.red_light_wp_idx = -1 # -1 is representing traffic light is red
+        self.red_light_wp_idx = -1 # -1 is representing traffic light is not red
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
@@ -63,8 +63,7 @@ class WaypointUpdater(object):
 
             #return the index of the closest waypoint ahead of us
             closest_idx_waypoint = self.closest_waypoint_ahead(car_x, car_y, car_yaw, self.wps.waypoints)
-
-            rospy.loginfo("red_light_wp_idx:{}".format(self.red_light_wp_idx))
+            rospy.loginfo_throttle(1, "red_light_wp_idx:{}".format(self.red_light_wp_idx))
 
             # if traffic light is not red
             if self.red_light_wp_idx is -1:
@@ -91,23 +90,19 @@ class WaypointUpdater(object):
                 if len(self.final_wps.waypoints) != LOOKAHEAD_WPS:
                     rospy.logwarn("List of /final_waypoints does not contain target number of elements")
 
-                for wp in self.final_wps.waypoints:
-
-                    wp.twist.twist.linear.x = 50
-
             else:
 
-                # if the red traffic light is detect, set velocity to zero.
+                # if the red traffic light is detected, set velocity to zero.
                 n_waypoint = self.red_light_wp_idx - closest_idx_waypoint
 
                 if n_waypoint > LOOKAHEAD_WPS:
-
                     n_waypoint = LOOKAHEAD_WPS
 
                 waypoints = self.wps.waypoints[closest_idx_waypoint:closest_idx_waypoint+n_waypoint]
 
-                for wp, v in zip(waypoints, np.linspace(40, 0, n_waypoint)):
-                    wp.twist.twist.linear.x = v
+                for wp, v_mul in zip(waypoints, np.linspace(1, 0, n_waypoint)):
+                    # Reduce velocity linearly based on base target (help considers turns) 
+                    wp.twist.twist.linear.x *= v_mul
 
                 self.final_wps.waypoints = waypoints
 
