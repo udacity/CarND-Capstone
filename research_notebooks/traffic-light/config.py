@@ -10,4 +10,5 @@ def set_download_path(dst):
 
 datasets = [
     'https://s3-us-west-2.amazonaws.com/traffic-light-data/just-traffic-lights.zip',
+    'https://s3-us-west-2.amazonaws.com/traffic-light-data/sim_training_data.zip'
 ]
