@@ -79,7 +79,6 @@ class TLDetector(object):
         if not all([self.waypoints, self.pose, self.light_classifier]):
             return
 
-        self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
 
@@ -153,9 +152,6 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
-            return False
-
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         # Detect traffic light
