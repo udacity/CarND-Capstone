@@ -1,5 +1,13 @@
-IMAGE_SIZE=224
-ARCHITECTURE="mobilenet_1.0_${IMAGE_SIZE}"
+# Scripts and methodology based on https://www.tensorflow.org/tutorials/image_retraining
+#
+# To run this script, you need to have your dataset in image_dir (ie tf_files/dataset).
+# Your dataset must contain one directory per class and be named after the class.
+#
+# You can visualize training by performing:
+#     tensorboard --logdir tf_files/training_summaries/ &
+
+IMAGE_SIZE=128
+ARCHITECTURE="mobilenet_0.25_${IMAGE_SIZE}"
 
 python retrain.py \
   --bottleneck_dir=tf_files/bottlenecks \
@@ -13,5 +21,4 @@ python retrain.py \
   --random_crop=10 \
   --random_scale=10 \
   --random_brightness=10 \
-  --validation_batch_size=-1 \
   --print_misclassified_test_images
