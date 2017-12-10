@@ -8,6 +8,7 @@ from styx_msgs.msg import Lane, Waypoint
 import math
 import copy
 import tf.transformations   # to get Euler coordinates
+import numpy as np
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -90,9 +91,25 @@ class WaypointUpdater(object):
                 if len(self.final_wps.waypoints) != LOOKAHEAD_WPS:
                     rospy.logwarn("List of /final_waypoints does not contain target number of elements")
 
+                for wp in self.final_wps.waypoints:
+
+                    wp.twist.twist.linear.x = 50
+
             else:
 
-                rospy.loginfo("light is red")
+                n_waypoint = self.red_light_wp_idx - closest_idx_waypoint
+
+                if n_waypoint > LOOKAHEAD_WPS:
+
+                    n_waypoint = LOOKAHEAD_WPS
+
+                waypoints = self.wps.waypoints[closest_idx_waypoint:closest_idx_waypoint+n_waypoint]
+
+                for wp, s in zip(waypoints, np.linspace(40, 0, n_waypoint)):
+
+                    wp.twist.twist.linear.x = 0
+
+                self.final_wps.waypoints = waypoints
 
             self.final_waypoints_pub.publish(self.final_wps)
 
