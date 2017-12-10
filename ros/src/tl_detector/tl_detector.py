@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
-from styx_msgs.msg import TrafficLightArray, TrafficLight
+from styx_msgs.msg import TrafficLightArray, TrafficLight, TrafficLightState, TrafficLightWaypoint
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -19,7 +18,10 @@ class TLDetector(object):
     dl = lambda self, a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
     # Details from src/styx_msgs/msg/TrafficLight.msg
-    state_txt = { 0: 'RED', 1: 'YELLOW', 2: 'GREEN', 4: 'UNKNOWN' }
+    state_txt = { TrafficLightState.RED: 'RED',
+                  TrafficLightState.YELLOW: 'YELLOW',
+                  TrafficLightState.GREEN: 'GREEN',
+                  TrafficLightState.UNKNOWN: 'UNKNOWN' }
 
     def __init__(self):
         rospy.init_node('tl_detector')
@@ -47,14 +49,14 @@ class TLDetector(object):
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
-        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', TrafficLightWaypoint, queue_size=1)
 
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
+        self.state = TrafficLightState.UNKNOWN
+        self.last_state = TrafficLightState.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
         self.waypoints = None
@@ -107,12 +109,12 @@ class TLDetector(object):
             if self.last_state != self.state:
                 rospy.logwarn("traffic light: {}.".format(self.state_txt[self.state]))
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            line_wp = line_wp if state == TrafficLight.RED else -1
+            light_wp = light_wp if state == TrafficLightState.RED else -1
+            line_wp = line_wp if state == TrafficLightState.RED else -1
             self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(line_wp))
+            self.upcoming_red_light_pub.publish(TrafficLightWaypoint(line_wp, TrafficLightState(self.state)))
         else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+            self.upcoming_red_light_pub.publish(TrafficLightWaypoint(self.last_wp, TrafficLightState(self.state)))
         self.state_count += 1
 
     def get_closest_waypoint(self, pose):
@@ -143,7 +145,7 @@ class TLDetector(object):
 
         """
         # TODO: Temporary data from simulator until image processing is complete.
-        return self.lights[light].state
+        return self.lights[light].state.state
 
         if(not self.has_image):
             self.prev_light_loc = None
@@ -182,7 +184,7 @@ class TLDetector(object):
         if self.light_visible:
             rospy.logwarn("traffic light passed.")
             self.light_visible = False
-        return -1, -1, TrafficLight.UNKNOWN
+        return -1, -1, TrafficLightState.UNKNOWN
 
 if __name__ == '__main__':
     try:
