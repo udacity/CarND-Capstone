@@ -29,6 +29,9 @@ class Controller(object):
         if self.prev_time:
             dt = self.prev_time-now
 
+            if target_velocity < 0.001 and velocity < 0.1:
+                throttle = 0.0
+                brake = -1809.0 # Limit from https://discussions.udacity.com/t/what-is-the-range-for-the-brake-in-the-dbw-node/412339
             velocity_error = target_velocity - velocity
             throttle, brake = self.acceleration(velocity_error, dt)
 
@@ -59,9 +62,10 @@ class Controller(object):
             # Braking required.  Brake values passed to publish should be in units of torque (N*m).
             # The correct values for brake can be computed using the desired acceleration,
             # weight of the vehicle, and wheel radius.
+            # Note that https://discussions.udacity.com/t/what-is-the-range-for-the-brake-in-the-dbw-node/412339
+            # suggests the `accel` value is limited by self.decel_limit rather than the valye of `brake`.
             throttle = 0.0
-            brake = self.total_vehicle_mass * accel * self.wheel_radius
-            brake = max(brake, self.decel_limit)
+            brake = self.total_vehicle_mass * max(accel, self.decel_limit) * self.wheel_radius
 
         return throttle, brake
 

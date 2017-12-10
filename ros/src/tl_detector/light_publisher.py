@@ -38,7 +38,7 @@ class TLPublisher(object):
         light.header.frame_id = '/world'
 
         light.pose = self.create_pose(x, y, z, yaw)
-        light.state = state
+        light.state.state = state
 
         return light
 
