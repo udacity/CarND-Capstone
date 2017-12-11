@@ -50,6 +50,10 @@ class TLDetector(object):
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
+        # get config values for site
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
+
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
         helps you acquire an accurate ground truth data source for the traffic light
@@ -59,20 +63,16 @@ class TLDetector(object):
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
-        sub7 = rospy.Subscriber('/image_color', Image, self.record_training_data_callback, queue_size=1)
-
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
+        if self.config['data_record_flag']:
+            sub7 = rospy.Subscriber('/image_color', Image, self.record_training_data_callback, queue_size=1)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', TrafficLightWaypoint, queue_size=1)
-
-
 
         rospy.spin()
 
     def record_training_data_callback(self, msg):
         light_wp, line_wp, state = self.process_traffic_lights()
-        print(state)
+        print('[record_training_data_callback]', state)
         try:
             # Convert your ROS Image message to OpenCV2
             cv2_img = self.bridge.imgmsg_to_cv2(msg, "bgr8")
