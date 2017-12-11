@@ -59,7 +59,10 @@ class DBWNode(object):
 
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
-        self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+        self.controller = Controller(wheel_base, steer_ratio, min_speed,
+                                     accel_limit, decel_limit, brake_deadband,
+                                     max_lat_accel, max_steer_angle,
+                                     vehicle_mass, fuel_capacity, wheel_radius)
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
@@ -75,7 +78,7 @@ class DBWNode(object):
         pass
 
     def velocity_cb(self, msg):
-        # /current_velocity message
+        # /current_velocity message (units: m/s)
         # The linear velocity is in the vehicle's frame of reference so only 'x' is populated
         self.velocity = msg.twist.linear.x
         self.angular_velocity = msg.twist.angular.z
