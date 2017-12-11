@@ -78,7 +78,7 @@ class DBWNode(object):
         pass
 
     def velocity_cb(self, msg):
-        # /current_velocity message
+        # /current_velocity message (units: m/s)
         # The linear velocity is in the vehicle's frame of reference so only 'x' is populated
         self.velocity = msg.twist.linear.x
         self.angular_velocity = msg.twist.angular.z
