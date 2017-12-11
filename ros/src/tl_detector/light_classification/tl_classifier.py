@@ -1,5 +1,5 @@
 import rospy
-from styx_msgs.msg import TrafficLight
+from styx_msgs.msg import TrafficLightState
 import numpy as np
 from keras.models import model_from_json
 from keras import backend as K
@@ -20,13 +20,13 @@ class TLClassifier(object):
         json_file.close()
         self.model = model_from_json(loaded_model_json)
         self.model._make_predict_function()
-        
+
         # load weights into model
         self.model.load_weights(model_weights_path)
         rospy.logwarn('Perception keras model loaded')
 
         #self.frame_count = 0
-        
+
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -34,7 +34,7 @@ class TLClassifier(object):
             image (cv::Mat): image containing the traffic light
 
         Returns:
-            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+            int: ID of traffic light color (specified in styx_msgs/TrafficLightState)
 
         """
 
@@ -47,7 +47,7 @@ class TLClassifier(object):
         resized_img = cv2.resize(image, (0,0), fx=scale, fy=scale)
 
         # turn resized image to numpy array
-        cropped_img = np.asarray(resized_img[:,:]) 
+        cropped_img = np.asarray(resized_img[:,:])
 
         # crop image to (227,227) image
         cropped_img = cropped_img[0:227, 0:227]
@@ -60,10 +60,10 @@ class TLClassifier(object):
         img = np.array([cropped_img])
         prediction = self.model.predict(img)[0]
 
-        prediction_labels = [TrafficLight.GREEN, TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.UNKNOWN]
+        prediction_labels = [TrafficLightState.GREEN, TrafficLightState.RED, TrafficLightState.YELLOW, TrafficLightState.UNKNOWN]
         labels_names = ['GREEN', 'RED', 'YELLOW', 'UNKNOWN']
 
-        light_state = prediction_labels[prediction.argmax()]       
+        light_state = prediction_labels[prediction.argmax()]
 
         rospy.logwarn('Traffic Light Prediction - ' + labels_names[prediction.argmax()])
 
