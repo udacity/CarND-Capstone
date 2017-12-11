@@ -34,7 +34,7 @@ class TLClassifier(object):
             image (cv::Mat): image containing the traffic light
 
         Returns:
-            int: ID of traffic light color (specified in styx_msgs/TrafficLightState)
+            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
 
@@ -62,6 +62,8 @@ class TLClassifier(object):
 
         prediction_labels = [TrafficLightState.GREEN, TrafficLightState.RED, TrafficLightState.YELLOW, TrafficLightState.UNKNOWN]
         labels_names = ['GREEN', 'RED', 'YELLOW', 'UNKNOWN']
+
+        print(prediction)
 
         light_state = prediction_labels[prediction.argmax()]
 
