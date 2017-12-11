@@ -72,7 +72,7 @@ class TLDetector(object):
 
     def record_training_data_callback(self, msg):
         light_wp, line_wp, state = self.process_traffic_lights()
-        print('[record_training_data_callback]', state)
+        print('[record_training_data_callback] state: ', state)
         try:
             # Convert your ROS Image message to OpenCV2
             cv2_img = self.bridge.imgmsg_to_cv2(msg, "bgr8")
@@ -182,9 +182,13 @@ class TLDetector(object):
         """
         # TODO: Temporary data from simulator until image processing is complete.
         #return self.lights[light].state.state
+<<<<<<< HEAD
 
         rospy.logwarn('get_light_state')
 
+=======
+
+>>>>>>> 7ef61d485fdd8d9310311a45c74e834c13edb34e
         if(not self.has_image):
             self.prev_light_loc = None
             rospy.logwarn('no image')
