@@ -182,13 +182,7 @@ class TLDetector(object):
         """
         # TODO: Temporary data from simulator until image processing is complete.
         #return self.lights[light].state.state
-<<<<<<< HEAD
 
-        rospy.logwarn('get_light_state')
-
-=======
-
->>>>>>> 7ef61d485fdd8d9310311a45c74e834c13edb34e
         if(not self.has_image):
             self.prev_light_loc = None
             rospy.logwarn('no image')
