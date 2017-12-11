@@ -11,7 +11,7 @@ ARCHITECTURE="mobilenet_0.25_${IMAGE_SIZE}"
 
 python retrain.py \
   --bottleneck_dir=tf_files/bottlenecks \
-  --how_many_training_steps=5000 \
+  --how_many_training_steps=1000 \
   --model_dir=tf_files/models/ \
   --summaries_dir=tf_files/training_summaries/"${ARCHITECTURE}" \
   --output_graph=tf_files/trained_models/"${ARCHITECTURE}"/classifier_graph.pb \
@@ -21,8 +21,8 @@ python retrain.py \
   --random_crop=10 \
   --random_scale=10 \
   --random_brightness=10 \
-  --train_batch_size=100 \
-  --validation_batch_size=100 \
+  --train_batch_size=1000 \
+  --validation_batch_size=1000 \
   --eval_step_interval=10
 #  --print_misclassified_test_images
 
@@ -33,7 +33,7 @@ ARCHITECTURE="mobilenet_1.0_${IMAGE_SIZE}"
 
 python retrain.py \
   --bottleneck_dir=tf_files/bottlenecks \
-  --how_many_training_steps=5000 \
+  --how_many_training_steps=1000 \
   --model_dir=tf_files/models/ \
   --summaries_dir=tf_files/training_summaries/"${ARCHITECTURE}" \
   --output_graph=tf_files/trained_models/"${ARCHITECTURE}"/classifier_graph.pb \
@@ -43,7 +43,7 @@ python retrain.py \
   --random_crop=10 \
   --random_scale=10 \
   --random_brightness=10 \
-  --train_batch_size=100 \
-  --validation_batch_size=100 \
+  --train_batch_size=1000 \
+  --validation_batch_size=1000 \
   --eval_step_interval=10
 #  --print_misclassified_test_images
