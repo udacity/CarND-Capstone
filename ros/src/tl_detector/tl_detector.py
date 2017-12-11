@@ -13,7 +13,9 @@ import yaml
 import math
 import copy
 
-STATE_COUNT_THRESHOLD = 3
+STATE_EMA = 0.15                # update parameter using exponential moving average for traffic light state
+MAX_DISTANCE_LIGHT = 10000      # max distance for which we try to detect lights
+RED_PROBABILITY_THRESH = 0.5    # consider there is a red light if our confidence is above this threshold
 
 class TLDetector(object):
     def __init__(self):
@@ -47,10 +49,8 @@ class TLDetector(object):
         self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
+        # Probability of having a red light ahead, updated through EMA
+        self.red_state_prob = 0.5
 
         rospy.spin()
 
@@ -80,25 +80,17 @@ class TLDetector(object):
             return
 
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
+        light_wp, red_prob = self.process_traffic_lights()
 
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        self.state_count += 1
+        # Update total probability of having a red light based on EMA
+        self.red_state_prob = STATE_EMA * red_prob + (1 - STATE_EMA) * self.red_state_prob
+
+        # Consider there is no red light if our confidence is low
+        if self.red_state_prob < RED_PROBABILITY_THRESH:
+            light_wp = -1
+
+        # Publish upcoming red lights at camera frequency.
+        self.upcoming_red_light_pub.publish(Int32(light_wp))
 
     def get_car_orientation(self):
         car_x, car_y = self.pose.position.x, self.pose.position.y
@@ -124,7 +116,7 @@ class TLDetector(object):
         closest_index = closest_waypoint[0]
         return closest_index
 
-    def closest_light_ahead(self, pos_x, pos_y, yaw):
+    def closest_light_ahead(self, pos_x, pos_y, yaw, max_distance_light):
         ''' Return position of closest light ahead '''
         
         # Define unit vector for car orientation in global (x, y) coordinates
@@ -137,10 +129,13 @@ class TLDetector(object):
             return None
         
         # Extract closest light
-        closest_light = min(lights_ahead,
-                            key = lambda light: (light[0] - self.pose.position.x) ** 2
-                            + (light[1] - self.pose.position.y) ** 2)
-        return closest_light
+        light_dist = [(light, (light[0] - self.pose.position.x) ** 2 + (light[1] - self.pose.position.y) ** 2)
+                      for light in lights_ahead]
+        closest_light = min(light_dist, key = lambda x: x[1])
+        if closest_light[1] > max_distance_light:
+            return None
+
+        return closest_light[0]
 
     def check_red_light(self):
         """Determines the current color of the traffic light
@@ -149,45 +144,38 @@ class TLDetector(object):
             light (TrafficLight): light to classify
 
         Returns:
-            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+            float: probability of having a red light
 
         """
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         # Detect traffic light
-        traffic_state = self.light_classifier.get_classification(cv_image)
-
-        if traffic_state == 'red':
-            return True
-        else:
-            return False
+        red_prob = self.light_classifier.get_classification(cv_image)
+        return red_prob
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
-            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
-
+            int: index of waypoint close to the upcoming stop line for a traffic light (-1 if none exists)
+            float: probability of having a red light ahead
         """
         
         # Get position of closest light ahead
         car_x, car_y = self.pose.position.x, self.pose.position.y
         car_yaw = self.get_car_orientation()
-        closest_light = self.closest_light_ahead(car_x, car_y, car_yaw)
+        closest_light = self.closest_light_ahead(car_x, car_y, car_yaw, MAX_DISTANCE_LIGHT)
         if closest_light is None:
-            return -1, TrafficLight.UNKNOWN
+            return -1, 0
 
         # Verify presence of a red light
-        if self.check_red_light():
-            # Get waypoint closer to the light
-            light_waypoint_idx = self.get_closest_waypoint(closest_light)
-            return light_waypoint_idx, TrafficLight.RED
+        red_prob = self.check_red_light()
 
-        else:
-            # We didn't find any red light
-            return -1, TrafficLight.UNKNOWN
+        # Get waypoint closest to the light
+        light_waypoint_idx = self.get_closest_waypoint(closest_light)
+
+        return light_waypoint_idx, red_prob
 
 if __name__ == '__main__':
     try:

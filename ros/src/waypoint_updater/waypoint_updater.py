@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import rospy
+from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
 import math
 import copy
 import tf.transformations   # to get Euler coordinates
+import numpy as np
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -23,7 +25,8 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 100     # Number of waypoints we will publish. You can change this number
+START_SLOWING = 5000    # Distance at which we start slowing down for red lights
 
 
 class WaypointUpdater(object):
@@ -33,22 +36,22 @@ class WaypointUpdater(object):
         self.wps = None
         self.final_wps = None
         self.first_pass = True
+        self.red_light_wp_idx = -1 # -1 is representing traffic light is not red
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
         self.loop()
 
     def loop(self):
 
-        rate = rospy.Rate(50)
+        rate = rospy.Rate(5)
 
         while not all([self.wps, self.ego_pos]):
 
             rate.sleep()
 
-        while not rospy.is_shutdown() and all([self.wps, self.ego_pos]):
+        while not rospy.is_shutdown() and all([self.wps, self.ego_pos, self.final_wps]):
 
             # Get car orientation
             car_x, car_y = self.ego_pos.position.x, self.ego_pos.position.y
@@ -76,11 +79,33 @@ class WaypointUpdater(object):
                 # we don't include last points of the list to ensure we go back to the beginning of the list
                 first_extra_point = self.closest_waypoint_ahead(last_x, last_y, last_yaw, self.wps.waypoints[0:-10])
 
-                #we complete our list to desired number of points
+                # we complete our list to desired number of points
                 self.final_wps.waypoints.extend(self.wps.waypoints[first_extra_point:first_extra_point+extra_points_needed])
 
             if len(self.final_wps.waypoints) != LOOKAHEAD_WPS:
                 rospy.logwarn("List of /final_waypoints does not contain target number of elements")
+
+            # if traffic light is red
+            if self.red_light_wp_idx != -1:
+
+                # we make a copy of the data to ensure it does not modify referenced base points
+                self.final_wps = copy.deepcopy(self.final_wps)
+
+                # find index of waypoint corresponding to traffic light in final_wps
+                red_idx_final_wps = (self.red_light_wp_idx - closest_idx_waypoint) % len(self.wps.waypoints)
+
+                # get position of traffic light
+                traffic_light_waypoint = self.wps.waypoints[self.red_light_wp_idx]
+
+                # if it is far, we start reducing the speed slowly until our horizon
+                if red_idx_final_wps >= LOOKAHEAD_WPS:
+                    red_idx_final_wps = LOOKAHEAD_WPS - 1
+
+                for idx in range(red_idx_final_wps + 1):
+                    # Reduce velocity based on distance to light
+                    distance_to_light = self.distance_sq_between_waypoints(self.final_wps.waypoints[idx], traffic_light_waypoint)
+                    factor = min(distance_to_light / START_SLOWING, 1)
+                    self.final_wps.waypoints[idx].twist.twist.linear.x *= factor
 
             self.final_waypoints_pub.publish(self.final_wps)
 
@@ -96,10 +121,15 @@ class WaypointUpdater(object):
             # We need to get a full copy as otherwise we just get a reference
             self.wps = copy.copy(waypoints)
             self.final_wps = copy.copy(waypoints)
+            rospy.logwarn("DONE")
+            if not self.final_wps:
+                rospy.logwarn("ISSUE")
+                rospy.logwarn("final {}".format(self.final_wps))
+                rospy.logwarn("waypoints {}".format(waypoints))
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        # red_light_wp_idx is representing red traffic light waypoint ahead of current vehicle position.
+        self.red_light_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -114,10 +144,14 @@ class WaypointUpdater(object):
     def distance(self, waypoints, wp1, wp2):
         dist = 0
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
+        for i in range(wp1+1, wp2+1):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    def distance_sq_between_waypoints(self, wp1, wp2):
+        dl = lambda a, b: (a.x - b.x) ** 2 + (a.y-b.y)**2  + (a.z-b.z)**2
+        return dl(wp1.pose.pose.position, wp2.pose.pose.position)
 
     def closest_waypoint_ahead(self, pos_x, pos_y, yaw, waypoints):
         ''' Return index of closest point ahead '''
