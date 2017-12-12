@@ -9,7 +9,7 @@ import cv2
 
 MODEL_FILE = "classifier_graph_sim.pb"
 LABEL_FILE = "classifier_labels.txt"
-MODEL_INPUT_SIZE = 128
+MODEL_INPUT_SIZE = 224
 MODEL_INPUT_MEAN = 127.5
 MODEL_INPUT_STD = 127.5
 INPUT_LAYER = "import/input"

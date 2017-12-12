@@ -58,7 +58,7 @@ class TLDetector(object):
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint"""
 
-        rate = rospy.Rate(5)
+        rate = rospy.Rate(3)
         while not rospy.is_shutdown():
 
             # Ensure all required parameters have been initialized
@@ -69,6 +69,7 @@ class TLDetector(object):
 
                 # Update total probability of having a red light based on EMA
                 self.red_state_prob = STATE_EMA * red_prob + (1 - STATE_EMA) * self.red_state_prob
+                rospy.logwarn("Red light prob: {} - {}".format(red_prob, self.red_state_prob))  #**************************** REMOVE TODO
 
                 # Consider there is no red light if our confidence is low
                 if self.red_state_prob < RED_PROBABILITY_THRESH:
