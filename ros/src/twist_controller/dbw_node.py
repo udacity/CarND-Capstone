@@ -86,7 +86,7 @@ class DBWNode(object):
     def dbw_cb(self, status):
         # /vehicle/dbw_enabled message for manual mode in simulator
         self.dbw = status.data
-        rospy.logwarn("DBW status changed to '{}''.".format(self.dbw))
+        rospy.logwarn("DBW status changed to '{}'.".format(self.dbw))
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz

@@ -132,26 +132,27 @@ class TLDetector(object):
         self.camera_image = msg
         light_wp, line_wp, state = self.process_traffic_lights()
 
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            if self.last_state != self.state:
-                rospy.logwarn("traffic light: {}.".format(self.state_txt[self.state]))
-            self.last_state = self.state
-            light_wp = light_wp if state in (TrafficLightState.RED, TrafficLightState.YELLOW) else -1
-            line_wp = line_wp if state in (TrafficLightState.RED, TrafficLightState.YELLOW) else -1
-            self.last_wp = line_wp
-            self.upcoming_red_light_pub.publish(TrafficLightWaypoint(line_wp, TrafficLightState(self.state)))
-        else:
-            self.upcoming_red_light_pub.publish(TrafficLightWaypoint(self.last_wp, TrafficLightState(self.state)))
-        self.state_count += 1
+        if light_wp != -1:
+            '''
+            Publish upcoming red lights at camera frequency.
+            Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+            of times till we start using it. Otherwise the previous stable state is
+            used.
+            '''
+            if self.state != state:
+                self.state_count = 0
+                self.state = state
+            elif self.state_count >= STATE_COUNT_THRESHOLD:
+                if self.last_state != self.state:
+                    rospy.logwarn("traffic light: {}.".format(self.state_txt[self.state]))
+                self.last_state = self.state
+                light_wp = light_wp if state in (TrafficLightState.RED, TrafficLightState.YELLOW) else -1
+                line_wp = line_wp if state in (TrafficLightState.RED, TrafficLightState.YELLOW) else -1
+                self.last_wp = line_wp
+                self.upcoming_red_light_pub.publish(TrafficLightWaypoint(line_wp, TrafficLightState(self.state)))
+            else:
+                self.upcoming_red_light_pub.publish(TrafficLightWaypoint(self.last_wp, TrafficLightState(self.state)))
+            self.state_count += 1
 
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
