@@ -34,31 +34,34 @@ class Controller(object):
             velocity_error = target_linear_velocity - current_linear_velocity
             pid_throttle, feedforward_throttle, decel_target = 0, 0, 0
 
+            # implement longitudinal controller
+
+            # if we're going too slow, release the brakes (if they are applied)
+            #T his essentially adds hysterisis: the brakes are only enabled if our velocity error is negative, and only
+            # released if the velocity error is positive 2 or greater.
             if velocity_error > 2:
                 self.brakeLatch = False
-            # implement throttle controller
             if self.brakeLatch is False:
                 pid_throttle = self.throttle_pid.step(velocity_error, DT, log_handle)
-                feedforward_throttle = target_linear_velocity*.01888
+                feedforward_throttle = target_linear_velocity*.01888 #based on desired speed, predict how much throttle we need at steady state
                 throttle = pid_throttle + feedforward_throttle
                 accel_limit = 1 #mps2
                 maxThrottle = 0.1962*accel_limit+0.083 # max throttle allowed for a given acceleration limit
-                throttle = max(0,min(throttle, maxThrottle))
+                throttle = max(0,min(throttle, maxThrottle))  # saturate throttle if it exceeds acceleration limits
                 brake = 0
                 if current_linear_velocity >= .1 and velocity_error < 0 and throttle is 0:
                     self.brakeLatch = True
-            #if throttle > maxThrottle:
-                #self.throttle_pid.reset()
-            else: # we need to brake when throttle PID is saturated at 0 and velocity error is negative
-#                decel_target = -velocity_error*.3  #positive 
-#                decel_target = min(decel_target, 1)
-#                brake = 0.335 * 1080.0/5 * decel_target #braking torque r * m * a
+            # we need to brake when throttle PID is saturated at 0 and velocity error is negative. In other words, when
+            # we can't slow down any more (throttle is already zero), and we want to slow down more (speed error is
+            # negative), then we need to use the brakes
+            else:
                 throttle = 0
-                #self.brakeLatch = True
-                brake = self.brake_pid.step(-velocity_error, DT, log_handle)        
-            if current_linear_velocity < .1 and target_linear_velocity == 0: #clamp at stop
+                brake = self.brake_pid.step(-velocity_error, DT, log_handle)
+            # If we're about to come to a stop, clamp the brake command to some value to hold the vehicle in place
+            if current_linear_velocity < .1 and target_linear_velocity == 0:
                 throttle = 0
                 brake = 25
+
             # implement steering controller
             steering = self.steer_ratio * target_angular_velocity
             self.last_velocity_error = velocity_error

@@ -25,13 +25,9 @@ class PID(object):
         
         p_effort = self.kp * error
         i_effort = self.ki * self.int_val
- 	d_effort = self.kd * derivative
-	
-        #p_effort = min(p_effort, .5) 
-	#if error <= 0.5:
-         #   p_effort = 0
+        d_effort = self.kd * derivative
 
-        y = p_effort + i_effort + d_effort;
+        y = p_effort + i_effort + d_effort
         val = max(self.min, min(y, self.max))
 	
         if val > self.max:
