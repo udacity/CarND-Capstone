@@ -1,32 +1,26 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+#data from waypoint updater node
 wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv',  delimiter=',', unpack = True)
-
+#data from dbw node
 p_effort, i_effort, d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True)
 
-
+#time align data from different ros nodes
 start_time = wu_time[0]
 dbw_time = dbw_time - start_time
 wu_time = wu_time - start_time
 dbw_time = dbw_time*1E-9
 wu_time = wu_time*1E-9
 
-#lateral control
+################ lateral controller subplot ##################
 f, axx = plt.subplots(2,3)
 f.suptitle('Lateral Control')
 axx[0, 0].plot(dbw_time, target_angular_velocity, label="setpoint")
 axx[0, 0].plot(dbw_time, current_angular_velocity, label="actual")
 axx[0, 0].set_title('anguar velocity')
 axx[0, 0].legend()
-axx[1, 0].plot(dbw_time, steering)
-axx[1, 0].set_title('steer_command')
-axx[1, 1].plot(dbw_time, dbw_status, label="dbw")
-axx[1, 1].set_title('dbw enabled')
-axx[1, 1].grid()
 
-axx[1, 2].set_title('waypoint indices')
-axx[1, 2].plot(wu_time, wp, label="waypoint")
 axx[0, 2].set_title('position')
 axx[0, 2].plot(x,y, label="actual")
 axx[0, 2].plot(cx,cy, label="setpoint")
@@ -42,7 +36,17 @@ for xy in zip(cx, cy):
         axx[0, 2].annotate( '%.2f' % wu_time[i], xy=xy, textcoords='data')
     i += 1
 
-#longitudinal control subplot
+axx[1, 0].plot(dbw_time, steering)
+axx[1, 0].set_title('steer_command')
+
+axx[1, 1].plot(dbw_time, dbw_status, label="dbw")
+axx[1, 1].set_title('dbw enabled')
+axx[1, 1].grid()
+
+axx[1, 2].set_title('waypoint indices')
+axx[1, 2].plot(wu_time, wp, label="waypoint")
+
+##########  longitudinal control subplot ##################
 f, ax = plt.subplots(2,3)
 ax[0, 0].plot(dbw_time, target_linear_velocity, label="setpoint")
 ax[0, 0].plot(dbw_time, current_linear_velocity, label="actual")
@@ -84,22 +88,5 @@ ax[1, 2].plot(dbw_time, feedforward_throttle*UseThrottle, label="Throttle FF")
 ax[1, 2].grid()
 ax[1, 2].set_title('Throttle PID')
 ax[1, 2].legend(loc=1)
-
-
-
-
-
-
-#f, ax2= plt.subplots(2, 1)
-#ax2[0].plot(dbw_time,proportional, label="proportional")
-#ax[0].plot(dbw_time, error, label="error")
-#ax2[0].plot(dbw_time,integral, label="integral")
-#ax2[0].plot(dbw_time, throttle_command, label="throttle")
-#ax2[0].plot(dbw_time, ff, label="ff")
-#ax2[0].plot(dbw_time, dbw_bool, label="dbw")
-#ax2[0].legend()
-#ax2[1].plot(dbw_time,error, label="error")
-#ax2[1].legend()
-#ax2[1].grid()
 
 plt.show()
