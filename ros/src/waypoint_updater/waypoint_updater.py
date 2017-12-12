@@ -20,8 +20,6 @@ Once you have created dbw_node, you will update this node to use the status of t
 Please note that our simulator also provides the exact location of traffic lights and their
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
-
-TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
@@ -51,6 +49,8 @@ class WaypointUpdater(object):
         self.way_points_np = None
         self.pose = None
         self.poses = 0
+        self.stopping = False
+        self.accelerating = False
 
         rospy.spin()
 
@@ -70,6 +70,7 @@ class WaypointUpdater(object):
             final_waypoints_index = self.index_of_nearest_wpts(self.way_points_np, self.pose)
             #get the selected waypoints
             final_waypoints = np.array(self.way_points)[final_waypoints_index].tolist()
+            nearest_waypoint = final_waypoints_index[0]
 
             stopping = False
 
@@ -79,7 +80,6 @@ class WaypointUpdater(object):
                 # Drop velocity to zero by the time the traffic_waypoint is reached.
                 # Not sure of requirement if it is suddenly 'RED' when at an impossible
                 # breaking distance.
-                nearest_waypoint = final_waypoints_index[0]
                 distance = self.distance(self.way_points, nearest_waypoint, self.traffic_waypoint)
                 if self.approach_velocity == None:
                     self.approach_velocity = self.velocity
@@ -88,17 +88,12 @@ class WaypointUpdater(object):
                 # TODO: Distance for Yellow Lights needs to be calculated
                 if self.traffic_state == TrafficLightState.RED or (self.traffic_state == TrafficLightState.YELLOW and distance>50.0):
                     stopping = True
-                    points = self.traffic_waypoint - nearest_waypoint
-                    for i, waypoint in enumerate(range(nearest_waypoint, self.traffic_waypoint)):
-                        self.set_waypoint_velocity(self.way_points, waypoint%self.way_points_count, self.velocity * (points-i-1)/points)
-                    for waypoint in range(self.traffic_waypoint, self.traffic_waypoint + LOOKAHEAD_WPS - points):
-                        self.set_waypoint_velocity(self.way_points, waypoint%self.way_points_count, 0.0)
+                    self.stop(self.way_points, nearest_waypoint, self.traffic_waypoint)
+#                else:
+#                    self.maintain()
 
             if not stopping:
-                # Set velocity to maximum (dbw_node controller to handle correct acceleration)
-                nearest_waypoint = final_waypoints_index[0]
-                for i, waypoint in enumerate(range(nearest_waypoint, nearest_waypoint + LOOKAHEAD_WPS)):
-                    self.set_waypoint_velocity(self.way_points, waypoint%self.way_points_count, self.speed_limit)
+                self.accelerate(self.way_points, nearest_waypoint)
 
             pub = Lane()
             pub.header = msg.header
@@ -162,6 +157,56 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    def stoppingdistance(self, v1, v2, a):
+        t = (v2 - v1) / a
+        return v1 * t + a * t * t / 2
+
+    def stop(self, waypoints, wp1, wpstop):
+        # Stopping waypoints are only generated once as they finish with a set of 0.0 values
+        # which the vehicle will not pass.
+        if not self.stopping:
+            stop_distance = self.stoppingdistance(self.velocity, 0.0, -1.5)
+            avail_distance = self.distance(waypoints, wp1, wpstop)
+            points = wpstop - wp1
+
+            if stop_distance > avail_distance*0.9:
+                if stop_distance > avail_distance:
+                    rospy.logwarn("Emergency stopping!  Should not happen!")
+                # Linear stop run from here.
+                for i, waypoint in enumerate(range(wp1, wpstop)):
+                    self.set_waypoint_velocity(self.way_points, waypoint%self.way_points_count, self.velocity * (points-i-1)/points)
+                # Pad more stopped waypoints in the unlikely event of overrun.
+                for waypoint in waypoints[wpstop:wpstop + 5]:
+                    waypoint.twist.twist.linear.x = 0.0
+                self.stopping = True
+                self.accelerating = False
+                rospy.logwarn("stopping.")
+
+            else:
+                # Maintain current speed for now as light may change to GREEN.
+                self.maintain(waypoints, wp1)
+
+        return
+
+    def accelerate(self, waypoints, wp1):
+        if not self.accelerating:
+            self.accelerating = True
+            rospy.logwarn("accelerating.")
+
+        self.stopping = False
+        v = self.velocity
+        for waypoint in waypoints[wp1:wp1+LOOKAHEAD_WPS-1]:
+            v = min(v + 1.0, self.speed_limit)
+            waypoint.twist.twist.linear.x = v
+        return
+
+    def maintain(self, waypoints, wp1):
+        self.accelerating = False
+        self.stopping = False
+        vel = waypoints[wp1].twist.twist.linear.x
+        for waypoint in waypoints[wp1:wp1+LOOKAHEAD_WPS-1]:
+            waypoint.twist.twist.linear.x = vel
+        return
 
 if __name__ == '__main__':
     try:

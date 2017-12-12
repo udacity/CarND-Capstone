@@ -27,14 +27,17 @@ class Controller(object):
     def control(self, velocity, angular_velocity, target_velocity, target_angular_velocity):
         now = time.time()
         if self.prev_time:
-            dt = self.prev_time-now
-
-            if target_velocity < 0.001 and velocity < 0.1:
+            if target_velocity < 0.001:
+                # If the target_velocity is a stop then apply the brake to hold position.
+                # If the calculated accel is 0 due to 0 error the car will move.
+                # Limit from https://discussions.udacity.com/t/what-is-the-range-for-the-brake-in-the-dbw-node/412339
                 throttle = 0.0
-                brake = -1809.0 # Limit from https://discussions.udacity.com/t/what-is-the-range-for-the-brake-in-the-dbw-node/412339
-            velocity_error = target_velocity - velocity
-            throttle, brake = self.acceleration(velocity_error, dt)
+                brake = -1809.0
+            else:
+                dt = self.prev_time-now
 
+                velocity_error = target_velocity - velocity
+                throttle, brake = self.acceleration(velocity_error, dt)
         else:
             throttle = 0.0
             brake = 0.0
@@ -42,10 +45,9 @@ class Controller(object):
         steer = self.steer_yaw.get_steering(target_velocity, target_angular_velocity, velocity)
         self.prev_time = now
 
-        return throttle, brake, steer
+        return throttle, abs(brake), steer
 
     def acceleration(self, velocity_error, dt):
-
         accel = self.accel_pid.step(velocity_error, dt)
         accel = self.accel_lpf.filt(accel)
 
@@ -74,4 +76,3 @@ class Controller(object):
         self.accel_pid.reset()
         self.accel_lpf.reset()
         self.accel = 0.0
-
