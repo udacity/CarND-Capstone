@@ -52,7 +52,32 @@ class TLDetector(object):
         # Probability of having a red light ahead, updated through EMA
         self.red_state_prob = 0.5
 
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        """Identifies red lights in the incoming camera image and publishes the index
+            of the waypoint closest to the red light's stop line to /traffic_waypoint"""
+
+        rate = rospy.Rate(5)
+        while not rospy.is_shutdown():
+
+            # Ensure all required parameters have been initialized
+            if all([self.waypoints, self.pose, self.light_classifier, self.camera_image]):
+
+                # get probability of having a red light and its position
+                light_wp, red_prob = self.process_traffic_lights()
+
+                # Update total probability of having a red light based on EMA
+                self.red_state_prob = STATE_EMA * red_prob + (1 - STATE_EMA) * self.red_state_prob
+
+                # Consider there is no red light if our confidence is low
+                if self.red_state_prob < RED_PROBABILITY_THRESH:
+                    light_wp = -1
+
+                # Publish upcoming red lights at camera frequency.
+                self.upcoming_red_light_pub.publish(Int32(light_wp))            
+
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg.pose
@@ -68,29 +93,7 @@ class TLDetector(object):
         self.lights = msg.lights
 
     def image_cb(self, msg):
-        """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light's stop line to /traffic_waypoint
-
-        Args:
-            msg (Image): image from car-mounted camera
-
-        """
-        # Ensure all required parameters have been initialized
-        if not all([self.waypoints, self.pose, self.light_classifier]):
-            return
-
         self.camera_image = msg
-        light_wp, red_prob = self.process_traffic_lights()
-
-        # Update total probability of having a red light based on EMA
-        self.red_state_prob = STATE_EMA * red_prob + (1 - STATE_EMA) * self.red_state_prob
-
-        # Consider there is no red light if our confidence is low
-        if self.red_state_prob < RED_PROBABILITY_THRESH:
-            light_wp = -1
-
-        # Publish upcoming red lights at camera frequency.
-        self.upcoming_red_light_pub.publish(Int32(light_wp))
 
     def get_car_orientation(self):
         car_x, car_y = self.pose.position.x, self.pose.position.y
