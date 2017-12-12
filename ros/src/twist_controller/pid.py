@@ -27,7 +27,7 @@ class PID(object):
         i_effort = self.ki * self.int_val
  	d_effort = self.kd * derivative
 	
-        p_effort = min(p_effort, .5) 
+        #p_effort = min(p_effort, .5) 
 	#if error <= 0.5:
          #   p_effort = 0
 

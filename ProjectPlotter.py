@@ -3,7 +3,7 @@ import numpy as np
 
 wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv',  delimiter=',', unpack = True)
 
-p_effort, i_effort, d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True) 
+p_effort, i_effort, d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchThrottle2zero, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True) 
 
 
 start_time = wu_time[0]
@@ -50,18 +50,19 @@ ax[0, 0].legend(loc=4)
 ax[0, 0].grid()
 ax[0, 0].set_title('speed')
 ax[1, 0].plot(dbw_time, throttle, label="throttle cmd")
+ax[1, 0].plot(dbw_time, latchThrottle2zero, label="latchThrottle2zero")
 ax[1, 0].set_title('throttle cmd')
-ax[1, 0].set_ylim(-0.1, 1.1)
+#ax[1, 0].set_ylim(-0.1, 1.1)
 ax[1, 0].grid()
 
 ax[0, 1].plot(dbw_time, brake, label="brale_cmd")
-ax[0, 1].set_title('brale cmd')
+ax[0, 1].set_title('brake cmd')
 ax[0, 1].grid()
 ax[1, 0].plot(dbw_time, p_effort, label="p")
 ax[1, 0].plot(dbw_time, i_effort, label="i")
 ax[1, 0].plot(dbw_time, d_effort, label="d")
 ax[1, 0].plot(dbw_time, feedforward_throttle, label="SteadyStateFF")
-ax[1, 0].legend()
+ax[1, 0].legend(loc=3)
 #ax[1, 1].plot(dbw_time, dbw_status, label="dbw")
 ax[1, 1].set_title('acceleration')
 
@@ -77,6 +78,7 @@ for i in range (len(current_linear_velocity)-span):
 #print len(current_linear_accel)
 
 ax[1, 1].plot(dbw_time[span:], current_linear_accel, label="actual")
+ax[1, 1].plot(dbw_time, decel_target, label="decel target")
 ax[1, 1].grid()
 
 
