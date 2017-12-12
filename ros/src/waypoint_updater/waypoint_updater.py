@@ -121,11 +121,6 @@ class WaypointUpdater(object):
             # We need to get a full copy as otherwise we just get a reference
             self.wps = copy.copy(waypoints)
             self.final_wps = copy.copy(waypoints)
-            rospy.logwarn("DONE")
-            if not self.final_wps:
-                rospy.logwarn("ISSUE")
-                rospy.logwarn("final {}".format(self.final_wps))
-                rospy.logwarn("waypoints {}".format(waypoints))
 
     def traffic_cb(self, msg):
         # red_light_wp_idx is representing red traffic light waypoint ahead of current vehicle position.

@@ -69,7 +69,6 @@ class TLDetector(object):
 
                 # Update total probability of having a red light based on EMA
                 self.red_state_prob = STATE_EMA * red_prob + (1 - STATE_EMA) * self.red_state_prob
-                rospy.logwarn("Red light prob: {} - {}".format(red_prob, self.red_state_prob))  #**************************** REMOVE TODO
 
                 # Consider there is no red light if our confidence is low
                 if self.red_state_prob < RED_PROBABILITY_THRESH:
