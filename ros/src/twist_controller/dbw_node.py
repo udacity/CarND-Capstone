@@ -85,10 +85,12 @@ class DBWNode(object):
                     speed_command = 13
                 elif rospy.get_time() - self.time_init < 60:
                     speed_command = last_speed_command - .02*decel_setpoint    
+                    speed_command = max(speed_command, 0)   
                 elif rospy.get_time() - self.time_init < 90:
                     speed_command = 8   
                 elif rospy.get_time() - self.time_init < 120:
-                    speed_command = 0  
+                    speed_command = last_speed_command - .02*decel_setpoint    
+                    speed_command = max(speed_command, 0) 
                 else: 
                     speed_command = 11
                 last_speed_command = speed_command 

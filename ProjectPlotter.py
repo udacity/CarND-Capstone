@@ -42,44 +42,41 @@ for xy in zip(cx, cy):
         axx[0, 2].annotate( '%.2f' % wu_time[i], xy=xy, textcoords='data')
     i += 1
 
-#longitudinal control
-f, ax = plt.subplots(2,2)
+#longitudinal control subplot
+f, ax = plt.subplots(2,3)
 ax[0, 0].plot(dbw_time, target_linear_velocity, label="setpoint")
 ax[0, 0].plot(dbw_time, current_linear_velocity, label="actual")
 ax[0, 0].legend(loc=4)
 ax[0, 0].grid()
 ax[0, 0].set_title('speed')
-ax[1, 0].plot(dbw_time, throttle, label="throttle cmd")
-ax[1, 0].plot(dbw_time, latchThrottle2zero, label="latchThrottle2zero")
-ax[1, 0].set_title('throttle cmd')
-#ax[1, 0].set_ylim(-0.1, 1.1)
-ax[1, 0].grid()
 
-ax[0, 1].plot(dbw_time, brake, label="brale_cmd")
+ax[0, 1].plot(dbw_time, brake, label="brake_cmd")
 ax[0, 1].set_title('brake cmd')
 ax[0, 1].grid()
-ax[1, 0].plot(dbw_time, p_effort, label="p")
-ax[1, 0].plot(dbw_time, i_effort, label="i")
-ax[1, 0].plot(dbw_time, d_effort, label="d")
-ax[1, 0].plot(dbw_time, feedforward_throttle, label="SteadyStateFF")
-ax[1, 0].legend(loc=3)
-#ax[1, 1].plot(dbw_time, dbw_status, label="dbw")
-ax[1, 1].set_title('acceleration')
 
+#Calculate Linear, longitudinal acceleration
 span = 50
 current_linear_accel = np.zeros(len(dbw_time)-span)
-
-#print len(current_linear_velocity)
-#print len(dbw_time)
-
 for i in range (len(current_linear_velocity)-span):
     current_linear_accel[i]=((current_linear_velocity[i+span]-current_linear_velocity[i])/(dbw_time[i+span]-dbw_time[i]))
-#print len(dbw_time[span:])
-#print len(current_linear_accel)
+ax[1, 0].plot(dbw_time[span:], current_linear_accel, label="actual")
+ax[1, 0].plot(dbw_time, decel_target, label="decel target")
+ax[1, 0].grid()
+ax[1, 0].set_title('acceleration')
 
-ax[1, 1].plot(dbw_time[span:], current_linear_accel, label="actual")
-ax[1, 1].plot(dbw_time, decel_target, label="decel target")
+ax[1, 1].plot(dbw_time, throttle, label="throttle cmd")
+ax[1, 1].set_title('throttle cmd')
 ax[1, 1].grid()
+
+ax[1, 2].plot(dbw_time, p_effort, label="p")
+ax[1, 2].plot(dbw_time, i_effort, label="i")
+ax[1, 2].plot(dbw_time, d_effort, label="d")
+ax[1, 2].plot(dbw_time, feedforward_throttle, label="Throttle FF")
+ax[1, 2].grid()
+ax[1, 2].set_title('PID')
+ax[1, 2].legend(loc=1)
+
+
 
 
 
