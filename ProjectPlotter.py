@@ -3,7 +3,7 @@ import numpy as np
 
 wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv',  delimiter=',', unpack = True)
 
-p_effort, i_effort, d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchThrottle2zero, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True) 
+p_effort, i_effort, d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True)
 
 
 start_time = wu_time[0]
@@ -54,6 +54,13 @@ ax[0, 1].plot(dbw_time, brake, label="brake_cmd")
 ax[0, 1].set_title('brake cmd')
 ax[0, 1].grid()
 
+ax[0, 2].plot(dbw_time, p_effort*latchBrake, label="p")
+ax[0, 2].plot(dbw_time, i_effort*latchBrake, label="i")
+ax[0, 2].plot(dbw_time, d_effort*latchBrake, label="d")
+ax[0, 2].grid()
+ax[0, 2].set_title('Brake PID')
+ax[0, 2].legend(loc=1)
+
 #Calculate Linear, longitudinal acceleration
 span = 50
 current_linear_accel = np.zeros(len(dbw_time)-span)
@@ -68,12 +75,14 @@ ax[1, 1].plot(dbw_time, throttle, label="throttle cmd")
 ax[1, 1].set_title('throttle cmd')
 ax[1, 1].grid()
 
-ax[1, 2].plot(dbw_time, p_effort, label="p")
-ax[1, 2].plot(dbw_time, i_effort, label="i")
-ax[1, 2].plot(dbw_time, d_effort, label="d")
-ax[1, 2].plot(dbw_time, feedforward_throttle, label="Throttle FF")
+UseThrottle = np.logical_not(latchBrake)
+UseThrottle.astype(float)
+ax[1, 2].plot(dbw_time, p_effort*UseThrottle, label="p")
+ax[1, 2].plot(dbw_time, i_effort*UseThrottle, label="i")
+ax[1, 2].plot(dbw_time, d_effort*UseThrottle, label="d")
+ax[1, 2].plot(dbw_time, feedforward_throttle*UseThrottle, label="Throttle FF")
 ax[1, 2].grid()
-ax[1, 2].set_title('PID')
+ax[1, 2].set_title('Throttle PID')
 ax[1, 2].legend(loc=1)
 
 
