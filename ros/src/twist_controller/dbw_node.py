@@ -71,7 +71,7 @@ class DBWNode(object):
         if self.log_to_csv:
             self.log_handle = self.log_init('dbw_node.csv')
 
-        self.time_init = rospy.get_time()
+        self.time_init = rospy.get_rostime()
 
         self.loop()
 
@@ -84,14 +84,16 @@ class DBWNode(object):
                 ########## for testing purposes only, do not integrate into master ####################
                 #creates speed profile for testing longitudinal controller
                 decel_setpoint = 1
-                if rospy.get_time() - self.time_init < 30:
+                current_time = rospy.get_rostime()
+                elapsed_time = current_time.secs - self.time_init.secs
+                if  elapsed_time < 30:
                     speed_command = 13
-                elif rospy.get_time() - self.time_init < 60:
+                elif elapsed_time < 60:
                     speed_command = last_speed_command - .02*decel_setpoint    
                     speed_command = max(speed_command, 0)   
-                elif rospy.get_time() - self.time_init < 90:
+                elif elapsed_time < 90:
                     speed_command = 8   
-                elif rospy.get_time() - self.time_init < 120:
+                elif elapsed_time < 120:
                     speed_command = last_speed_command - .02*decel_setpoint    
                     speed_command = max(speed_command, 0) 
                 else: 
@@ -152,8 +154,8 @@ class DBWNode(object):
 
     def log_init(self, log_path):
         log_handle = open(log_path,'w')
-        headers = ','.join(["Time", "Target speed", "Target yaw", "Current speed", "DBW status", "Throttle", "Brake", "Steering"])
-        #log_handle.write(headers + '\n')
+        headers = ','.join(["p_effort", "i_effort", "d_effort", "pid_throttle", "feedforward_throttle", "velocity_error", "DT", "decel_target", "latchBrake", "dbw_time", "target_linear_velocity", "target_angular_velocity","current_linear_velocity", "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
+        log_handle.write(headers + '\n')
         return log_handle
         
     def log_data(self, *args):

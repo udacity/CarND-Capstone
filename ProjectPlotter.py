@@ -7,7 +7,7 @@ Plot_Longitudinal_Control = True
 #data from waypoint updater node
 wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv',  delimiter=',', unpack = True)
 #data from dbw node
-p_effort, i_effort, d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', unpack = True)
+p_effort, i_effort, d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', skiprows=1, unpack = True)
 
 #time align data from different ros nodes
 start_time = wu_time[0]
