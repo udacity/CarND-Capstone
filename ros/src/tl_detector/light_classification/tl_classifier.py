@@ -4,13 +4,17 @@ import numpy as np
 from keras.models import model_from_json
 from keras import backend as K
 import cv2
+from cv_bridge import CvBridge, CvBridgeError
+from scipy import misc
+from time import time
 
 class TLClassifier(object):
     def __init__(self):
 
         # clear TF graph state
-        K.clear_session()
-
+	     
+	K.clear_session()
+	
         model_arch_path = 'keras_model/squeezenet_transfer_learned_architecture.json'
         model_weights_path = 'keras_model/squeezenet_transfer_learned_weights.h5'
 
@@ -24,10 +28,12 @@ class TLClassifier(object):
         # load weights into model
         self.model.load_weights(model_weights_path)
         rospy.logwarn('Perception keras model loaded')
+	self.bridge = CvBridge()
 
-        #self.frame_count = 0
+	#self.frame_count = 0
 
     def get_classification(self, image):
+
         """Determines the color of the traffic light in the image
 
         Args:
@@ -36,37 +42,29 @@ class TLClassifier(object):
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
-        """
+	"""
+	# resize OpenCV image to (227, x)
+	tic1 = time()
+	org_width, org_height = (600.0, 800.0)
+	resize_width, resize_height = (227, 227)
+	scale = resize_height / org_width
+	resized_img = cv2.resize(image, (resize_width,resize_height), fx=scale, fy=scale)
 
-        #self.frame_count = self.frame_count + 1
+	# crop image to (227,227) image
+	cropped_img = resized_img[0:227, 0:227]/255.0
 
-        # resize OpenCV image to (227, x)
-        org_width, org_height = (600.0, 800.0)
-        resize_width, resize_height = (227.0, 227.0)
-        scale = resize_height / org_width
-        resized_img = cv2.resize(image, (0,0), fx=scale, fy=scale)
+	
+	tic = time()
+	prediction = self.model.predict(np.array([cropped_img]))[0]
+	toc = time()
+	rospy.logwarn('Inference Time - ' + str(toc-tic))
+	prediction_labels = [TrafficLightState.GREEN, TrafficLightState.RED, TrafficLightState.YELLOW, TrafficLightState.UNKNOWN]
+	labels_names = ['GREEN', 'RED', 'YELLOW', 'UNKNOWN']
 
-        # turn resized image to numpy array
-        cropped_img = np.asarray(resized_img[:,:])
 
-        # crop image to (227,227) image
-        cropped_img = cropped_img[0:227, 0:227]
 
-        # for debugging
-        # cv2.imwrite('/tmp/imgs/{}_org.png'.format(self.frame_count), image)
-        # cv2.imwrite('/tmp/imgs/{}_resized.png'.format(self.frame_count), resized_img)
-        # cv2.imwrite('/tmp/imgs/{}_cropped.png'.format(self.frame_count), cropped_img)
+	light_state = prediction_labels[prediction.argmax()]
 
-        img = np.array([cropped_img])
-        prediction = self.model.predict(img)[0]
+	rospy.logwarn('Traffic Light Prediction - ' + labels_names[prediction.argmax()])
+	return light_state
 
-        prediction_labels = [TrafficLightState.GREEN, TrafficLightState.RED, TrafficLightState.YELLOW, TrafficLightState.UNKNOWN]
-        labels_names = ['GREEN', 'RED', 'YELLOW', 'UNKNOWN']
-
-        print(prediction)
-
-        light_state = prediction_labels[prediction.argmax()]
-
-        rospy.logwarn('Traffic Light Prediction - ' + labels_names[prediction.argmax()])
-
-        return light_state
