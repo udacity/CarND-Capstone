@@ -54,7 +54,7 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # Create `TwistController` object
-        self.controller = Controller(steer_ratio, decel_limit, accel_limit)
+        self.controller = Controller(steer_ratio, decel_limit, accel_limit, max_steer_angle, wheel_base, max_lat_accel)
 
         # Subscribe to all necessary topics
         rospy.Subscriber('/twist_cmd', TwistStamped, self.upd_twist)
@@ -102,13 +102,13 @@ class DBWNode(object):
                 ###################################################################################
 
                 # Get predicted throttle, brake and steering
-                throttle, brake, steering = self.controller.control(speed_command,
-                    self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled, self.log_handle) #self.twist_cmd.linear.x
+                throttle, brake, steering = self.controller.control(self.twist_cmd.linear.x,
+                    self.twist_cmd.angular.z, self.current_velocity.linear.x, self.dbw_enabled, self.log_handle)
 
                 # Log data for car control analysis
                 if self.log_to_csv:
                     #timestamp = rospy.get_rostime() - self.time_init
-                    self.log_data(rospy.get_rostime(), speed_command, self.twist_cmd.angular.z,
+                    self.log_data(rospy.get_rostime(), self.twist_cmd.linear.x, self.twist_cmd.angular.z,
                                   self.current_velocity.linear.x, self.current_velocity.angular.z, int(self.dbw_enabled), throttle, brake, steering)
 
                 # Ensure dbw is enabled (not manual mode)
