@@ -34,7 +34,7 @@ class Controller(object):
                 throttle = 0.0
                 brake = -1809.0
             else:
-                dt = self.prev_time-now
+                dt = now - self.prev_time
 
                 velocity_error = target_velocity - velocity
                 throttle, brake = self.acceleration(velocity_error, dt)
