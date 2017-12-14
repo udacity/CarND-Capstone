@@ -4,3 +4,12 @@ build
 devel
 
 profile.tmp
+
+# Traffic Light
+research_notebooks/traffic-light/data
+*.ipynb_checkpoints
+.DS_Store
+
+squeezenet_transfer_learned_architecture.json
+squeezenet_transfer_learned_weights.h5
+
