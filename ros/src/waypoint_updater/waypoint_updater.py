@@ -25,7 +25,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 100     # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50      # Number of waypoints we will publish. You can change this number
 START_SLOWING = 5000    # Distance at which we start slowing down for red lights
 
 
@@ -106,11 +106,15 @@ class WaypointUpdater(object):
                 if red_idx_final_wps >= LOOKAHEAD_WPS:
                     red_idx_final_wps = LOOKAHEAD_WPS - 1
 
+                # Reduce velocity based on distance to light
                 for idx in range(red_idx_final_wps + 1):
-                    # Reduce velocity based on distance to light
                     distance_to_light = self.distance_sq_between_waypoints(self.final_wps.waypoints[idx], traffic_light_waypoint)
                     factor = min(distance_to_light / START_SLOWING, 1)
                     self.final_wps.waypoints[idx].twist.twist.linear.x *= factor
+
+                # Set all future points to zero speed
+                for idx in range(red_idx_final_wps + 1, len(self.final_wps.waypoints) - 1):
+                    self.final_wps.waypoints[idx].twist.twist.linear.x = 0                
 
             self.final_waypoints_pub.publish(self.final_wps)
             
