@@ -7,8 +7,6 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
-MODEL_FILE = "classifier_graph_sim.pb"
-LABEL_FILE = "classifier_labels.txt"
 MODEL_INPUT_SIZE = 224
 MODEL_INPUT_MEAN = 127.5
 MODEL_INPUT_STD = 127.5
@@ -17,13 +15,11 @@ OUTPUT_LAYER = "import/final_result"
 
 class TLClassifier(object):
 
-    def __init__(self):
+    def __init__(self, model_path, labels_path):
 
         # Load graph, labels, input and output sensors
-        model_path = os.path.join(os.path.dirname(__file__), MODEL_FILE)
-        label_path = os.path.join(os.path.dirname(__file__), LABEL_FILE)
         self.graph = label_image.load_graph(model_path)
-        self.labels = label_image.load_labels(label_path)
+        self.labels = label_image.load_labels(labels_path)
         self.red_idx = self.get_red_idx()
         self.input_operation = self.graph.get_operation_by_name(INPUT_LAYER)
         self.output_operation = self.graph.get_operation_by_name(OUTPUT_LAYER)
