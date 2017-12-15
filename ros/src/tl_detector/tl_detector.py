@@ -14,7 +14,7 @@ import math
 import copy
 
 STATE_EMA = 0.15                # update parameter using exponential moving average for traffic light state
-MAX_DISTANCE_LIGHT = 10000      # max distance for which we try to detect lights
+MAX_DISTANCE_SQ_LIGHT = 10000      # max distance for which we try to detect lights
 RED_PROBABILITY_THRESH = 0.5    # consider there is a red light if our confidence is above this threshold
 
 class TLDetector(object):
@@ -168,7 +168,7 @@ class TLDetector(object):
         # Get position of closest light ahead
         car_x, car_y = self.pose.position.x, self.pose.position.y
         car_yaw = self.get_car_orientation()
-        closest_light = self.closest_light_ahead(car_x, car_y, car_yaw, MAX_DISTANCE_LIGHT)
+        closest_light = self.closest_light_ahead(car_x, car_y, car_yaw, MAX_DISTANCE_SQ_LIGHT)
         if closest_light is None:
             return -1, 0
 
