@@ -154,7 +154,7 @@ class DBWNode(object):
 
     def log_init(self, log_path):
         log_handle = open(log_path,'w')
-        headers = ','.join(["p_effort", "i_effort", "d_effort", "pid_throttle", "feedforward_throttle", "velocity_error", "DT", "decel_target", "latchBrake", "dbw_time", "target_linear_velocity", "target_angular_velocity","current_linear_velocity", "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
+        headers = ','.join(["brkThrttle_p_effort", "brkThrttle_i_effort", "brkThrttle_d_effort", "steering_p_effort", "steering_i_effort", "steering_d_effort", "pid_throttle", "feedforward_throttle", "velocity_error", "DT", "decel_target", "latchBrake", "dbw_time", "target_linear_velocity", "target_angular_velocity","current_linear_velocity", "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
         log_handle.write(headers + '\n')
         return log_handle
         

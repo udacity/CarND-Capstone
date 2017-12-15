@@ -50,7 +50,7 @@ class Controller(object):
             if velocity_error > 2:
                 self.brakeLatch = False
             if self.brakeLatch is False:
-                pid_throttle = self.throttle_pid.step(velocity_error, DT, log_handle)
+                pid_throttle = self.throttle_pid.step(velocity_error, self.DT, log_handle)
                 feedforward_throttle = target_linear_velocity*.01888 #based on desired speed, predict how much throttle we need at steady state
                 throttle = pid_throttle + feedforward_throttle
                 accel_limit = 1 #mps2
@@ -64,7 +64,7 @@ class Controller(object):
             # negative), then we need to use the brakes
             else:
                 throttle = 0
-                brake = self.brake_pid.step(-velocity_error, DT, log_handle)
+                brake = self.brake_pid.step(-velocity_error, self.DT, log_handle)
             # If we're about to come to a stop, clamp the brake command to some value to hold the vehicle in place
             if current_linear_velocity < .1 and target_linear_velocity == 0:
                 throttle = 0
@@ -75,12 +75,12 @@ class Controller(object):
                                                      target_angular_velocity,
                                                      current_linear_velocity)
 
-            steering = self.steer_pid.step(steer_error, DT, log_handle)
+            steering = self.steer_pid.step(steer_error, self.DT, log_handle)
 
 
             self.last_velocity_error = velocity_error
             #args = velocity_error
-            self.log_data(log_handle, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, int(self.brakeLatch))
+            self.log_data(log_handle, pid_throttle, feedforward_throttle, velocity_error, self.DT, decel_target, int(self.brakeLatch))
         else:
             throttle = 0
             brake = 0
