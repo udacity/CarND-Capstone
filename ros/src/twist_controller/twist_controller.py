@@ -57,6 +57,7 @@ class Controller(object):
                 maxThrottle = 0.1962*accel_limit+0.083 # max throttle allowed for a given acceleration limit
                 throttle = max(0,min(throttle, maxThrottle))  # saturate throttle if it exceeds acceleration limits
                 brake = 0
+                self.brake_pid.reset()
                 if current_linear_velocity >= .1 and velocity_error < 0 and throttle is 0:
                     self.brakeLatch = True
             # we need to brake when throttle PID is saturated at 0 and velocity error is negative. In other words, when
@@ -64,6 +65,7 @@ class Controller(object):
             # negative), then we need to use the brakes
             else:
                 throttle = 0
+                self.throttle_pid.reset()
                 brake = self.brake_pid.step(-velocity_error, self.DT)
             # If we're about to come to a stop, clamp the brake command to some value to hold the vehicle in place
             if current_linear_velocity < .1 and target_linear_velocity == 0:
@@ -74,7 +76,6 @@ class Controller(object):
             steer_error = self.yaw_controller.get_steering(target_linear_velocity,
                                                      target_angular_velocity,
                                                      current_linear_velocity)
-
             steering = self.steer_pid.step(steer_error, self.DT)
 
             self.last_velocity_error = velocity_error

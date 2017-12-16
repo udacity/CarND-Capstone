@@ -9,6 +9,8 @@ import math
 import copy
 import tf.transformations   # to get Euler coordinates
 import numpy as np
+import os.path
+import rospkg
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -194,7 +196,12 @@ class WaypointUpdater(object):
         return closest_index
 
     def log_init(self, log_path):
-        log_handle = open(log_path,'w')
+        log_dir = rospkg.get_log_dir() + "/latest"
+        log_dir = os.path.realpath(log_dir)
+        log_file = log_dir + "/" + log_path
+        log_handle = open(log_file,'w')
+        headers = ','.join(["time", "car_x", "car_y", "closest_idx_waypoint", "waypoint_x", "waypoint_y"])
+        log_handle.write(headers + '\n')
         return log_handle
 
     def log_data(self, *args):

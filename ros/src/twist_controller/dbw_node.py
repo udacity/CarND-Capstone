@@ -5,6 +5,8 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
+import os.path
+import rospkg
 
 from twist_controller import Controller
 
@@ -130,7 +132,10 @@ class DBWNode(object):
         rospy.logdebug_throttle(1, loginfo)
 
     def log_init(self, log_path):
-        log_handle = open(log_path,'w')
+        log_dir = rospkg.get_log_dir() + "/latest"
+        log_dir = os.path.realpath(log_dir)
+        log_file = log_dir + "/" + log_path
+        log_handle = open(log_file,'w')
         headers = ','.join(["throttle_p_effort", "throttle_i_effort", "throttle_d_effort",
                             "break_p_effort", "break_i_effort", "break_d_effort",
                             "steering_p_effort", "steering_i_effort", "steering_d_effort",

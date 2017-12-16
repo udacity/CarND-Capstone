@@ -1,13 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import rospkg
+import os.path
 
 Plot_Lateral_Control = False
 Plot_Longitudinal_Control = True
 
 #data from waypoint updater node
-wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv',  delimiter=',', unpack = True)
+log_dir = rospkg.get_log_dir() + "/latest"
+log_dir = os.path.realpath(log_dir)
+log_file = log_dir + "/" + "waypoint_updater.csv"
+wu_time, x, y, wp, cx, cy = np.loadtxt(log_file,  delimiter=',', skiprows=1, unpack = True)
 #data from dbw node
-throttle_p_effort, throttle_i_effort, throttle_d_effort, brake_p_effort, brake_i_effort, brake_d_effort, strng_p_effort, strng_i_effort, strng_d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', skiprows=1, unpack = True)
+log_file = log_dir + "/" + "dbw_node.csv"
+throttle_p_effort, throttle_i_effort, throttle_d_effort, brake_p_effort, brake_i_effort, brake_d_effort, strng_p_effort, strng_i_effort, strng_d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt(log_file,  delimiter=',', skiprows=1, unpack = True)
 
 #time align data from different ros nodes
 start_time = wu_time[0]

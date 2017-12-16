@@ -12,6 +12,8 @@ import cv2
 import yaml
 import math
 import copy
+import os.path
+import rospkg
 
 STATE_EMA = 0.2                     # update parameter using exponential moving average for traffic light state
 MAX_DISTANCE_SQ_LIGHT = 10000       # max distance for which we try to detect lights
@@ -193,7 +195,10 @@ class TLDetector(object):
         return light_waypoint_idx, red_prob
 
     def log_init(self, log_path):
-        log_handle = open(log_path,'w')
+        log_dir = rospkg.get_log_dir() + "/latest"
+        log_dir = os.path.realpath(log_dir)
+        log_file = log_dir + "/" + log_path
+        log_handle = open(log_file,'w')
         headers = ','.join(["time", "prob_red_light", "prob_EMA_red_light", "red_light_id"])
         log_handle.write(headers + '\n')
         return log_handle
