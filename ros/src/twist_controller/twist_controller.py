@@ -79,22 +79,14 @@ class Controller(object):
 
 
             self.last_velocity_error = velocity_error
-            #args = velocity_error
             self.log_data(log_handle, pid_throttle, feedforward_throttle, velocity_error, self.DT, decel_target, int(self.brakeLatch))
         else:
             throttle = 0
             brake = 0
             steering = 0
-            rospy.loginfo("dbw_status false")
+            rospy.logdebug_throttle(1, "dbw_status set to false")
 
         return throttle, brake, steering
-
-    def is_change_acc(self, velocity_error):
-
-        is_switch_brake = (self.last_velocity_error >= 0) and (velocity_error < 0)
-        is_switch_acc = (self.last_velocity_error <= 0) and (velocity_error > 0)
-
-        return is_switch_brake or is_switch_acc
     
     def log_data(self, log_handle, *args):
         log_handle.write(','.join(str(arg) for arg in args) + ',')
