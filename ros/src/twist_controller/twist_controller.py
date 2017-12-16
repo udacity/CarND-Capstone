@@ -45,12 +45,12 @@ class Controller(object):
             # implement longitudinal controller
 
             # if we're going too slow, release the brakes (if they are applied)
-            #T his essentially adds hysterisis: the brakes are only enabled if our velocity error is negative, and only
+            # This essentially adds hysterisis: the brakes are only enabled if our velocity error is negative, and only
             # released if the velocity error is positive 2 or greater.
             if velocity_error > 2:
                 self.brakeLatch = False
             if self.brakeLatch is False:
-                pid_throttle = self.throttle_pid.step(velocity_error, self.DT, log_handle)
+                pid_throttle = self.throttle_pid.step(velocity_error, self.DT)
                 feedforward_throttle = target_linear_velocity*.01888 #based on desired speed, predict how much throttle we need at steady state
                 throttle = pid_throttle + feedforward_throttle
                 accel_limit = 1 #mps2
@@ -64,7 +64,7 @@ class Controller(object):
             # negative), then we need to use the brakes
             else:
                 throttle = 0
-                brake = self.brake_pid.step(-velocity_error, self.DT, log_handle)
+                brake = self.brake_pid.step(-velocity_error, self.DT)
             # If we're about to come to a stop, clamp the brake command to some value to hold the vehicle in place
             if current_linear_velocity < .1 and target_linear_velocity == 0:
                 throttle = 0
@@ -75,16 +75,24 @@ class Controller(object):
                                                      target_angular_velocity,
                                                      current_linear_velocity)
 
-            steering = self.steer_pid.step(steer_error, self.DT, log_handle)
-
+            steering = self.steer_pid.step(steer_error, self.DT)
 
             self.last_velocity_error = velocity_error
-            self.log_data(log_handle, pid_throttle, feedforward_throttle, velocity_error, self.DT, decel_target, int(self.brakeLatch))
+
         else:
-            throttle = 0
-            brake = 0
-            steering = 0
-            rospy.logdebug_throttle(1, "dbw_status set to false")
+            self.brakeLatch = False
+            self.throttle_pid.reset()
+            self.brake_pid.reset()
+            self.steer_pid.reset()
+            throttle, brake, steering = 0, 0, 0
+            pid_throttle, feedforward_throttle, velocity_error, decel_target = 0, 0, 0, 0
+
+        # Log data
+        throttle_P, throttle_I, throttle_D = self.throttle_pid.get_PID()
+        brake_P, brake_I, brake_D = self.brake_pid.get_PID()
+        steer_P, steer_I, steer_D = self.steer_pid.get_PID()
+        self.log_data(log_handle, throttle_P, throttle_I, throttle_D, brake_P, brake_I, brake_D, steer_P, steer_I, steer_D,
+                          pid_throttle, feedforward_throttle, velocity_error, self.DT, decel_target, int(self.brakeLatch))
 
         return throttle, brake, steering
     

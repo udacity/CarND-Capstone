@@ -79,7 +79,7 @@ class DBWNode(object):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
 
-            if all([self.twist_cmd, self.current_velocity, self.dbw_enabled]):    # Ensure values have been initialized
+            if all([self.twist_cmd, self.current_velocity]) and self.dbw_enabled is not None:    # Ensure values have been initialized
 
                 # Get predicted throttle, brake and steering
                 throttle, brake, steering = self.controller.control(self.twist_cmd.linear.x,
@@ -87,7 +87,6 @@ class DBWNode(object):
 
                 # Log data for car control analysis
                 if self.log_to_csv:
-                    #timestamp = rospy.get_rostime() - self.time_init
                     self.log_data(rospy.get_rostime(), self.twist_cmd.linear.x, self.twist_cmd.angular.z,
                                   self.current_velocity.linear.x, self.current_velocity.angular.z, int(self.dbw_enabled), throttle, brake, steering)
 
@@ -134,7 +133,12 @@ class DBWNode(object):
 
     def log_init(self, log_path):
         log_handle = open(log_path,'w')
-        headers = ','.join(["brkThrttle_p_effort", "brkThrttle_i_effort", "brkThrttle_d_effort", "steering_p_effort", "steering_i_effort", "steering_d_effort", "pid_throttle", "feedforward_throttle", "velocity_error", "DT", "decel_target", "latchBrake", "dbw_time", "target_linear_velocity", "target_angular_velocity","current_linear_velocity", "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
+        headers = ','.join(["throttle_p_effort", "throttle_i_effort", "throttle_d_effort",
+                            "break_p_effort", "break_i_effort", "break_d_effort",
+                            "steering_p_effort", "steering_i_effort", "steering_d_effort",
+                            "pid_throttle", "feedforward_throttle", "velocity_error", "DT", "decel_target",
+                            "latchBrake", "dbw_time", "target_linear_velocity", "target_angular_velocity", "current_linear_velocity",
+                            "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
         log_handle.write(headers + '\n')
         return log_handle
         

@@ -7,7 +7,7 @@ Plot_Longitudinal_Control = True
 #data from waypoint updater node
 wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv',  delimiter=',', unpack = True)
 #data from dbw node
-p_effort, i_effort, d_effort, strng_p_effort, strng_i_effort, strng_d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', skiprows=1, unpack = True)
+throttle_p_effort, throttle_i_effort, throttle_d_effort, brake_p_effort, brake_i_effort, brake_d_effort, strng_p_effort, strng_i_effort, strng_d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', skiprows=1, unpack = True)
 
 #time align data from different ros nodes
 start_time = wu_time[0]
@@ -64,9 +64,9 @@ if Plot_Longitudinal_Control:
     ax[0, 1].set_title('brake cmd')
     ax[0, 1].grid()
 
-    ax[0, 2].plot(dbw_time, p_effort*latchBrake, label="p")
-    ax[0, 2].plot(dbw_time, i_effort*latchBrake, label="i")
-    ax[0, 2].plot(dbw_time, d_effort*latchBrake, label="d")
+    ax[0, 2].plot(dbw_time, brake_p_effort, label="p")
+    ax[0, 2].plot(dbw_time, brake_i_effort, label="i")
+    ax[0, 2].plot(dbw_time, brake_d_effort, label="d")
     ax[0, 2].grid()
     ax[0, 2].set_title('Brake PID')
     ax[0, 2].legend(loc=1)
@@ -85,12 +85,10 @@ if Plot_Longitudinal_Control:
     ax[1, 1].set_title('throttle cmd')
     ax[1, 1].grid()
 
-    UseThrottle = np.logical_not(latchBrake)
-    UseThrottle.astype(float)
-    ax[1, 2].plot(dbw_time, p_effort*UseThrottle, label="p")
-    ax[1, 2].plot(dbw_time, i_effort*UseThrottle, label="i")
-    ax[1, 2].plot(dbw_time, d_effort*UseThrottle, label="d")
-    ax[1, 2].plot(dbw_time, feedforward_throttle*UseThrottle, label="Throttle FF")
+    ax[1, 2].plot(dbw_time, throttle_p_effort, label="p")
+    ax[1, 2].plot(dbw_time, throttle_i_effort, label="i")
+    ax[1, 2].plot(dbw_time, throttle_d_effort, label="d")
+    ax[1, 2].plot(dbw_time, feedforward_throttle, label="Throttle FF")
     ax[1, 2].grid()
     ax[1, 2].set_title('Throttle PID')
     ax[1, 2].legend(loc=1)
