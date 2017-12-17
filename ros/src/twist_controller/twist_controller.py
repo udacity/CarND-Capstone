@@ -20,6 +20,8 @@ class Controller(object):
 
         self.throttle_pid = PID(0.1, 0.001, 0, 0, 0.4)
         self.brake_pid = PID(60., 1, 0, 0, 100)
+        self.throttle_filter = LowPassFilter(0.2, DT)
+        self.brake_filter = LowPassFilter(0.2, DT)
         self.steer_filter = LowPassFilter(0.2, DT)
         self.last_time = 0
         self.DT = DT
@@ -50,6 +52,7 @@ class Controller(object):
                 throttle = self.throttle_pid.step(velocity_error, self.DT)
                 brake = 0
                 self.brake_pid.reset()
+                self.brake_filter.reset()
                 # if we go too fast and we cannot decrease throttle, we need to start braking
                 if (velocity_error < 0 and throttle is 0) or (velocity_error < -1):
                     self.brakeLatch = True
@@ -57,22 +60,29 @@ class Controller(object):
                 # We are currently braking
                 throttle = 0
                 self.throttle_pid.reset()
+                self.throttle_filter.reset()
                 brake = self.brake_pid.step(-velocity_error, self.DT)
             # If we're about to come to a stop, clamp the brake command to some value to hold the vehicle in place
             if current_linear_velocity < .1 and target_linear_velocity == 0:
                 throttle = 0
-                brake = 0.5
-
+                brake = 50
+                
             # implement steering controller
             steer_target = self.yaw_controller.get_steering(target_linear_velocity,
                                                      target_angular_velocity,
                                                      current_linear_velocity)
+
+            # filter commands
+            throttle = self.throttle_filter.filt(throttle)
+            brake = self.brake_filter.filt(brake)
             steering = self.steer_filter.filt(steer_target)
 
         else:
             self.brakeLatch = False
             self.throttle_pid.reset()
             self.brake_pid.reset()
+            self.throttle_filter.reset()
+            self.brake_filter.reset()
             self.steer_filter.reset()
             throttle, brake, steering = 0, 0, 0
             pid_throttle, velocity_error = 0, 0
