@@ -13,7 +13,7 @@ log_file = log_dir + "/" + "waypoint_updater.csv"
 wu_time, x, y, wp, cx, cy = np.loadtxt(log_file,  delimiter=',', skiprows=1, unpack = True)
 #data from dbw node
 log_file = log_dir + "/" + "dbw_node.csv"
-throttle_p_effort, throttle_i_effort, throttle_d_effort, brake_p_effort, brake_i_effort, brake_d_effort, strng_p_effort, strng_i_effort, strng_d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt(log_file,  delimiter=',', skiprows=1, unpack = True)
+throttle_p_effort, throttle_i_effort, throttle_d_effort, brake_p_effort, brake_i_effort, brake_d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt(log_file,  delimiter=',', skiprows=1, unpack = True)
 
 #time align data from different ros nodes
 start_time = wu_time[0]
@@ -83,7 +83,6 @@ if Plot_Longitudinal_Control:
     for i in range (len(current_linear_velocity)-span):
         current_linear_accel[i]=((current_linear_velocity[i+span]-current_linear_velocity[i])/(dbw_time[i+span]-dbw_time[i]))
     ax[1, 0].plot(dbw_time[span:], current_linear_accel, label="actual")
-    ax[1, 0].plot(dbw_time, decel_target, label="decel target")
     ax[1, 0].grid()
     ax[1, 0].set_title('acceleration')
 

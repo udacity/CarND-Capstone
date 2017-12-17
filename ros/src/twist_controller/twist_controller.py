@@ -1,6 +1,7 @@
 import rospy
 from pid import PID
 from yaw_controller import YawController
+from lowpass import LowPassFilter
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -18,9 +19,8 @@ class Controller(object):
         self.wheel_base = wheel_base
 
         self.throttle_pid = PID(.15, .00, 0, self.decel_limit, self.accel_limit)
-        self.brake_pid = PID(15, 1, 0, 0, 100)
-        self.steer_pid = PID(2.0, 0.0005, 2.0, -self.max_steer_angle, self.max_steer_angle)
-        self.last_velocity_error = 0
+        self.brake_pid = PID(25, 0, 0, 0, 100)
+        self.steer_filter = LowPassFilter(0.1, DT)
         self.last_time = 0
         self.DT = DT
         self.brakeLatch = False
@@ -73,27 +73,25 @@ class Controller(object):
                 brake = 25
 
             # implement steering controller
-            steer_error = self.yaw_controller.get_steering(target_linear_velocity,
+            steer_target = self.yaw_controller.get_steering(target_linear_velocity,
                                                      target_angular_velocity,
                                                      current_linear_velocity)
-            steering = self.steer_pid.step(steer_error, self.DT)
-
-            self.last_velocity_error = velocity_error
+            steering = self.steer_filter.filt(steer_target)
 
         else:
             self.brakeLatch = False
             self.throttle_pid.reset()
             self.brake_pid.reset()
-            self.steer_pid.reset()
+            self.steer_filter.reset()
             throttle, brake, steering = 0, 0, 0
-            pid_throttle, feedforward_throttle, velocity_error, decel_target = 0, 0, 0, 0
+            pid_throttle, feedforward_throttle, velocity_error = 0, 0, 0
 
         # Log data
         throttle_P, throttle_I, throttle_D = self.throttle_pid.get_PID()
         brake_P, brake_I, brake_D = self.brake_pid.get_PID()
-        steer_P, steer_I, steer_D = self.steer_pid.get_PID()
-        self.log_data(log_handle, throttle_P, throttle_I, throttle_D, brake_P, brake_I, brake_D, steer_P, steer_I, steer_D,
-                          pid_throttle, feedforward_throttle, velocity_error, self.DT, decel_target, int(self.brakeLatch))
+        steer_P, steer_I, steer_D = 0, 0, 0
+        self.log_data(log_handle, throttle_P, throttle_I, throttle_D, brake_P, brake_I, brake_D,
+                          pid_throttle, feedforward_throttle, velocity_error, self.DT, int(self.brakeLatch))
 
         return throttle, brake, steering
     

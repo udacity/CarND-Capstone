@@ -138,8 +138,7 @@ class DBWNode(object):
         log_handle = open(log_file,'w')
         headers = ','.join(["throttle_p_effort", "throttle_i_effort", "throttle_d_effort",
                             "break_p_effort", "break_i_effort", "break_d_effort",
-                            "steering_p_effort", "steering_i_effort", "steering_d_effort",
-                            "pid_throttle", "feedforward_throttle", "velocity_error", "DT", "decel_target",
+                            "pid_throttle", "feedforward_throttle", "velocity_error", "DT",
                             "latchBrake", "dbw_time", "target_linear_velocity", "target_angular_velocity", "current_linear_velocity",
                             "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
         log_handle.write(headers + '\n')
