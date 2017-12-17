@@ -137,7 +137,7 @@ class DBWNode(object):
         log_file = log_dir + "/" + log_path
         log_handle = open(log_file,'w')
         headers = ','.join(["throttle_p_effort", "throttle_i_effort", "throttle_d_effort",
-                            "break_p_effort", "break_i_effort", "break_d_effort",
+                            "brake_p_effort", "brake_i_effort", "brake_d_effort",
                             "velocity_error", "DT", "latchBrake",
                             "dbw_time", "target_linear_velocity", "target_angular_velocity", "current_linear_velocity",
                             "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
