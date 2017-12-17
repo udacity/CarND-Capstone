@@ -20,9 +20,10 @@ class Controller(object):
 
         self.throttle_pid = PID(0.1, 0.001, 0, 0, 0.4)
         self.brake_pid = PID(60., 1, 0, 0, 100)
-        self.throttle_filter = LowPassFilter(0.2, DT)
-        self.brake_filter = LowPassFilter(0.2, DT)
-        self.steer_filter = LowPassFilter(0.2, DT)
+        tau = 0.1
+        self.throttle_filter = LowPassFilter(tau, DT)
+        self.brake_filter = LowPassFilter(tau, DT)
+        self.steer_filter = LowPassFilter(tau, DT)
         self.last_time = 0
         self.DT = DT
         self.brakeLatch = False

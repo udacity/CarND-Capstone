@@ -32,7 +32,7 @@ LOOKAHEAD_WPS = 50      # Number of waypoints we will publish. You can change th
 # Profile for slowing at traffic light: v = K_SLOW * sqrt(dist - DIST_MIN)
 # This is equivalent to considering a constant deceleration
 K_SLOW = 5     # in m^1/2 . s^-1
-DIST_MIN = 10   # distance we need to be from stop line
+DIST_MIN = 6   # distance we need to be from stop line
 
 
 class WaypointUpdater(object):
