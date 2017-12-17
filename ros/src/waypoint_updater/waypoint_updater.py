@@ -9,6 +9,8 @@ import math
 import copy
 import tf.transformations   # to get Euler coordinates
 import numpy as np
+import os.path
+import rospkg
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -30,7 +32,7 @@ LOOKAHEAD_WPS = 50      # Number of waypoints we will publish. You can change th
 # Profile for slowing at traffic light: v = K_SLOW * sqrt(dist - DIST_MIN)
 # This is equivalent to considering a constant deceleration
 K_SLOW = 5     # in m^1/2 . s^-1
-DIST_MIN = 10   # distance we need to be from stop line
+DIST_MIN = 6   # distance we need to be from stop line
 
 
 class WaypointUpdater(object):
@@ -125,7 +127,7 @@ class WaypointUpdater(object):
             self.final_waypoints_pub.publish(self.final_wps)
             
             if self.log_to_csv:
-                    self.log_data(rospy.get_rostime(), car_x, car_y, closest_idx_waypoint, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.x, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.y)
+                self.log_data(rospy.get_rostime(), car_x, car_y, closest_idx_waypoint, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.x, self.wps.waypoints[closest_idx_waypoint].pose.pose.position.y)
  
             
             rate.sleep()
@@ -194,7 +196,12 @@ class WaypointUpdater(object):
         return closest_index
 
     def log_init(self, log_path):
-        log_handle = open(log_path,'w')
+        log_dir = rospkg.get_log_dir() + "/latest"
+        log_dir = os.path.realpath(log_dir)
+        log_file = log_dir + "/" + log_path
+        log_handle = open(log_file,'w')
+        headers = ','.join(["time", "car_x", "car_y", "closest_idx_waypoint", "waypoint_x", "waypoint_y"])
+        log_handle.write(headers + '\n')
         return log_handle
 
     def log_data(self, *args):

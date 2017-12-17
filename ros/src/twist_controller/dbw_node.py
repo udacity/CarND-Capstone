@@ -5,6 +5,8 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
+import os.path
+import rospkg
 
 from twist_controller import Controller
 
@@ -71,15 +73,13 @@ class DBWNode(object):
         if self.log_to_csv:
             self.log_handle = self.log_init('dbw_node.csv')
 
-        self.time_init = rospy.get_rostime()
-
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
 
-            if all([self.twist_cmd, self.current_velocity, self.dbw_enabled]):    # Ensure values have been initialized
+            if all([self.twist_cmd, self.current_velocity]) and self.dbw_enabled is not None:    # Ensure values have been initialized
 
                 # Get predicted throttle, brake and steering
                 throttle, brake, steering = self.controller.control(self.twist_cmd.linear.x,
@@ -87,7 +87,6 @@ class DBWNode(object):
 
                 # Log data for car control analysis
                 if self.log_to_csv:
-                    #timestamp = rospy.get_rostime() - self.time_init
                     self.log_data(rospy.get_rostime(), self.twist_cmd.linear.x, self.twist_cmd.angular.z,
                                   self.current_velocity.linear.x, self.current_velocity.angular.z, int(self.dbw_enabled), throttle, brake, steering)
 
@@ -111,7 +110,7 @@ class DBWNode(object):
 
         bcmd = BrakeCmd()
         bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
@@ -133,8 +132,15 @@ class DBWNode(object):
         rospy.logdebug_throttle(1, loginfo)
 
     def log_init(self, log_path):
-        log_handle = open(log_path,'w')
-        headers = ','.join(["brkThrttle_p_effort", "brkThrttle_i_effort", "brkThrttle_d_effort", "steering_p_effort", "steering_i_effort", "steering_d_effort", "pid_throttle", "feedforward_throttle", "velocity_error", "DT", "decel_target", "latchBrake", "dbw_time", "target_linear_velocity", "target_angular_velocity","current_linear_velocity", "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
+        log_dir = rospkg.get_log_dir() + "/latest"
+        log_dir = os.path.realpath(log_dir)
+        log_file = log_dir + "/" + log_path
+        log_handle = open(log_file,'w')
+        headers = ','.join(["throttle_p_effort", "throttle_i_effort", "throttle_d_effort",
+                            "brake_p_effort", "brake_i_effort", "brake_d_effort",
+                            "velocity_error", "DT", "latchBrake",
+                            "dbw_time", "target_linear_velocity", "target_angular_velocity", "current_linear_velocity",
+                            "current_angular_velocity", "dbw_status", "throttle", "brake", "steering"])
         log_handle.write(headers + '\n')
         return log_handle
         

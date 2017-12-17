@@ -1,13 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import rospkg
+import os.path
 
 Plot_Lateral_Control = False
 Plot_Longitudinal_Control = True
 
 #data from waypoint updater node
-wu_time, x, y, wp, cx, cy = np.loadtxt('/home/student/.ros/waypoint_updater.csv',  delimiter=',', unpack = True)
+log_dir = rospkg.get_log_dir() + "/latest"
+log_dir = os.path.realpath(log_dir)
+log_file = log_dir + "/" + "waypoint_updater.csv"
+wu_time, x, y, wp, cx, cy = np.loadtxt(log_file,  delimiter=',', skiprows=1, unpack = True)
 #data from dbw node
-p_effort, i_effort, d_effort, strng_p_effort, strng_i_effort, strng_d_effort, pid_throttle, feedforward_throttle, velocity_error, DT, decel_target, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt('/home/student/.ros/dbw_node.csv',  delimiter=',', skiprows=1, unpack = True)
+log_file = log_dir + "/" + "dbw_node.csv"
+throttle_p_effort, throttle_i_effort, throttle_d_effort, brake_p_effort, brake_i_effort, brake_d_effort, velocity_error, DT, latchBrake, dbw_time, target_linear_velocity, target_angular_velocity,current_linear_velocity, current_angular_velocity, dbw_status, throttle, brake, steering,  = np.loadtxt(log_file,  delimiter=',', skiprows=1, unpack = True)
 
 #time align data from different ros nodes
 start_time = wu_time[0]
@@ -64,9 +70,9 @@ if Plot_Longitudinal_Control:
     ax[0, 1].set_title('brake cmd')
     ax[0, 1].grid()
 
-    ax[0, 2].plot(dbw_time, p_effort*latchBrake, label="p")
-    ax[0, 2].plot(dbw_time, i_effort*latchBrake, label="i")
-    ax[0, 2].plot(dbw_time, d_effort*latchBrake, label="d")
+    ax[0, 2].plot(dbw_time, brake_p_effort, label="p")
+    ax[0, 2].plot(dbw_time, brake_i_effort, label="i")
+    ax[0, 2].plot(dbw_time, brake_d_effort, label="d")
     ax[0, 2].grid()
     ax[0, 2].set_title('Brake PID')
     ax[0, 2].legend(loc=1)
@@ -77,7 +83,6 @@ if Plot_Longitudinal_Control:
     for i in range (len(current_linear_velocity)-span):
         current_linear_accel[i]=((current_linear_velocity[i+span]-current_linear_velocity[i])/(dbw_time[i+span]-dbw_time[i]))
     ax[1, 0].plot(dbw_time[span:], current_linear_accel, label="actual")
-    ax[1, 0].plot(dbw_time, decel_target, label="decel target")
     ax[1, 0].grid()
     ax[1, 0].set_title('acceleration')
 
@@ -85,12 +90,9 @@ if Plot_Longitudinal_Control:
     ax[1, 1].set_title('throttle cmd')
     ax[1, 1].grid()
 
-    UseThrottle = np.logical_not(latchBrake)
-    UseThrottle.astype(float)
-    ax[1, 2].plot(dbw_time, p_effort*UseThrottle, label="p")
-    ax[1, 2].plot(dbw_time, i_effort*UseThrottle, label="i")
-    ax[1, 2].plot(dbw_time, d_effort*UseThrottle, label="d")
-    ax[1, 2].plot(dbw_time, feedforward_throttle*UseThrottle, label="Throttle FF")
+    ax[1, 2].plot(dbw_time, throttle_p_effort, label="p")
+    ax[1, 2].plot(dbw_time, throttle_i_effort, label="i")
+    ax[1, 2].plot(dbw_time, throttle_d_effort, label="d")
     ax[1, 2].grid()
     ax[1, 2].set_title('Throttle PID')
     ax[1, 2].legend(loc=1)
