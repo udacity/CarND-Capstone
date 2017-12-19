@@ -38,7 +38,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         self.current_position = []
-        #Node-wide variables
+        # Node-wide variables
         self.base_waypoints = []
         self.total_waypoints = 0
         # TODO: Add other member variables you need below
@@ -46,17 +46,17 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def convert_local(self, waypoint, current_pos):
-        #Helper function for converting from global to local coords
-        #Grab our waypoint and car position variables
+        # Helper function for converting from global to local coords
+        # Grab our waypoint and car position variables
         x_way = waypoint.pose.pose.position.x
         y_way = waypoint.pose.pose.position.y
         x_car = current_pos.pose.position.x
         y_car = current_pos.pose.position.y
-        #Convert from Quarternion to Radians
+        # Convert from Quarternion to Radians
         theta_car = 2*math.acos(current_pos.pose.orientation.w)
         theta_waypoint = 2 * math.acos(waypoint.pose.pose.orientation.w)
 
-        #Perform coordinate localization
+        # Perform coordinate localization
         x_shift = x_way - x_car
         y_shift = y_way - y_car
         x = x_shift*math.cos(0 - theta_car) - y_shift*math.sin(0 - theta_car)
@@ -64,18 +64,18 @@ class WaypointUpdater(object):
         return x,y, theta_car, theta_waypoint
 
     def pose_cb(self, msg):
-        #Callback for our current car position recieved
+        # Callback for our current car position recieved
         current_pos = msg
-        #x = msg.pose.position.x    #Access x value like this
-        #theta = msg.pose.orientation.w # Access w value like this
+        # x = msg.pose.position.x    #Access x value like this
+        # theta = msg.pose.orientation.w # Access w value like this
 
-        #Create list for our published final_waypoints
+        # Create list for our published final_waypoints
         final_waypoints_list = []
 
-        #Scan through all base_waypoints
+        # Scan through all base_waypoints
         for i in range(len(self.base_waypoints.waypoints)):
             waypoint = self.base_waypoints.waypoints[i]
-            # convert waypoint to local coordinates
+            # Convert waypoint to local coordinates
             x,y,theta_car, theta_waypoint = self.convert_local(waypoint, current_pos)
             orientation_match = math.cos(theta_waypoint - theta_car)
             # Check if the waypoint is in front of our car, and if the orientation is within +/- pi/4 of our car
@@ -85,22 +85,23 @@ class WaypointUpdater(object):
                 for j in range(LOOKAHEAD_WPS):
                     j_mod = i+j%self.total_waypoints
                     final_waypoints_list.append(self.base_waypoints.waypoints[j_mod])
-                #Format our message
+                # Format our message
                 msg = Lane()
                 msg.waypoints = final_waypoints_list
+                # Setting header info to current_pos header
+                msg.header = current_pos.header
                 self.final_waypoints_pub.publish(msg)
                 return
         pass
 
     def waypoints_cb(self, waypoints):
-        #Call back for base_waypoints when our simulator is started
-        #first_x = waypoints.waypoints[0].twist.twist.linear.x #Use this format to access waypoint info
+        # Call back for base_waypoints when our simulator is started
+        # first_x = waypoints.waypoints[0].twist.twist.linear.x #Use this format to access waypoint info
 
         # Set a variable for accessing base_waypoints throughout this node
         self.base_waypoints = waypoints
         # Set a variable for access the total number of base_waypoints throughout this node
         self.total_waypoints = len(self.base_waypoints.waypoints)
-        #rospy.logwarn(self.total_waypoints)
         pass
 
 
