@@ -8,8 +8,8 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 |-----------------------------------|------------------------------------|
 | John Moody (**Team Lead**)        | John.Moody at ieee.org             |
 | Jayasim Jayakumar                 | jayasim at gmail.com               |
-| Rajeev Ranjan                     | rajeev.cse.imps@gmail.com          |
-| Sven Bone                         | sven.bone@mail.de                  |
+| Rajeev Ranjan                     | rajeev.cse.imps at gmail.com       |
+| Sven Bone                         | sven.bone at mail.de               |
 
 ### Native Installation
 
