@@ -17,9 +17,10 @@ The image export node `tl_image_extractor.py` can be configured by its launch fi
 the simulator setup `tl_image_extractor.launch` and one for the rosbag setup `tl_image_extractor_site.launch`. 
 
 **Attention:**
-If you have resource limitations on your PC ensure to deactivate the OpenCV image visualization by setting 
+If you have resource limitations on your PC, ensure to deactivate the OpenCV image visualization by setting 
 `export_show_image` to `False` in both launch files.
 
+**Parameters**
 ```
 <param name="export_directory" type="str" value="/home/student/CarND-Capstone/export"/>
 <param name="export_filename" type="str" value="tfl_"/>
@@ -29,13 +30,15 @@ If you have resource limitations on your PC ensure to deactivate the OpenCV imag
 ```
 
 **Simulator**
-1. Start the image extractor node with styx support by `roslaunch launch/styx_image_extractor.launch`
-2. Run the simulator
-3. Activate camera output in simulator
+1. Check if the export directory (`export_directory`) exists and is empty. The exporter overrides existing images!
+2. Start the image extractor node with styx support by `roslaunch launch/styx_image_extractor.launch`
+3. Run the simulator
+4. Activate camera output in simulator
 
 **ROS Bags**
-1. Start the image extractor node with styx support by `roslaunch launch/site_image_extractor.launch`
-1. Run ROS bag player by `rosbag play ./bags/just_traffic_light.bag`
+1. Check if the export directory (`export_directory`) exists and is empty. The exporter overrides existing images!
+2. Start the image extractor node with styx support by `roslaunch launch/site_image_extractor.launch`
+3. Run ROS bag player by `rosbag play ./bags/just_traffic_light.bag`
 
 ### Native Installation
 
