@@ -32,11 +32,13 @@ class TLImageExtractor(object):
         self.export_directory = rospy.get_param('export_directory', '')
         self.export_filename = rospy.get_param('export_filename', 'tfl_')
         self.export_rate = rospy.get_param('export_rate', '1')
+        self.export_encoding = rospy.get_param('export_encoding', 'bgr8')
         self.export_show_image = rospy.get_param('export_show_image', False)
 
         rospy.loginfo('export_directory: {}'.format(self.export_directory))
         rospy.loginfo('export_filename: {}'.format(self.export_filename))
         rospy.loginfo('export_rate: {}'.format(self.export_rate))
+        rospy.loginfo('export_encoding: {}'.format(self.export_encoding))
         rospy.loginfo('export_show_image: {}'.format(self.export_show_image))
 
         '''
@@ -46,11 +48,7 @@ class TLImageExtractor(object):
          simulator. When testing on the vehicle, the color state will not be available. You'll need to
          rely on the position of the light and the camera image to predict it.
          '''
-        subscriber_traffic_lights = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         subscriber_image = rospy.Subscriber('/image_color', Image, self.image_cb)
-    
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
 
         self.bridge = CvBridge()
         self.listener = tf.TransformListener()
@@ -76,13 +74,14 @@ class TLImageExtractor(object):
             rospy.logerr('The export directory "{}" cannot be found.'.format(self.export_directory))
         else:
             filename = "{}/{}{:05d}.png".format(self.export_directory, self.export_filename, self.camera_image.header.seq)
-            height = self.camera_image.height
             width = self.camera_image.width
+            height = self.camera_image.height
+            encoding = self.camera_image.encoding
 
             # convert ROS to OpenCV image
             if self.image_count % self.export_rate == 0:
-                rospy.loginfo('Exported: {} ({:d}x{:d})'.format(filename, height, width))
-                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, desired_encoding="passthrough")
+                rospy.loginfo('Exported: {} ({:d}x{:d}, {}-->{})'.format(filename, width, height, encoding, self.export_encoding))
+                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, desired_encoding=self.export_encoding)
                 cv2.imwrite(filename, cv_image)
 
                 # show each exported image if activated in launch file

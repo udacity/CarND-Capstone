@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <node pkg="tl_detector" type="tl_image_extractor.py" name="tl_image_extractor" output="screen" cwd="node"/>
-    <node pkg="tl_detector" type="light_publisher.py" name="light_publisher" output="screen" cwd="node"/>
-
+  
     <param name="export_directory" type="str" value="/home/student/CarND-Capstone/export"/>
     <param name="export_filename" type="str" value="tfl_"/>
     <param name="export_rate" type="int" value="1"/>
