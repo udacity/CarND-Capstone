@@ -37,7 +37,7 @@ If you have resource limitations on your PC, ensure to deactivate the OpenCV ima
 
 **ROS Bags**
 1. Check if the export directory (`export_directory`) exists and is empty. The exporter overrides existing images!
-2. Start the image extractor node with styx support by `roslaunch launch/site_image_extractor.launch`
+2. Start the image extractor node by `roslaunch launch/site_image_extractor.launch`
 3. Run ROS bag player by `rosbag play ./bags/just_traffic_light.bag`
 
 ### Native Installation
