@@ -5,6 +5,18 @@
 
 ## Datasets
 
+### Required Directory Layout
+
+- datasets
+  - dataset_bosch_small_tlr
+    - dataset_test_rgb
+    - dataset_train_rgb
+  - dataset_lara
+    - Lara3D_UrbanSeq1_JPG
+  - dataset_sdcnd_capstone
+    - real_training_data
+    - sim_training_data
+
 ### Bosch Small Traffic Light Dataset
 
 ![Bosch Label Histogram][image_bosch_label_hist]
