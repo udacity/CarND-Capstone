@@ -80,12 +80,6 @@ class DatasetHandler():
         label_hist = np.array([])
         colors = []
 
-        # print label statistics
-        # for key, val in self.bosch_label_statistics.items():
-        #     print('{} = {}'.format(key, val))
-        #     label_names = np.append(label_names, key)
-        #     label_hist = np.append(label_hist, val)
-
         for key in sorted(self.bosch_label_statistics.keys()):
             print('{} = {}'.format(key, self.bosch_label_statistics[key]))
             label_names = np.append(label_names, key)
@@ -106,11 +100,14 @@ class DatasetHandler():
         fig.subplots_adjust(left=0.27, right=0.97, bottom=0.1, top=0.9)
         rect = plt.barh(x, label_hist, color=colors)
         plu.autolabel_barh(rect, ax)
-        plt.yticks(x, label_names, rotation=0)
+        plt.yticks(x, label_names)
         plt.title('Label Distribution in Bosch Small Traffic Light Dataset')
         plt.ylabel('label class')
         plt.xlabel('number of labels per class')
-        plt.grid(True)
+        ax.set_axisbelow(True)
+        #ax.minorticks_on()
+        ax.grid(which='major', linestyle='-', linewidth='0.5', color='grey')
+        #ax.grid(which='minor', linestyle=':', linewidth='0.5', color='grey')
 
         if safe_figure:
             plt.savefig('bosch_label_histogram.png')
