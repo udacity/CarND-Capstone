@@ -1,0 +1,17 @@
+name: carnd-term3
+channels:
+    - https://conda.anaconda.org/menpo
+    - conda-forge
+dependencies:
+    - python==3.5.2
+    - numpy
+    - matplotlib
+    - pillow
+    - scipy
+    - ffmpeg
+    - imageio==2.1.2
+    - PyYAML
+    - pip:
+        - moviepy
+        - tensorflow==1.3
+        - tensorflow-tensorboard
