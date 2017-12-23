@@ -15,7 +15,10 @@ class DatasetHandler():
     The DatasetHandler provides basic methods to translate the different dataset ground truth data into
     one common format which can be used to train the TL model.
 
-    Usage:
+    Usage: DatasetHandler.py [-h] [--bosch_label_file YAML_file] [-s]
+
+        --bosch_label_file    Path to Bosch dataset label YAML file.
+        -s, --safe_plots      If set, safe all plots as PNG files in the actual directory.
 
     """
 

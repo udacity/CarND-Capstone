@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+The plot utils provide generic functions and enhancements for the matplotlib library.
+"""
 
 """ Color specifications """
 COLOR_GREEN  = '#28B463'
