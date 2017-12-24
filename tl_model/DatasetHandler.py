@@ -16,6 +16,10 @@ class DatasetHandler():
     The DatasetHandler provides basic methods to translate the different dataset ground truth data into
     one common format which can be used to train the TL model.
 
+    The Bosch statistics and read all labels scripcs are inspired by the original Bosch GitHub repository:
+
+        https://github.com/bosch-ros-pkg/bstld
+
     Usage: DatasetHandler.py [-h] [--bosch_label_file YAML_file] [-s] [-sp] [-si]
 
         -h                    Print help
@@ -25,11 +29,12 @@ class DatasetHandler():
         -si, --show_images    Show all dataset images with colored labels.
     """
 
-    bosch_label_dict_valid = False          # True if Bosch dataset has been read.
-    bosch_label_dict = {}                   # dictionary with Bosch label data
-    bosch_label_statistics = {}             # dictionary of type <TL class> : <number of labeled TL class>
-    bosch_number_images = 0                 # number of images in Bosch dataset
-    bosch_number_labeled_traffic_lights = 0 # number of traffic light in the Bosch dataset
+    bosch_label_dict_valid = False           # True if Bosch dataset has been read.
+    bosch_label_dict = {}                    # dictionary with Bosch label data
+    bosch_label_statistics = {}              # dictionary of type <TL class> : <number of labeled TL class>
+    bosch_number_images = 0                  # number of images in Bosch dataset
+    bosch_number_labeled_traffic_lights = 0  # number of traffic light in the Bosch dataset
+    bosch_image_shape = (0, 0, 0)            # image shape [height, width, channels] of bosch dataset
 
     def read_all_bosch_labels(self, input_yaml, riib=False):
         """
@@ -76,6 +81,10 @@ class DatasetHandler():
                     self.bosch_label_statistics[box['label']] = self.bosch_label_statistics[box['label']] + 1
 
         self.bosch_label_dict = images
+
+        # determine image size
+        image = cv2.imread(self.bosch_label_dict[0]['path'])
+        self.bosch_image_shape = image.shape
         self.bosch_label_dict_valid = True
 
         return images
@@ -92,10 +101,9 @@ class DatasetHandler():
         print('--------------------------------------------------')
         print('Number images:        {}'.format(self.bosch_number_images))
         print('Number traffic light: {}'.format(self.bosch_number_labeled_traffic_lights))
-
-        image = cv2.imread(self.bosch_label_dict[0]['path'])
-        height, width, channels = image.shape
-        print('Image shape:          {}x{}x{}'.format(width, height, channels))
+        print('Image shape:          {}x{}x{}'.format(self.bosch_image_shape[1],
+                                                      self.bosch_image_shape[0],
+                                                      self.bosch_image_shape[2]))
 
     def plot_bosch_label_histogram(self, safe_figure=False):
         """ Plots a histogram over all Bosch labels which have been read by the `read_all_bosch_labels()` method.
@@ -122,12 +130,12 @@ class DatasetHandler():
             label_hist = np.append(label_hist, self.bosch_label_statistics[key])
 
             # set bar color depending on label class
-            if str(key).lower().find('green') >= 0:
-                colors.append(plu.COLOR_GREEN)
+            if str(key).lower().find('red') >= 0:
+                colors.append(plu.COLOR_RED)
             elif str(key).lower().find('yellow') >= 0:
                 colors.append(plu.COLOR_YELLOW)
-            elif str(key).lower().find('red') >= 0:
-                colors.append(plu.COLOR_RED)
+            elif str(key).lower().find('green') >= 0:
+                colors.append(plu.COLOR_GREEN)
             else:
                 colors.append(plu.COLOR_GREY)
 
@@ -150,7 +158,67 @@ class DatasetHandler():
 
         plt.show(block=False)
 
-    def show_labeled_images(self, output_folder=None):
+    def plot_bosch_label_heatmap(self, safe_figure=False):
+        """ Plots a heatmap over all Bosch label positions.
+
+        :param safe_figure: If true safe figure as png file.
+        """
+
+        if not self.bosch_label_dict_valid:
+            print('ERROR: No valid dataset dictionary. Read Bosch dataset before.')
+            return
+
+        heatmap_red = np.zeros((self.bosch_image_shape[0], self.bosch_image_shape[1]), dtype=np.float)
+        heatmap_yellow = np.zeros((self.bosch_image_shape[0], self.bosch_image_shape[1]), dtype=np.float)
+        heatmap_green = np.zeros((self.bosch_image_shape[0], self.bosch_image_shape[1]), dtype=np.float)
+        heatmap_off = np.zeros((self.bosch_image_shape[0], self.bosch_image_shape[1]), dtype=np.float)
+
+        for i in range(self.bosch_number_images):
+            for box in self.bosch_label_dict[i]['boxes']:
+                # set bar color depending on label class
+                if box['label'].lower().find('red') >= 0 and len(box['label']) == len('red'):
+                    heatmap_red[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
+                elif box['label'].lower().find('yellow') >= 0 and len(box['label']) == len('yellow'):
+                    heatmap_yellow[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
+                elif box['label'].lower().find('green') >= 0 and len(box['label']) == len('green'):
+                    heatmap_green[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
+                elif box['label'].lower().find('off') >= 0 and len(box['label']) == len('off'):
+                    heatmap_off[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
+
+        heatmap_all = heatmap_red + heatmap_yellow + heatmap_green + heatmap_off
+
+        # plot label histogram
+        fig, ax = plt.subplots()
+        fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+        fig.suptitle('Label Heatmap of Bosch Small Traffic Light Dataset')
+        ax.imshow(heatmap_all, cmap='jet', interpolation='nearest')
+        ax.set_title('Red, Green, Red, Off TL')
+
+        if safe_figure:
+            plt.savefig('bosch_label_heatmap_all.png')
+
+        fig, axarr = plt.subplots(2, 2)
+        fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+        fig.suptitle('Label Heatmap of Bosch Small Traffic Light Dataset')
+
+        axarr[0, 0].imshow(heatmap_red, cmap='Reds', interpolation='nearest')
+        axarr[0, 0].set_title('Red TL')
+
+        axarr[0, 1].imshow(heatmap_yellow, cmap='Oranges', interpolation='nearest')
+        axarr[0, 1].set_title('Yellow TL')
+
+        axarr[1, 0].imshow(heatmap_green, cmap='Greens', interpolation='nearest')
+        axarr[1, 0].set_title('Green TL')
+
+        axarr[1, 1].imshow(heatmap_off, cmap='Greys', interpolation='nearest')
+        axarr[1, 1].set_title('Off TL')
+
+        if safe_figure:
+            plt.savefig('bosch_label_heatmap_red_yellow_green_off.png')
+
+        plt.show(block=False)
+
+    def show_bosch_labeled_images(self, output_folder=None):
         """
         Shows all images with colored labeled traffic lights.
 
@@ -247,8 +315,9 @@ if __name__ == '__main__':
             # print/plot dataset statistics
             dataset_handler.print_bosch_statistics()
             dataset_handler.plot_bosch_label_histogram(safe_figure=args.safe_plots)
+            dataset_handler.plot_bosch_label_heatmap(safe_figure=args.safe_plots)
             plt.show()
         elif args.show_images:
             # show all images with colored labels
             print('Exit with CTRL+C')
-            dataset_handler.show_labeled_images()
+            dataset_handler.show_bosch_labeled_images()
