@@ -46,8 +46,11 @@ class DatasetHandler():
         :param input_yaml: Path to yaml file.
         :param riib:       If True, change path to labeled pictures.
 
-        :return: images:   Labels for traffic lights.
+        :return: images:   Labels for traffic lights. None in case the input file couldn't be found.
         """
+        if not os.path.exists(input_yaml):
+            return None
+
         images = yaml.load(open(input_yaml, 'rb').read())
         self.bosch_number_images = len(images)
 
@@ -93,10 +96,6 @@ class DatasetHandler():
         image = cv2.imread(self.bosch_label_dict[0]['path'])
         height, width, channels = image.shape
         print('Image shape:          {}x{}x{}'.format(width, height, channels))
-
-    def ir(self, value):
-        """Int-round function for short array indexing """
-        return int(round(value))
 
     def plot_bosch_label_histogram(self, safe_figure=False):
         """ Plots a histogram over all Bosch labels which have been read by the `read_all_bosch_labels()` method.
@@ -179,8 +178,8 @@ class DatasetHandler():
                     color = (0, 255, 0)
 
                 cv2.rectangle(image,
-                              (self.ir(box['x_min']), self.ir(box['y_min'])),
-                              (self.ir(box['x_max']), self.ir(box['y_max'])),
+                              (int(round(box['x_min'])), int(round(box['y_min']))),
+                              (int(round(box['x_max'])), int(round(box['y_max']))),
                               color)
 
             cv2.imshow('labeled_image', image)
@@ -236,8 +235,13 @@ if __name__ == '__main__':
     if args.bosch_label_file:
         print('Loading Bosch dataset...', end='', flush=True)
         dataset_handler = DatasetHandler()
-        dataset_handler.read_all_bosch_labels(args.bosch_label_file)
-        print('done')
+
+        if dataset_handler.read_all_bosch_labels(args.bosch_label_file) == None:
+            print('')
+            print('ERROR: Input YAML file "{}" not found.'.format(args.bosch_label_file))
+            exit(-1)
+        else:
+            print('done')
 
         if args.statistics:
             # print/plot dataset statistics
@@ -246,4 +250,5 @@ if __name__ == '__main__':
             plt.show()
         elif args.show_images:
             # show all images with colored labels
+            print('Exit with CTRL+C')
             dataset_handler.show_labeled_images()
