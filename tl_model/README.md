@@ -3,7 +3,7 @@
 [//]: # (Image References)
 [image_bosch_label_hist]: ./images/bosch_label_histogram.png
 [image_bosch_label_heatmap_all]: ./images/bosch_label_heatmap_all.png
-[image_bosch_label_heatmap_rygo]: ./images/bosch_label_heatmap_red_yellow_green_off.png.png
+[image_bosch_label_heatmap_rygo]: ./images/bosch_label_heatmap_red_yellow_green_off.png
 
 ## Datasets
 
