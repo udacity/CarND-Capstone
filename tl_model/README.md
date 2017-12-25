@@ -29,8 +29,6 @@ python DatasetHandler.py
   --disable_filter
 ```
 
-## Datasets
-
 ### Required Directory Layout
 
 - datasets
@@ -42,6 +40,8 @@ python DatasetHandler.py
   - dataset_sdcnd_capstone
     - real_training_data
     - sim_training_data
+    
+## Datasets
 
 ### Bosch Small Traffic Light Dataset
 
