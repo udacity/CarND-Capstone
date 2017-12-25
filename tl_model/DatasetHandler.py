@@ -3,6 +3,8 @@ import os
 import sys
 import argparse
 import yaml
+import pandas as pd
+from enum import Enum
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,39 +13,68 @@ import cv2
 import plot_utils as plu
 
 
-class DatasetHandler():
+class DatasetType(Enum):
+    """ Available datasets. """
+    NONE = 0                # Empty dataset
+    MERGED = 1              # Merged different datasets
+    BOSCH = 2               # Bosch small traffic light dataset
+    LARA = 3                # LARA traffic light dataset (La Route Automatisée, Paris)
+    SDCND_CAPSTONE = 4      # Udacity specific dataset
+
+
+class TrafficLightLabel(Enum):
+    """ Traffic light label/class definitions. """
+    UNDEFINED = 0           # off, side, back view
+    RED = 1                 # red traffic light, no direction information
+    YELLOW = 2              # yellow/orange traffic light, no direction information
+    GREEN = 3               # green traffic light, no direction information
+
+
+class DatasetHandler:
     """
     The DatasetHandler provides basic methods to translate the different dataset ground truth data into
     one common format which can be used to train the TL model.
 
-    The Bosch statistics and read all labels scripcs are inspired by the original Bosch GitHub repository:
+    The Bosch related statistics and labels scripts are inspired by the original Bosch GitHub repository:
 
         https://github.com/bosch-ros-pkg/bstld
 
-    Usage: DatasetHandler.py [-h] [--bosch_label_file YAML_file] [-s] [-sp] [-si]
+    Usage: DatasetHandler.py -h] [-h] [--bosch_label_file YAML_file]
+                                      [--lara_label_file XML_file]
+                                      [--capstone_label_file YAML_file]
+                                      [-df] [-s] [-sp] [-si]
 
-        -h                    Print help
-        --bosch_label_file    Path to Bosch dataset label YAML file.
-        -s, --statistics      Show dataset statistics line, mnumber images, image size, histograms.
-        -sp, --safe_plots     If set, safe all plots as PNG files in the actual directory. In combination with -s
-        -si, --show_images    Show all dataset images with colored labels.
+        -h, --help                       Show this help message and exit
+        --bosch_label_file YAML_file     Path to the Bosch label YAML file.
+        --lara_label_file XML_file       Path to the LARA label XML file.
+        --capstone_label_file YAML_file  Path to the SDCND Capstone label YAML file.
+        -df, --disable_filter            If set, all labels will be added to the merged dataset. Otherwise red, yellow, green, off only.
+        -s, --statistics                 Show dataset statistics like label distribution.
+        -sp, --safe_plots                Safe plots as PNG files.
+        -si, --show_images               Show all labeled images in the dataset in a video.
+
+    Common `label_dict Format:
     """
 
-    bosch_label_dict_valid = False              # True if Bosch dataset has been read.
-    bosch_label_dict = {}                       # dictionary with Bosch label data
-    bosch_label_statistics = {}                 # dictionary of type <TL class> : <number of labeled TL class>
-    bosch_number_images = 0                     # number of images in Bosch dataset
-    bosch_number_labeled_traffic_lights = 0     # number of traffic light in the Bosch dataset
-    bosch_image_shape = (0, 0, 0)               # image shape [height, width, channels] of Bosch dataset
+    dataset_type = DatasetType.NONE     # type of dataset
+    number_datasets = 0                 # Number of merged datasets
+    number_images = 0                   # number of images in the dataset
+    number_labeled_traffic_lights = 0   # number of labeled traffic lights in the dataset
+    labels = []                         # list of labeled data
+    label_statistics = {}               # dictionary of type <TL class> : <number of labeled TL class>
+    image_shape = (0, 0, 0)             # image shape [height, width, channels] of dataset
 
-    capstone_label_dict_valid = False           # True if SDCND Capstone dataset has been read.
-    capstone_label_dict = {}                    # dictionary with SDCND Capstone label data
-    capstone_label_statistics = {}              # dictionary of type <TL class> : <number of labeled TL class>
-    capstone_number_images = 0                  # number of images in SDCND Capstone dataset
-    capstone_number_labeled_traffic_lights = 0  # number of traffic light in the SDCND Capstone dataset
-    capstone_image_shape = (0, 0, 0)            # image shape [height, width, channels] of SDCND Capstone dataset
+    def update_dataset_type(self, dataset_type):
+        """ Updates the dataset type. In case several dataset have been read the type is set to `DatasetType.MERGED`.
 
-    def read_all_bosch_labels(self, input_yaml, riib=False):
+        :param type: Dataset type of enum type `DatasetType` (MERGED, BOSCH, LARA, SDCND_SCAPSTONE).
+        """
+        if self.number_datasets == 1:
+            self.dataset_type = dataset_type
+        else:
+            self.dataset_type = DatasetType.MERGED
+
+    def read_all_bosch_labels(self, input_yaml, riib=False, filter_labels=True):
         """
         Gets all labels from the Bosch Small Traffic Light Dataset listed in the label file.
 
@@ -55,18 +86,30 @@ class DatasetHandler():
         process has some drawbacks. Some of the converted images may contain artifacts and the color distribution
         may seem unusual.
 
-        :param input_yaml: Path to yaml file.
-        :param riib:       If True, change path to labeled pictures.
+        Bosch Label File Format:
 
-        :return: images:   Labels for traffic lights. None in case the input file couldn't be found.
+        - boxes:
+          - {label: Green, occluded: false, x_max: 752.625, x_min: 748.875, y_max: 354.25, y_min: 343.375}
+          path: /net/pal-soc1.us.bosch.com/ifs/data/Shared_Exports/deep_learning_data/traffic_lights/university_run1/24070.png
+        - boxes: []
+          path: /net/pal-soc1.us.bosch.com/ifs/data/Shared_Exports/deep_learning_data/traffic_lights/university_run1/24460.png
+        - boxes:
+          - {label: Green, occluded: false, x_max: 798.875, x_min: 793.375, y_max: 373.25, y_min: 357.875}
+          - {label: 'off', occluded: false, x_max: 359.875, x_min: 355.125, y_max: 383.375, y_min: 366.375}
+          path: /net/pal-soc1.us.bosch.com/ifs/data/Shared_Exports/deep_learning_data/traffic_lights/university_run1/24740.png
+
+        :param input_yaml:     Path to yaml file.
+        :param riib:           If True, change path to labeled pictures.
+        :param filter_labels:  If true only red, yellow, green and off labels are considered.
+
+        :return: images: Labels for traffic lights. None in case the input file couldn't be found.
         """
         if not os.path.exists(input_yaml):
             return None
 
         images = yaml.load(open(input_yaml, 'rb').read())
-        self.bosch_number_images = len(images)
 
-        for i in range(self.bosch_number_images):
+        for i in range(len(images)):
             images[i]['path'] = os.path.abspath(os.path.join(os.path.dirname(input_yaml), images[i]['path']))
 
             if riib:
@@ -78,259 +121,228 @@ class DatasetHandler():
                     box['y_max'] = box['y_max'] + 8
                     box['y_min'] = box['y_min'] + 8
 
-            # generate label statistics
-            self.bosch_number_labeled_traffic_lights += len(images[i]['boxes'])
+            # convert to generic label format and generate some basic dataset statistics
+            annotations = []
+            path = images[i]['path']
 
             for box in images[i]['boxes']:
-                if box['label'] not in self.bosch_label_statistics.keys():
-                    self.bosch_label_statistics[box['label']] = 1
-                else:
-                    self.bosch_label_statistics[box['label']] = self.bosch_label_statistics[box['label']] + 1
+                # filter for relevant labels if activated
+                if not filter_labels or \
+                        ((box['label'].lower().find('red') >= 0 and len(box['label']) == len('red')) or \
+                         (box['label'].lower().find('yellow') >= 0 and len(box['label']) == len('yellow')) or \
+                         (box['label'].lower().find('green') >= 0 and len(box['label']) == len('green')) or \
+                         (box['label'].lower().find('off') >= 0 and len(box['label']) == len('off'))):
 
-        self.bosch_label_dict = images
+                    annotation = {'class': box['label'].lower(),
+                                  'x_max': box['x_max'],
+                                  'x_min': box['x_min'],
+                                  'y_max': box['y_max'],
+                                  'y_min': box['y_min']}
+
+                    annotations.append(annotation)
+                    self.number_labeled_traffic_lights += 1
+
+                    if annotation['class'] not in self.label_statistics.keys():
+                        self.label_statistics[annotation['class']] = 1
+                    else:
+                        self.label_statistics[annotation['class']] = self.label_statistics[
+                                                                         annotation['class']] + 1
+
+            image = {'annotations': annotations, 'path': path}
+            self.labels.append(image)
+            self.number_images += 1
 
         # determine image size
-        image = cv2.imread(self.bosch_label_dict[0]['path'])
-        self.bosch_image_shape = image.shape
-        self.bosch_label_dict_valid = True
+        image = cv2.imread(self.labels[0]['path'])
+        self.image_shape = image.shape
+
+        self.number_datasets += 1
+        self.update_dataset_type(DatasetType.BOSCH)
 
         return images
 
-    def print_bosch_statistics(self):
-        """ Plots basic dataset statistics like number of images, labes, etc. """
+    def read_all_lara_labels(self, input_txt, filter_labels=True):
+        """
+        Gets all labels from the LARA Traffic Light Dataset listed in the label file.
 
-        if not self.bosch_label_dict_valid:
-            print('ERROR: No valid dataset dictionary. Read Bosch dataset before.')
-            return
+        Image Formats:
+          - RGB 8bit, size = 640x480.
 
-        print()
-        print(' Bosch Small Traffic Light Dataset')
-        print('--------------------------------------------------')
-        print('Number images:        {}'.format(self.bosch_number_images))
-        print('Number traffic light: {}'.format(self.bosch_number_labeled_traffic_lights))
-        print('Image shape:          {}x{}x{}'.format(self.bosch_image_shape[1],
-                                                      self.bosch_image_shape[0],
-                                                      self.bosch_image_shape[2]))
+         LARA GT TXT File Format:
+            Timestamp / frameindex x1 y1 x2 y2 id 'type' 'subtype'
 
-    def plot_bosch_label_histogram(self, safe_figure=False):
-        """ Plots a histogram over all Bosch labels which have been read by the `read_all_bosch_labels()` method.
+            06:54.6118 / 5221 339 15 355 50 10 'Traffic Light' 'stop'
+            06:54.6118 / 5221 342 131 348 146 35 'Traffic Light' 'ambiguous'
+            06:54.6710 / 5222 338 13 354 48 10 'Traffic Light' 'stop'
 
-        :param safe_figure:  If true safe figure as png file.
+        :param input_txt:      Path to GT TXT file.
+        :param filter_labels:  If true only red, yellow, green and off labels are considered.
+
+        :return: images: Labels for traffic lights. None in case the input file couldn't be found.
         """
 
-        if not self.bosch_label_dict_valid:
-            print('ERROR: No valid dataset dictionary. Read Bosch dataset before.')
-            return
+        gt = pd.read_csv(input_txt, delimiter=' ', skiprows=13)
+        tuples = [tuple(x) for x in gt.values]
 
-        x = np.arange(len(self.bosch_label_statistics))
-        label_names = np.array([], dtype=np.str)
-        label_hist = np.array([])
-        colors = []
+        # FIXME: Add empty images to labels
+        prev_frameindex = -1
 
-        print()
-        print(' Label Class Distribution')
-        print('--------------------------------------------------')
+        for i in range(len(tuples)):
+            # convert to generic label format and generate some basic dataset statistics
+            frameindex = tuples[i][2]
+            path = os.path.abspath(os.path.join(os.path.dirname(input_txt), 'Lara3D_UrbanSeq1_JPG/frame_{:06d}.jpg'.format(int(frameindex))))
 
-        for key in sorted(self.bosch_label_statistics.keys()):
-            print('{:18s} = {}'.format(key, self.bosch_label_statistics[key]))
-            label_names = np.append(label_names, key)
-            label_hist = np.append(label_hist, self.bosch_label_statistics[key])
+            if frameindex > prev_frameindex:
+                annotations = []
 
-            # set bar color depending on label class
-            if str(key).lower().find('red') >= 0:
-                colors.append(plu.COLOR_RED)
-            elif str(key).lower().find('yellow') >= 0:
-                colors.append(plu.COLOR_YELLOW)
-            elif str(key).lower().find('green') >= 0:
-                colors.append(plu.COLOR_GREEN)
-            else:
-                colors.append(plu.COLOR_GREY)
+            # filter for relevant labels if activated
+            if not filter_labels or \
+                    tuples[i][10].lower().find('stop') >= 0 or \
+                    tuples[i][10].lower().find('warning') >= 0 or \
+                    tuples[i][10].lower().find('go') >= 0 or \
+                    tuples[i][10].lower().find('ambiguous') >= 0:
 
-        # plot label histogram
-        fig, ax = plt.subplots()
-        fig.subplots_adjust(left=0.27, right=0.97, bottom=0.1, top=0.9)
-        rect = plt.barh(x, label_hist, color=colors)
-        plu.autolabel_barh(rect, ax)
-        plt.yticks(x, label_names)
-        plt.title('Label Distribution in Bosch Small Traffic Light Dataset')
-        plt.ylabel('label class')
-        plt.xlabel('number of labels per class')
-        ax.set_axisbelow(True)
-        #ax.minorticks_on()
-        ax.grid(which='major', linestyle='-', linewidth='0.5', color='grey')
-        #ax.grid(which='minor', linestyle=':', linewidth='0.5', color='grey')
+                if tuples[i][10].lower().find('stop') >= 0:
+                    label = 'red'
+                elif tuples[i][10].lower().find('warning') >= 0:
+                    label = 'yellow'
+                elif tuples[i][10].lower().find('go') >= 0:
+                    label = 'green'
+                else:
+                    label = 'off'
 
-        if safe_figure:
-            plt.savefig('bosch_label_histogram.png')
+                annotation = {'class': label,
+                              'x_max': tuples[i][5],
+                              'x_min': tuples[i][3],
+                              'y_max': tuples[i][6],
+                              'y_min': tuples[i][4]}
 
-        plt.show(block=False)
+                annotations.append(annotation)
+                self.number_labeled_traffic_lights += 1
 
-    def plot_bosch_label_heatmap(self, safe_figure=False):
-        """ Plots a heatmap over all Bosch label positions.
+                if annotation['class'] not in self.label_statistics.keys():
+                    self.label_statistics[annotation['class']] = 1
+                else:
+                    self.label_statistics[annotation['class']] = self.label_statistics[
+                                                                     annotation['class']] + 1
 
-        :param safe_figure: If true safe figure as png file.
-        """
+            if frameindex > prev_frameindex:
+                image = {'annotations': annotations, 'path': path}
+                self.labels.append(image)
+                self.number_images += 1
+                prev_frameindex = frameindex
 
-        if not self.bosch_label_dict_valid:
-            print('ERROR: No valid dataset dictionary. Read Bosch dataset before.')
-            return
+        # determine image size
+        image = cv2.imread(self.labels[0]['path'])
+        self.image_shape = image.shape
 
-        heatmap_red = np.zeros((self.bosch_image_shape[0], self.bosch_image_shape[1]), dtype=np.float)
-        heatmap_yellow = np.zeros((self.bosch_image_shape[0], self.bosch_image_shape[1]), dtype=np.float)
-        heatmap_green = np.zeros((self.bosch_image_shape[0], self.bosch_image_shape[1]), dtype=np.float)
-        heatmap_off = np.zeros((self.bosch_image_shape[0], self.bosch_image_shape[1]), dtype=np.float)
+        self.number_datasets += 1
+        self.update_dataset_type(DatasetType.LARA)
 
-        for i in range(self.bosch_number_images):
-            for box in self.bosch_label_dict[i]['boxes']:
-                # set bar color depending on label class
-                # label file format: {label: Green, occluded: false, x_max: 753.875, x_min: 750.0, y_max: 355.625, y_min: 346.375}
+        return self.labels
 
-                if box['label'].lower().find('red') >= 0 and len(box['label']) == len('red'):
-                    heatmap_red[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
-                elif box['label'].lower().find('yellow') >= 0 and len(box['label']) == len('yellow'):
-                    heatmap_yellow[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
-                elif box['label'].lower().find('green') >= 0 and len(box['label']) == len('green'):
-                    heatmap_green[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
-                elif box['label'].lower().find('off') >= 0 and len(box['label']) == len('off'):
-                    heatmap_off[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
-
-        heatmap_all = heatmap_red + heatmap_yellow + heatmap_green + heatmap_off
-
-        # plot label histogram
-        fig, ax = plt.subplots()
-        fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
-        fig.suptitle('Label Heatmap of Bosch Small Traffic Light Dataset')
-        ax.imshow(heatmap_all, cmap='jet', interpolation='nearest')
-        ax.set_title('Red, Green, Red, Off TL')
-
-        if safe_figure:
-            plt.savefig('bosch_label_heatmap_all.png')
-
-        fig, axarr = plt.subplots(2, 2)
-        fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
-        fig.suptitle('Label Heatmap of Bosch Small Traffic Light Dataset')
-
-        axarr[0, 0].imshow(heatmap_red, cmap='Reds', interpolation='nearest')
-        axarr[0, 0].set_title('Red TL')
-
-        axarr[0, 1].imshow(heatmap_yellow, cmap='Oranges', interpolation='nearest')
-        axarr[0, 1].set_title('Yellow TL')
-
-        axarr[1, 0].imshow(heatmap_green, cmap='Greens', interpolation='nearest')
-        axarr[1, 0].set_title('Green TL')
-
-        axarr[1, 1].imshow(heatmap_off, cmap='Greys', interpolation='nearest')
-        axarr[1, 1].set_title('Off TL')
-
-        if safe_figure:
-            plt.savefig('bosch_label_heatmap_red_yellow_green_off.png')
-
-        plt.show(block=False)
-
-    def show_bosch_labeled_images(self, output_folder=None):
-        """
-        Shows all images with colored labeled traffic lights.
-
-        :param output_folder: If None, do not save picture. Else enter path to folder
-        """
-        images = self.bosch_label_dict
-
-        if output_folder is not None:
-            if not os.path.exists(output_folder):
-                os.makedirs(output_folder)
-
-        for i, image_dict in enumerate(images):
-            image = cv2.imread(image_dict['path'])
-            if image is None:
-                raise IOError('Could not open image path', image_dict['path'])
-
-            for box in image_dict['boxes']:
-                color = (100, 100, 100)
-
-                if box['label'].lower().find('red') >= 0:
-                    color = (0, 0, 255)
-                elif box['label'].lower().find('yellow') >= 0:
-                    color = (0, 255, 255)
-                elif box['label'].lower().find('green') >= 0:
-                    color = (0, 255, 0)
-
-                cv2.rectangle(image,
-                              (int(round(box['x_min'])), int(round(box['y_min']))),
-                              (int(round(box['x_max'])), int(round(box['y_max']))),
-                              color)
-
-            cv2.imshow('labeled_image', image)
-            cv2.waitKey(200)
-
-            if output_folder is not None:
-                cv2.imwrite(os.path.join(output_folder, str(i).zfill(10) + '_'
-                                         + os.path.basename(image_dict['path'])), image)
-
-    def read_all_capstone_labels(self, input_yaml):
+    def read_all_capstone_labels(self, input_yaml, filter_labels=True):
         """
         Gets all labels from the SDCND Capstone Traffic Light Dataset listed in the label file.
 
         Image Formats:
           - RGB 8bit, size = 1368x1096.
 
-        :param input_yaml: Path to yaml file.
+        SDCND Capstone Label File Format:
 
-        :return: images:   Labels for traffic lights. None in case the input file couldn't be found.
+        - annotations:
+          - {class: Green, x_width: 20.25524832517874, xmin: 646.3460457627134, y_height: 56.264578681052, ymin: 417.32241787431707}
+          class: image
+          filename: green/left0007.jpg
+
+        :param input_yaml:     Path to yaml file.
+        :param filter_labels:  If true only red, yellow, green and off labels are considered.
+
+        :return: images: Labels for traffic lights. None in case the input file couldn't be found.
         """
         if not os.path.exists(input_yaml):
             return None
 
         images = yaml.load(open(input_yaml, 'rb').read())
-        self.capstone_number_images = len(images)
 
-        for i in range(self.capstone_number_images):
+        for i in range(len(images)):
             images[i]['filename'] = os.path.abspath(os.path.join(os.path.dirname(input_yaml), images[i]['filename']))
 
-            # generate label statistics
-            self.capstone_number_labeled_traffic_lights += len(images[i]['annotations'])
+            # convert to generic label format and generate some basic dataset statistics
+            annotations = []
+            path = images[i]['filename']
 
             for annotation in images[i]['annotations']:
-                if annotation['class'] not in self.capstone_label_statistics.keys():
-                    self.capstone_label_statistics[annotation['class']] = 1
-                else:
-                    self.capstone_label_statistics[annotation['class']] = self.capstone_label_statistics[annotation['class']] + 1
+                # filter for relevant labels if activated
+                if not filter_labels or \
+                        ((annotation['class'].lower().find('red') >= 0 and len(annotation['class']) == len('red')) or \
+                         (annotation['class'].lower().find('yellow') >= 0 and len(annotation['class']) == len('yellow')) or \
+                         (annotation['class'].lower().find('green') >= 0 and len(annotation['class']) == len('green')) or \
+                         (annotation['class'].lower().find('off') >= 0 and len(annotation['class']) == len('off'))):
 
-        self.capstone_label_dict = images
+                    annotation = {'class': annotation['class'].lower(),
+                                  'x_max': annotation['xmin'] + annotation['x_width'],
+                                  'x_min': annotation['xmin'],
+                                  'y_max': annotation['ymin'] + annotation['y_height'],
+                                  'y_min': annotation['ymin']}
+
+                    annotations.append(annotation)
+                    self.number_labeled_traffic_lights += 1
+
+                    if annotation['class'] not in self.label_statistics.keys():
+                        self.label_statistics[annotation['class']] = 1
+                    else:
+                        self.label_statistics[annotation['class']] = self.label_statistics[
+                                                                         annotation['class']] + 1
+
+            image = {'annotations': annotations, 'path': path}
+            self.labels.append(image)
+            self.number_images += 1
 
         # determine image size
-        image = cv2.imread(self.capstone_label_dict[0]['filename'])
-        self.capstone_image_shape = image.shape
-        self.capstone_label_dict_valid = True
+        image = cv2.imread(self.labels[0]['path'])
+        self.image_shape = image.shape
+
+        self.number_datasets += 1
+        self.update_dataset_type(DatasetType.SDCND_CAPSTONE)
 
         return images
 
-    def print_capstone_statistics(self):
+    def is_valid(self):
+        """ Returns true if valid datasets resp. images are available. """
+        return self.number_images > 0
+
+    def number_merged_datasets(self):
+        """ Returns the number of merged datasets. """
+        return self.number_datasets
+
+    def print_statistics(self):
         """ Plots basic dataset statistics like number of images, labes, etc. """
 
-        if not self.capstone_label_dict_valid:
-            print('ERROR: No valid dataset dictionary. Read SDCND Capstone dataset before.')
+        if self.number_images == 0:
+            print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
         print()
-        print(' SDCND Capstone Dataset')
+        print(' Traffic Light Dataset')
         print('--------------------------------------------------')
-        print('Number images:        {}'.format(self.capstone_number_images))
-        print('Number traffic light: {}'.format(self.capstone_number_labeled_traffic_lights))
-        print('Image shape:          {}x{}x{}'.format(self.capstone_image_shape[1],
-                                                      self.capstone_image_shape[0],
-                                                      self.capstone_image_shape[2]))
+        print('Number images:        {}'.format(self.number_images))
+        print('Number traffic light: {}'.format(self.number_labeled_traffic_lights))
+        print('Image shape:          {}x{}x{}'.format(self.image_shape[1],
+                                                      self.image_shape[0],
+                                                      self.image_shape[2]))
 
-    def plot_capstone_label_histogram(self, safe_figure=False):
-        """ Plots a histogram over all SDCND Capstone labels which have been read by the `read_all_capstone_labels()` method.
+    def plot_label_histogram(self, safe_figure=False):
+        """ Plots a histogram over all labels.
 
         :param safe_figure:  If true safe figure as png file.
         """
 
-        if not self.capstone_label_dict_valid:
-            print('ERROR: No valid dataset dictionary. Read SDCND Capstone dataset before.')
+        if self.number_images == 0:
+            print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
-        x = np.arange(len(self.capstone_label_statistics))
+        x = np.arange(len(self.label_statistics))
         label_names = np.array([], dtype=np.str)
         label_hist = np.array([])
         colors = []
@@ -339,10 +351,10 @@ class DatasetHandler():
         print(' Label Class Distribution')
         print('--------------------------------------------------')
 
-        for key in sorted(self.capstone_label_statistics.keys()):
-            print('{:18s} = {}'.format(key, self.capstone_label_statistics[key]))
+        for key in sorted(self.label_statistics.keys()):
+            print('{:18s} = {}'.format(key, self.label_statistics[key]))
             label_names = np.append(label_names, key)
-            label_hist = np.append(label_hist, self.capstone_label_statistics[key])
+            label_hist = np.append(label_hist, self.label_statistics[key])
 
             # set bar color depending on label class
             if str(key).lower().find('red') >= 0:
@@ -355,74 +367,89 @@ class DatasetHandler():
                 colors.append(plu.COLOR_GREY)
 
         # plot label histogram
+        if self.dataset_type == DatasetType.BOSCH:
+            title = 'Label Distribution in Bosch Small Traffic Light Dataset'
+        elif self.dataset_type == DatasetType.LARA:
+            title = 'Label Distribution in LARA Traffic Light Dataset'
+        elif self.dataset_type == DatasetType.SDCND_CAPSTONE:
+            title = 'Label Distribution in SDCND Capstone Traffic Light Dataset'
+        else:
+            title = 'Label Distribution in Merged Traffic Light Dataset'
+
         fig, ax = plt.subplots()
         fig.subplots_adjust(left=0.13, right=0.97, bottom=0.1, top=0.9)
         rect = plt.barh(x, label_hist, color=colors)
         plu.autolabel_barh(rect, ax)
         plt.yticks(x, label_names)
-        plt.title('Label Distribution in SDCND Capstone Traffic Light Dataset')
+        plt.title(title)
         plt.ylabel('label class')
         plt.xlabel('number of labels per class')
         ax.set_axisbelow(True)
-        #ax.minorticks_on()
+        # ax.minorticks_on()
         ax.grid(which='major', linestyle='-', linewidth='0.5', color='grey')
-        #ax.grid(which='minor', linestyle=':', linewidth='0.5', color='grey')
+        # ax.grid(which='minor', linestyle=':', linewidth='0.5', color='grey')
 
         if safe_figure:
-            plt.savefig('capstone_label_histogram.png')
+            plt.savefig('label_histogram.png')
 
         plt.show(block=False)
 
-    def plot_capstone_label_heatmap(self, safe_figure=False):
-        """ Plots a heatmap over all SDCND Capstone label positions.
+    def plot_label_heatmap(self, safe_figure=False):
+        """ Plots a heatmap over all label positions (bounding boxes).
 
         :param safe_figure: If true safe figure as png file.
         """
 
-        if not self.capstone_label_dict_valid:
-            print('ERROR: No valid dataset dictionary. Read SDCND Capstone dataset before.')
+        if self.number_images == 0:
+            print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
-        heatmap_red = np.zeros((self.capstone_image_shape[0], self.capstone_image_shape[1]), dtype=np.float)
-        heatmap_yellow = np.zeros((self.capstone_image_shape[0], self.capstone_image_shape[1]), dtype=np.float)
-        heatmap_green = np.zeros((self.capstone_image_shape[0], self.capstone_image_shape[1]), dtype=np.float)
-        heatmap_off = np.zeros((self.capstone_image_shape[0], self.capstone_image_shape[1]), dtype=np.float)
+        heatmap_red = np.zeros((self.image_shape[0], self.image_shape[1]), dtype=np.float)
+        heatmap_yellow = np.zeros((self.image_shape[0], self.image_shape[1]), dtype=np.float)
+        heatmap_green = np.zeros((self.image_shape[0], self.image_shape[1]), dtype=np.float)
+        heatmap_off = np.zeros((self.image_shape[0], self.image_shape[1]), dtype=np.float)
 
+        for i in range(self.number_images):
+            for annotation in self.labels[i]['annotations']:
+                class_label = annotation['class'].lower()
+                x_max = int(round(annotation['x_max']))
+                x_min = int(round(annotation['x_min']))
+                y_max = int(round(annotation['y_max']))
+                y_min = int(round(annotation['y_min']))
 
-        for i in range(self.capstone_number_images):
-            for annotation in self.capstone_label_dict[i]['annotations']:
-                # set bar color depending on label class
-                # label file format: {class: Green, x_width: 19.290712690646387, xmin: 647.3105813972458, y_height: 54.442678038046495, ymin: 418.50129476096765}
-
-                x_min = int(round(annotation['xmin']))
-                x_max = int(round(annotation['xmin'] + annotation['x_width']))
-                y_min = int(round(annotation['ymin']))
-                y_max = int(round(annotation['ymin'] + annotation['y_height']))
-
-                if annotation['class'].lower().find('red') >= 0 and len(annotation['class']) == len('red'):
+                if class_label.find('red') >= 0 and len(class_label) == len('red'):
                     heatmap_red[y_min:y_max, x_min:x_max] += 1
-                elif annotation['class'].lower().find('yellow') >= 0 and len(annotation['class']) == len('yellow'):
+                elif class_label.find('yellow') >= 0 and len(class_label) == len('yellow'):
                     heatmap_yellow[y_min:y_max, x_min:x_max] += 1
-                elif annotation['class'].lower().find('green') >= 0 and len(annotation['class']) == len('green'):
+                elif class_label.lower().find('green') >= 0 and len(class_label) == len('green'):
                     heatmap_green[y_min:y_max, x_min:x_max] += 1
-                elif annotation['class'].lower().find('off') >= 0 and len(annotation['class']) == len('off'):
+                elif class_label.find('off') >= 0 and len(class_label) == len('off'):
                     heatmap_off[y_min:y_max, x_min:x_max] += 1
 
         heatmap_all = heatmap_red + heatmap_yellow + heatmap_green + heatmap_off
 
         # plot label histogram
+        if self.dataset_type == DatasetType.BOSCH:
+            title = 'Label Heatmap of Bosch Small Traffic Light Dataset'
+        elif self.dataset_type == DatasetType.LARA:
+            title = 'Label Heatmap of LARA Traffic Light Dataset'
+        elif self.dataset_type == DatasetType.SDCND_CAPSTONE:
+            title = 'Label Heatmap of SDCND Capstone Traffic Light Dataset'
+        else:
+            title = 'Label Heatmap of Merged Traffic Light Dataset'
+
         fig, ax = plt.subplots()
         fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
-        fig.suptitle('Label Heatmap of SDCND Capstone Traffic Light Dataset')
+        fig.suptitle(title)
         ax.imshow(heatmap_all, cmap='jet', interpolation='nearest')
         ax.set_title('Red, Green, Red, Off TL')
 
         if safe_figure:
-            plt.savefig('capstone_label_heatmap_all.png')
+            plt.savefig('label_heatmap_all.png')
 
         fig, axarr = plt.subplots(2, 2)
         fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
-        fig.suptitle('Label Heatmap of SDCND Capstine Traffic Light Dataset')
+        fig.suptitle(title)
 
         axarr[0, 0].imshow(heatmap_red, cmap='Reds', interpolation='nearest')
         axarr[0, 0].set_title('Red TL')
@@ -437,28 +464,28 @@ class DatasetHandler():
         axarr[1, 1].set_title('Off TL')
 
         if safe_figure:
-            plt.savefig('capstone_label_heatmap_red_yellow_green_off.png')
+            plt.savefig('label_heatmap_red_yellow_green_off.png')
 
         plt.show(block=False)
 
-    def show_capstone_labeled_images(self, output_folder=None):
+    def show_labeled_images(self, output_folder=None):
         """
         Shows all images with colored labeled traffic lights.
 
-        :param output_folder: If None, do not save picture. Else enter path to folder
+        :param output_folder: If None, do not save picture. Else enter path to folder.
         """
-        images = self.capstone_label_dict
 
         if output_folder is not None:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
 
-        for i, image_dict in enumerate(images):
-            image = cv2.imread(image_dict['filename'])
-            if image is None:
-                raise IOError('Could not open image path', image_dict['filename'])
+        for i, label in enumerate(self.labels):
+            image = cv2.imread(label['path'])
 
-            for annotation in image_dict['annotations']:
+            if image is None:
+                raise IOError('Could not open image path', label['path'])
+
+            for annotation in label['annotations']:
                 color = (100, 100, 100)
 
                 if annotation['class'].lower().find('red') >= 0:
@@ -468,22 +495,18 @@ class DatasetHandler():
                 elif annotation['class'].lower().find('green') >= 0:
                     color = (0, 255, 0)
 
-                x_min = int(round(annotation['xmin']))
-                x_max = int(round(annotation['xmin'] + annotation['x_width']))
-                y_min = int(round(annotation['ymin']))
-                y_max = int(round(annotation['ymin'] + annotation['y_height']))
+                x_max = int(round(annotation['x_max']))
+                x_min = int(round(annotation['x_min']))
+                y_max = int(round(annotation['y_max']))
+                y_min = int(round(annotation['y_min']))
 
-                cv2.rectangle(image,
-                              (x_min, y_min),
-                              (x_max, y_max),
-                              color)
+                cv2.rectangle(image, (x_min, y_min), (x_max, y_max), color)
 
-            cv2.imshow('labeled_image', image)
-            cv2.waitKey(200)
+            cv2.imshow('Labeled Images', image)
+            cv2.waitKey(10)
 
             if output_folder is not None:
-                cv2.imwrite(os.path.join(output_folder, str(i).zfill(10) + '_'
-                                         + os.path.basename(image_dict['filename'])), image)
+                cv2.imwrite(os.path.join(output_folder, str(i).zfill(10) + '_' + os.path.basename(label['path'])), image)
 
 
 if __name__ == '__main__':
@@ -497,10 +520,25 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
+        '--lara_label_file',
+        help='Path to the LARA label XML file.',
+        dest='lara_label_file',
+        metavar='XML_file'
+    )
+
+    parser.add_argument(
         '--capstone_label_file',
         help='Path to the SDCND Capstone label YAML file.',
         dest='capstone_label_file',
         metavar='YAML_file'
+    )
+
+    parser.add_argument(
+        '-df', '--disable_filter',
+        help='If set, all labels will be added to the merged dataset. Otherwise red, yellow, green, off only.',
+        action='store_true',
+        default=False,
+        dest='disable_filter'
     )
 
     parser.add_argument(
@@ -521,7 +559,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '-si', '--show_images',
-        help='Show all labeled images in the dataset.',
+        help='Show all labeled images in the dataset in a video.',
         action='store_true',
         default=False,
         dest='show_images'
@@ -534,48 +572,48 @@ if __name__ == '__main__':
         parser.print_usage()
         parser.exit(-1)
 
+    dataset_handler = DatasetHandler()
     safe_plots = False
 
     if args.bosch_label_file:
         print('Loading Bosch dataset...', end='', flush=True)
-        dataset_handler = DatasetHandler()
 
-        if dataset_handler.read_all_bosch_labels(args.bosch_label_file) is None:
+        if dataset_handler.read_all_bosch_labels(args.bosch_label_file, filter_labels=not args.disable_filter) is None:
             print('')
             print('ERROR: Input YAML file "{}" not found.'.format(args.bosch_label_file))
             exit(-1)
         else:
             print('done')
 
-        if args.statistics:
-            # print/plot dataset statistics
-            dataset_handler.print_bosch_statistics()
-            dataset_handler.plot_bosch_label_histogram(safe_figure=args.safe_plots)
-            dataset_handler.plot_bosch_label_heatmap(safe_figure=args.safe_plots)
-            plt.show()
-        elif args.show_images:
-            # show all images with colored labels
-            print('Exit with CTRL+C')
-            dataset_handler.show_bosch_labeled_images()
+    if args.lara_label_file:
+        print('Loading LARA dataset...', end='', flush=True)
+
+        if dataset_handler.read_all_lara_labels(args.lara_label_file, filter_labels=not args.disable_filter) is None:
+            print('')
+            print('ERROR: Input XML file "{}" not found.'.format(args.lara_label_file))
+            exit(-1)
+        else:
+            print('done')
 
     if args.capstone_label_file:
         print('Loading SDCND Capstone dataset...', end='', flush=True)
-        dataset_handler = DatasetHandler()
 
-        if dataset_handler.read_all_capstone_labels(args.capstone_label_file) is None:
+        if dataset_handler.read_all_capstone_labels(args.capstone_label_file, filter_labels=not args.disable_filter) is None:
             print('')
             print('ERROR: Input YAML file "{}" not found.'.format(args.capstone_label_file))
             exit(-1)
         else:
             print('done')
 
+    if dataset_handler.is_valid():
         if args.statistics:
-            # print/plot dataset statistics
-            dataset_handler.print_capstone_statistics()
-            dataset_handler.plot_capstone_label_histogram(safe_figure=args.safe_plots)
-            dataset_handler.plot_capstone_label_heatmap(safe_figure=args.safe_plots)
+            dataset_handler.print_statistics()
+            dataset_handler.plot_label_histogram(safe_figure=args.safe_plots)
+            dataset_handler.plot_label_heatmap(safe_figure=args.safe_plots)
             plt.show()
         elif args.show_images:
-            # show all images with colored labels
             print('Exit with CTRL+C')
-            dataset_handler.show_capstone_labeled_images()
+            dataset_handler.show_labeled_images(output_folder=None)
+    else:
+        print('ERROR: No valid datasets found.')
+        exit(-1)

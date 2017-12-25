@@ -11,6 +11,7 @@ dependencies:
     - ffmpeg
     - imageio==2.1.2
     - PyYAML
+    - pandas
     - pip:
         - moviepy
         - opencv-python
