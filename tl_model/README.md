@@ -6,7 +6,7 @@
 [image_bosch_label_heatmap_all]: ./images/bosch_label_heatmap_all.png
 [image_bosch_label_heatmap_rygo]: ./images/bosch_label_heatmap_red_yellow_green_off.png
 
-[image_capstone_labeled_image]: ./images/capstone_labeled_image_0.png
+[image_capstone_labeled_image]: ./images/capstone_labeled_image_0.jpg
 [image_capstone_label_hist]: ./images/capstone_label_histogram.png
 [image_capstone_label_heatmap_all]: ./images/capstone_label_heatmap_all.png
 [image_capstone_label_heatmap_rygo]: ./images/capstone_label_heatmap_red_yellow_green_off.png
