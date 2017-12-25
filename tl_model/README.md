@@ -6,6 +6,11 @@
 [image_bosch_label_heatmap_all]: ./images/bosch_label_heatmap_all.png
 [image_bosch_label_heatmap_rygo]: ./images/bosch_label_heatmap_red_yellow_green_off.png
 
+[image_capstone_labeled_image]: ./images/capstone_labeled_image_0.png
+[image_capstone_label_hist]: ./images/capstone_label_histogram.png
+[image_capstone_label_heatmap_all]: ./images/capstone_label_heatmap_all.png
+[image_capstone_label_heatmap_rygo]: ./images/capstone_label_heatmap_red_yellow_green_off.png
+
 ## Datasets
 
 ### Required Directory Layout
@@ -53,3 +58,20 @@ The following images display a heatmap of label positions of the class red, yell
 ![Bosch Label Heatmap All][image_bosch_label_heatmap_all]
 
 ![Bosch Label Heatmnap Red, Yellow, Green, Off][image_bosch_label_heatmap_rygo]
+
+### SDCND Capstone Dataset
+
+| Attribute                        | Description |
+|:---------------------------------|:------------|
+| Number of images                 | 159         |
+| Number of labeled traffic lights | 159         |
+| Image shape                      | 1368x1096x3 |
+| Image format                     | 8 bit RGB   |
+
+![SDCND Capstone Label Image Example][image_capstone_labeled_image]
+
+The following images display a heatmap of label positions of the class red, yellow, green and off. The class off us currently not available in the SDCND Capstone dataset.
+
+![SDCND Capstone Label Heatmap All][image_capstone_label_heatmap_all]
+
+![SDCND Capstone Label Heatmnap Red, Yellow, Green, Off][image_capstone_label_heatmap_rygo]

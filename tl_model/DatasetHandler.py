@@ -29,12 +29,19 @@ class DatasetHandler():
         -si, --show_images    Show all dataset images with colored labels.
     """
 
-    bosch_label_dict_valid = False           # True if Bosch dataset has been read.
-    bosch_label_dict = {}                    # dictionary with Bosch label data
-    bosch_label_statistics = {}              # dictionary of type <TL class> : <number of labeled TL class>
-    bosch_number_images = 0                  # number of images in Bosch dataset
-    bosch_number_labeled_traffic_lights = 0  # number of traffic light in the Bosch dataset
-    bosch_image_shape = (0, 0, 0)            # image shape [height, width, channels] of bosch dataset
+    bosch_label_dict_valid = False              # True if Bosch dataset has been read.
+    bosch_label_dict = {}                       # dictionary with Bosch label data
+    bosch_label_statistics = {}                 # dictionary of type <TL class> : <number of labeled TL class>
+    bosch_number_images = 0                     # number of images in Bosch dataset
+    bosch_number_labeled_traffic_lights = 0     # number of traffic light in the Bosch dataset
+    bosch_image_shape = (0, 0, 0)               # image shape [height, width, channels] of Bosch dataset
+
+    capstone_label_dict_valid = False           # True if SDCND Capstone dataset has been read.
+    capstone_label_dict = {}                    # dictionary with SDCND Capstone label data
+    capstone_label_statistics = {}              # dictionary of type <TL class> : <number of labeled TL class>
+    capstone_number_images = 0                  # number of images in SDCND Capstone dataset
+    capstone_number_labeled_traffic_lights = 0  # number of traffic light in the SDCND Capstone dataset
+    capstone_image_shape = (0, 0, 0)            # image shape [height, width, channels] of SDCND Capstone dataset
 
     def read_all_bosch_labels(self, input_yaml, riib=False):
         """
@@ -176,6 +183,8 @@ class DatasetHandler():
         for i in range(self.bosch_number_images):
             for box in self.bosch_label_dict[i]['boxes']:
                 # set bar color depending on label class
+                # label file format: {label: Green, occluded: false, x_max: 753.875, x_min: 750.0, y_max: 355.625, y_min: 346.375}
+
                 if box['label'].lower().find('red') >= 0 and len(box['label']) == len('red'):
                     heatmap_red[int(round(box['y_min'])):int(round(box['y_max'])), int(round(box['x_min'])):int(round(box['x_max']))] += 1
                 elif box['label'].lower().find('yellow') >= 0 and len(box['label']) == len('yellow'):
@@ -257,6 +266,226 @@ class DatasetHandler():
                 cv2.imwrite(os.path.join(output_folder, str(i).zfill(10) + '_'
                                          + os.path.basename(image_dict['path'])), image)
 
+    def read_all_capstone_labels(self, input_yaml):
+        """
+        Gets all labels from the SDCND Capstone Traffic Light Dataset listed in the label file.
+
+        Image Formats:
+          - RGB 8bit, size = 1368x1096.
+
+        :param input_yaml: Path to yaml file.
+
+        :return: images:   Labels for traffic lights. None in case the input file couldn't be found.
+        """
+        if not os.path.exists(input_yaml):
+            return None
+
+        images = yaml.load(open(input_yaml, 'rb').read())
+        self.capstone_number_images = len(images)
+
+        for i in range(self.capstone_number_images):
+            images[i]['filename'] = os.path.abspath(os.path.join(os.path.dirname(input_yaml), images[i]['filename']))
+
+            # generate label statistics
+            self.capstone_number_labeled_traffic_lights += len(images[i]['annotations'])
+
+            for annotation in images[i]['annotations']:
+                if annotation['class'] not in self.capstone_label_statistics.keys():
+                    self.capstone_label_statistics[annotation['class']] = 1
+                else:
+                    self.capstone_label_statistics[annotation['class']] = self.capstone_label_statistics[annotation['class']] + 1
+
+        self.capstone_label_dict = images
+
+        # determine image size
+        image = cv2.imread(self.capstone_label_dict[0]['filename'])
+        self.capstone_image_shape = image.shape
+        self.capstone_label_dict_valid = True
+
+        return images
+
+    def print_capstone_statistics(self):
+        """ Plots basic dataset statistics like number of images, labes, etc. """
+
+        if not self.capstone_label_dict_valid:
+            print('ERROR: No valid dataset dictionary. Read SDCND Capstone dataset before.')
+            return
+
+        print()
+        print(' SDCND Capstone Dataset')
+        print('--------------------------------------------------')
+        print('Number images:        {}'.format(self.capstone_number_images))
+        print('Number traffic light: {}'.format(self.capstone_number_labeled_traffic_lights))
+        print('Image shape:          {}x{}x{}'.format(self.capstone_image_shape[1],
+                                                      self.capstone_image_shape[0],
+                                                      self.capstone_image_shape[2]))
+
+    def plot_capstone_label_histogram(self, safe_figure=False):
+        """ Plots a histogram over all SDCND Capstone labels which have been read by the `read_all_capstone_labels()` method.
+
+        :param safe_figure:  If true safe figure as png file.
+        """
+
+        if not self.capstone_label_dict_valid:
+            print('ERROR: No valid dataset dictionary. Read SDCND Capstone dataset before.')
+            return
+
+        x = np.arange(len(self.capstone_label_statistics))
+        label_names = np.array([], dtype=np.str)
+        label_hist = np.array([])
+        colors = []
+
+        print()
+        print(' Label Class Distribution')
+        print('--------------------------------------------------')
+
+        for key in sorted(self.capstone_label_statistics.keys()):
+            print('{:18s} = {}'.format(key, self.capstone_label_statistics[key]))
+            label_names = np.append(label_names, key)
+            label_hist = np.append(label_hist, self.capstone_label_statistics[key])
+
+            # set bar color depending on label class
+            if str(key).lower().find('red') >= 0:
+                colors.append(plu.COLOR_RED)
+            elif str(key).lower().find('yellow') >= 0:
+                colors.append(plu.COLOR_YELLOW)
+            elif str(key).lower().find('green') >= 0:
+                colors.append(plu.COLOR_GREEN)
+            else:
+                colors.append(plu.COLOR_GREY)
+
+        # plot label histogram
+        fig, ax = plt.subplots()
+        fig.subplots_adjust(left=0.13, right=0.97, bottom=0.1, top=0.9)
+        rect = plt.barh(x, label_hist, color=colors)
+        plu.autolabel_barh(rect, ax)
+        plt.yticks(x, label_names)
+        plt.title('Label Distribution in SDCND Capstone Traffic Light Dataset')
+        plt.ylabel('label class')
+        plt.xlabel('number of labels per class')
+        ax.set_axisbelow(True)
+        #ax.minorticks_on()
+        ax.grid(which='major', linestyle='-', linewidth='0.5', color='grey')
+        #ax.grid(which='minor', linestyle=':', linewidth='0.5', color='grey')
+
+        if safe_figure:
+            plt.savefig('capstone_label_histogram.png')
+
+        plt.show(block=False)
+
+    def plot_capstone_label_heatmap(self, safe_figure=False):
+        """ Plots a heatmap over all SDCND Capstone label positions.
+
+        :param safe_figure: If true safe figure as png file.
+        """
+
+        if not self.capstone_label_dict_valid:
+            print('ERROR: No valid dataset dictionary. Read SDCND Capstone dataset before.')
+            return
+
+        heatmap_red = np.zeros((self.capstone_image_shape[0], self.capstone_image_shape[1]), dtype=np.float)
+        heatmap_yellow = np.zeros((self.capstone_image_shape[0], self.capstone_image_shape[1]), dtype=np.float)
+        heatmap_green = np.zeros((self.capstone_image_shape[0], self.capstone_image_shape[1]), dtype=np.float)
+        heatmap_off = np.zeros((self.capstone_image_shape[0], self.capstone_image_shape[1]), dtype=np.float)
+
+
+        for i in range(self.capstone_number_images):
+            for annotation in self.capstone_label_dict[i]['annotations']:
+                # set bar color depending on label class
+                # label file format: {class: Green, x_width: 19.290712690646387, xmin: 647.3105813972458, y_height: 54.442678038046495, ymin: 418.50129476096765}
+
+                x_min = int(round(annotation['xmin']))
+                x_max = int(round(annotation['xmin'] + annotation['x_width']))
+                y_min = int(round(annotation['ymin']))
+                y_max = int(round(annotation['ymin'] + annotation['y_height']))
+
+                if annotation['class'].lower().find('red') >= 0 and len(annotation['class']) == len('red'):
+                    heatmap_red[y_min:y_max, x_min:x_max] += 1
+                elif annotation['class'].lower().find('yellow') >= 0 and len(annotation['class']) == len('yellow'):
+                    heatmap_yellow[y_min:y_max, x_min:x_max] += 1
+                elif annotation['class'].lower().find('green') >= 0 and len(annotation['class']) == len('green'):
+                    heatmap_green[y_min:y_max, x_min:x_max] += 1
+                elif annotation['class'].lower().find('off') >= 0 and len(annotation['class']) == len('off'):
+                    heatmap_off[y_min:y_max, x_min:x_max] += 1
+
+        heatmap_all = heatmap_red + heatmap_yellow + heatmap_green + heatmap_off
+
+        # plot label histogram
+        fig, ax = plt.subplots()
+        fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+        fig.suptitle('Label Heatmap of SDCND Capstone Traffic Light Dataset')
+        ax.imshow(heatmap_all, cmap='jet', interpolation='nearest')
+        ax.set_title('Red, Green, Red, Off TL')
+
+        if safe_figure:
+            plt.savefig('capstone_label_heatmap_all.png')
+
+        fig, axarr = plt.subplots(2, 2)
+        fig.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+        fig.suptitle('Label Heatmap of SDCND Capstine Traffic Light Dataset')
+
+        axarr[0, 0].imshow(heatmap_red, cmap='Reds', interpolation='nearest')
+        axarr[0, 0].set_title('Red TL')
+
+        axarr[0, 1].imshow(heatmap_yellow, cmap='Oranges', interpolation='nearest')
+        axarr[0, 1].set_title('Yellow TL')
+
+        axarr[1, 0].imshow(heatmap_green, cmap='Greens', interpolation='nearest')
+        axarr[1, 0].set_title('Green TL')
+
+        axarr[1, 1].imshow(heatmap_off, cmap='Greys', interpolation='nearest')
+        axarr[1, 1].set_title('Off TL')
+
+        if safe_figure:
+            plt.savefig('capstone_label_heatmap_red_yellow_green_off.png')
+
+        plt.show(block=False)
+
+    def show_capstone_labeled_images(self, output_folder=None):
+        """
+        Shows all images with colored labeled traffic lights.
+
+        :param output_folder: If None, do not save picture. Else enter path to folder
+        """
+        images = self.capstone_label_dict
+
+        if output_folder is not None:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder)
+
+        for i, image_dict in enumerate(images):
+            image = cv2.imread(image_dict['filename'])
+            if image is None:
+                raise IOError('Could not open image path', image_dict['filename'])
+
+            for annotation in image_dict['annotations']:
+                color = (100, 100, 100)
+
+                if annotation['class'].lower().find('red') >= 0:
+                    color = (0, 0, 255)
+                elif annotation['class'].lower().find('yellow') >= 0:
+                    color = (0, 255, 255)
+                elif annotation['class'].lower().find('green') >= 0:
+                    color = (0, 255, 0)
+
+                x_min = int(round(annotation['xmin']))
+                x_max = int(round(annotation['xmin'] + annotation['x_width']))
+                y_min = int(round(annotation['ymin']))
+                y_max = int(round(annotation['ymin'] + annotation['y_height']))
+
+                cv2.rectangle(image,
+                              (x_min, y_min),
+                              (x_max, y_max),
+                              color)
+
+            cv2.imshow('labeled_image', image)
+            cv2.waitKey(200)
+
+            if output_folder is not None:
+                cv2.imwrite(os.path.join(output_folder, str(i).zfill(10) + '_'
+                                         + os.path.basename(image_dict['filename'])), image)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dataset handler provides statistics and label transformation.')
 
@@ -264,6 +493,13 @@ if __name__ == '__main__':
         '--bosch_label_file',
         help='Path to the Bosch label YAML file.',
         dest='bosch_label_file',
+        metavar='YAML_file'
+    )
+
+    parser.add_argument(
+        '--capstone_label_file',
+        help='Path to the SDCND Capstone label YAML file.',
+        dest='capstone_label_file',
         metavar='YAML_file'
     )
 
@@ -304,7 +540,7 @@ if __name__ == '__main__':
         print('Loading Bosch dataset...', end='', flush=True)
         dataset_handler = DatasetHandler()
 
-        if dataset_handler.read_all_bosch_labels(args.bosch_label_file) == None:
+        if dataset_handler.read_all_bosch_labels(args.bosch_label_file) is None:
             print('')
             print('ERROR: Input YAML file "{}" not found.'.format(args.bosch_label_file))
             exit(-1)
@@ -321,3 +557,25 @@ if __name__ == '__main__':
             # show all images with colored labels
             print('Exit with CTRL+C')
             dataset_handler.show_bosch_labeled_images()
+
+    if args.capstone_label_file:
+        print('Loading SDCND Capstone dataset...', end='', flush=True)
+        dataset_handler = DatasetHandler()
+
+        if dataset_handler.read_all_capstone_labels(args.capstone_label_file) is None:
+            print('')
+            print('ERROR: Input YAML file "{}" not found.'.format(args.capstone_label_file))
+            exit(-1)
+        else:
+            print('done')
+
+        if args.statistics:
+            # print/plot dataset statistics
+            dataset_handler.print_capstone_statistics()
+            dataset_handler.plot_capstone_label_histogram(safe_figure=args.safe_plots)
+            dataset_handler.plot_capstone_label_heatmap(safe_figure=args.safe_plots)
+            plt.show()
+        elif args.show_images:
+            # show all images with colored labels
+            print('Exit with CTRL+C')
+            dataset_handler.show_capstone_labeled_images()
