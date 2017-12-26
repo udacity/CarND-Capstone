@@ -1,6 +1,9 @@
 # Traffic Light Detection and Classification Model
 
 [//]: # (Image References)
+[image_generator_label_heatmap_all]: ./images/generator_label_heatmap_all.png
+[image_generator_label_heatmap_rygo]: ./images/generator_label_heatmap_red_yellow_green_off.png
+
 [image_bosch_labeled_image]: ./images/bosch_labeled_image_0.png
 [image_bosch_label_hist]: ./images/bosch_label_histogram.png
 [image_bosch_label_heatmap_all]: ./images/bosch_label_heatmap_all.png
@@ -62,6 +65,18 @@ python DatasetHandler.py
   --disable_filter
 ```
 
+### Generator Output
+
+In total 65% of the whole dataset has been augmented by the following methods. The augmentation methods are combined with its own probability.
+
+- random translation: tx_max=+/-70, ty_max=+70, probability=50%
+- random horizontal flip, probability=50%
+- random brightness, probability=50%
+
+![Generator Label Heatmnap All][image_generator_label_heatmap_all]
+
+![Generator Label Heatmnap Red, Yellow, Green, Off][image_generator_label_heatmap_rygo]
+
 ## Datasets
 
 ### Bosch Small Traffic Light Dataset
@@ -92,7 +107,7 @@ The following plots display a heatmap of label positions of the class red, yello
 
 ![Bosch Label Heatmap All][image_bosch_label_heatmap_all]
 
-![Bosch Label Heatmnap Red, Yellow, Green, Off][image_bosch_label_heatmap_rygo]
+![Bosch Label Heatmap Red, Yellow, Green, Off][image_bosch_label_heatmap_rygo]
 
 ### SDCND Capstone Dataset
 
@@ -113,7 +128,7 @@ The following plots display a heatmap of label positions of the class red, yello
 
 ![SDCND Capstone Label Heatmap All][image_capstone_label_heatmap_all]
 
-![SDCND Capstone Label Heatmnap Red, Yellow, Green, Off][image_capstone_label_heatmap_rygo]
+![SDCND Capstone Label Heatmap Red, Yellow, Green, Off][image_capstone_label_heatmap_rygo]
 
 #### Udacity Simulator Data
 
@@ -130,7 +145,7 @@ The following plots display a heatmap of label positions of the class red, yello
 
 ![SDCND Capstone Simulator Label Heatmap All][image_capstone_sim_label_heatmap_all]
 
-![SDCND Capstone Simulator Label Heatmnap Red, Yellow, Green, Off][image_capstone_sim_label_heatmap_rygo]
+![SDCND Capstone Simulator Label Heatmap Red, Yellow, Green, Off][image_capstone_sim_label_heatmap_rygo]
 
 ### LARA Dataset
 
