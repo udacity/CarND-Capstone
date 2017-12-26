@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="162256c2-e8e4-49c0-8f55-920482da9dd9" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change beforePath="$PROJECT_DIR$/DataAugmentation.py" afterPath="$PROJECT_DIR$/DataAugmentation.py" />
       <change beforePath="$PROJECT_DIR$/DatasetHandler.py" afterPath="$PROJECT_DIR$/DatasetHandler.py" />
-      <change beforePath="$PROJECT_DIR$/environment.yml" afterPath="$PROJECT_DIR$/environment.yml" />
+      <change beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -18,8 +20,8 @@
       <file leaf-file-name="DatasetHandler.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2550">
-              <caret line="593" column="29" lean-forward="true" selection-start-line="534" selection-start-column="8" selection-end-line="593" selection-end-column="29" />
+            <state relative-caret-position="442">
+              <caret line="458" column="47" lean-forward="true" selection-start-line="458" selection-start-column="47" selection-end-line="458" selection-end-column="47" />
               <folding>
                 <element signature="e#22#31#0" expanded="true" />
               </folding>
@@ -30,8 +32,8 @@
       <file leaf-file-name="DataAugmentation.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DataAugmentation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="253">
-              <caret line="399" column="28" lean-forward="true" selection-start-line="399" selection-start-column="28" selection-end-line="399" selection-end-column="28" />
+            <state relative-caret-position="2880">
+              <caret line="192" column="59" lean-forward="false" selection-start-line="192" selection-start-column="59" selection-end-line="192" selection-end-column="59" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
               </folding>
@@ -54,8 +56,8 @@
       <file leaf-file-name="plot_utils.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/plot_utils.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="90">
-              <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="9" selection-end-column="24" />
+            <state relative-caret-position="525">
+              <caret line="35" column="0" lean-forward="true" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -103,9 +105,9 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/read_label_files.py" />
-        <option value="$PROJECT_DIR$/plot_utils.py" />
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/environment.yml" />
+        <option value="$PROJECT_DIR$/plot_utils.py" />
         <option value="$PROJECT_DIR$/DataAugmentation.py" />
         <option value="$PROJECT_DIR$/DatasetHandler.py" />
       </list>
@@ -431,7 +433,7 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="35" />
+      <option name="time" value="38" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -600,6 +602,14 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../../../CarND-Behavioral-Cloning-P3/DynamicPlot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-394">
+          <caret line="29" column="11" lean-forward="true" selection-start-line="29" selection-start-column="11" selection-end-line="29" selection-end-column="11" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/../../../CarND-Behavioral-Cloning-P3/networks/BaseNetwork.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1628">
@@ -612,34 +622,34 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/plot_utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" column="0" lean-forward="false" selection-start-line="6" selection-start-column="0" selection-end-line="9" selection-end-column="24" />
+        <state relative-caret-position="525">
+          <caret line="35" column="0" lean-forward="true" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Library/Caches/IdeaIC2017.3/python_stubs/1535028065/cv2/cv2/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="57">
+          <caret line="5992" column="4" lean-forward="false" selection-start-line="5992" selection-start-column="4" selection-end-line="5992" selection-end-column="4" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/DataAugmentation.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="253">
-          <caret line="399" column="28" lean-forward="true" selection-start-line="399" selection-start-column="28" selection-end-line="399" selection-end-column="28" />
+        <state relative-caret-position="2880">
+          <caret line="192" column="59" lean-forward="false" selection-start-line="192" selection-start-column="59" selection-end-line="192" selection-end-column="59" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/Library/Caches/IdeaIC2017.3/python_stubs/1535028065/cv2/cv2/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-282">
-          <caret line="7004" column="4" lean-forward="false" selection-start-line="7004" selection-start-column="4" selection-end-line="7004" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2550">
-          <caret line="593" column="29" lean-forward="true" selection-start-line="534" selection-start-column="8" selection-end-line="593" selection-end-column="29" />
+        <state relative-caret-position="442">
+          <caret line="458" column="47" lean-forward="true" selection-start-line="458" selection-start-column="47" selection-end-line="458" selection-end-column="47" />
           <folding>
             <element signature="e#22#31#0" expanded="true" />
           </folding>

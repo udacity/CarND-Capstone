@@ -14,128 +14,6 @@ class DataAugmentation:
     """
 
     @staticmethod
-    def prepare_dataset(csv_filename):
-        """ Prepares the training and validation datasets (images and measurements) from driving log cvs file.
-        
-        :param csv_filename:              Path and filename of CVS file.
-    
-        :return: Returns the train_samples and validation_samples dataset.
-        """
-
-        # open and read content of csv file
-        samples = []
-        with open(csv_filename) as csv_file:
-            reader = csv.reader(csv_file)
-
-            # skip the csv header
-            next(reader, None)
-
-            for line in reader:
-                samples.append(line)
-
-        return samples
-
-    @staticmethod
-    def draw_overlay(image, frame=None, steering_angle=None, speed=None, color=(255, 255, 255)):
-        """ Draws the image overlay like frame ID, speed, steering angle and the steering angle arrow.
-
-        :param image:          Input image.
-        :param frame:          Frame ID.
-        :param steering_angle: Steering angle in degree.
-        :param speed:          Speed in mph.
-        :param color:          Text color as RGB array (R, G, B).
-
-        :return: Returns the image with info text.
-        """
-
-        pos_x = 5
-        pos_y = 15
-        fontFace = cv2.FONT_HERSHEY_SIMPLEX
-        fontScale = 0.4
-        thickness = 1
-        i = 0
-
-        textSize = cv2.getTextSize('frame:', fontFace=fontFace, fontScale=fontScale, thickness=thickness)[0]
-
-        if frame is not None:
-            cv2.putText(img=image, text='frame:  {:05d}'.format(frame),
-                        org=(pos_x, pos_y),
-                        fontFace=fontFace, fontScale=fontScale, color=color, thickness=thickness)
-            i += 1
-
-        if speed is not None:
-            cv2.putText(img=image, text='speed: {:6.2f} mph'.format(speed),
-                        org=(pos_x, pos_y + i * (textSize[1] + 3)),
-                        fontFace=fontFace, fontScale=fontScale, color=color, thickness=thickness)
-            i += 1
-
-        if steering_angle is not None:
-            cv2.putText(img=image, text='angle: {:6.2f} deg'.format(steering_angle),
-                        org=(pos_x, pos_y + i * (textSize[1] + 3)),
-                        fontFace=fontFace, fontScale=fontScale, color=color, thickness=thickness)
-
-            height = image.shape[0]
-            width = image.shape[1]
-            p0 = (int(width / 2), height)
-            p1 = (int(width / 2) + int(height / 2 * math.tan(math.radians(steering_angle))), int(height / 2))
-            cv2.line(image, p0, p1, color=(0, 255, 0), thickness=1, lineType=cv2.LINE_AA)
-
-        return image
-
-    @staticmethod
-    def draw_steering_angles(image, steering_angle=None, augmented_steering_angle=None):
-        """ Visualizes the steering angle by line in the center of the image.
-        
-        :param image:                     Input image.
-        :param steering_angle:            Normed steering angle in (green)
-        :param augmented_steering_angle:  Normed augmented steering angle (red).
-        
-        :return: Returns the image with visualized steering angle.
-        """
-
-        height = image.shape[0]
-        width = image.shape[1]
-        p0 = (int(width / 2), height)
-
-        # draw steering angle
-        if steering_angle is not None:
-            p1 = (int(width / 2) + int(height / 2 * math.tan(math.radians(steering_angle * 25.))), int(height / 2))
-            # TODO: p1 = (int(width / 2) + int(height * math.tan(math.radians(steering_angle * 25.))), 0)
-            cv2.line(image, p0, p1, color=(0, 255, 0), thickness=1, lineType=cv2.LINE_AA)
-
-        # draw augmented steering angle
-        if augmented_steering_angle is not None:
-            p1 = (int(width / 2) + int(height / 2 * math.tan(math.radians(augmented_steering_angle * 25.))), int(height / 2))
-            # TODO: p1 = (int(width / 2) + int(height * math.tan(math.radians(augmented_steering_angle * 25.))), 0)
-            cv2.line(image, p0, p1, color=(255, 0, 0), thickness=1, lineType=cv2.LINE_AA)
-
-        return image
-
-    @staticmethod
-    def reduce_zero_steering_angles(samples, reduction_rate):
-        """ Reduces total amount of images with 0° steering angle.
-        
-        :param samples:        Measurement samples which shall be augmented.
-        :param reduction_rate: Reduction rate [0..1].
-        :return: Returns the augmented samples array. If reduction rate is out of the range [0..1] the input samples
-                 will be returned.
-        """
-
-        zero_angle_index = np.empty(0, dtype='int32')
-
-        if reduction_rate < 1.:
-            for idx, sample in enumerate(samples):
-                if float(sample[3]) == 0.:
-                    zero_angle_index = np.append(zero_angle_index, idx)
-
-            nb_samples_to_delete = math.ceil(len(zero_angle_index) * reduction_rate)
-            idx = np.arange(nb_samples_to_delete)
-            np.random.shuffle(idx)
-            return np.delete(samples, zero_angle_index[idx], 0)
-        else:
-            return samples
-
-    @staticmethod
     def equalize_histogram(image):
         """ Equalizes the image histogram in order to improve the contrast.
 
@@ -152,34 +30,29 @@ class DataAugmentation:
         return cv2.cvtColor(hls, cv2.COLOR_BGR2RGB)
 
     @staticmethod
-    def flip_image_horizontally(image, image_gt, probability=1.0, lr_bias=0.0):
+    def flip_image_horizontally(image, image_gt, annotations, probability=1.0):
         """ Flip image horizontally with given 'probability'.
         
         :param image:           Input RGB image.
         :param image_gt:        Input ground truth image.
+        :param annotations:     List of annotations (bounding boxes).
         :param probability:     Flip image probability [0..1].
-        :param lr_bias:         Tendency to flip image more to the left or right 
-                                [-1 = 100% left, 0 = equal +1 = 100% right].
-        
+
         :return: Returns the flipped RGB and ground truth image.
         """
 
         if np.random.rand() <= probability:
+            flipped_image = cv2.flip(image, 1)
+            flipped_image_gt = cv2.flip(image_gt, 1)
 
-            # 1 = flip to left, 2 = flip to right, (p_left + p_right = 1.0)
-            p_right = (lr_bias + 1.) / 2.
-            p_left = 1. - p_right
-            lr_coin = np.random.choice([1, 2], p=[p_left, p_right])
+            for annotation in annotations:
+                width = annotation['x_max'] - annotation['x_min']
+                annotation['x_max'] = image.shape[1] - annotation['x_min']
+                annotation['x_min'] = annotation['x_max'] - width
 
-            if lr_bias == 0.0 or (lr_coin == 1 and steering_angle < 0) or (lr_coin == 2 and steering_angle >= 0):
-                flipped_image = cv2.flip(image, 1)
-                flipped_image_gt = cv2.flip(image_gt, 1)
-
-                return flipped_image, flipped_image_gt
-            else:
-                return image, image_gt
+            return flipped_image, flipped_image_gt, annotations
         else:
-            return image, image_gt
+            return image, image_gt, annotations
 
     @staticmethod
     def random_brightness(image, probability=1.0):
@@ -300,16 +173,17 @@ class DataAugmentation:
             return image
 
     @staticmethod
-    def random_translation(image, image_gt, max_trans, probability=1.0, border_replication=True):
+    def random_translation(image, image_gt, annotations, max_trans, probability=1.0, border_replication=True):
         """ Translates (shift) the image randomly horizontally and vertically with given 'probability'.
 
         :param image:              Input RGB image.
         :param image_gt:           Input ground truth image.
+        :param annotations:        List of annotations (bounding boxes).
         :param max_trans:          Max translation in pixel [tx_max, ty_max].
         :param probability:        Apply random translation probability [0..1].
         :param border_replication: If true, the border will be replicated.
         
-        :return: Returns the randomly translated RGB and ground truth image.
+        :return: Returns the randomly translated RGB and ground truth image and annotations.
         """
 
         if np.random.rand() <= probability:
@@ -326,30 +200,36 @@ class DataAugmentation:
                 t_image = cv2.warpAffine(image, M, (width, height))
                 t_image_gt = cv2.warpAffine(image_gt, M, (width, height))
 
-            return t_image, t_image_gt
+            for annotation in annotations:
+                annotation['x_max'] += tx
+                annotation['x_min'] += tx
+                annotation['y_max'] += ty
+                annotation['y_min'] += ty
+
+            return t_image, t_image_gt, annotations
         else:
-            return image, image_gt
+            return image, image_gt, annotations
 
     @staticmethod
-    def random_rotation(image, steering_angle, max_rotation, probability=1.0, border_replication=True):
+    def random_rotation(image, image_gt, annotations, max_rotation, probability=1.0, border_replication=True):
         """ Rotates the image randomly around mid of bottom image row with given 'probability'.
         
         ATTENTION: This method shall only be applied, if the car is driving in the center of the road.
         
         :param image:              Input RGB image.
-        :param steering_angle:     Input steering angle.
+        :param image_gt:           Input ground truth image.
+        :param annotations:        List of annotations (bounding boxes).
         :param max_rotation:       Max rotation angle in degree.
         :param probability:        Apply random rotation probability [0..1].
         :param border_replication: If true, the border will be replicated.
         
-        :return: Returns the randomly rotated RGB image and the augmented steering angle.
+        :return: Returns the randomly rotated RGB image and ground truth image and annotations.
         """
 
         if np.random.rand() <= probability:
             height = image.shape[0]
             width = image.shape[1]
             rot = np.random.uniform(low=-max_rotation, high=max_rotation)
-            r_angle = steering_angle + 0.3 * (rot / 25.)
             M = cv2.getRotationMatrix2D((height, width / 2), rot, 1)
 
             if border_replication:
@@ -357,9 +237,16 @@ class DataAugmentation:
             else:
                 r_image = cv2.warpAffine(image, M, (width, height))
 
-            return r_image, r_angle
+            # FIXME: rotation of bounding boxes
+            for annotation in annotations:
+                annotation['x_max'] = annotation['x_max']
+                annotation['x_min'] = annotation['x_min']
+                annotation['y_max'] = annotation['y_max']
+                annotation['y_min'] = annotation['y_min']
+
+            return r_image, image_gt, annotations
         else:
-            return image, steering_angle
+            return image, image_gt, annotations
 
     @staticmethod
     def random_perspective_transformation(image, image_gt, max_trans, probability=1.0, border_replication=True):
@@ -397,15 +284,29 @@ class DataAugmentation:
             return image, image_gt
 
     @staticmethod
-    def resize_image(image, shape):
-        """ Resizes the image.
+    def resize_image(image, image_gt, annotations, shape):
+        """ Resizes the image and ground truth image.
 
-        :param image: Input RGB image.
-        :param shape: New shape (width, height).
+        :param image:       Input RGB image.
+        :param image_gt:    Input ground truth image.
+        :param annotations: List of annotations (bounding boxes).
+        :param shape:       New shape (width, height).
 
-        :return: Returns the augmented RGB image and the augmented ground truth image.
+        :return: Returns the augmented RGB and ground truth image and annotations.
         """
-        return cv2.resize(image, shape, interpolation=cv2.INTER_AREA)
+        s_image = cv2.resize(image, shape, interpolation=cv2.INTER_AREA)
+        s_image_gt = cv2.resize(image_gt, shape, interpolation=cv2.INTER_AREA)
+
+        x_scale = shape[0] / image.shape[1]
+        y_scale = shape[1] / image.shape[0]
+
+        for annotation in annotations:
+            annotation['x_max'] *= x_scale
+            annotation['x_min'] *= x_scale
+            annotation['y_max'] *= y_scale
+            annotation['y_min'] *= y_scale
+
+        return s_image, s_image_gt, annotations
 
     @staticmethod
     def crop_image(image, roi, resize_size=None):

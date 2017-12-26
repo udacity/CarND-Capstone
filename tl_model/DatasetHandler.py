@@ -2,8 +2,11 @@
 import os
 import sys
 import argparse
+import copy
 import yaml
 import pandas as pd
+#import matplotlib as mpl
+#mpl.use('macosx', force=True)
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
@@ -11,7 +14,6 @@ import plot_utils as plu
 import DataAugmentation as da
 
 from enum import Enum
-from random import randint
 from sklearn.utils import shuffle
 
 
@@ -71,10 +73,42 @@ class DatasetHandler:
     label_statistics = {}               # dictionary of type <TL class> : <number of labeled TL class>
     image_shape = (0, 0, 0)             # image shape [height, width, channels] of dataset
 
-    generator_image_size = (0, 0)       # Image size for generator output (width, height)
 
-    def __init__(self, width=1024, height=768):
-        self.generator_image_size = (width, height)
+    def __init__(self, width=1024, height=768, verbose=False):
+        """ Initializes the DatasetHandler.
+
+        :param width:   Width of the generator output image.
+        :param height:  Height of the generator output image.
+        :param verbose: If true, the the generator visualizes its output.
+        """
+        self.generator_image_shape = (width, height)
+        heatmap_shape = (self.generator_image_shape[1], self.generator_image_shape[0])
+        self.generator_heatmap_red = np.zeros(heatmap_shape, dtype=np.float)
+        self.generator_heatmap_yellow = np.zeros(heatmap_shape, dtype=np.float)
+        self.generator_heatmap_green = np.zeros(heatmap_shape, dtype=np.float)
+        self.generator_heatmap_off = np.zeros(heatmap_shape, dtype=np.float)
+        self.generator_heatmap_all = np.zeros(heatmap_shape, dtype=np.float)
+        self.verbose = verbose
+
+        if verbose:
+            plt.ion()
+            self.fig_heatmap_all, self.ax_heatmap_all = plt.subplots()
+            self.fig_heatmap_all.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+            self.fig_heatmap_all.suptitle('Label Heatmap of Generator Traffic Light Dataset')
+            self.plt_heatmap_all = self.ax_heatmap_all.imshow(self.generator_heatmap_all, cmap='jet', interpolation='nearest')
+            self.ax_heatmap_all.set_title('Red, Green, Red, Off TL')
+
+            self.fig_heatmap, self.axarr_heatmap = plt.subplots(2, 2)
+            self.fig_heatmap.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+            self.fig_heatmap.suptitle('Label Heatmap of Generator Traffic Light Dataset')
+            self.plt_heatmap_red = self.axarr_heatmap[0, 0].imshow(self.generator_heatmap_red, cmap='Reds', interpolation='nearest')
+            self.axarr_heatmap[0, 0].set_title('Red TL')
+            self.plt_heatmap_yellow = self.axarr_heatmap[0, 1].imshow(self.generator_heatmap_yellow, cmap='Oranges', interpolation='nearest')
+            self.axarr_heatmap[0, 1].set_title('Yellow TL')
+            self.plt_heatmap_green = self.axarr_heatmap[1, 0].imshow(self.generator_heatmap_green, cmap='Greens', interpolation='nearest')
+            self.axarr_heatmap[1, 0].set_title('Green TL')
+            self.plt_heatmap_off = self.axarr_heatmap[1, 1].imshow(self.generator_heatmap_off, cmap='Greys', interpolation='nearest')
+            self.axarr_heatmap[1, 1].set_title('Off TL')
 
     def update_dataset_type(self, dataset_type):
         """ Updates the dataset type. In case several dataset have been read the type is set to `DatasetType.MERGED`.
@@ -358,33 +392,12 @@ class DatasetHandler:
 
         return ground_truth
 
-    @staticmethod
-    def preprocess_image(image, image_shape, roi=None):
-        """ Pre-processing pipeline for model input image. The method applies the following steps:
-
-            - crop image (optionally)
-            - resize image
-
-        :param image:       Image which shall be preprocessed (Input format: RGB coded image!).
-        :param image_shape: Output image shape (width, height).
-        :param roi:         Region of interest which will be cropped [x0, y0, x1, y1]. If None, no cropping will
-                            be applied.
-
-        :return: Returns the pre-processed image.
-        """
-        if roi is None:
-            return da.DataAugmentation.resize_image(image, image_shape)
-        else:
-            return da.DataAugmentation.crop_image(image, roi,image_shape)
-
-    def generator(self, batch_size=128, image_shape=(1024, 768), augmentation_rate=0.0, verbose=False):
+    def generator(self, batch_size=128, augmentation_rate=0.0):
         """ Image and ground truth generator.
 
         :param batch_size:         Batch size for actual run.
-        :param image_shape:        Output image shape (width, height).
         :param augmentation_rate:  Rate (0..1) of total images which will be randomly augmented.
                                    E.g. 0.6 augments 60% of the images and 40% are raw images
-        :param verbose:            If true the generator output is shown in an opencv image view.
 
         :return: Returns x_train (RGB image) and y_train (GT image).
         """
@@ -401,48 +414,122 @@ class DatasetHandler:
                 images_gt = []
 
                 for batch_sample in batch_samples:
+                    annotations = copy.deepcopy(batch_sample['annotations'])
                     image = cv2.imread(batch_sample['path'])
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                    image_gt = self.generate_ground_truth_image(batch_sample['annotations'], image.shape)
+                    image_gt = self.generate_ground_truth_image(annotations, image.shape)
 
                     if augmentation_rate > 0.0 and np.random.rand() <= augmentation_rate:
                         # apply random translation
-                        image, image_gt = da.DataAugmentation.random_translation(image, image_gt, [50, 50], probability=0.5)
+                        image, image_gt, annotations = da.DataAugmentation.random_translation(
+                            image, image_gt, annotations, [70, 70], probability=0.5)
 
                         # apply random flip, lr_bias = 0.0 (no left/right bias correction of dataset)
-                        image, image_gt = da.DataAugmentation.flip_image_horizontally(image, image_gt, probability=0.5, lr_bias=0.0)
+                        image, image_gt, annotations = da.DataAugmentation.flip_image_horizontally(
+                            image, image_gt, annotations, probability=0.5)
 
                         # apply random brightness
                         image = da.DataAugmentation.random_brightness(image, probability=0.5)
 
                     # final image pre-processing
-                    # TODO: image = da.DataAugmentation.equalize_histogram(image)
-                    # TODO: image = da.DataAugmentation.crop_image(image, self.roi, crop_size)
-                    image = da.DataAugmentation.resize_image(image, image_shape)
-                    image_gt = da.DataAugmentation.resize_image(image_gt, image_shape)
+                    image, image_gt, annotations = da.DataAugmentation.resize_image(
+                        image, image_gt, annotations, self.generator_image_shape)
 
                     images.append(image)
                     images_gt.append(image_gt)
                     number_batch_samples += 1
 
-                    if verbose:
+                    if self.verbose:
                         # show generated images in a separate window
+                        image = self.draw_bounding_boxes(image, annotations)
                         image_gen = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                         image_gt = cv2.cvtColor(image_gt, cv2.COLOR_RGB2BGR)
                         image_gen = cv2.addWeighted(image_gen, 1.0, image_gt, 0.3, 0.0)
                         image_gen = np.concatenate((image_gen, image_gt), axis=1)
+
+                        self.plot_generator_heatmap(annotations)
                         cv2.imshow('Generator output (left: Generator Image + Ground Truth Overlay, right: Ground Truth)', image_gen)
-                        cv2.waitKey(100)
+                        cv2.waitKey(1)
 
                 number_total_samples += number_batch_samples
 
-                if verbose:
+                if self.verbose:
                     print(' Generator: number_batch_samples: {:4d} number_total_samples: {:5d}/{:5d}'.format(number_batch_samples, number_total_samples, self.number_samples))
+
+                # FIXME: Remove after debugging
+                #if number_total_samples > self.number_samples:
+                #    self.fig_heatmap_all.savefig('generator_label_heatmap_all.png')
+                #    self.fig_heatmap.savefig('generator_label_heatmap_red_yellow_green_off.png')
+                #    exit(0)
 
                 # convert to numpy arrays
                 x_train = np.array(images)
                 y_train = np.array(images_gt)
                 yield shuffle(x_train, y_train)
+
+    def plot_generator_heatmap(self, annotations):
+        """ Plots a heatmap over all label positions (bounding boxes) generated by the generator.
+
+        :param annotations:  List with annotations.
+        """
+        for annotation in annotations:
+            class_label = annotation['class'].lower()
+            x_max = int(round(annotation['x_max']))
+            x_min = int(round(annotation['x_min']))
+            y_max = int(round(annotation['y_max']))
+            y_min = int(round(annotation['y_min']))
+
+            if class_label.find('red') >= 0 and len(class_label) == len('red'):
+                self.generator_heatmap_red[y_min:y_max, x_min:x_max] += 1
+            elif class_label.find('yellow') >= 0 and len(class_label) == len('yellow'):
+                self.generator_heatmap_yellow[y_min:y_max, x_min:x_max] += 1
+            elif class_label.lower().find('green') >= 0 and len(class_label) == len('green'):
+                self.generator_heatmap_green[y_min:y_max, x_min:x_max] += 1
+            elif class_label.find('off') >= 0 and len(class_label) == len('off'):
+                self.generator_heatmap_off[y_min:y_max, x_min:x_max] += 1
+
+        self.generator_heatmap_all = self.generator_heatmap_red + self.generator_heatmap_yellow + \
+                                     self.generator_heatmap_green + self.generator_heatmap_off
+
+        # update label histogram
+        self.plt_heatmap_all.set_data(self.generator_heatmap_all)
+        self.plt_heatmap_all.autoscale()
+        self.plt_heatmap_red.set_data(self.generator_heatmap_red)
+        self.plt_heatmap_red.autoscale()
+        self.plt_heatmap_yellow.set_data(self.generator_heatmap_yellow)
+        self.plt_heatmap_yellow.autoscale()
+        self.plt_heatmap_green.set_data(self.generator_heatmap_green)
+        self.plt_heatmap_green.autoscale()
+        self.plt_heatmap_off.set_data(self.generator_heatmap_off)
+        self.plt_heatmap_off.autoscale()
+        plt.draw_all()
+        plt.pause(1e-9)
+
+    def draw_bounding_boxes(self, image, annotations):
+        """ Draw the bounding boxes
+
+        :param image:       RGB Image
+        :param annotations: List of annotations (bounding boxes)
+        :return:
+        """
+        for annotation in annotations:
+            color = (100, 100, 100)
+
+            if annotation['class'].lower().find('red') >= 0:
+                color = (255, 0, 0)
+            elif annotation['class'].lower().find('yellow') >= 0:
+                color = (255, 255, 0)
+            elif annotation['class'].lower().find('green') >= 0:
+                color = (0, 255, 0)
+
+            x_max = int(round(annotation['x_max']))
+            x_min = int(round(annotation['x_min']))
+            y_max = int(round(annotation['y_max']))
+            y_min = int(round(annotation['y_min']))
+
+            cv2.rectangle(image, (x_min, y_min), (x_max, y_max), color)
+
+        return image
 
     def print_statistics(self):
         """ Plots basic dataset statistics like number of images, labes, etc. """
@@ -610,23 +697,9 @@ class DatasetHandler:
             if image is None:
                 raise IOError('Could not open image path', label['path'])
 
-            for annotation in label['annotations']:
-                color = (100, 100, 100)
-
-                if annotation['class'].lower().find('red') >= 0:
-                    color = (0, 0, 255)
-                elif annotation['class'].lower().find('yellow') >= 0:
-                    color = (0, 255, 255)
-                elif annotation['class'].lower().find('green') >= 0:
-                    color = (0, 255, 0)
-
-                x_max = int(round(annotation['x_max']))
-                x_min = int(round(annotation['x_min']))
-                y_max = int(round(annotation['y_max']))
-                y_min = int(round(annotation['y_min']))
-
-                cv2.rectangle(image, (x_min, y_min), (x_max, y_max), color)
-
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = self.draw_bounding_boxes(image, label['annotations'])
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             cv2.imshow('Labeled Images', image)
             cv2.waitKey(10)
 
@@ -705,8 +778,9 @@ if __name__ == '__main__':
         parser.print_usage()
         parser.exit(-1)
 
-    dataset_handler = DatasetHandler()
     safe_plots = False
+
+    dataset_handler = DatasetHandler(width=640, height=480, verbose=args.show_generator)
 
     if args.bosch_label_file:
         print('Loading Bosch dataset...', end='', flush=True)
@@ -748,10 +822,7 @@ if __name__ == '__main__':
             print('Exit with CTRL+C')
             dataset_handler.show_labeled_images(output_folder=None)
         elif args.show_generator:
-            generator = dataset_handler.generator(batch_size=5,
-                                                  image_shape=(640, 480),
-                                                  augmentation_rate=0.5,
-                                                  verbose=True)
+            generator = dataset_handler.generator(batch_size=5, augmentation_rate=0.65)
 
             for x_train, y_train in generator:
                 pass
