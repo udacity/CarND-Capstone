@@ -4,13 +4,15 @@ import sys
 import argparse
 import yaml
 import pandas as pd
-from enum import Enum
-
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-
 import plot_utils as plu
+import DataAugmentation as da
+
+from enum import Enum
+from random import randint
+from sklearn.utils import shuffle
 
 
 class DatasetType(Enum):
@@ -29,6 +31,11 @@ class TrafficLightLabel(Enum):
     YELLOW = 2              # yellow/orange traffic light, no direction information
     GREEN = 3               # green traffic light, no direction information
 
+# GT color definitions
+GT_TL_RED       = [255, 0, 0]
+GT_TL_YELLOW    = [255, 255, 0]
+GT_TL_GREEN     = [0, 255, 0]
+GT_TL_UNDEFINED = [100, 100, 100]
 
 class DatasetHandler:
     """
@@ -58,11 +65,16 @@ class DatasetHandler:
 
     dataset_type = DatasetType.NONE     # type of dataset
     number_datasets = 0                 # Number of merged datasets
-    number_images = 0                   # number of images in the dataset
+    number_samples = 0                  # number of images in the dataset
     number_labeled_traffic_lights = 0   # number of labeled traffic lights in the dataset
-    labels = []                         # list of labeled data
+    samples = []                        # list of images and labeled data (annotations)
     label_statistics = {}               # dictionary of type <TL class> : <number of labeled TL class>
     image_shape = (0, 0, 0)             # image shape [height, width, channels] of dataset
+
+    generator_image_size = (0, 0)       # Image size for generator output (width, height)
+
+    def __init__(self, width=1024, height=768):
+        self.generator_image_size = (width, height)
 
     def update_dataset_type(self, dataset_type):
         """ Updates the dataset type. In case several dataset have been read the type is set to `DatasetType.MERGED`.
@@ -149,11 +161,11 @@ class DatasetHandler:
                                                                          annotation['class']] + 1
 
             image = {'annotations': annotations, 'path': path}
-            self.labels.append(image)
-            self.number_images += 1
+            self.samples.append(image)
+            self.number_samples += 1
 
         # determine image size
-        image = cv2.imread(self.labels[0]['path'])
+        image = cv2.imread(self.samples[0]['path'])
         self.image_shape = image.shape
 
         self.number_datasets += 1
@@ -228,18 +240,18 @@ class DatasetHandler:
 
             if frameindex > prev_frameindex:
                 image = {'annotations': annotations, 'path': path}
-                self.labels.append(image)
-                self.number_images += 1
+                self.samples.append(image)
+                self.number_samples += 1
                 prev_frameindex = frameindex
 
         # determine image size
-        image = cv2.imread(self.labels[0]['path'])
+        image = cv2.imread(self.samples[0]['path'])
         self.image_shape = image.shape
 
         self.number_datasets += 1
         self.update_dataset_type(DatasetType.LARA)
 
-        return self.labels
+        return self.samples
 
     def read_all_capstone_labels(self, input_yaml, filter_labels=True):
         """
@@ -296,11 +308,11 @@ class DatasetHandler:
                                                                          annotation['class']] + 1
 
             image = {'annotations': annotations, 'path': path}
-            self.labels.append(image)
-            self.number_images += 1
+            self.samples.append(image)
+            self.number_samples += 1
 
         # determine image size
-        image = cv2.imread(self.labels[0]['path'])
+        image = cv2.imread(self.samples[0]['path'])
         self.image_shape = image.shape
 
         self.number_datasets += 1
@@ -310,23 +322,139 @@ class DatasetHandler:
 
     def is_valid(self):
         """ Returns true if valid datasets resp. images are available. """
-        return self.number_images > 0
+        return self.number_samples > 0
 
     def number_merged_datasets(self):
         """ Returns the number of merged datasets. """
         return self.number_datasets
 
+    def generate_ground_truth_image(self, annotations, image_shape):
+        """ Generates the ground truth image based on bounding boxes and the traffic light class.
+
+        :param annotations: List with annotations.
+        :param image_shape: Output image shape (width, height).
+
+        :return: Ground truth image.
+        """
+        ground_truth = np.zeros((image_shape[0], image_shape[1], 3), dtype=np.uint8)
+
+        for annotation in annotations:
+            class_label = annotation['class']
+            x_min = int(round(annotation['x_min']))
+            x_max = int(round(annotation['x_max']))
+            y_min = int(round(annotation['y_min']))
+            y_max = int(round(annotation['y_max']))
+
+            if class_label.find('red') >= 0:
+                color = GT_TL_RED
+            elif class_label.find('yellow') >= 0:
+                color = GT_TL_YELLOW
+            elif class_label.find('green') >= 0:
+                color = GT_TL_GREEN
+            else:
+                color = GT_TL_UNDEFINED
+
+            ground_truth[y_min:y_max, x_min:x_max, :] = color
+
+        return ground_truth
+
+    @staticmethod
+    def preprocess_image(image, image_shape, roi=None):
+        """ Pre-processing pipeline for model input image. The method applies the following steps:
+
+            - crop image (optionally)
+            - resize image
+
+        :param image:       Image which shall be preprocessed (Input format: RGB coded image!).
+        :param image_shape: Output image shape (width, height).
+        :param roi:         Region of interest which will be cropped [x0, y0, x1, y1]. If None, no cropping will
+                            be applied.
+
+        :return: Returns the pre-processed image.
+        """
+        if roi is None:
+            return da.DataAugmentation.resize_image(image, image_shape)
+        else:
+            return da.DataAugmentation.crop_image(image, roi,image_shape)
+
+    def generator(self, batch_size=128, image_shape=(1024, 768), augmentation_rate=0.0, verbose=False):
+        """ Image and ground truth generator.
+
+        :param batch_size:         Batch size for actual run.
+        :param image_shape:        Output image shape (width, height).
+        :param augmentation_rate:  Rate (0..1) of total images which will be randomly augmented.
+                                   E.g. 0.6 augments 60% of the images and 40% are raw images
+        :param verbose:            If true the generator output is shown in an opencv image view.
+
+        :return: Returns x_train (RGB image) and y_train (GT image).
+        """
+
+        samples = shuffle(self.samples)
+        number_total_samples = 0
+
+        while 1:  # loop forever so the generator never terminates
+            for offset in range(0, self.number_samples, batch_size):
+                batch_samples = samples[offset:offset + batch_size]
+
+                number_batch_samples = 0
+                images = []
+                images_gt = []
+
+                for batch_sample in batch_samples:
+                    image = cv2.imread(batch_sample['path'])
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                    image_gt = self.generate_ground_truth_image(batch_sample['annotations'], image.shape)
+
+                    if augmentation_rate > 0.0 and np.random.rand() <= augmentation_rate:
+                        # apply random translation
+                        image, image_gt = da.DataAugmentation.random_translation(image, image_gt, [50, 50], probability=0.5)
+
+                        # apply random flip, lr_bias = 0.0 (no left/right bias correction of dataset)
+                        image, image_gt = da.DataAugmentation.flip_image_horizontally(image, image_gt, probability=0.5, lr_bias=0.0)
+
+                        # apply random brightness
+                        image = da.DataAugmentation.random_brightness(image, probability=0.5)
+
+                    # final image pre-processing
+                    # TODO: image = da.DataAugmentation.equalize_histogram(image)
+                    # TODO: image = da.DataAugmentation.crop_image(image, self.roi, crop_size)
+                    image = da.DataAugmentation.resize_image(image, image_shape)
+                    image_gt = da.DataAugmentation.resize_image(image_gt, image_shape)
+
+                    images.append(image)
+                    images_gt.append(image_gt)
+                    number_batch_samples += 1
+
+                    if verbose:
+                        # show generated images in a separate window
+                        image_gen = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                        image_gt = cv2.cvtColor(image_gt, cv2.COLOR_RGB2BGR)
+                        image_gen = cv2.addWeighted(image_gen, 1.0, image_gt, 0.3, 0.0)
+                        image_gen = np.concatenate((image_gen, image_gt), axis=1)
+                        cv2.imshow('Generator output (left: Generator Image + Ground Truth Overlay, right: Ground Truth)', image_gen)
+                        cv2.waitKey(100)
+
+                number_total_samples += number_batch_samples
+
+                if verbose:
+                    print(' Generator: number_batch_samples: {:4d} number_total_samples: {:5d}/{:5d}'.format(number_batch_samples, number_total_samples, self.number_samples))
+
+                # convert to numpy arrays
+                x_train = np.array(images)
+                y_train = np.array(images_gt)
+                yield shuffle(x_train, y_train)
+
     def print_statistics(self):
         """ Plots basic dataset statistics like number of images, labes, etc. """
 
-        if self.number_images == 0:
+        if self.number_samples == 0:
             print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
         print()
         print(' Traffic Light Dataset')
         print('--------------------------------------------------')
-        print('Number images:        {}'.format(self.number_images))
+        print('Number images:        {}'.format(self.number_samples))
         print('Number traffic light: {}'.format(self.number_labeled_traffic_lights))
         print('Image shape:          {}x{}x{}'.format(self.image_shape[1],
                                                       self.image_shape[0],
@@ -338,7 +466,7 @@ class DatasetHandler:
         :param safe_figure:  If true safe figure as png file.
         """
 
-        if self.number_images == 0:
+        if self.number_samples == 0:
             print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
@@ -400,7 +528,7 @@ class DatasetHandler:
         :param safe_figure: If true safe figure as png file.
         """
 
-        if self.number_images == 0:
+        if self.number_samples == 0:
             print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
@@ -409,8 +537,8 @@ class DatasetHandler:
         heatmap_green = np.zeros((self.image_shape[0], self.image_shape[1]), dtype=np.float)
         heatmap_off = np.zeros((self.image_shape[0], self.image_shape[1]), dtype=np.float)
 
-        for i in range(self.number_images):
-            for annotation in self.labels[i]['annotations']:
+        for i in range(self.number_samples):
+            for annotation in self.samples[i]['annotations']:
                 class_label = annotation['class'].lower()
                 x_max = int(round(annotation['x_max']))
                 x_min = int(round(annotation['x_min']))
@@ -453,13 +581,10 @@ class DatasetHandler:
 
         axarr[0, 0].imshow(heatmap_red, cmap='Reds', interpolation='nearest')
         axarr[0, 0].set_title('Red TL')
-
         axarr[0, 1].imshow(heatmap_yellow, cmap='Oranges', interpolation='nearest')
         axarr[0, 1].set_title('Yellow TL')
-
         axarr[1, 0].imshow(heatmap_green, cmap='Greens', interpolation='nearest')
         axarr[1, 0].set_title('Green TL')
-
         axarr[1, 1].imshow(heatmap_off, cmap='Greys', interpolation='nearest')
         axarr[1, 1].set_title('Off TL')
 
@@ -479,7 +604,7 @@ class DatasetHandler:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
 
-        for i, label in enumerate(self.labels):
+        for i, label in enumerate(self.samples):
             image = cv2.imread(label['path'])
 
             if image is None:
@@ -565,6 +690,14 @@ if __name__ == '__main__':
         dest='show_images'
     )
 
+    parser.add_argument(
+        '-sg', '--show_generator',
+        help='Show generator images and labels in a video.',
+        action='store_true',
+        default=False,
+        dest='show_generator'
+    )
+
     args = parser.parse_args()
 
     if len(sys.argv) < 4:
@@ -614,6 +747,14 @@ if __name__ == '__main__':
         elif args.show_images:
             print('Exit with CTRL+C')
             dataset_handler.show_labeled_images(output_folder=None)
+        elif args.show_generator:
+            generator = dataset_handler.generator(batch_size=5,
+                                                  image_shape=(640, 480),
+                                                  augmentation_rate=0.5,
+                                                  verbose=True)
+
+            for x_train, y_train in generator:
+                pass
     else:
         print('ERROR: No valid datasets found.')
         exit(-1)

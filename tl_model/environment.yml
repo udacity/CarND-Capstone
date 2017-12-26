@@ -12,6 +12,7 @@ dependencies:
     - imageio==2.1.2
     - PyYAML
     - pandas
+    - scikit-learn
     - pip:
         - moviepy
         - opencv-python
