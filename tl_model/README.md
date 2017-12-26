@@ -29,7 +29,7 @@ The conda environment `carnd-term3` currently just includes `tensorflow==1.3` be
 
 Setup the conda environment `carnd-term3`:
 ```
-conda env update -f environment.yml
+conda env create -f environment.yml
 ```
 
 Update the conda environment `carnd-term3`:
