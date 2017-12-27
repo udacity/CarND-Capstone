@@ -97,9 +97,9 @@ validation_generator = dataset_handler.generator(validation_samples, batch_size=
 ```
 
 #### Convenient Methods for Dataset Loading
-In order to load all available dataset at once use the following method. 
+In order to load all available dataset at once use the following method.
 
-*Attention: In order to ensure a correct dataset preparation, setup the directory layout exactly as described in the chapter "Environment Setup" above.*
+***Attention:*** *In order to ensure a correct dataset preparation, setup the directory layout exactly as described in the chapter "Environment Setup" above.*
 
 ```python
 dataset_handler.read_predefined_dataset()
