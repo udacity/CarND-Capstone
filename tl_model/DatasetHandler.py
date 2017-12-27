@@ -5,8 +5,11 @@ import argparse
 import copy
 import yaml
 import pandas as pd
-#import matplotlib as mpl
-#mpl.use('macosx', force=True)
+
+if sys.platform.startswith('darwin'):
+    import matplotlib as mpl
+    mpl.use('macosx', force=True)
+
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
@@ -15,6 +18,20 @@ import DataAugmentation as da
 
 from enum import Enum
 from sklearn.utils import shuffle
+from sklearn.model_selection import train_test_split
+
+
+# GT color definitions
+GT_TL_RED       = [255, 0, 0]
+GT_TL_YELLOW    = [255, 255, 0]
+GT_TL_GREEN     = [0, 255, 0]
+GT_TL_UNDEFINED = [100, 100, 100]
+
+# Dataset annotation files
+DATASET_BOSCH         = 'datasets/dataset_bosch_small_tlr/dataset_train_rgb/train.yaml'
+DATASET_LARA          = 'datasets/dataset_lara/Lara_UrbanSeq1_GroundTruth_GT.txt'
+DATASET_CAPSTONE_REAL = 'datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml'
+DATASET_CAPSTONE_SIM  = 'datasets/dataset_sdcnd_capstone/sim_training_data/sim_data_annotations.yaml'
 
 
 class DatasetType(Enum):
@@ -33,11 +50,6 @@ class TrafficLightLabel(Enum):
     YELLOW = 2              # yellow/orange traffic light, no direction information
     GREEN = 3               # green traffic light, no direction information
 
-# GT color definitions
-GT_TL_RED       = [255, 0, 0]
-GT_TL_YELLOW    = [255, 255, 0]
-GT_TL_GREEN     = [0, 255, 0]
-GT_TL_UNDEFINED = [100, 100, 100]
 
 class DatasetHandler:
     """
@@ -51,7 +63,7 @@ class DatasetHandler:
     Usage: DatasetHandler.py -h] [-h] [--bosch_label_file YAML_file]
                                       [--lara_label_file XML_file]
                                       [--capstone_label_file YAML_file]
-                                      [-df] [-s] [-sp] [-si]
+                                      [-df] [-s] [-sp] [-si] [-sg]
 
         -h, --help                       Show this help message and exit
         --bosch_label_file YAML_file     Path to the Bosch label YAML file.
@@ -61,25 +73,46 @@ class DatasetHandler:
         -s, --statistics                 Show dataset statistics like label distribution.
         -sp, --safe_plots                Safe plots as PNG files.
         -si, --show_images               Show all labeled images in the dataset in a video.
+        -sg, --show_generator            Show generator images and labels in a video.
 
     Common `label_dict Format:
+
+    samples<list>
+      [0]<dict>
+        'annotations'<list>
+            [0]<dict>
+                'class' : <str>
+                'x_max! : <float>
+                'x_min! : <float>
+                'y_max! : <float>
+                'y_min! : <float>
+            [1]<dict>
+                'class' : <str>
+                'x_max! : <float>
+                'x_min! : <float>
+                'y_max! : <float>
+                'y_min! : <float>
+        'path': <str>
+      [1]<dict>
+        'annotations'<list>
+        'path': <str>
+        ...
     """
 
-    dataset_type = DatasetType.NONE     # type of dataset
-    number_datasets = 0                 # Number of merged datasets
-    number_samples = 0                  # number of images in the dataset
-    number_labeled_traffic_lights = 0   # number of labeled traffic lights in the dataset
-    samples = []                        # list of images and labeled data (annotations)
-    label_statistics = {}               # dictionary of type <TL class> : <number of labeled TL class>
-    image_shape = (0, 0, 0)             # image shape [height, width, channels] of dataset
-
+    dataset_type = DatasetType.NONE    # type of dataset
+    number_datasets = 0                # Number of merged datasets
+    number_samples = 0                 # number of images in the dataset
+    number_labeled_traffic_lights = 0  # number of labeled traffic lights in the dataset
+    samples = []                       # list of images and labeled data (annotations)
+    label_statistics = {}              # dictionary of type <TL class> : <number of labeled TL class>
+    image_shape = (0, 0, 0)            # image shape [height, width, channels] of dataset
 
     def __init__(self, width=1024, height=768, verbose=False):
         """ Initializes the DatasetHandler.
 
-        :param width:   Width of the generator output image.
-        :param height:  Height of the generator output image.
-        :param verbose: If true, the the generator visualizes its output.
+        :param width:     Width of the generator output image.
+        :param height:    Height of the generator output image.
+        :param verbose:   If true, the the generator visualizes its output.
         """
         self.generator_image_shape = (width, height)
         heatmap_shape = (self.generator_image_shape[1], self.generator_image_shape[0])
@@ -354,13 +387,62 @@ class DatasetHandler:
 
         return images
 
+    def read_predefined_dataset(self):
+        """ Read all predefined datasets (Bosch, capstone real and capstone sim). """
+
+        print('Loading Bosch dataset...', end='', flush=True)
+
+        if self.read_all_bosch_labels(DATASET_BOSCH) is None:
+            print('')
+            print('ERROR: Input YAML file "{}" not found.'.format(DATASET_BOSCH))
+            exit(-1)
+        else:
+            print('done')
+
+        print('Loading LARA dataset...', end='', flush=True)
+
+        if self.read_all_lara_labels(DATASET_LARA) is None:
+            print('')
+            print('ERROR: Input TXT file "{}" not found.'.format(DATASET_LARA))
+            exit(-1)
+        else:
+            print('done')
+
+        print('Loading SDCND Capstone real dataset...', end='', flush=True)
+
+        if self.read_all_capstone_labels(DATASET_CAPSTONE_REAL) is None:
+            print('')
+            print('ERROR: Input TXT file "{}" not found.'.format(DATASET_CAPSTONE_REAL))
+            exit(-1)
+        else:
+            print('done')
+
+        print('Loading SDCND Capstone sim dataset...', end='', flush=True)
+
+        if self.read_all_capstone_labels(DATASET_CAPSTONE_SIM) is None:
+            print('')
+            print('ERROR: Input TXT file "{}" not found.'.format(DATASET_CAPSTONE_SIM))
+            exit(-1)
+        else:
+            print('done')
+
     def is_valid(self):
         """ Returns true if valid datasets resp. images are available. """
         return self.number_samples > 0
 
-    def number_merged_datasets(self):
+    def get_number_merged_datasets(self):
         """ Returns the number of merged datasets. """
         return self.number_datasets
+
+    def split_dataset(self, train_size):
+        """ Shuffles and splits the dataset into a training and testing dataset.
+
+        :param train_size: Size of the training dataset [%].
+
+        :return: Returns two lists, one with training and one with test samples.
+        """
+        train_samples, test_samples = train_test_split(self.samples, train_size=train_size, shuffle=True)
+        return train_samples, test_samples
 
     def generate_ground_truth_image(self, annotations, image_shape):
         """ Generates the ground truth image based on bounding boxes and the traffic light class.
@@ -392,17 +474,16 @@ class DatasetHandler:
 
         return ground_truth
 
-    def generator(self, batch_size=128, augmentation_rate=0.0):
-        """ Image and ground truth generator.
+    def generator(self, samples, batch_size=128, augmentation_rate=0.0):
+        """ Sample and ground truth generator.
 
-        :param batch_size:         Batch size for actual run.
-        :param augmentation_rate:  Rate (0..1) of total images which will be randomly augmented.
-                                   E.g. 0.6 augments 60% of the images and 40% are raw images
+        :param samples:           Samples which shall be loaded into memory.
+        :param batch_size:        Batch size for actual run.
+        :param augmentation_rate: Rate (0..1) of total images which will be randomly augmented.
+                                  E.g. 0.6 augments 60% of the images and 40% are raw images
 
-        :return: Returns x_train (RGB image) and y_train (GT image).
+        :return: Returns X (RGB image) and y (GT image).
         """
-
-        samples = shuffle(self.samples)
         number_total_samples = 0
 
         while 1:  # loop forever so the generator never terminates
@@ -463,9 +544,9 @@ class DatasetHandler:
                 #    exit(0)
 
                 # convert to numpy arrays
-                x_train = np.array(images)
-                y_train = np.array(images_gt)
-                yield shuffle(x_train, y_train)
+                X = np.array(images)
+                y = np.array(images_gt)
+                yield shuffle(X, y)
 
     def plot_generator_heatmap(self, annotations):
         """ Plots a heatmap over all label positions (bounding boxes) generated by the generator.
@@ -822,7 +903,7 @@ if __name__ == '__main__':
             print('Exit with CTRL+C')
             dataset_handler.show_labeled_images(output_folder=None)
         elif args.show_generator:
-            generator = dataset_handler.generator(batch_size=5, augmentation_rate=0.65)
+            generator = dataset_handler.generator(dataset_handler.samples, batch_size=5, augmentation_rate=0.65)
 
             for x_train, y_train in generator:
                 pass
