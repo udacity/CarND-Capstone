@@ -3,6 +3,7 @@
 [//]: # (Image References)
 [image_generator_label_heatmap_all]: ./images/generator_label_heatmap_all.png
 [image_generator_label_heatmap_rygo]: ./images/generator_label_heatmap_red_yellow_green_off.png
+[image_generator_output]: ./images/generator_output.png
 
 [image_bosch_labeled_image]: ./images/bosch_labeled_image_0.png
 [image_bosch_label_hist]: ./images/bosch_label_histogram.png
@@ -65,7 +66,57 @@ python DatasetHandler.py
   --disable_filter
 ```
 
-### Generator Output
+### Integration into TL Model Training SW-Component
+
+The integration of the `DatasetHandler`is straight forward.
+
+1. Initialize the `DatasetHandler` with the desired output image size (width, height)
+2. Read all desired datasets. Each `read_all_...()` method call concatenates the dataset to the internal one.
+3. Split the internal dataset into a training and a validation dataset.
+4. Setup a  training and a validation generator with the desired batch size and augmentation rate.
+
+```python
+# initialize the DatasetHandler with the model input layer size (image size)
+dataset_handler = DatasetHandler(width=1024, height=768)
+
+# read desired datasets
+dataset_handler.read_all_bosch_labels('path to Bosch training yaml file')
+dataset_handler.read_all_lara_labels('path to LARA ground truth txt file')
+dataset_handler.read_all_capstone_labels('path to capstone real data yaml file')
+dataset_handler.read_all_capstone_labels('path to capstone sim data yaml file')
+
+# shuffles and splits the dataset into a 80% training and a 20% test, resp. validation set
+train_samples, validation_samples = dataset_handler.split_dataset(train_size=0.8)
+
+# initialize generators for model training and validation with a
+# batch size of 128 and 65% augmentation rate
+train_generator = dataset_handler.generator(train_samples, batch_size=128, augmentation_rate=0.65)
+validation_generator = dataset_handler.generator(validation_samples, batch_size=128, augmentation_rate=0.65)
+
+# start model training...
+```
+
+#### Convenient Methods for Dataset Loading
+In order to load all available dataset at once use the following method.
+```python
+dataset_handler.read_predefined_dataset()
+```
+
+#### Generator Output
+The `generator()` outputs a list with sample images (see left image below) and list with the ground truth images (see right image below). The list contains `batch_size` RGB images in the specified size `[width, height, 3]`. If required all bounding boxes, instead of the ground truth image, could be returned as well.
+
+![Generator output][image_generator_output]
+
+** Ground Truth Color Coding**
+
+| Annotation      | RGB Color-Code |
+|:----------------|:--------------:|
+| GT_TL_RED       |    0xFF0000    |
+| GT_TL_YELLOW    |    0xFFFF00    |
+| GT_TL_GREEN     |    0x00FF00    |
+| GT_TL_UNDEFINED |    0x646464    |
+
+**Augmentation Results**
 
 In total 65% of the whole dataset has been augmented by the following methods. The augmentation methods are combined with its own probability.
 
@@ -79,6 +130,15 @@ In total 65% of the whole dataset has been augmented by the following methods. T
 
 ## Datasets
 
+All labeled traffic lights are visualized with the following colored bounding boxes.
+
+| Class                                            | Color  |
+|:-------------------------------------------------|:-------|
+| All variants of Red, RedLeft, RedRight,...       | Red    |
+| Yellow                                           | Yellow |
+| All variants of Green, GreenLeft, GreenRight,... | Green  |
+| Off, backside, side view,...                     | Grey   |
+
 ### Bosch Small Traffic Light Dataset
 
 Source: https://hci.iwr.uni-heidelberg.de/node/6132
@@ -89,15 +149,6 @@ Source: https://hci.iwr.uni-heidelberg.de/node/6132
 | Number of labeled traffic lights | 10756                                                                             |
 | Image shape                      | 1280x720x3                                                                        |
 | Image format                     | 8 bit RGB, reconstructed from RIIB 12 bit (red-clear-clear-blue), size = 1280x736 |
-
-All labeled traffic lights are visualized with the following colored bounding boxes.
-
-| Class                                            | Color  |
-|:-------------------------------------------------|:-------|
-| All variants of Red, RedLeft, RedRight,...       | Red    |
-| Yellow                                           | Yellow |
-| All variants of Green, GreenLeft, GreenRight,... | Green  |
-| Off                                              | Grey   |
 
 ![Bosch Label Image Example][image_bosch_labeled_image]
 
