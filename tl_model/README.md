@@ -44,15 +44,15 @@ conda env update -f environment.yml
 ### Required Directory Layout
 
 - tl_model
- - datasets
+  - datasets
     - dataset_bosch_small_tlr
-      - dataset_test_rgb
-      - dataset_train_rgb
-    - dataset_lara
-      - Lara3D_UrbanSeq1_JPG
-    - dataset_sdcnd_capstone
-      - real_training_data
-      - sim_training_data
+       - dataset_test_rgb
+       - dataset_train_rgb
+     - dataset_lara
+       - Lara3D_UrbanSeq1_JPG
+     - dataset_sdcnd_capstone
+       - real_training_data
+       - sim_training_data
 
 ## DatasetHandler
 To get a first impression about the dataset, run the `DatasetHandler.py` with the following arguments. It plays a short video with all labeled traffic lights for the Bosch Small Traffic Light, the LARA and the SDCND Capstone Dataset.
