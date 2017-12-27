@@ -97,7 +97,10 @@ validation_generator = dataset_handler.generator(validation_samples, batch_size=
 ```
 
 #### Convenient Methods for Dataset Loading
-In order to load all available dataset at once use the following method.
+In order to load all available dataset at once use the following method. 
+
+*Attention: In order to ensure a correct dataset preparation, setup the directory layout exactly as described in the chapter "Environment Setup" above.'
+
 ```python
 dataset_handler.read_predefined_dataset()
 ```
@@ -107,7 +110,7 @@ The `generator()` outputs a list with sample images (see left image below) and l
 
 ![Generator output][image_generator_output]
 
-** Ground Truth Color Coding**
+**Ground Truth Color Coding**
 
 | Annotation      | RGB Color-Code |
 |:----------------|:--------------:|
