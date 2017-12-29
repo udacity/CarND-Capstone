@@ -1,0 +1,19 @@
+item {
+  id: 1
+  name: 'TL_undefined'
+}
+
+item {
+  id: 2
+  name: 'TL_red'
+}
+
+item {
+  id: 3
+  name: 'TL_yellow'
+}
+
+item {
+  id: 4
+  name: 'TL_green'
+}
