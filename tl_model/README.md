@@ -67,14 +67,16 @@ https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc
 1. Ensure the conda environment `carnd-term3` is installed and activated
  - The current Tensorflow Object-Detection API requires Tensorflow v1.4. For the final submission we have to find an earlier version which supports v1.3.
 1. Download the datasets and setup the directory layout as described above.
-1. Convert the dataset to TFRecord format
-  - This step has to be skipped. The converter `DatasetToTFRecordConverter.py` still has an issue. Therefore, the network training can only be performed on the Udacity dataset.
+1. Download the pre-trained model from the [Tensorflow detection model zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md)
+ - Choose the [rfcn_resnet101_coco_2017_11_08](http://download.tensorflow.org/models/object_detection/rfcn_resnet101_coco_2017_11_08.tar.gz) model and unzip it into `CarND-Capstone/tl_model/model/research/object_detection/tl_model_config`.
 1. Prepare Tensorflow object detection API according these [instructions](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md)
   - All required packages are already installed in the conda environment `carnd-term3`
   - Each time you open a new terminal, ensure you've updated the python path in the `model/research/` directory.
   ```
   export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
   ```
+1. Convert the dataset to TFRecord format
+    - This step has to be skipped. The converter `DatasetToTFRecordConverter.py` still has an issue. Therefore, the network training can only be performed on the Udacity dataset.
 1. Change to the directory to `CarND-Capstone/tl_model/model/research/object_detection`
 1. Prepare the model configuration in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_config`
  - The `rfcn_resnet101_coco_traffic_light.config` specifies the whole training process. In the `train_config` chapter you can find some hyperparameters like the `batch_size`, the `learning_rate`and the `num_steps`.
