@@ -19,6 +19,7 @@ import DataAugmentation as da
 from enum import Enum
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
+from PIL import Image
 
 
 # GT color definitions
@@ -41,14 +42,6 @@ class DatasetType(Enum):
     BOSCH = 2               # Bosch small traffic light dataset
     LARA = 3                # LARA traffic light dataset (La Route Automatisée, Paris)
     SDCND_CAPSTONE = 4      # Udacity specific dataset
-
-
-class TrafficLightLabel(Enum):
-    """ Traffic light label/class definitions. """
-    UNDEFINED = 0           # off, side, back view
-    RED = 1                 # red traffic light, no direction information
-    YELLOW = 2              # yellow/orange traffic light, no direction information
-    GREEN = 3               # green traffic light, no direction information
 
 
 class DatasetHandler:
@@ -78,25 +71,31 @@ class DatasetHandler:
     Common `label_dict Format:
 
     samples<list>
-      [0]<dict>
-        'annotations'<list>
-            [0]<dict>
-                'class' : <str>
-                'x_max! : <float>
-                'x_min! : <float>
-                'y_max! : <float>
-                'y_min! : <float>
-            [1]<dict>
-                'class' : <str>
-                'x_max! : <float>
-                'x_min! : <float>
-                'y_max! : <float>
-                'y_min! : <float>
-        'path': <str>
-      [1]<dict>
-        'annotations'<list>
-        'path': <str>
-        ...
+      |-- [0]<dict>
+      |   |-- 'annotations'<list>
+      |   |    |-- [0]<dict>
+      |   |    |   |-- 'class_id' : <int>
+      |   |    |   |-- 'class_text' : <str>
+      |   |    |   |-- 'x_max! : <float>
+      |   |    |   |-- 'x_min! : <float>
+      |   |    |   |-- 'y_max! : <float>
+      |   |    |   |-- 'y_min! : <float>
+      |   |    `-- [1]<dict>
+      |   |    |   |-- 'class_id' : <int>
+      |   |    |   |-- 'class_text' : <str>
+      |   |        |-- 'x_max! : <float>
+      |   |        |-- 'x_min! : <float>
+      |   |        |-- 'y_max! : <float>
+      |   |        |-- 'y_min! : <float>
+      |   |-- 'path': <str>
+      |   |-- 'height': <int>
+      |   `-- 'width': <int>
+      |-- [1]<dict>
+      |   |-- 'annotations'<list>
+      |   |-- 'path': <str>
+      |   |-- 'height': <float>
+      |   `-- 'width': <float>
+      ...
     """
 
     dataset_type = DatasetType.NONE    # type of dataset
@@ -106,6 +105,14 @@ class DatasetHandler:
     samples = []                       # list of images and labeled data (annotations)
     label_statistics = {}              # dictionary of type <TL class> : <number of labeled TL class>
     image_shape = (0, 0, 0)            # image shape [height, width, channels] of dataset
+
+    # label class id to class text mapping.
+    # This line shall be consistent to the used traffic_light_label_map.pbtxt file.
+    # Attention: The fist class id shall not be 0.
+    class_dict = {1: 'TL_undefined',
+                  2: 'TL_red',
+                  3: 'TL_yellow',
+                  4: 'TL_green'}
 
     def __init__(self, width=1024, height=768, verbose=False):
         """ Initializes the DatasetHandler.
@@ -152,6 +159,33 @@ class DatasetHandler:
             self.dataset_type = dataset_type
         else:
             self.dataset_type = DatasetType.MERGED
+
+    def get_class_id_text(self, label):
+        """ Determines the class id and text for the orinial label.
+
+        :param label: Label from orinial annotation file. It shall contain red, yellow or green in
+                      order to ensure a valid match.
+
+        :return: Returns the correspondig class id and class text.
+        """
+        if label.lower().find('red') >= 0:
+            return 2, self.class_dict[2]
+        elif label.lower().find('yellow') >= 0:
+            return 3, self.class_dict[3]
+        elif label.lower().find('green') >= 0:
+            return 4, self.class_dict[4]
+        else:
+            return 1, self.class_dict[1]
+
+    def get_image_shape(self, path):
+        """ Returns the image shape witout loading the image into memory.
+
+        :param path: Path to image.
+
+        :return: Returns the image shape (height, width, channels).
+        """
+        image = Image.open(path)
+        return (image.height, image.width, 3)
 
     def read_all_bosch_labels(self, input_yaml, riib=False, filter_labels=True):
         """
@@ -204,6 +238,11 @@ class DatasetHandler:
             annotations = []
             path = images[i]['path']
 
+            # determine image size
+            self.image_shape = self.get_image_shape(path)
+            height = self.image_shape[0]
+            width = self.image_shape[1]
+
             for box in images[i]['boxes']:
                 # filter for relevant labels if activated
                 if not filter_labels or \
@@ -212,7 +251,9 @@ class DatasetHandler:
                          (box['label'].lower().find('green') >= 0 and len(box['label']) == len('green')) or \
                          (box['label'].lower().find('off') >= 0 and len(box['label']) == len('off'))):
 
-                    annotation = {'class': box['label'].lower(),
+                    class_id, class_text = self.get_class_id_text(box['label'])
+                    annotation = {'class_id': class_id,
+                                  'class_text': class_text,
                                   'x_max': box['x_max'],
                                   'x_min': box['x_min'],
                                   'y_max': box['y_max'],
@@ -221,19 +262,15 @@ class DatasetHandler:
                     annotations.append(annotation)
                     self.number_labeled_traffic_lights += 1
 
-                    if annotation['class'] not in self.label_statistics.keys():
-                        self.label_statistics[annotation['class']] = 1
+                    if annotation['class_text'] not in self.label_statistics.keys():
+                        self.label_statistics[annotation['class_text']] = 1
                     else:
-                        self.label_statistics[annotation['class']] = self.label_statistics[
-                                                                         annotation['class']] + 1
+                        self.label_statistics[annotation['class_text']] = self.label_statistics[
+                                                                         annotation['class_text']] + 1
 
-            image = {'annotations': annotations, 'path': path}
+            image = {'annotations': annotations, 'path': path, 'height': height, 'width': width}
             self.samples.append(image)
             self.number_samples += 1
-
-        # determine image size
-        image = cv2.imread(self.samples[0]['path'])
-        self.image_shape = image.shape
 
         self.number_datasets += 1
         self.update_dataset_type(DatasetType.BOSCH)
@@ -271,6 +308,11 @@ class DatasetHandler:
             frameindex = tuples[i][2]
             path = os.path.abspath(os.path.join(os.path.dirname(input_txt), 'Lara3D_UrbanSeq1_JPG/frame_{:06d}.jpg'.format(int(frameindex))))
 
+            # determine image size
+            self.image_shape = self.get_image_shape(path)
+            height = self.image_shape[0]
+            width = self.image_shape[1]
+
             if frameindex > prev_frameindex:
                 annotations = []
 
@@ -290,7 +332,9 @@ class DatasetHandler:
                 else:
                     label = 'off'
 
-                annotation = {'class': label,
+                class_id, class_text = self.get_class_id_text(label)
+                annotation = {'class_id': class_id,
+                              'class_text': class_text,
                               'x_max': tuples[i][5],
                               'x_min': tuples[i][3],
                               'y_max': tuples[i][6],
@@ -299,21 +343,17 @@ class DatasetHandler:
                 annotations.append(annotation)
                 self.number_labeled_traffic_lights += 1
 
-                if annotation['class'] not in self.label_statistics.keys():
-                    self.label_statistics[annotation['class']] = 1
+                if annotation['class_text'] not in self.label_statistics.keys():
+                    self.label_statistics[annotation['class_text']] = 1
                 else:
-                    self.label_statistics[annotation['class']] = self.label_statistics[
-                                                                     annotation['class']] + 1
+                    self.label_statistics[annotation['class_text']] = self.label_statistics[
+                                                                     annotation['class_text']] + 1
 
             if frameindex > prev_frameindex:
-                image = {'annotations': annotations, 'path': path}
+                image = {'annotations': annotations, 'path': path, 'height': height, 'width': width}
                 self.samples.append(image)
                 self.number_samples += 1
                 prev_frameindex = frameindex
-
-        # determine image size
-        image = cv2.imread(self.samples[0]['path'])
-        self.image_shape = image.shape
 
         self.number_datasets += 1
         self.update_dataset_type(DatasetType.LARA)
@@ -351,6 +391,11 @@ class DatasetHandler:
             annotations = []
             path = images[i]['filename']
 
+            # determine image size
+            self.image_shape = self.get_image_shape(path)
+            height = self.image_shape[0]
+            width = self.image_shape[1]
+
             for annotation in images[i]['annotations']:
                 # filter for relevant labels if activated
                 if not filter_labels or \
@@ -359,7 +404,9 @@ class DatasetHandler:
                          (annotation['class'].lower().find('green') >= 0 and len(annotation['class']) == len('green')) or \
                          (annotation['class'].lower().find('off') >= 0 and len(annotation['class']) == len('off'))):
 
-                    annotation = {'class': annotation['class'].lower(),
+                    class_id, class_text = self.get_class_id_text(annotation['class'])
+                    annotation = {'class_id': class_id,
+                                  'class_text': class_text,
                                   'x_max': annotation['xmin'] + annotation['x_width'],
                                   'x_min': annotation['xmin'],
                                   'y_max': annotation['ymin'] + annotation['y_height'],
@@ -368,19 +415,15 @@ class DatasetHandler:
                     annotations.append(annotation)
                     self.number_labeled_traffic_lights += 1
 
-                    if annotation['class'] not in self.label_statistics.keys():
-                        self.label_statistics[annotation['class']] = 1
+                    if annotation['class_text'] not in self.label_statistics.keys():
+                        self.label_statistics[annotation['class_text']] = 1
                     else:
-                        self.label_statistics[annotation['class']] = self.label_statistics[
-                                                                         annotation['class']] + 1
+                        self.label_statistics[annotation['class_text']] = self.label_statistics[
+                                                                         annotation['class_text']] + 1
 
-            image = {'annotations': annotations, 'path': path}
+            image = {'annotations': annotations, 'path': path, 'height': height, 'width': width}
             self.samples.append(image)
             self.number_samples += 1
-
-        # determine image size
-        image = cv2.imread(self.samples[0]['path'])
-        self.image_shape = image.shape
 
         self.number_datasets += 1
         self.update_dataset_type(DatasetType.SDCND_CAPSTONE)
@@ -434,14 +477,15 @@ class DatasetHandler:
         """ Returns the number of merged datasets. """
         return self.number_datasets
 
-    def split_dataset(self, train_size):
+    def split_dataset(self, train_size, shuffle=True):
         """ Shuffles and splits the dataset into a training and testing dataset.
 
         :param train_size: Size of the training dataset [%].
+        :param shuffle:    If true, the dataset will be shuffeled before splitting.
 
         :return: Returns two lists, one with training and one with test samples.
         """
-        train_samples, test_samples = train_test_split(self.samples, train_size=train_size, shuffle=True)
+        train_samples, test_samples = train_test_split(self.samples, train_size=train_size, shuffle=shuffle)
         return train_samples, test_samples
 
     def generate_ground_truth_image(self, annotations, image_shape):
@@ -455,17 +499,17 @@ class DatasetHandler:
         ground_truth = np.zeros((image_shape[0], image_shape[1], 3), dtype=np.uint8)
 
         for annotation in annotations:
-            class_label = annotation['class']
+            class_text = annotation['class_text']
             x_min = int(round(annotation['x_min']))
             x_max = int(round(annotation['x_max']))
             y_min = int(round(annotation['y_min']))
             y_max = int(round(annotation['y_max']))
 
-            if class_label.find('red') >= 0:
+            if class_text.find('red') >= 0:
                 color = GT_TL_RED
-            elif class_label.find('yellow') >= 0:
+            elif class_text.find('yellow') >= 0:
                 color = GT_TL_YELLOW
-            elif class_label.find('green') >= 0:
+            elif class_text.find('green') >= 0:
                 color = GT_TL_GREEN
             else:
                 color = GT_TL_UNDEFINED
@@ -474,13 +518,15 @@ class DatasetHandler:
 
         return ground_truth
 
-    def generator(self, samples, batch_size=128, augmentation_rate=0.0):
+    def generator(self, samples, batch_size=128, augmentation_rate=0.0, bbox=False):
         """ Sample and ground truth generator.
 
         :param samples:           Samples which shall be loaded into memory.
         :param batch_size:        Batch size for actual run.
         :param augmentation_rate: Rate (0..1) of total images which will be randomly augmented.
                                   E.g. 0.6 augments 60% of the images and 40% are raw images
+        :param bbox:              If true, the generator returns the sample with annotations (bounding boxes).
+                                  Otherwise the ground truth image is returned.
 
         :return: Returns X (RGB image) and y (GT image).
         """
@@ -545,7 +591,10 @@ class DatasetHandler:
 
                 # convert to numpy arrays
                 X = np.array(images)
-                y = np.array(images_gt)
+                if bbox:
+                    y = np.array(batch_samples)
+                else:
+                    y = np.array(images_gt)
                 yield shuffle(X, y)
 
     def plot_generator_heatmap(self, annotations):
@@ -554,19 +603,19 @@ class DatasetHandler:
         :param annotations:  List with annotations.
         """
         for annotation in annotations:
-            class_label = annotation['class'].lower()
+            class_text = annotation['class_text'].lower()
             x_max = int(round(annotation['x_max']))
             x_min = int(round(annotation['x_min']))
             y_max = int(round(annotation['y_max']))
             y_min = int(round(annotation['y_min']))
 
-            if class_label.find('red') >= 0 and len(class_label) == len('red'):
+            if class_text.find('red') >= 0 and len(class_text) == len('red'):
                 self.generator_heatmap_red[y_min:y_max, x_min:x_max] += 1
-            elif class_label.find('yellow') >= 0 and len(class_label) == len('yellow'):
+            elif class_text.find('yellow') >= 0 and len(class_text) == len('yellow'):
                 self.generator_heatmap_yellow[y_min:y_max, x_min:x_max] += 1
-            elif class_label.lower().find('green') >= 0 and len(class_label) == len('green'):
+            elif class_text.lower().find('green') >= 0 and len(class_text) == len('green'):
                 self.generator_heatmap_green[y_min:y_max, x_min:x_max] += 1
-            elif class_label.find('off') >= 0 and len(class_label) == len('off'):
+            elif class_text.find('off') >= 0 and len(class_text) == len('off'):
                 self.generator_heatmap_off[y_min:y_max, x_min:x_max] += 1
 
         self.generator_heatmap_all = self.generator_heatmap_red + self.generator_heatmap_yellow + \
@@ -596,11 +645,11 @@ class DatasetHandler:
         for annotation in annotations:
             color = (100, 100, 100)
 
-            if annotation['class'].lower().find('red') >= 0:
+            if annotation['class_text'].lower().find('red') >= 0:
                 color = (255, 0, 0)
-            elif annotation['class'].lower().find('yellow') >= 0:
+            elif annotation['class_text'].lower().find('yellow') >= 0:
                 color = (255, 255, 0)
-            elif annotation['class'].lower().find('green') >= 0:
+            elif annotation['class_text'].lower().find('green') >= 0:
                 color = (0, 255, 0)
 
             x_max = int(round(annotation['x_max']))
@@ -707,19 +756,19 @@ class DatasetHandler:
 
         for i in range(self.number_samples):
             for annotation in self.samples[i]['annotations']:
-                class_label = annotation['class'].lower()
+                class_text = annotation['class_text'].lower()
                 x_max = int(round(annotation['x_max']))
                 x_min = int(round(annotation['x_min']))
                 y_max = int(round(annotation['y_max']))
                 y_min = int(round(annotation['y_min']))
 
-                if class_label.find('red') >= 0 and len(class_label) == len('red'):
+                if class_text.find('red') >= 0 and len(class_text) == len('red'):
                     heatmap_red[y_min:y_max, x_min:x_max] += 1
-                elif class_label.find('yellow') >= 0 and len(class_label) == len('yellow'):
+                elif class_text.find('yellow') >= 0 and len(class_text) == len('yellow'):
                     heatmap_yellow[y_min:y_max, x_min:x_max] += 1
-                elif class_label.lower().find('green') >= 0 and len(class_label) == len('green'):
+                elif class_text.lower().find('green') >= 0 and len(class_text) == len('green'):
                     heatmap_green[y_min:y_max, x_min:x_max] += 1
-                elif class_label.find('off') >= 0 and len(class_label) == len('off'):
+                elif class_text.find('off') >= 0 and len(class_text) == len('off'):
                     heatmap_off[y_min:y_max, x_min:x_max] += 1
 
         heatmap_all = heatmap_red + heatmap_yellow + heatmap_green + heatmap_off

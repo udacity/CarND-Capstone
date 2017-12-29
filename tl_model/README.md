@@ -40,19 +40,25 @@ Update the conda environment `carnd-term3`:
 ```
 conda env update -f environment.yml
 ```
+### Installation of the TensorFLow Object Detection API
+
+The conda environment [environment.yml](environment.yml) already includes all required packages and library. So just start with the Protobuf compilation and path setups.
+
+https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md
 
 ### Required Directory Layout
-
-- tl_model
-  - datasets
-    - dataset_bosch_small_tlr
-       - dataset_test_rgb
-       - dataset_train_rgb
-     - dataset_lara
-       - Lara3D_UrbanSeq1_JPG
-     - dataset_sdcnd_capstone
-       - real_training_data
-       - sim_training_data
+```
+|-- tl_model
+    |-- datasets
+    |-- dataset_bosch_small_tlr
+    |   |-- dataset_test_rgb
+    |   |-- dataset_train_rgb
+    |-- dataset_lara
+    |   |-- Lara3D_UrbanSeq1_JPG
+    |-- dataset_sdcnd_capstone
+        |-- real_training_data
+        |-- sim_training_data
+```
 
 ## DatasetHandler
 To get a first impression about the dataset, run the `DatasetHandler.py` with the following arguments. It plays a short video with all labeled traffic lights for the Bosch Small Traffic Light, the LARA and the SDCND Capstone Dataset.

@@ -7,14 +7,17 @@ dependencies:
     - numpy
     - matplotlib
     - pillow
+    - lxml
+    - jupyter
     - scipy
     - ffmpeg
     - imageio==2.1.2
     - PyYAML
     - pandas
     - scikit-learn
+    - protobuf
     - pip:
         - moviepy
         - opencv-python
-        - tensorflow==1.3
+        - tensorflow==1.4
         - tensorflow-tensorboard
