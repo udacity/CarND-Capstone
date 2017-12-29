@@ -114,7 +114,7 @@ class DatasetHandler:
                   3: 'TL_yellow',
                   4: 'TL_green'}
 
-    def __init__(self, width=1024, height=768, verbose=False):
+    def __init__(self, width=None, height=None, verbose=False):
         """ Initializes the DatasetHandler.
 
         :param width:     Width of the generator output image.
@@ -122,15 +122,16 @@ class DatasetHandler:
         :param verbose:   If true, the the generator visualizes its output.
         """
         self.generator_image_shape = (width, height)
-        heatmap_shape = (self.generator_image_shape[1], self.generator_image_shape[0])
-        self.generator_heatmap_red = np.zeros(heatmap_shape, dtype=np.float)
-        self.generator_heatmap_yellow = np.zeros(heatmap_shape, dtype=np.float)
-        self.generator_heatmap_green = np.zeros(heatmap_shape, dtype=np.float)
-        self.generator_heatmap_off = np.zeros(heatmap_shape, dtype=np.float)
-        self.generator_heatmap_all = np.zeros(heatmap_shape, dtype=np.float)
         self.verbose = verbose
 
         if verbose:
+            heatmap_shape = (self.generator_image_shape[1], self.generator_image_shape[0])
+            self.generator_heatmap_red = np.zeros(heatmap_shape, dtype=np.float)
+            self.generator_heatmap_yellow = np.zeros(heatmap_shape, dtype=np.float)
+            self.generator_heatmap_green = np.zeros(heatmap_shape, dtype=np.float)
+            self.generator_heatmap_off = np.zeros(heatmap_shape, dtype=np.float)
+            self.generator_heatmap_all = np.zeros(heatmap_shape, dtype=np.float)
+
             plt.ion()
             self.fig_heatmap_all, self.ax_heatmap_all = plt.subplots()
             self.fig_heatmap_all.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
@@ -442,14 +443,14 @@ class DatasetHandler:
         else:
             print('done')
 
-        print('Loading LARA dataset...', end='', flush=True)
-
-        if self.read_all_lara_labels(DATASET_LARA) is None:
-            print('')
-            print('ERROR: Input TXT file "{}" not found.'.format(DATASET_LARA))
-            exit(-1)
-        else:
-            print('done')
+        # print('Loading LARA dataset...', end='', flush=True)
+        #
+        # if self.read_all_lara_labels(DATASET_LARA) is None:
+        #     print('')
+        #     print('ERROR: Input TXT file "{}" not found.'.format(DATASET_LARA))
+        #     exit(-1)
+        # else:
+        #     print('done')
 
         print('Loading SDCND Capstone real dataset...', end='', flush=True)
 
@@ -477,15 +478,15 @@ class DatasetHandler:
         """ Returns the number of merged datasets. """
         return self.number_datasets
 
-    def split_dataset(self, train_size, shuffle=True):
+    def split_dataset(self, train_ratio, shuffle=True):
         """ Shuffles and splits the dataset into a training and testing dataset.
 
-        :param train_size: Size of the training dataset [%].
-        :param shuffle:    If true, the dataset will be shuffeled before splitting.
+        :param train_ratio: Size of the training dataset [%].
+        :param shuffle:     If true, the dataset will be shuffeled before splitting.
 
         :return: Returns two lists, one with training and one with test samples.
         """
-        train_samples, test_samples = train_test_split(self.samples, train_size=train_size, shuffle=shuffle)
+        train_samples, test_samples = train_test_split(self.samples, train_size=train_ratio, shuffle=shuffle)
         return train_samples, test_samples
 
     def generate_ground_truth_image(self, annotations, image_shape):
@@ -518,7 +519,7 @@ class DatasetHandler:
 
         return ground_truth
 
-    def generator(self, samples, batch_size=128, augmentation_rate=0.0, bbox=False):
+    def generator(self, samples, batch_size=128, augmentation_rate=0.0, bbox=False, stop_at_end=False):
         """ Sample and ground truth generator.
 
         :param samples:           Samples which shall be loaded into memory.
@@ -527,12 +528,15 @@ class DatasetHandler:
                                   E.g. 0.6 augments 60% of the images and 40% are raw images
         :param bbox:              If true, the generator returns the sample with annotations (bounding boxes).
                                   Otherwise the ground truth image is returned.
+        :param stop_at_end:       If true, the generator stops if all images have been provided.
 
         :return: Returns X (RGB image) and y (GT image).
         """
-        number_total_samples = 0
+        number_samples = len(samples)
+        number_generated_samples = 0
+        running = True
 
-        while 1:  # loop forever so the generator never terminates
+        while running:  # loop forever so the generator never terminates
             for offset in range(0, self.number_samples, batch_size):
                 batch_samples = samples[offset:offset + batch_size]
 
@@ -559,8 +563,11 @@ class DatasetHandler:
                         image = da.DataAugmentation.random_brightness(image, probability=0.5)
 
                     # final image pre-processing
-                    image, image_gt, annotations = da.DataAugmentation.resize_image(
-                        image, image_gt, annotations, self.generator_image_shape)
+                    if self.generator_image_shape[0] is not None:
+                        image, image_gt, annotations = da.DataAugmentation.resize_image(
+                            image, image_gt, annotations, self.generator_image_shape)
+                        batch_sample['width'] = self.generator_image_shape[0]
+                        batch_sample['height'] = self.generator_image_shape[1]
 
                     images.append(image)
                     images_gt.append(image_gt)
@@ -578,10 +585,13 @@ class DatasetHandler:
                         cv2.imshow('Generator output (left: Generator Image + Ground Truth Overlay, right: Ground Truth)', image_gen)
                         cv2.waitKey(1)
 
-                number_total_samples += number_batch_samples
+                number_generated_samples += number_batch_samples
+
+                if stop_at_end and number_generated_samples >= number_samples:
+                    running = False
 
                 if self.verbose:
-                    print(' Generator: number_batch_samples: {:4d} number_total_samples: {:5d}/{:5d}'.format(number_batch_samples, number_total_samples, self.number_samples))
+                    print(' Generator: number_batch_samples: {:4d} number_generated_samples: {:5d}/{:5d}'.format(number_batch_samples, number_generated_samples, self.number_samples))
 
                 # FIXME: Remove after debugging
                 #if number_total_samples > self.number_samples:
