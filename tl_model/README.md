@@ -40,7 +40,7 @@ Update the conda environment `carnd-term3`:
 ```
 conda env update -f environment.yml
 ```
-### Installation of the TensorFLow Object Detection API
+### Installation of the Tensorflow Object Detection API
 
 The conda environment [environment.yml](environment.yml) already includes all required packages and library. So just start with the Protobuf compilation and path setups.
 
@@ -59,6 +59,61 @@ https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc
         |-- real_training_data
         |-- sim_training_data
 ```
+
+## Traffic Light R-FCN Model
+
+### How to train the model
+
+1. Ensure the conda environment `carnd-term3` is installed and activated
+ - The current Tensorflow Object-Detection API requires Tensorflow v1.4. For the final submission we have to find an earlier version which supports v1.3.
+1. Download the datasets and setup the directory layout as described above.
+1. Convert the dataset to TFRecord format
+  - This step has to be skipped. The converter `DatasetToTFRecordConverter.py` still has an issue. Therefore, the network training can only be performed on the Udacity dataset.
+1. Prepare Tensorflow object detection API according these [instructions](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md)
+  - All required packages are already installed in the conda environment `carnd-term3`
+  - Each time you open a new terminal, ensure you've updated the python path in the `model/research/` directory.
+  ```
+  export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
+  ```
+1. Change to the directory to `CarND-Capstone/tl_model/model/research/object_detection`
+1. Prepare the model configuration in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_config`
+ - The `rfcn_resnet101_coco_traffic_light.config` specifies the whole training process. In the `train_config` chapter you can find some hyperparameters like the `batch_size`, the `learning_rate`and the `num_steps`.
+1. Run the model training
+```
+python train.py
+       --logtostderr
+       --train_dir=tl_model_training/
+       --pipeline_config_path=tl_model_config/rfcn_resnet101_coco_traffic_light.config
+```
+ - All checkpoints are stored in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_training`
+ - If you need the checkpoints, move the content of this directory to a safe place before you run the training.
+1. Run Tensorboard in order to check the total loss value
+```
+tensorboard --logdir tl_model_training/
+```
+1. Freeze the model after successful training
+```
+python export_inference_graph.py
+        --input_type image_tensor
+        --pipeline_config_path tl_model_config/rfcn_resnet101_coco_traffic_light.config
+        --trained_checkpoint_prefix tl_model_training/model.ckpt-305
+        --output_directory tl_model_freeze
+```
+ - Choose the checkpoint you like to freeze by changing the number in `tl_model_training/model.ckpt-305`.
+ - The frozen model is stored in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_freeze`
+1. Test the model in the jupyter notebook
+```
+jupyter notebook
+```
+ - Open the `object_detection_tl_test.ipynb` notebook and run all steps excepting the `Prepare R-FCN Resnet-101 Coco Model`. The code loads the pre-trained model instead of the traffic light model. You can use this code in order to analyzer the performance of the pre-trained model without the specific traffic light color classification.
+1. Performance evaluation coming soon....
+
+***Good Luck!***
+
+### Open Issues
+
+- Converter from `DatasetHandler` format to TFRecord format is not finished yet. Therefore, only the Udacity dataset is available.
+- The current Tensorflow Object-Detection API required Tensorflow v1.4. CARLA support Tensorflow v1.3 only.
 
 ## DatasetHandler
 To get a first impression about the dataset, run the `DatasetHandler.py` with the following arguments. It plays a short video with all labeled traffic lights for the Bosch Small Traffic Light, the LARA and the SDCND Capstone Dataset.
