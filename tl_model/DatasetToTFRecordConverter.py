@@ -38,8 +38,8 @@ class DatasetToTFRecordConverter:
 
         # setup dataset handler
         self.dataset_handler = dh.DatasetHandler(width=width, height=height)
-        #FIXME: self.dataset_handler.read_predefined_dataset()
-        self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
+        self.dataset_handler.read_predefined_dataset()
+        #TODO: self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
 
         stop_at_end = (number_images_to_generate is None)
 
