@@ -63,16 +63,15 @@ class DatasetToTFRecordConverter:
         elif ext[1] in '.png':
             return b'png'
 
-    def load_image(self, path):
+    def load_image_binary(self, path):
         """ Load image in TFRecord format.
 
         :param path: Path to the jpg or png image.
 
         :return: Returns the TFRecord encoded image data.
         """
-        image = cv2.imread(path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = image.astype(np.float32)
+        with tf.gfile.GFile(path, 'rb') as fid:
+            image = fid.read()
         return image
 
     def convert_annotations_to_lists(self, annotations, width, height):
@@ -119,7 +118,7 @@ class DatasetToTFRecordConverter:
         width = sample['width']
         filename = sample['path'].encode('utf8')
         image_format = self.decode_image_format(sample['path'])
-        encoded_image_data = image.tobytes()
+        encoded_image_data = self.load_image_binary(sample['path']) #FIXME: image.tobytes()
 
         x_mins, x_maxs, y_mins, y_maxs, classes_id, classes_text = \
             self.convert_annotations_to_lists(sample['annotations'], width=width, height=height)
