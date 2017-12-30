@@ -73,7 +73,7 @@ https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc
 
 ## Traffic Light R-FCN Model
 
-Background information, performance and runtime analysis results can be read in this paper 
+Background information, performance and runtime analysis results can be read in this paper
 [R-FCN: Object Detection via Region-based Fully Convolutional Networks, Jifeng Dai Yi (Microsoft Research), Li∗ Kaiming (Tsinghua University), He Jian Sun (Microsoft Research)](https://arxiv.org/pdf/1605.06409.pdf).
 
 ### How to train the model
@@ -120,7 +120,7 @@ Background information, performance and runtime analysis results can be read in 
     ```
    - All checkpoints are stored in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_training`
    - If you need the checkpoints, move the content of this directory to a safe place before you run the training.
-9. Run Tensorboard in order to check the total loss value
+9. Run Tensorboard in order to check the total loss value. In case the total loss, the individual losses of the box classifier (classification and localization) or the RPN (region proposal network) start to fluctuate, adjust the batch size and learning rate in the `rfcn_resnet101_coco_traffic_light.config` file.
     ```
     tensorboard --logdir tl_model_training/
     ```
