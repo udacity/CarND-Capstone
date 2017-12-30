@@ -27,8 +27,8 @@ class DatasetToTFRecordConverter:
                                   E.g. 0.6 augments 60% of the images and 40% are raw images
         """
         self.dataset_handler = dh.DatasetHandler(width=width, height=height)
-        # FIXME: self.dataset_handler.read_predefined_dataset()
-        self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
+        self.dataset_handler.read_predefined_dataset()
+        # TODO: self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
 
         if train_ratio < 1.0:
             self.train_samples, self.test_samples = self.dataset_handler.split_dataset(train_ratio=train_ratio)
@@ -147,14 +147,14 @@ if __name__ == '__main__':
         '--train_output_file',
         help='Path to train TFRecord output file.',
         dest='train_output_file',
-        metavar='TRAIN_FILE'
+        metavar='TRAIN_FILE.record'
     )
 
     parser.add_argument(
         '--test_output_file',
         help='Path to test TFRecord output file.',
         dest='test_output_file',
-        metavar='TEST_FILE'
+        metavar='TEST_FILE.record'
     )
 
     parser.add_argument(
@@ -167,16 +167,16 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '--train_ratio',
-        help='Size of the training dataset [%].',
+        help='Size of the training dataset [0..1].',
         dest='train_ratio',
         default=1.0,
         type=float,
-        metavar='SIZE'
+        metavar='RATIO'
     )
 
     parser.add_argument(
         '--augmentation_rate',
-        help='Augmentation rate [%].',
+        help='Augmentation rate [0..1].',
         dest='augmentation_rate',
         default=0.65,
         type=float,
@@ -195,6 +195,10 @@ if __name__ == '__main__':
                                            height=None,
                                            train_ratio=args.train_ratio,
                                            augmentation_rate=args.augmentation_rate)
+
+    if not converter.dataset_handler.is_valid():
+        print('ERROR: No valid datasets found.')
+        exit(-1)
 
     number_train_images = 0
     number_test_images = 0
