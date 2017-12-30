@@ -120,11 +120,19 @@ Background information, performance and runtime analysis results can be read in 
     ```
    - All checkpoints are stored in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_training`
    - If you need the checkpoints, move the content of this directory to a safe place before you run the training.
-9. Run Tensorboard in order to check the total loss value. In case the total loss, the individual losses of the box classifier (classification and localization) or the RPN (region proposal network) start to fluctuate, adjust the batch size and learning rate in the `rfcn_resnet101_coco_traffic_light.config` file.
+9. Run the evaluation script in a separate terminal. This script performs an TL inference after each checkpoint and shows the images including bounding boxes in Tensorboard.
     ```
-    tensorboard --logdir tl_model_training/
+    python eval.py \
+           --logtostderr \
+           --pipeline_config_path tl_model_config/rfcn_resnet101_coco_traffic_light.config \
+           --checkpoint_dir tl_model_training \
+           --eval_dir tl_model_eval
     ```
-10. Freeze the model after successful training
+10. Run Tensorboard in order to check the total loss value. In case the total loss, the individual losses of the box classifier (classification and localization) or the RPN (region proposal network) start to fluctuate, adjust the batch size and learning rate in the `rfcn_resnet101_coco_traffic_light.config` file.
+    ```
+    tensorboard --logdir training:tl_model_training,evaluation:tl_model_eval
+    ```
+11. Freeze the model after successful training
     ```
     python export_inference_graph.py \
             --input_type image_tensor \
@@ -134,12 +142,12 @@ Background information, performance and runtime analysis results can be read in 
     ```
  - Choose the checkpoint you like to freeze by changing the number in `tl_model_training/model.ckpt-305`.
  - The frozen model is stored in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_freeze`
-11. Test the trained model in the jupyter notebook
+12. Test the trained model in the jupyter notebook
     ```
     jupyter notebook
     ```
     - Open the `object_detection_tl_test.ipynb` notebook and run all steps excepting the `Prepare R-FCN Resnet-101 Coco Model`. The code loads the pre-trained model instead of the traffic light model. You can use this code in order to analyze the performance of the pre-trained model without the specific traffic light color classification.
-12. Performance evaluation coming soon....
+13. Performance evaluation coming soon....
 
 ***Good Luck!***
 
