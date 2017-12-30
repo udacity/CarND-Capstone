@@ -73,6 +73,9 @@ https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc
 
 ## Traffic Light R-FCN Model
 
+Background information, performance and runtime analysis results can be read in this paper 
+[R-FCN: Object Detection via Region-based Fully Convolutional Networks, Jifeng Dai Yi (Microsoft Research), Li∗ Kaiming (Tsinghua University), He Jian Sun (Microsoft Research)](https://arxiv.org/pdf/1605.06409.pdf).
+
 ### How to train the model
 
 1. Ensure the conda environment `carnd-term3` is installed and activated
@@ -87,7 +90,6 @@ https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc
     export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
     ```
 5. Convert the dataset to TFRecord format
-   - ***Attention: The `DatasetToTFRecordConverter()` still has a bug. Therefore, it is not possible to convert the augmented images into the TFRecord format. Only the original images can be converted.***
    - Currently the Bosch Small Traffic light and the Capstone (sim+real) datasets are converted. The LARA dataset consists of several ambiguous labels and thus is ignored for the first test runs.
    - The following command splits the dataset into a 85% training and 15% test set without image augmentation.
    ```
@@ -96,6 +98,15 @@ https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc
           --test_output_file datasets/test_bosch_capstone.record \
           --train_ratio 0.85 \
           --augmentation_rate 0.0
+   ```
+   - The following command splits the dataset into a 85% training and 15% test set with 65% image augmentation and total number of images (train + test set) of 15.000 images.
+   ```
+   python DatasetToTFRecordConverter.py \
+          --train_output_file datasets/train_bosch_capstone_augmented.record \
+          --test_output_file datasets/test_bosch_capstone_augmented.record \
+          --train_ratio 0.85 \
+          --augmentation_rate 0.65 \
+          --number_images 15000
    ```
 6. Change to the directory to `CarND-Capstone/tl_model/model/research/object_detection`
 7. Prepare the model configuration in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_config`
@@ -123,19 +134,14 @@ https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc
     ```
  - Choose the checkpoint you like to freeze by changing the number in `tl_model_training/model.ckpt-305`.
  - The frozen model is stored in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_freeze`
-11. Test the model in the jupyter notebook
+11. Test the trained model in the jupyter notebook
     ```
     jupyter notebook
     ```
- - Open the `object_detection_tl_test.ipynb` notebook and run all steps excepting the `Prepare R-FCN Resnet-101 Coco Model`. The code loads the pre-trained model instead of the traffic light model. You can use this code in order to analyzer the performance of the pre-trained model without the specific traffic light color classification.
+    - Open the `object_detection_tl_test.ipynb` notebook and run all steps excepting the `Prepare R-FCN Resnet-101 Coco Model`. The code loads the pre-trained model instead of the traffic light model. You can use this code in order to analyze the performance of the pre-trained model without the specific traffic light color classification.
 12. Performance evaluation coming soon....
 
 ***Good Luck!***
-
-### Open Issues
-
-- Converter from `DatasetHandler` format to TFRecord format is not finished yet. Therefore, only the Udacity dataset is available.
-- The current Tensorflow Object-Detection API required Tensorflow v1.4. CARLA support Tensorflow v1.3 only.
 
 ## DatasetHandler
 To get a first impression about the dataset, run the `DatasetHandler.py` with the following arguments. It plays a short video with all labeled traffic lights for the Bosch Small Traffic Light, the LARA and the SDCND Capstone Dataset.
