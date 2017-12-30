@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="162256c2-e8e4-49c0-8f55-920482da9dd9" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/DatasetHandler.py" afterPath="$PROJECT_DIR$/DatasetHandler.py" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -18,21 +17,11 @@
       <file leaf-file-name="DatasetHandler.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="183">
-              <caret line="161" column="50" lean-forward="true" selection-start-line="161" selection-start-column="50" selection-end-line="161" selection-end-column="50" />
+            <state relative-caret-position="363">
+              <caret line="562" column="56" lean-forward="false" selection-start-line="562" selection-start-column="56" selection-end-line="562" selection-end-column="56" />
               <folding>
                 <element signature="e#22#31#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="figure.py" pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/miniconda3/envs/carnd-term3/lib/python3.5/site-packages/matplotlib/figure.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="198">
-              <caret line="1880" column="0" lean-forward="false" selection-start-line="1880" selection-start-column="0" selection-end-line="1880" selection-end-column="0" />
-              <folding />
             </state>
           </provider>
         </entry>
@@ -122,11 +111,11 @@
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_training/rfcn_resnet101_coco_traffic_light.config" />
         <option value="$PROJECT_DIR$/environment.yml" />
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_config/traffic_light_label_map.pbtxt" />
-        <option value="$PROJECT_DIR$/DataAugmentation.py" />
         <option value="$PROJECT_DIR$/DatasetToTFRecordConverter.py" />
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config" />
         <option value="$PROJECT_DIR$/model/research/object_detection/utils/visualization_utils.py" />
         <option value="$PROJECT_DIR$/DatasetHandler.py" />
+        <option value="$PROJECT_DIR$/DataAugmentation.py" />
       </list>
     </option>
   </component>
@@ -163,24 +152,6 @@
               <item name="TL_Model" type="b2602c69:ProjectViewProjectNode" />
               <item name="tl_model" type="462c0819:PsiDirectoryNode" />
               <item name="datasets" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="TL_Model" type="b2602c69:ProjectViewProjectNode" />
-              <item name="tl_model" type="462c0819:PsiDirectoryNode" />
-              <item name="model" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="TL_Model" type="b2602c69:ProjectViewProjectNode" />
-              <item name="tl_model" type="462c0819:PsiDirectoryNode" />
-              <item name="model" type="462c0819:PsiDirectoryNode" />
-              <item name="research" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="TL_Model" type="b2602c69:ProjectViewProjectNode" />
-              <item name="tl_model" type="462c0819:PsiDirectoryNode" />
-              <item name="model" type="462c0819:PsiDirectoryNode" />
-              <item name="research" type="462c0819:PsiDirectoryNode" />
-              <item name="object_detection" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -744,13 +715,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DataAugmentation.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3466">
-          <caret line="306" column="42" lean-forward="false" selection-start-line="306" selection-start-column="42" selection-end-line="306" selection-end-column="42" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/datasets/test.record">
       <provider selected="true" editor-type-id="LargeFileEditor">
         <state relative-caret-position="0">
@@ -812,10 +776,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/DataAugmentation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="65">
+          <caret line="47" column="42" lean-forward="true" selection-start-line="47" selection-start-column="42" selection-end-line="47" selection-end-column="42" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="183">
-          <caret line="161" column="50" lean-forward="true" selection-start-line="161" selection-start-column="50" selection-end-line="161" selection-end-column="50" />
+        <state relative-caret-position="363">
+          <caret line="562" column="56" lean-forward="false" selection-start-line="562" selection-start-column="56" selection-end-line="562" selection-end-column="56" />
           <folding>
             <element signature="e#22#31#0" expanded="true" />
           </folding>

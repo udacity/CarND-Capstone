@@ -180,9 +180,19 @@ dataset_handler.read_predefined_dataset()
 ```
 
 #### Generator Output
-The `generator()` outputs a list with sample images (see left image below) and list with the ground truth images (see right image below). The list contains `batch_size` RGB images in the specified size `[width, height, 3]`. If required all bounding boxes, instead of the ground truth image, could be returned as well.
+The `generator()` outputs a list with sample images (see left image below) and list with the ground truth images (see right image below). The list contains `batch_size` RGB images in the specified size `[width, height, 3]`. Alternatively, all bounding boxes instead of the ground truth image, can be returned as well. The bounding boxes are required to train the network with for the Tensorflow Object-Detection API.
 
 ![Generator output][image_generator_output]
+
+The image above can be generated with the following arguments:
+```
+python DatasetHandler.py \
+  --bosch_label_file datasets/dataset_bosch_small_tlr/dataset_train_rgb/train.yaml \
+  --lara_label_file datasets/dataset_lara/Lara_UrbanSeq1_GroundTruth_GT.txt \
+  --capstone_label_file datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml \
+  --show_generator \
+  --disable_filter
+```
 
 **Ground Truth Color Coding**
 
