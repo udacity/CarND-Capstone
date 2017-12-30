@@ -17,24 +17,31 @@ class DatasetToTFRecordConverter:
         https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/using_your_own_dataset.md
     """
 
-    def __init__(self, width, height, train_ratio=1.0, augmentation_rate=0.0):
+    def __init__(self, width, height, number_images_to_generate=None, train_ratio=1.0, augmentation_rate=0.0):
         """ Initialize the dataset handler with datasets.
 
         :param width:             Target image width.
         :param height:            Target image height.
+        :param number_images_to_generate: If None, the generator generates as much images as stored in the datasets. Otherwise
+                                  the specified number of images.
+                                  Number of images = train set + test set
         :param train_ratio:       Size of the training dataset [%].
         :param augmentation_rate: Rate (0..1) of total images which will be randomly augmented.
                                   E.g. 0.6 augments 60% of the images and 40% are raw images
         """
         self.width = width
         self.height = height
+        self.number_images_to_generate = number_images_to_generate
         self.train_ratio = train_ratio
         self.augmentation_rate = augmentation_rate
+        self.temp_converted_image_name = 'tmp_converted_image'
 
         # setup dataset handler
         self.dataset_handler = dh.DatasetHandler(width=width, height=height)
-        self.dataset_handler.read_predefined_dataset()
-        #TODO: self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
+        #FIXME: self.dataset_handler.read_predefined_dataset()
+        self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
+
+        stop_at_end = (number_images_to_generate is None)
 
         if train_ratio < 1.0:
             self.train_samples, self.test_samples = self.dataset_handler.split_dataset(train_ratio=train_ratio)
@@ -43,7 +50,7 @@ class DatasetToTFRecordConverter:
                                                                  batch_size=1,
                                                                  augmentation_rate=augmentation_rate,
                                                                  bbox=True,
-                                                                 stop_at_end=True)
+                                                                 stop_at_end=stop_at_end)
         else:
             self.train_samples = self.dataset_handler.samples
             self.test_samples = None
@@ -53,7 +60,7 @@ class DatasetToTFRecordConverter:
                                                               batch_size=1,
                                                               augmentation_rate=augmentation_rate,
                                                               bbox=True,
-                                                              stop_at_end=True)
+                                                              stop_at_end=stop_at_end)
 
     def decode_image_format(self, path):
         """ Decodes TFRecord specific the image format. Only valid for jpg and png files!
@@ -89,14 +96,13 @@ class DatasetToTFRecordConverter:
         :return: Returns a TFRecords compatible binary image.
         """
         if format in b'jpeg':
-            filename = 'tmp_converted_image.jpg'
+            filename = self.temp_converted_image_name + '.jpg'
         else:
-            filename = 'tmp_converted_image.png'
+            filename = self.temp_converted_image_name + '.png'
 
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         cv2.imwrite(filename, image)
         image_binary = self.load_image_binary(filename)
-        os.remove(filename)
 
         return image_binary
 
@@ -169,6 +175,16 @@ class DatasetToTFRecordConverter:
         }))
         return tf_example
 
+    def cleanup(self):
+        """ Clean-up temporary stored files. """
+        filename_jpg = self.temp_converted_image_name + '.jpg'
+        filename_png = self.temp_converted_image_name + '.png'
+
+        if os.path.isfile(filename_jpg):
+            os.remove(filename_jpg)
+
+        if os.path.isfile(filename_png):
+            os.remove(filename_png)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dataset to TFRecord Converter.')
@@ -190,7 +206,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--number_images',
         help='Total number of images train + test set.',
-        dest='train_size',
+        dest='number_images',
         default=None,
         metavar='SIZE'
     )
@@ -224,7 +240,8 @@ if __name__ == '__main__':
     converter = DatasetToTFRecordConverter(width=None,
                                            height=None,
                                            train_ratio=args.train_ratio,
-                                           augmentation_rate=args.augmentation_rate)
+                                           augmentation_rate=args.augmentation_rate,
+                                           number_images_to_generate=args.number_images)
 
     if not converter.dataset_handler.is_valid():
         print('ERROR: No valid datasets found.')
@@ -243,6 +260,12 @@ if __name__ == '__main__':
                     writer_train.write(tf_example.SerializeToString())
                     number_train_images += 1
 
+                    if converter.number_images_to_generate is not None:
+                        max_number_train_images = int(round(float(converter.number_images_to_generate) * converter.train_ratio))
+                        if number_train_images >= max_number_train_images:
+                            break
+
+
         print('done')
         print('Converted {} images to {}'.format(number_train_images, args.train_output_file))
         writer_train.close()
@@ -257,6 +280,13 @@ if __name__ == '__main__':
                 writer_test.write(tf_example.SerializeToString())
                 number_test_images += 1
 
+                if converter.number_images_to_generate is not None:
+                    max_number_test_images = int(round(float(converter.number_images_to_generate) * (1.0 - converter.train_ratio)))
+                    if number_test_images >= max_number_test_images:
+                        break
+
         print('done')
         print('Converted {} images to {}'.format(number_test_images, args.test_output_file))
         writer_test.close()
+
+    converter.cleanup()
