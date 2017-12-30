@@ -26,9 +26,15 @@ class DatasetToTFRecordConverter:
         :param augmentation_rate: Rate (0..1) of total images which will be randomly augmented.
                                   E.g. 0.6 augments 60% of the images and 40% are raw images
         """
+        self.width = width
+        self.height = height
+        self.train_ratio = train_ratio
+        self.augmentation_rate = augmentation_rate
+
+        # setup dataset handler
         self.dataset_handler = dh.DatasetHandler(width=width, height=height)
         self.dataset_handler.read_predefined_dataset()
-        # TODO: self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
+        #TODO: self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
 
         if train_ratio < 1.0:
             self.train_samples, self.test_samples = self.dataset_handler.split_dataset(train_ratio=train_ratio)
@@ -74,6 +80,26 @@ class DatasetToTFRecordConverter:
             image = fid.read()
         return image
 
+    def convert_nparray_to_binary_image(self, image, format):
+        """ Converts a numpy array image to the TFRecords compatible binary image.
+
+        :param image:  Numpy binary image (e.g. read by OpenCv).
+        :param format: Image format 'jpeg' or 'png'.
+
+        :return: Returns a TFRecords compatible binary image.
+        """
+        if format in b'jpeg':
+            filename = 'tmp_converted_image.jpg'
+        else:
+            filename = 'tmp_converted_image.png'
+
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(filename, image)
+        image_binary = self.load_image_binary(filename)
+        os.remove(filename)
+
+        return image_binary
+
     def convert_annotations_to_lists(self, annotations, width, height):
         """ Converts the annotations (classes and bounding boxes) to separate lists. The bounding boxes are normalized
         by the image width and height.
@@ -118,7 +144,11 @@ class DatasetToTFRecordConverter:
         width = sample['width']
         filename = sample['path'].encode('utf8')
         image_format = self.decode_image_format(sample['path'])
-        encoded_image_data = self.load_image_binary(sample['path']) #FIXME: image.tobytes()
+
+        if self.augmentation_rate > 0.0 or self.width is not None or self.height is not None:
+            encoded_image_data = self.convert_nparray_to_binary_image(image, image_format)
+        else:
+            encoded_image_data = self.load_image_binary(sample['path'])
 
         x_mins, x_maxs, y_mins, y_maxs, classes_id, classes_text = \
             self.convert_annotations_to_lists(sample['annotations'], width=width, height=height)
