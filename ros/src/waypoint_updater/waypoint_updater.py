@@ -140,20 +140,26 @@ class WaypointUpdater(object):
                             # decl = self.current_velocity / wp_count
                             # decl = .5
                             # car_closest_idx = self.get_closest_waypoint_idx(0, self.current_pos)
-                            dist = self.distance(self.base_waypoints.waypoints, j_mod + 3, j_mod + 5)
+                            dist = self.distance(self.base_waypoints.waypoints, j_mod, j_mod + 2)
                             if self.current_velocity < 0.1:
                                 vel = 0.
                             else:
-                                vel = math.sqrt(abs(self.current_velocity**2 + (2 * DECEL * dist)))
-                                if vel < .1:
+                                if j == 0:
+                                    prev_velocity = self.current_velocity
+                                else:
+                                    prev_velocity = self.base_waypoints.waypoints[j_mod - 1].twist.twist.linear.x
+
+                                vel = math.sqrt(abs(prev_velocity ** 2 + (2 * DECEL * dist)))
+                                if vel < 1.:
                                     vel = 0.
                             rospy.logdebug(
                                 "Current velocity: {} Target velocity: {}".format(self.current_velocity, vel))
                             next_wp.twist.twist.linear.x = max(0, vel)
                             if j:
                                 rospy.logdebug(
-                                    "Stop Next waypoint idx: {}  velocity: {}".format(j,
-                                                                                      next_wp.twist.twist.linear.x))
+                                    "Stop Next waypoint idx: {}  velocity: {} distance: {}".format(j,
+                                                                                                   next_wp.twist.twist.linear.x,
+                                                                                                   dist))
                             # else:
                             #     next_wp.twist.twist.linear.x = 0
                         else:
