@@ -31,6 +31,9 @@ class TwistController(object):
         ang_vel = twist_cmd.twist.angular.z
         vel_err = lin_vel - current_velocity.twist.linear.x
 
+        if current_velocity.twist.linear.x <= 0.01 and twist_cmd.twist.linear.x <= 0.01:
+            return 0, 100, 0
+
         next_steer = self.yaw_controller.get_steering(lin_vel, ang_vel, current_velocity.twist.linear.x)
         next_steer = self.s_lpf.filt(next_steer)
 
