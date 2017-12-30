@@ -619,13 +619,13 @@ class DatasetHandler:
             y_max = int(round(annotation['y_max']))
             y_min = int(round(annotation['y_min']))
 
-            if class_text.find('red') >= 0 and len(class_text) == len('red'):
+            if class_text.find('red') >= 0:
                 self.generator_heatmap_red[y_min:y_max, x_min:x_max] += 1
-            elif class_text.find('yellow') >= 0 and len(class_text) == len('yellow'):
+            elif class_text.find('yellow') >= 0:
                 self.generator_heatmap_yellow[y_min:y_max, x_min:x_max] += 1
-            elif class_text.lower().find('green') >= 0 and len(class_text) == len('green'):
+            elif class_text.lower().find('green') >= 0:
                 self.generator_heatmap_green[y_min:y_max, x_min:x_max] += 1
-            elif class_text.find('off') >= 0 and len(class_text) == len('off'):
+            elif class_text.find('off') >= 0:
                 self.generator_heatmap_off[y_min:y_max, x_min:x_max] += 1
 
         self.generator_heatmap_all = self.generator_heatmap_red + self.generator_heatmap_yellow + \
@@ -962,7 +962,7 @@ if __name__ == '__main__':
             print('Exit with CTRL+C')
             dataset_handler.show_labeled_images(output_folder=None)
         elif args.show_generator:
-            generator = dataset_handler.generator(dataset_handler.samples, batch_size=5, augmentation_rate=0.65)
+            generator = dataset_handler.generator(dataset_handler.samples, batch_size=1, augmentation_rate=0.65)
 
             for x_train, y_train in generator:
                 pass
