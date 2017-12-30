@@ -772,13 +772,13 @@ class DatasetHandler:
                 y_max = int(round(annotation['y_max']))
                 y_min = int(round(annotation['y_min']))
 
-                if class_text.find('red') >= 0 and len(class_text) == len('red'):
+                if class_text.find('red') >= 0:
                     heatmap_red[y_min:y_max, x_min:x_max] += 1
-                elif class_text.find('yellow') >= 0 and len(class_text) == len('yellow'):
+                elif class_text.find('yellow') >= 0:
                     heatmap_yellow[y_min:y_max, x_min:x_max] += 1
-                elif class_text.lower().find('green') >= 0 and len(class_text) == len('green'):
+                elif class_text.lower().find('green') >= 0:
                     heatmap_green[y_min:y_max, x_min:x_max] += 1
-                elif class_text.find('off') >= 0 and len(class_text) == len('off'):
+                elif class_text.find('off') >= 0:
                     heatmap_off[y_min:y_max, x_min:x_max] += 1
 
         heatmap_all = heatmap_red + heatmap_yellow + heatmap_green + heatmap_off
