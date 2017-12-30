@@ -2,15 +2,36 @@
 import os
 import sys
 import argparse
+import copy
 import yaml
 import pandas as pd
-from enum import Enum
+
+if sys.platform.startswith('darwin'):
+    import matplotlib as mpl
+    mpl.use('macosx', force=True)
 
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-
 import plot_utils as plu
+import DataAugmentation as da
+
+from enum import Enum
+from sklearn.utils import shuffle
+from sklearn.model_selection import train_test_split
+
+
+# GT color definitions
+GT_TL_RED       = [255, 0, 0]
+GT_TL_YELLOW    = [255, 255, 0]
+GT_TL_GREEN     = [0, 255, 0]
+GT_TL_UNDEFINED = [100, 100, 100]
+
+# Dataset annotation files
+DATASET_BOSCH         = 'datasets/dataset_bosch_small_tlr/dataset_train_rgb/train.yaml'
+DATASET_LARA          = 'datasets/dataset_lara/Lara_UrbanSeq1_GroundTruth_GT.txt'
+DATASET_CAPSTONE_REAL = 'datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml'
+DATASET_CAPSTONE_SIM  = 'datasets/dataset_sdcnd_capstone/sim_training_data/sim_data_annotations.yaml'
 
 
 class DatasetType(Enum):
@@ -42,7 +63,7 @@ class DatasetHandler:
     Usage: DatasetHandler.py -h] [-h] [--bosch_label_file YAML_file]
                                       [--lara_label_file XML_file]
                                       [--capstone_label_file YAML_file]
-                                      [-df] [-s] [-sp] [-si]
+                                      [-df] [-s] [-sp] [-si] [-sg]
 
         -h, --help                       Show this help message and exit
         --bosch_label_file YAML_file     Path to the Bosch label YAML file.
@@ -52,17 +73,75 @@ class DatasetHandler:
         -s, --statistics                 Show dataset statistics like label distribution.
         -sp, --safe_plots                Safe plots as PNG files.
         -si, --show_images               Show all labeled images in the dataset in a video.
+        -sg, --show_generator            Show generator images and labels in a video.
 
     Common `label_dict Format:
+
+    samples<list>
+      [0]<dict>
+        'annotations'<list>
+            [0]<dict>
+                'class' : <str>
+                'x_max! : <float>
+                'x_min! : <float>
+                'y_max! : <float>
+                'y_min! : <float>
+            [1]<dict>
+                'class' : <str>
+                'x_max! : <float>
+                'x_min! : <float>
+                'y_max! : <float>
+                'y_min! : <float>
+        'path': <str>
+      [1]<dict>
+        'annotations'<list>
+        'path': <str>
+        ...
     """
 
-    dataset_type = DatasetType.NONE     # type of dataset
-    number_datasets = 0                 # Number of merged datasets
-    number_images = 0                   # number of images in the dataset
-    number_labeled_traffic_lights = 0   # number of labeled traffic lights in the dataset
-    labels = []                         # list of labeled data
-    label_statistics = {}               # dictionary of type <TL class> : <number of labeled TL class>
-    image_shape = (0, 0, 0)             # image shape [height, width, channels] of dataset
+    dataset_type = DatasetType.NONE    # type of dataset
+    number_datasets = 0                # Number of merged datasets
+    number_samples = 0                 # number of images in the dataset
+    number_labeled_traffic_lights = 0  # number of labeled traffic lights in the dataset
+    samples = []                       # list of images and labeled data (annotations)
+    label_statistics = {}              # dictionary of type <TL class> : <number of labeled TL class>
+    image_shape = (0, 0, 0)            # image shape [height, width, channels] of dataset
+
+    def __init__(self, width=1024, height=768, verbose=False):
+        """ Initializes the DatasetHandler.
+
+        :param width:     Width of the generator output image.
+        :param height:    Height of the generator output image.
+        :param verbose:   If true, the the generator visualizes its output.
+        """
+        self.generator_image_shape = (width, height)
+        heatmap_shape = (self.generator_image_shape[1], self.generator_image_shape[0])
+        self.generator_heatmap_red = np.zeros(heatmap_shape, dtype=np.float)
+        self.generator_heatmap_yellow = np.zeros(heatmap_shape, dtype=np.float)
+        self.generator_heatmap_green = np.zeros(heatmap_shape, dtype=np.float)
+        self.generator_heatmap_off = np.zeros(heatmap_shape, dtype=np.float)
+        self.generator_heatmap_all = np.zeros(heatmap_shape, dtype=np.float)
+        self.verbose = verbose
+
+        if verbose:
+            plt.ion()
+            self.fig_heatmap_all, self.ax_heatmap_all = plt.subplots()
+            self.fig_heatmap_all.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+            self.fig_heatmap_all.suptitle('Label Heatmap of Generator Traffic Light Dataset')
+            self.plt_heatmap_all = self.ax_heatmap_all.imshow(self.generator_heatmap_all, cmap='jet', interpolation='nearest')
+            self.ax_heatmap_all.set_title('Red, Green, Red, Off TL')
+
+            self.fig_heatmap, self.axarr_heatmap = plt.subplots(2, 2)
+            self.fig_heatmap.subplots_adjust(left=0.1, right=0.97, bottom=0.1, top=0.9)
+            self.fig_heatmap.suptitle('Label Heatmap of Generator Traffic Light Dataset')
+            self.plt_heatmap_red = self.axarr_heatmap[0, 0].imshow(self.generator_heatmap_red, cmap='Reds', interpolation='nearest')
+            self.axarr_heatmap[0, 0].set_title('Red TL')
+            self.plt_heatmap_yellow = self.axarr_heatmap[0, 1].imshow(self.generator_heatmap_yellow, cmap='Oranges', interpolation='nearest')
+            self.axarr_heatmap[0, 1].set_title('Yellow TL')
+            self.plt_heatmap_green = self.axarr_heatmap[1, 0].imshow(self.generator_heatmap_green, cmap='Greens', interpolation='nearest')
+            self.axarr_heatmap[1, 0].set_title('Green TL')
+            self.plt_heatmap_off = self.axarr_heatmap[1, 1].imshow(self.generator_heatmap_off, cmap='Greys', interpolation='nearest')
+            self.axarr_heatmap[1, 1].set_title('Off TL')
 
     def update_dataset_type(self, dataset_type):
         """ Updates the dataset type. In case several dataset have been read the type is set to `DatasetType.MERGED`.
@@ -149,11 +228,11 @@ class DatasetHandler:
                                                                          annotation['class']] + 1
 
             image = {'annotations': annotations, 'path': path}
-            self.labels.append(image)
-            self.number_images += 1
+            self.samples.append(image)
+            self.number_samples += 1
 
         # determine image size
-        image = cv2.imread(self.labels[0]['path'])
+        image = cv2.imread(self.samples[0]['path'])
         self.image_shape = image.shape
 
         self.number_datasets += 1
@@ -228,18 +307,18 @@ class DatasetHandler:
 
             if frameindex > prev_frameindex:
                 image = {'annotations': annotations, 'path': path}
-                self.labels.append(image)
-                self.number_images += 1
+                self.samples.append(image)
+                self.number_samples += 1
                 prev_frameindex = frameindex
 
         # determine image size
-        image = cv2.imread(self.labels[0]['path'])
+        image = cv2.imread(self.samples[0]['path'])
         self.image_shape = image.shape
 
         self.number_datasets += 1
         self.update_dataset_type(DatasetType.LARA)
 
-        return self.labels
+        return self.samples
 
     def read_all_capstone_labels(self, input_yaml, filter_labels=True):
         """
@@ -296,11 +375,11 @@ class DatasetHandler:
                                                                          annotation['class']] + 1
 
             image = {'annotations': annotations, 'path': path}
-            self.labels.append(image)
-            self.number_images += 1
+            self.samples.append(image)
+            self.number_samples += 1
 
         # determine image size
-        image = cv2.imread(self.labels[0]['path'])
+        image = cv2.imread(self.samples[0]['path'])
         self.image_shape = image.shape
 
         self.number_datasets += 1
@@ -308,25 +387,242 @@ class DatasetHandler:
 
         return images
 
+    def read_predefined_dataset(self):
+        """ Read all predefined datasets (Bosch, capstone real and capstone sim). """
+
+        print('Loading Bosch dataset...', end='', flush=True)
+
+        if self.read_all_bosch_labels(DATASET_BOSCH) is None:
+            print('')
+            print('ERROR: Input YAML file "{}" not found.'.format(DATASET_BOSCH))
+            exit(-1)
+        else:
+            print('done')
+
+        print('Loading LARA dataset...', end='', flush=True)
+
+        if self.read_all_lara_labels(DATASET_LARA) is None:
+            print('')
+            print('ERROR: Input TXT file "{}" not found.'.format(DATASET_LARA))
+            exit(-1)
+        else:
+            print('done')
+
+        print('Loading SDCND Capstone real dataset...', end='', flush=True)
+
+        if self.read_all_capstone_labels(DATASET_CAPSTONE_REAL) is None:
+            print('')
+            print('ERROR: Input TXT file "{}" not found.'.format(DATASET_CAPSTONE_REAL))
+            exit(-1)
+        else:
+            print('done')
+
+        print('Loading SDCND Capstone sim dataset...', end='', flush=True)
+
+        if self.read_all_capstone_labels(DATASET_CAPSTONE_SIM) is None:
+            print('')
+            print('ERROR: Input TXT file "{}" not found.'.format(DATASET_CAPSTONE_SIM))
+            exit(-1)
+        else:
+            print('done')
+
     def is_valid(self):
         """ Returns true if valid datasets resp. images are available. """
-        return self.number_images > 0
+        return self.number_samples > 0
 
-    def number_merged_datasets(self):
+    def get_number_merged_datasets(self):
         """ Returns the number of merged datasets. """
         return self.number_datasets
+
+    def split_dataset(self, train_size):
+        """ Shuffles and splits the dataset into a training and testing dataset.
+
+        :param train_size: Size of the training dataset [%].
+
+        :return: Returns two lists, one with training and one with test samples.
+        """
+        train_samples, test_samples = train_test_split(self.samples, train_size=train_size, shuffle=True)
+        return train_samples, test_samples
+
+    def generate_ground_truth_image(self, annotations, image_shape):
+        """ Generates the ground truth image based on bounding boxes and the traffic light class.
+
+        :param annotations: List with annotations.
+        :param image_shape: Output image shape (width, height).
+
+        :return: Ground truth image.
+        """
+        ground_truth = np.zeros((image_shape[0], image_shape[1], 3), dtype=np.uint8)
+
+        for annotation in annotations:
+            class_label = annotation['class']
+            x_min = int(round(annotation['x_min']))
+            x_max = int(round(annotation['x_max']))
+            y_min = int(round(annotation['y_min']))
+            y_max = int(round(annotation['y_max']))
+
+            if class_label.find('red') >= 0:
+                color = GT_TL_RED
+            elif class_label.find('yellow') >= 0:
+                color = GT_TL_YELLOW
+            elif class_label.find('green') >= 0:
+                color = GT_TL_GREEN
+            else:
+                color = GT_TL_UNDEFINED
+
+            ground_truth[y_min:y_max, x_min:x_max, :] = color
+
+        return ground_truth
+
+    def generator(self, samples, batch_size=128, augmentation_rate=0.0):
+        """ Sample and ground truth generator.
+
+        :param samples:           Samples which shall be loaded into memory.
+        :param batch_size:        Batch size for actual run.
+        :param augmentation_rate: Rate (0..1) of total images which will be randomly augmented.
+                                  E.g. 0.6 augments 60% of the images and 40% are raw images
+
+        :return: Returns X (RGB image) and y (GT image).
+        """
+        number_total_samples = 0
+
+        while 1:  # loop forever so the generator never terminates
+            for offset in range(0, self.number_samples, batch_size):
+                batch_samples = samples[offset:offset + batch_size]
+
+                number_batch_samples = 0
+                images = []
+                images_gt = []
+
+                for batch_sample in batch_samples:
+                    annotations = copy.deepcopy(batch_sample['annotations'])
+                    image = cv2.imread(batch_sample['path'])
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                    image_gt = self.generate_ground_truth_image(annotations, image.shape)
+
+                    if augmentation_rate > 0.0 and np.random.rand() <= augmentation_rate:
+                        # apply random translation
+                        image, image_gt, annotations = da.DataAugmentation.random_translation(
+                            image, image_gt, annotations, [70, 70], probability=0.5)
+
+                        # apply random flip, lr_bias = 0.0 (no left/right bias correction of dataset)
+                        image, image_gt, annotations = da.DataAugmentation.flip_image_horizontally(
+                            image, image_gt, annotations, probability=0.5)
+
+                        # apply random brightness
+                        image = da.DataAugmentation.random_brightness(image, probability=0.5)
+
+                    # final image pre-processing
+                    image, image_gt, annotations = da.DataAugmentation.resize_image(
+                        image, image_gt, annotations, self.generator_image_shape)
+
+                    images.append(image)
+                    images_gt.append(image_gt)
+                    number_batch_samples += 1
+
+                    if self.verbose:
+                        # show generated images in a separate window
+                        image = self.draw_bounding_boxes(image, annotations)
+                        image_gen = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                        image_gt = cv2.cvtColor(image_gt, cv2.COLOR_RGB2BGR)
+                        image_gen = cv2.addWeighted(image_gen, 1.0, image_gt, 0.3, 0.0)
+                        image_gen = np.concatenate((image_gen, image_gt), axis=1)
+
+                        self.plot_generator_heatmap(annotations)
+                        cv2.imshow('Generator output (left: Generator Image + Ground Truth Overlay, right: Ground Truth)', image_gen)
+                        cv2.waitKey(1)
+
+                number_total_samples += number_batch_samples
+
+                if self.verbose:
+                    print(' Generator: number_batch_samples: {:4d} number_total_samples: {:5d}/{:5d}'.format(number_batch_samples, number_total_samples, self.number_samples))
+
+                # FIXME: Remove after debugging
+                #if number_total_samples > self.number_samples:
+                #    self.fig_heatmap_all.savefig('generator_label_heatmap_all.png')
+                #    self.fig_heatmap.savefig('generator_label_heatmap_red_yellow_green_off.png')
+                #    exit(0)
+
+                # convert to numpy arrays
+                X = np.array(images)
+                y = np.array(images_gt)
+                yield shuffle(X, y)
+
+    def plot_generator_heatmap(self, annotations):
+        """ Plots a heatmap over all label positions (bounding boxes) generated by the generator.
+
+        :param annotations:  List with annotations.
+        """
+        for annotation in annotations:
+            class_label = annotation['class'].lower()
+            x_max = int(round(annotation['x_max']))
+            x_min = int(round(annotation['x_min']))
+            y_max = int(round(annotation['y_max']))
+            y_min = int(round(annotation['y_min']))
+
+            if class_label.find('red') >= 0 and len(class_label) == len('red'):
+                self.generator_heatmap_red[y_min:y_max, x_min:x_max] += 1
+            elif class_label.find('yellow') >= 0 and len(class_label) == len('yellow'):
+                self.generator_heatmap_yellow[y_min:y_max, x_min:x_max] += 1
+            elif class_label.lower().find('green') >= 0 and len(class_label) == len('green'):
+                self.generator_heatmap_green[y_min:y_max, x_min:x_max] += 1
+            elif class_label.find('off') >= 0 and len(class_label) == len('off'):
+                self.generator_heatmap_off[y_min:y_max, x_min:x_max] += 1
+
+        self.generator_heatmap_all = self.generator_heatmap_red + self.generator_heatmap_yellow + \
+                                     self.generator_heatmap_green + self.generator_heatmap_off
+
+        # update label histogram
+        self.plt_heatmap_all.set_data(self.generator_heatmap_all)
+        self.plt_heatmap_all.autoscale()
+        self.plt_heatmap_red.set_data(self.generator_heatmap_red)
+        self.plt_heatmap_red.autoscale()
+        self.plt_heatmap_yellow.set_data(self.generator_heatmap_yellow)
+        self.plt_heatmap_yellow.autoscale()
+        self.plt_heatmap_green.set_data(self.generator_heatmap_green)
+        self.plt_heatmap_green.autoscale()
+        self.plt_heatmap_off.set_data(self.generator_heatmap_off)
+        self.plt_heatmap_off.autoscale()
+        plt.draw_all()
+        plt.pause(1e-9)
+
+    def draw_bounding_boxes(self, image, annotations):
+        """ Draw the bounding boxes
+
+        :param image:       RGB Image
+        :param annotations: List of annotations (bounding boxes)
+        :return:
+        """
+        for annotation in annotations:
+            color = (100, 100, 100)
+
+            if annotation['class'].lower().find('red') >= 0:
+                color = (255, 0, 0)
+            elif annotation['class'].lower().find('yellow') >= 0:
+                color = (255, 255, 0)
+            elif annotation['class'].lower().find('green') >= 0:
+                color = (0, 255, 0)
+
+            x_max = int(round(annotation['x_max']))
+            x_min = int(round(annotation['x_min']))
+            y_max = int(round(annotation['y_max']))
+            y_min = int(round(annotation['y_min']))
+
+            cv2.rectangle(image, (x_min, y_min), (x_max, y_max), color)
+
+        return image
 
     def print_statistics(self):
         """ Plots basic dataset statistics like number of images, labes, etc. """
 
-        if self.number_images == 0:
+        if self.number_samples == 0:
             print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
         print()
         print(' Traffic Light Dataset')
         print('--------------------------------------------------')
-        print('Number images:        {}'.format(self.number_images))
+        print('Number images:        {}'.format(self.number_samples))
         print('Number traffic light: {}'.format(self.number_labeled_traffic_lights))
         print('Image shape:          {}x{}x{}'.format(self.image_shape[1],
                                                       self.image_shape[0],
@@ -338,7 +634,7 @@ class DatasetHandler:
         :param safe_figure:  If true safe figure as png file.
         """
 
-        if self.number_images == 0:
+        if self.number_samples == 0:
             print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
@@ -400,7 +696,7 @@ class DatasetHandler:
         :param safe_figure: If true safe figure as png file.
         """
 
-        if self.number_images == 0:
+        if self.number_samples == 0:
             print('ERROR: No valid dataset dictionary. Read datasets before.')
             return
 
@@ -409,8 +705,8 @@ class DatasetHandler:
         heatmap_green = np.zeros((self.image_shape[0], self.image_shape[1]), dtype=np.float)
         heatmap_off = np.zeros((self.image_shape[0], self.image_shape[1]), dtype=np.float)
 
-        for i in range(self.number_images):
-            for annotation in self.labels[i]['annotations']:
+        for i in range(self.number_samples):
+            for annotation in self.samples[i]['annotations']:
                 class_label = annotation['class'].lower()
                 x_max = int(round(annotation['x_max']))
                 x_min = int(round(annotation['x_min']))
@@ -453,13 +749,10 @@ class DatasetHandler:
 
         axarr[0, 0].imshow(heatmap_red, cmap='Reds', interpolation='nearest')
         axarr[0, 0].set_title('Red TL')
-
         axarr[0, 1].imshow(heatmap_yellow, cmap='Oranges', interpolation='nearest')
         axarr[0, 1].set_title('Yellow TL')
-
         axarr[1, 0].imshow(heatmap_green, cmap='Greens', interpolation='nearest')
         axarr[1, 0].set_title('Green TL')
-
         axarr[1, 1].imshow(heatmap_off, cmap='Greys', interpolation='nearest')
         axarr[1, 1].set_title('Off TL')
 
@@ -479,29 +772,15 @@ class DatasetHandler:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
 
-        for i, label in enumerate(self.labels):
+        for i, label in enumerate(self.samples):
             image = cv2.imread(label['path'])
 
             if image is None:
                 raise IOError('Could not open image path', label['path'])
 
-            for annotation in label['annotations']:
-                color = (100, 100, 100)
-
-                if annotation['class'].lower().find('red') >= 0:
-                    color = (0, 0, 255)
-                elif annotation['class'].lower().find('yellow') >= 0:
-                    color = (0, 255, 255)
-                elif annotation['class'].lower().find('green') >= 0:
-                    color = (0, 255, 0)
-
-                x_max = int(round(annotation['x_max']))
-                x_min = int(round(annotation['x_min']))
-                y_max = int(round(annotation['y_max']))
-                y_min = int(round(annotation['y_min']))
-
-                cv2.rectangle(image, (x_min, y_min), (x_max, y_max), color)
-
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = self.draw_bounding_boxes(image, label['annotations'])
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             cv2.imshow('Labeled Images', image)
             cv2.waitKey(10)
 
@@ -565,6 +844,14 @@ if __name__ == '__main__':
         dest='show_images'
     )
 
+    parser.add_argument(
+        '-sg', '--show_generator',
+        help='Show generator images and labels in a video.',
+        action='store_true',
+        default=False,
+        dest='show_generator'
+    )
+
     args = parser.parse_args()
 
     if len(sys.argv) < 4:
@@ -572,8 +859,9 @@ if __name__ == '__main__':
         parser.print_usage()
         parser.exit(-1)
 
-    dataset_handler = DatasetHandler()
     safe_plots = False
+
+    dataset_handler = DatasetHandler(width=640, height=480, verbose=args.show_generator)
 
     if args.bosch_label_file:
         print('Loading Bosch dataset...', end='', flush=True)
@@ -614,6 +902,11 @@ if __name__ == '__main__':
         elif args.show_images:
             print('Exit with CTRL+C')
             dataset_handler.show_labeled_images(output_folder=None)
+        elif args.show_generator:
+            generator = dataset_handler.generator(dataset_handler.samples, batch_size=5, augmentation_rate=0.65)
+
+            for x_train, y_train in generator:
+                pass
     else:
         print('ERROR: No valid datasets found.')
         exit(-1)
