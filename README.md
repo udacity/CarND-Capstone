@@ -10,6 +10,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 | Jayasim Jayakumar                 | jayasim at gmail.com               |
 | Rajeev Ranjan                     | rajeev.cse.imps at gmail.com       |
 | Sven Bone                         | sven.bone at mail.de               |
+| Bassam Sayed			            | b`underscore`sayed at icloud.com	 |
 
 
 
