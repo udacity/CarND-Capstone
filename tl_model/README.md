@@ -65,6 +65,7 @@ https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc
             |   |-- test_images
             |   |-- tl_model_config
             |   |   `-- rfcn_resnet101_coco_2017_11_08
+            |   |-- tl_model_eval
             |   |-- tl_model_freeze
             |   |-- tl_model_test_results
             |   `-- tl_model_training
