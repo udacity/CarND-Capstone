@@ -25,10 +25,9 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 150  # Number of waypoints we will publish. You can change this number
-STOP_LINE_THRESHOLD = 30  # Number of waypoints between the stop line and the traffic lights
-NUM_WPS_PUB = 50  # Number of waypoints to publish
-
+LOOKAHEAD_WPS = 50  # Number of waypoints we will publish.
+STOP_LINE_THRESHOLD = 30.0  # Number of waypoints between the stop line and the traffic lights
+MAX_ACCE = 1.0
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -108,48 +107,38 @@ class WaypointUpdater(object):
             # Check if the waypoint is in front of our car, and if the orientation is within +/- pi/4 of our car
             if x >= 0.00 and orientation_match > 0.707:
                 self.closest_waypoint_idx = i
-                # rospy.logdebug("Closest waypoint index: {}".format(i))
 
                 if self.red_traffic_light_ahead:
-                    dist_to_tl = self.distance(self.base_waypoints.waypoints,
-                                               self.closest_waypoint_idx,
-                                               self.red_traffic_light_waypoint_idx - STOP_LINE_THRESHOLD)
-                    # a = (final_v^2 - curr_v^2)/ (2 * distance)  # acc
-                    rospy.logdebug("Distance amount: {}".format(dist_to_tl))
-                    if dist_to_tl > 0:
-                        DECEL = (0 - self.current_velocity ** 2) / (2 * dist_to_tl)
+                    dist_to_stop_line = self.distance(self.base_waypoints.waypoints, self.closest_waypoint_idx,
+                                                      self.red_traffic_light_waypoint_idx) - STOP_LINE_THRESHOLD
+                    if dist_to_stop_line > 0:
+                        # acceleration = (final_v^2 - curr_v^2)/ (2 * distance)
+                        DECEL = (0 - self.current_velocity ** 2) / (2 * dist_to_stop_line)
                     else:
                         DECEL = 3.0
 
-                    # Since our waypoints are sequential
+                # Since our waypoints are sequential
                 # As soon as we find our first waypoint, we populate the rest of the list with the following waypoints
-                for j in range(NUM_WPS_PUB):
+                for j in range(LOOKAHEAD_WPS):
                     j_mod = i + j % self.total_waypoints
 
                     next_wp = self.base_waypoints.waypoints[j_mod]
                     if self.red_traffic_light_ahead:
                         rospy.logdebug(
-                            "Red Traffic light Ahead Idx?: {}  Carla Idx: {}".format(
+                            "Red Traffic light Ahead Idx?: {}  Carla Idx: {} diff: {} distance: {}".format(
                                 self.red_traffic_light_waypoint_idx,
-                                self.closest_waypoint_idx))
-                        wp_count = (
-                                self.red_traffic_light_waypoint_idx - STOP_LINE_THRESHOLD - self.closest_waypoint_idx)
-                        rospy.logdebug("Red Traffic Light Waypoints diff: {}".format(wp_count))
-                        if -5 < wp_count <= LOOKAHEAD_WPS:
-                            # if wp_count != 0:  # Avoiding division by zero
-                            # decl = self.current_velocity / wp_count
-                            # decl = .5
-                            # car_closest_idx = self.get_closest_waypoint_idx(0, self.current_pos)
+                                self.closest_waypoint_idx,
+                                self.red_traffic_light_waypoint_idx - self.closest_waypoint_idx,
+                                dist_to_stop_line))
+                        # wp_count = (
+                        #         self.red_traffic_light_waypoint_idx - STOP_LINE_THRESHOLD - self.closest_waypoint_idx)
+                        # rospy.logdebug("Red Traffic Light Waypoints diff: {}".format(wp_count))
+                        if -(STOP_LINE_THRESHOLD/4) < dist_to_stop_line <= 4 * STOP_LINE_THRESHOLD:
                             dist = self.distance(self.base_waypoints.waypoints, j_mod, j_mod + 2)
                             if self.current_velocity < 0.1:
-                                vel = 0.
+                                vel = 0.0
                             else:
-                                if j == 0:
-                                    prev_velocity = self.current_velocity
-                                else:
-                                    prev_velocity = self.base_waypoints.waypoints[j_mod - 1].twist.twist.linear.x
-
-                                vel = math.sqrt(abs(prev_velocity ** 2 + (2 * DECEL * dist)))
+                                vel = math.sqrt(abs(self.current_velocity ** 2 + (2 * DECEL * dist)))
                                 if vel < 1.:
                                     vel = 0.
                             rospy.logdebug(
@@ -157,9 +146,8 @@ class WaypointUpdater(object):
                             next_wp.twist.twist.linear.x = max(0, vel)
                             if j:
                                 rospy.logdebug(
-                                    "Stop Next waypoint idx: {}  velocity: {} distance: {}".format(j,
-                                                                                                   next_wp.twist.twist.linear.x,
-                                                                                                   dist))
+                                    "Stop Next waypoint idx: {}  velocity: {} distance: {}"
+                                        .format(j, next_wp.twist.twist.linear.x, dist))
                             # else:
                             #     next_wp.twist.twist.linear.x = 0
                         else:
@@ -167,7 +155,7 @@ class WaypointUpdater(object):
                                                                self.max_speed_mps)
 
                     else:
-                        next_wp.twist.twist.linear.x = min((self.current_velocity + (j + 1) * 1.0), self.max_speed_mps)
+                        next_wp.twist.twist.linear.x = min((self.current_velocity + (j + 1) * MAX_ACCE), self.max_speed_mps)
                         # rospy.logdebug(
                         #     "Go Next waypoint idx: {}  velocity: {}".format(j, next_wp.twist.twist.linear.x))
 
