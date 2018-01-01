@@ -39,7 +39,9 @@ class DatasetToTFRecordConverter:
         # setup dataset handler
         self.dataset_handler = dh.DatasetHandler(width=width, height=height)
         self.dataset_handler.read_predefined_dataset()
-        #TODO: self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
+        #self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
+        #self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
+        #self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/sim_training_data/sim_data_annotations.yaml')
 
         stop_at_end = (number_images_to_generate is None)
 
@@ -224,7 +226,7 @@ if __name__ == '__main__':
         '--augmentation_rate',
         help='Augmentation rate [0..1].',
         dest='augmentation_rate',
-        default=0.65,
+        default=0.0,
         type=float,
         metavar='SIZE'
     )

@@ -2,12 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="162256c2-e8e4-49c0-8f55-920482da9dd9" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change beforePath="$PROJECT_DIR$/DatasetToTFRecordConverter.py" afterPath="$PROJECT_DIR$/DatasetToTFRecordConverter.py" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/object_detection_tl_test.ipynb" afterPath="$PROJECT_DIR$/model/research/object_detection/object_detection_tl_test.ipynb" />
-      <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config" />
-      <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config" />
-      <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_adam_50classes.config" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_adam_50classes.config" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_freeze/_STORE_FROZEN_MODEL_HERE.txt" afterPath="" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_0.png" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_0.png" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_1.png" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_1.png" />
@@ -17,7 +13,11 @@
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_yellow_1.png" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_yellow_1.png" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_green_0.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_green_0.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_green_1.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_green_1.jpg" />
+      <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_red_0.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_red_0.jpg" />
+      <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_red_1.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_red_1.jpg" />
+      <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_undefined_0.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_undefined_0.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_undefined_1.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_undefined_1.jpg" />
+      <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_undefined_2.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_undefined_2.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_yellow_1.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_real_yellow_1.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_green_0.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_green_0.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_green_1.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_green_1.jpg" />
@@ -39,7 +39,7 @@
       <file leaf-file-name="DatasetHandler.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
+            <state relative-caret-position="7185">
               <caret line="484" column="74" lean-forward="false" selection-start-line="484" selection-start-column="74" selection-end-line="484" selection-end-column="74" />
               <folding>
                 <element signature="e#22#31#0" expanded="true" />
@@ -60,11 +60,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="DatasetToTFRecordConverter.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="DatasetToTFRecordConverter.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/DatasetToTFRecordConverter.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="169">
-              <caret line="21" column="0" lean-forward="false" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
+            <state relative-caret-position="418">
+              <caret line="228" column="19" lean-forward="false" selection-start-line="228" selection-start-column="19" selection-end-line="228" selection-end-column="19" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -85,14 +85,14 @@
       <file leaf-file-name="rfcn_resnet101_coco_traffic_light.config" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="104">
+            <state relative-caret-position="1515">
               <caret line="101" column="28" lean-forward="false" selection-start-line="101" selection-start-column="28" selection-end-line="101" selection-end-column="28" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="rfcn_resnet101_coco_traffic_light_50classes.config" pinned="false" current-in-tab="true">
+      <file leaf-file-name="rfcn_resnet101_coco_traffic_light_50classes.config" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="220">
@@ -174,14 +174,14 @@
         <option value="$PROJECT_DIR$/DatasetHandler.py" />
         <option value="$PROJECT_DIR$/DataAugmentation.py" />
         <option value="$PROJECT_DIR$/test_byte_image.py" />
-        <option value="$PROJECT_DIR$/DatasetToTFRecordConverter.py" />
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_adam_50classes.config" />
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config" />
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config" />
+        <option value="$PROJECT_DIR$/DatasetToTFRecordConverter.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="-1" />
     <option name="y" value="23" />
     <option name="width" value="1920" />
@@ -223,7 +223,6 @@
     </navigator>
     <panes>
       <pane id="Scope" />
-      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -267,6 +266,7 @@
         </subPane>
       </pane>
       <pane id="PackagesPane" />
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -525,7 +525,8 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1" y="23" width="1920" height="1129" extended-state="0" />
+    <frame x="-1" y="23" width="1920" height="1129" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32913843" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -536,7 +537,7 @@
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32913843" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32913843" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15495208" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15654951" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18690096" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -842,7 +843,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
+        <state relative-caret-position="7185">
           <caret line="484" column="74" lean-forward="false" selection-start-line="484" selection-start-column="74" selection-end-line="484" selection-end-column="74" />
           <folding>
             <element signature="e#22#31#0" expanded="true" />
@@ -871,6 +872,29 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_adam_50classes.config">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="472">
+          <caret line="113" column="40" lean-forward="true" selection-start-line="113" selection-start-column="40" selection-end-line="113" selection-end-column="40" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1515">
+          <caret line="101" column="28" lean-forward="false" selection-start-line="101" selection-start-column="28" selection-end-line="101" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="91" column="20" lean-forward="false" selection-start-line="91" selection-start-column="20" selection-end-line="91" selection-end-column="20" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/DataAugmentation.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -883,35 +907,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/DatasetToTFRecordConverter.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="169">
-          <caret line="21" column="0" lean-forward="false" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
+        <state relative-caret-position="418">
+          <caret line="228" column="19" lean-forward="false" selection-start-line="228" selection-start-column="19" selection-end-line="228" selection-end-column="19" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_adam_50classes.config">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="472">
-          <caret line="113" column="40" lean-forward="true" selection-start-line="113" selection-start-column="40" selection-end-line="113" selection-end-column="40" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="104">
-          <caret line="101" column="28" lean-forward="false" selection-start-line="101" selection-start-column="28" selection-end-line="101" selection-end-column="28" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="91" column="20" lean-forward="false" selection-start-line="91" selection-start-column="20" selection-end-line="91" selection-end-column="20" />
-          <folding />
         </state>
       </provider>
     </entry>
