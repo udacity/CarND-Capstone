@@ -489,6 +489,13 @@ class DatasetHandler:
         train_samples, test_samples = train_test_split(self.samples, train_size=train_ratio, shuffle=shuffle)
         return train_samples, test_samples
 
+    def shuffle_dataset(self):
+        """ Shuffles the dataset.
+
+        :return: Returns shuffeled samples.
+        """
+        return shuffle(self.samples)
+
     def generate_ground_truth_image(self, annotations, image_shape):
         """ Generates the ground truth image based on bounding boxes and the traffic light class.
 
@@ -543,12 +550,20 @@ class DatasetHandler:
                 number_batch_samples = 0
                 images = []
                 images_gt = []
+                samples_gt = []
 
                 for batch_sample in batch_samples:
-                    annotations = copy.deepcopy(batch_sample['annotations'])
+                    sample_gt = copy.deepcopy(batch_sample)
+                    annotations = sample_gt['annotations']
                     image = cv2.imread(batch_sample['path'])
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                     image_gt = self.generate_ground_truth_image(annotations, image.shape)
+
+                    # fix unsued image pixels in Bosch images
+                    if batch_sample['path'].lower().find('bosch') >= 0:
+                        image, image_gt, annotations = da.DataAugmentation.crop_image(image, image_gt, annotations, [1, 1, image.shape[1]-1, image.shape[0]])
+                        sample_gt['width'] = image.shape[1]
+                        sample_gt['height'] = image.shape[0]
 
                     if augmentation_rate > 0.0 and np.random.rand() <= augmentation_rate:
                         # apply random translation
@@ -571,6 +586,7 @@ class DatasetHandler:
 
                     images.append(image)
                     images_gt.append(image_gt)
+                    samples_gt.append(sample_gt)
                     number_batch_samples += 1
 
                     if self.verbose:
@@ -602,7 +618,7 @@ class DatasetHandler:
                 # convert to numpy arrays
                 X = np.array(images)
                 if bbox:
-                    y = np.array(batch_samples)
+                    y = np.array(samples_gt)
                 else:
                     y = np.array(images_gt)
                 yield shuffle(X, y)
