@@ -14,6 +14,27 @@ class DataAugmentation:
     """
 
     @staticmethod
+    def correct_bounding_boxes_to_image_size(annotation, width, height):
+        """ Limits the bounding boxes to the image size.
+
+        :param annotation: List of bounding boxes.
+        :param width:      Image width.
+        :param height:     Image height.
+
+        :return: Returns the corrected bounding box list.
+        """
+        annotation['x_max'] = max(annotation['x_max'], 0.0)
+        annotation['x_max'] = min(annotation['x_max'], width - 1)
+        annotation['x_min'] = max(annotation['x_min'], 0.0)
+        annotation['x_min'] = min(annotation['x_min'], width - 1)
+        annotation['y_max'] = max(annotation['y_max'], 0.0)
+        annotation['y_max'] = min(annotation['y_max'], height - 1)
+        annotation['y_min'] = max(annotation['y_min'], 0.0)
+        annotation['y_min'] = min(annotation['y_min'], height - 1)
+
+        return annotation
+
+    @staticmethod
     def equalize_histogram(image):
         """ Equalizes the image histogram in order to improve the contrast.
 
@@ -69,7 +90,7 @@ class DataAugmentation:
         if np.random.rand() <= probability:
             image_hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
             image_hsv = np.array(image_hsv, dtype=np.float64)
-            rand_brightness = .2 + 0.5 * np.random.uniform()
+            rand_brightness = .3 + 0.7 * np.random.uniform()
             image_hsv[:, :, 2] = image_hsv[:, :, 2] * rand_brightness
             image_hsv[:, :, 2][image_hsv[:, :, 2] > 255] = 255
             image_hsv = np.array(image_hsv, dtype=np.uint8)
@@ -205,6 +226,7 @@ class DataAugmentation:
                 annotation['x_min'] += tx
                 annotation['y_max'] += ty
                 annotation['y_min'] += ty
+                annotation = DataAugmentation.correct_bounding_boxes_to_image_size(annotation, width, height)
 
             return t_image, t_image_gt, annotations
         else:
@@ -243,6 +265,7 @@ class DataAugmentation:
                 annotation['x_min'] = annotation['x_min']
                 annotation['y_max'] = annotation['y_max']
                 annotation['y_min'] = annotation['y_min']
+                annotation = DataAugmentation.correct_bounding_boxes_to_image_size(annotation, width, height)
 
             return r_image, image_gt, annotations
         else:
@@ -305,6 +328,7 @@ class DataAugmentation:
             annotation['x_min'] *= x_scale
             annotation['y_max'] *= y_scale
             annotation['y_min'] *= y_scale
+            annotation = DataAugmentation.correct_bounding_boxes_to_image_size(annotation, shape[0], shape[1])
 
         return s_image, s_image_gt, annotations
 
