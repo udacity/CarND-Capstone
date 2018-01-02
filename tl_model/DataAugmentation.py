@@ -90,7 +90,7 @@ class DataAugmentation:
         if np.random.rand() <= probability:
             image_hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
             image_hsv = np.array(image_hsv, dtype=np.float64)
-            rand_brightness = .3 + 0.7 * np.random.uniform()
+            rand_brightness = .6 + 0.4 * np.random.uniform()
             image_hsv[:, :, 2] = image_hsv[:, :, 2] * rand_brightness
             image_hsv[:, :, 2][image_hsv[:, :, 2] > 255] = 255
             image_hsv = np.array(image_hsv, dtype=np.uint8)
@@ -215,7 +215,7 @@ class DataAugmentation:
             M = np.float32([[1, 0, tx], [0, 1, ty]])
 
             if border_replication:
-                t_image = cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+                t_image = cv2.warpAffine(image, M, (width, height), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REFLECT)
                 t_image_gt = cv2.warpAffine(image_gt, M, (width, height), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
             else:
                 t_image = cv2.warpAffine(image, M, (width, height))
@@ -333,10 +333,12 @@ class DataAugmentation:
         return s_image, s_image_gt, annotations
 
     @staticmethod
-    def crop_image(image, roi, resize_size=None):
+    def crop_image(image, image_gt, annotations, roi, resize_size=None):
         """ Crops and resizes the image.
         
         :param image:       Input RGB image.
+        :param image_gt:    Input ground truth image.
+        :param annotations: List of annotations (bounding boxes).
         :param roi:         Cropping area (region of interest) [x0, y0, x1, y1].
         :param resize_size: If not None the cropped image will be resized (width, height).
         
@@ -344,11 +346,21 @@ class DataAugmentation:
         """
 
         cropped_image = image[roi[1]:roi[3], roi[0]:roi[2]]
+        cropped_image_gt = image_gt[roi[1]:roi[3], roi[0]:roi[2]]
+
+        for annotation in annotations:
+            annotation['x_max'] -= roi[0]
+            annotation['x_min'] -= roi[0]
+            annotation['y_max'] -= roi[1]
+            annotation['y_min'] -= roi[1]
+            annotation = DataAugmentation.correct_bounding_boxes_to_image_size(annotation, cropped_image.shape[1], cropped_image.shape[0])
 
         if resize_size is not None:
-            return cv2.resize(cropped_image, resize_size, interpolation=cv2.INTER_AREA)
+            return cv2.resize(cropped_image, resize_size, interpolation=cv2.INTER_AREA), \
+                   cv2.resize(cropped_image_gt, resize_size, interpolation=cv2.INTER_AREA), \
+                   annotations
         else:
-            return cropped_image
+            return cropped_image, cropped_image_gt, annotations
 
 
 if __name__ == "__main__":
