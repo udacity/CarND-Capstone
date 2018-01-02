@@ -205,6 +205,14 @@ if __name__ == '__main__':
         default=False
     )
 
+    parser.add_argument(
+        '-n', '--show_graph_node_names',
+        help='Shows all graph node names.',
+        action='store_true',
+        dest='show_graph_node_names',
+        default=False
+    )
+
     args = parser.parse_args()
 
     if len(sys.argv) < 4:
@@ -225,6 +233,14 @@ if __name__ == '__main__':
         print('done')
 
         if args.timing_analysis:
+            # run timing analysis for different image resolutions
             timing_analysis()
         elif args.run_test_images:
+            # run frozen model on test images and show results
             run_tl_detector_on_test_images()
+        elif args.show_graph_node_names:
+            # show all graph node names
+            #TODO: [n.name for n in tf.get_default_graph().as_graph_def().node]
+            print('Operations in Optimized Graph:')
+            for op in detection_graph.get_operations():
+                print(op.name)
