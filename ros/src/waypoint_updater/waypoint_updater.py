@@ -66,6 +66,7 @@ class WaypointUpdater(object):
             np = Waypoint()
             cwp = self.saved_base_waypoints[(cidx + i) % self.num_waypoints]
             np.pose.pose.position = cwp.pose.pose.position
+            np.twist.twist.linear.x = self.default_speed
             lane.waypoints.append(np)
         
         self.final_waypoints_pub.publish(lane)
