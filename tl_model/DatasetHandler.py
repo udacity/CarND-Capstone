@@ -553,14 +553,14 @@ class DatasetHandler:
                     if augmentation_rate > 0.0 and np.random.rand() <= augmentation_rate:
                         # apply random translation
                         image, image_gt, annotations = da.DataAugmentation.random_translation(
-                            image, image_gt, annotations, [70, 70], probability=0.5)
+                            image, image_gt, annotations, [70, 70], probability=0.2)
 
                         # apply random flip, lr_bias = 0.0 (no left/right bias correction of dataset)
                         image, image_gt, annotations = da.DataAugmentation.flip_image_horizontally(
-                            image, image_gt, annotations, probability=0.5)
+                            image, image_gt, annotations, probability=0.7)
 
                         # apply random brightness
-                        image = da.DataAugmentation.random_brightness(image, probability=0.5)
+                        image = da.DataAugmentation.random_brightness(image, probability=0.2)
 
                     # final image pre-processing
                     if self.generator_image_shape[0] is not None:
@@ -911,6 +911,15 @@ if __name__ == '__main__':
         dest='show_generator'
     )
 
+    parser.add_argument(
+        '-r', '--augmentation_rate',
+        help='Augmentation rate [0..1].',
+        dest='augmentation_rate',
+        default=0.0,
+        type=float,
+        metavar='SIZE'
+    )
+
     args = parser.parse_args()
 
     if len(sys.argv) < 4:
@@ -962,7 +971,7 @@ if __name__ == '__main__':
             print('Exit with CTRL+C')
             dataset_handler.show_labeled_images(output_folder=None)
         elif args.show_generator:
-            generator = dataset_handler.generator(dataset_handler.samples, batch_size=1, augmentation_rate=0.65)
+            generator = dataset_handler.generator(dataset_handler.samples, batch_size=1, augmentation_rate=args.augmentation_rate)
 
             for x_train, y_train in generator:
                 pass
