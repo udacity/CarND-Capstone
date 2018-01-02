@@ -38,10 +38,15 @@ class DatasetToTFRecordConverter:
 
         # setup dataset handler
         self.dataset_handler = dh.DatasetHandler(width=width, height=height)
-        self.dataset_handler.read_predefined_dataset()
-        #self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
-        #self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/real_training_data/real_data_annotations.yaml')
-        #self.dataset_handler.read_all_capstone_labels('datasets/dataset_sdcnd_capstone/sim_training_data/sim_data_annotations.yaml')
+        # self.dataset_handler.read_predefined_dataset()
+
+        # TODO: Identify best dataset for model training and adjust 'read_predefined_dataset()'
+        print('Loading datasets...', end='', flush=True)
+        self.dataset_handler.read_all_bosch_labels(dh.DATASET_BOSCH)
+        self.dataset_handler.read_all_capstone_labels(dh.DATASET_CAPSTONE_REAL)
+        self.dataset_handler.read_all_capstone_labels(dh.DATASET_CAPSTONE_REAL)
+        self.dataset_handler.read_all_capstone_labels(dh.DATASET_CAPSTONE_SIM)
+        print('done')
 
         stop_at_end = (number_images_to_generate is None)
 
@@ -54,7 +59,7 @@ class DatasetToTFRecordConverter:
                                                                  bbox=True,
                                                                  stop_at_end=stop_at_end)
         else:
-            self.train_samples = self.dataset_handler.samples
+            self.train_samples = self.dataset_handler.shuffle_dataset()
             self.test_samples = None
             self.test_generator = None
 
@@ -228,7 +233,7 @@ if __name__ == '__main__':
         dest='augmentation_rate',
         default=0.0,
         type=float,
-        metavar='SIZE'
+        metavar='RATE'
     )
 
     args = parser.parse_args()
