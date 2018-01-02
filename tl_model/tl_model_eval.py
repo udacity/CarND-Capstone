@@ -127,8 +127,11 @@ def draw_bounding_boxes(image, boxes, scores, classes, min_score_thresh=0.5, lin
     return image
 
 
-def run_tl_detector_on_test_images():
-    """ Run TL model on test images. """
+def run_tl_detector_on_test_images(min_score_thresh=0.5):
+    """ Run TL model on test images.
+
+    :param min_score_thresh: Minimum score threshold for a box to be visualized. If None draw all boxes.
+    """
     # load test images
     test_sets = ['real', 'sim', 'bosch']
 
@@ -152,7 +155,7 @@ def run_tl_detector_on_test_images():
             num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
             for image_path in test_image_paths:
-                print('Image: {}'.format(image_path))
+                print('Run TL detecton on {}'.format(image_path))
                 image = cv2.imread(image_path)
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
@@ -172,10 +175,13 @@ def run_tl_detector_on_test_images():
                 print('scores:')
                 print(scores)
 
-                image = draw_bounding_boxes(image, boxes, scores, classes, min_score_thresh=0.2, line_thickness=2)
+                image = draw_bounding_boxes(image, boxes, scores, classes,
+                                            min_score_thresh=min_score_thresh,
+                                            line_thickness=2)
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 cv2.imshow('Traffic Light Detection', image)
-                cv2.waitKey(1)
+                print('Press any key to continue.')
+                cv2.waitKey(0)
 
 
 if __name__ == '__main__':
@@ -201,8 +207,17 @@ if __name__ == '__main__':
         '-r', '--run_test_images',
         help='Run TL detector on test images.',
         action='store_true',
-        dest='run_test_images',
-        default=False
+        default=False,
+        dest='run_test_images'
+    )
+
+    parser.add_argument(
+        '-s', '--min_score_threshold',
+        help='Min score threshold to draw the bounding boxes.',
+        dest='min_score_threshold',
+        default=0.5,
+        type=float,
+        metavar='MIN_SCORE_THRESHOLD'
     )
 
     parser.add_argument(
@@ -240,7 +255,6 @@ if __name__ == '__main__':
             run_tl_detector_on_test_images()
         elif args.show_graph_node_names:
             # show all graph node names
-            #TODO: [n.name for n in tf.get_default_graph().as_graph_def().node]
             print('Operations in Optimized Graph:')
             for op in detection_graph.get_operations():
                 print(op.name)
