@@ -148,7 +148,14 @@ Background information, performance and runtime analysis results can be read in 
     jupyter notebook
     ```
     - Open the `object_detection_tl_test.ipynb` notebook and run all steps excepting the `Prepare R-FCN Resnet-101 Coco Model`. The code loads the pre-trained model instead of the traffic light model. You can use this code in order to analyze the performance of the pre-trained model without the specific traffic light color classification.
-13. Performance evaluation coming soon....
+    - Alternatively, the model can be tested by the following python script.
+    ```
+    python tl_model_eval.py -m tl_model_freeze/frozen_inference_graph.pb --run_test_images --waitkey
+    ```
+13. The following script runs the PASCAL measurement which calculates the average precision and the precision for each individual class (undefined, red, yellow and greed) on the given test dataset.
+    ```
+    python tl_model_eval.py -m tl_model_freeze/frozen_inference_graph.pb --run_pascal ../../../datasets/test_capstone.record
+    ```
 
 ***Good Luck!***
 
