@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="162256c2-e8e4-49c0-8f55-920482da9dd9" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/object_detection_tl_test.ipynb" afterPath="$PROJECT_DIR$/model/research/object_detection/object_detection_tl_test.ipynb" />
+      <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_freeze/_STORE_FROZEN_MODEL_HERE.txt" afterPath="" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_0.png" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_0.png" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_1.png" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_1.png" />
@@ -25,7 +26,6 @@
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_red_2.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_red_2.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_yellow_0.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_yellow_0.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_yellow_1.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_yellow_1.jpg" />
-      <change beforePath="$PROJECT_DIR$/tl_model.iml" afterPath="$PROJECT_DIR$/tl_model.iml" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -40,7 +40,7 @@
       <file leaf-file-name="DatasetHandler.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="329">
+            <state relative-caret-position="7290">
               <caret line="491" column="8" lean-forward="false" selection-start-line="491" selection-start-column="8" selection-end-line="491" selection-end-column="8" />
               <folding>
                 <element signature="e#22#31#0" expanded="true" />
@@ -65,7 +65,7 @@
         <entry file="file://$PROJECT_DIR$/DatasetToTFRecordConverter.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="60">
-              <caret line="4" column="10" lean-forward="true" selection-start-line="4" selection-start-column="10" selection-end-line="4" selection-end-column="10" />
+              <caret line="4" column="10" lean-forward="false" selection-start-line="4" selection-start-column="10" selection-end-line="4" selection-end-column="10" />
               <folding />
             </state>
           </provider>
@@ -74,15 +74,16 @@
       <file leaf-file-name="tl_model_eval.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="75">
-              <caret line="5" column="31" lean-forward="true" selection-start-line="5" selection-start-column="31" selection-end-line="5" selection-end-column="31" />
+            <state relative-caret-position="597">
+              <caret line="467" column="60" lean-forward="true" selection-start-line="467" selection-start-column="60" selection-end-line="467" selection-end-column="60" />
               <folding>
+                <element signature="e#0#9#0" expanded="true" />
                 <element signature="e#478#1485#0" expanded="false" />
                 <element signature="e#1515#2966#0" expanded="false" />
                 <element signature="e#3059#4515#0" expanded="false" />
                 <element signature="e#4618#6439#0" expanded="false" />
-                <element signature="e#6504#9259#0" expanded="false" />
-                <element signature="e#9317#16705#0" expanded="false" />
+                <element signature="e#6519#9408#0" expanded="false" />
+                <element signature="e#9466#16854#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -232,8 +233,9 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
+      <pane id="PackagesPane" />
       <pane id="Scratches" />
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -263,7 +265,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -553,8 +554,7 @@
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3288201" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32913843" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
       <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.16453674" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3288201" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.16613418" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.18690096" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -566,6 +566,7 @@
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3288201" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
     <layout-to-restore>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -620,7 +621,7 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="123" />
+      <option name="time" value="125" />
     </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
@@ -873,25 +874,17 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/model/research/object_detection/setup_environment.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" column="3" lean-forward="false" selection-start-line="6" selection-start-column="3" selection-end-line="6" selection-end-column="3" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/setup_environment.sh" />
     <entry file="file://$PROJECT_DIR$/model/research/object_detection/utils/label_map_util.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="198">
           <caret line="92" column="0" lean-forward="false" selection-start-line="92" selection-start-column="0" selection-end-line="92" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="329">
+        <state relative-caret-position="7290">
           <caret line="491" column="8" lean-forward="false" selection-start-line="491" selection-start-column="8" selection-end-line="491" selection-end-column="8" />
           <folding>
             <element signature="e#22#31#0" expanded="true" />
@@ -903,9 +896,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="342">
           <caret line="121" column="62" lean-forward="false" selection-start-line="121" selection-start-column="62" selection-end-line="121" selection-end-column="62" />
-          <folding>
-            <element signature="e#1825#1841#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -921,7 +911,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-428">
           <caret line="69" column="4" lean-forward="false" selection-start-line="69" selection-start-column="4" selection-end-line="69" selection-end-column="4" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -929,39 +918,30 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1041">
           <caret line="377" column="0" lean-forward="false" selection-start-line="377" selection-start-column="0" selection-end-line="377" selection-end-column="0" />
-          <folding>
-            <element signature="e#1315#1338#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tl_model_eval.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2831">
-          <caret line="50" column="31" lean-forward="true" selection-start-line="50" selection-start-column="31" selection-end-line="50" selection-end-column="31" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/tl_model_eval.py" />
     <entry file="file://$PROJECT_DIR$/DatasetToTFRecordConverter.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="60">
-          <caret line="4" column="10" lean-forward="true" selection-start-line="4" selection-start-column="10" selection-end-line="4" selection-end-column="10" />
+          <caret line="4" column="10" lean-forward="false" selection-start-line="4" selection-start-column="10" selection-end-line="4" selection-end-column="10" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="75">
-          <caret line="5" column="31" lean-forward="true" selection-start-line="5" selection-start-column="31" selection-end-line="5" selection-end-column="31" />
+        <state relative-caret-position="597">
+          <caret line="467" column="60" lean-forward="true" selection-start-line="467" selection-start-column="60" selection-end-line="467" selection-end-column="60" />
           <folding>
+            <element signature="e#0#9#0" expanded="true" />
             <element signature="e#478#1485#0" expanded="false" />
             <element signature="e#1515#2966#0" expanded="false" />
             <element signature="e#3059#4515#0" expanded="false" />
             <element signature="e#4618#6439#0" expanded="false" />
-            <element signature="e#6504#9259#0" expanded="false" />
-            <element signature="e#9317#16705#0" expanded="false" />
+            <element signature="e#6519#9408#0" expanded="false" />
+            <element signature="e#9466#16854#0" expanded="false" />
           </folding>
         </state>
       </provider>

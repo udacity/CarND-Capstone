@@ -174,10 +174,11 @@ def draw_bounding_boxes(image, boxes, scores, classes, min_score_thresh=0.5, lin
     return image
 
 
-def run_tl_detector_on_test_images(min_score_thresh=0.5):
+def run_tl_detector_on_test_images(min_score_thresh=0.5, waitkey=False):
     """ Run TL model on test images.
 
     :param min_score_thresh: Minimum score threshold for a box to be visualized. If None draw all boxes.
+    :param waitkey:          If true, wait for keyboard input after each TL detection.
     """
     # load test images
     test_sets = ['real', 'sim', 'bosch']
@@ -228,7 +229,9 @@ def run_tl_detector_on_test_images(min_score_thresh=0.5):
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 cv2.imshow('Traffic Light Detection', image)
                 print('Press any key to continue.')
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                wait = 0 if waitkey else 1
+
+                if cv2.waitKey(wait) & 0xFF == ord('q'):
                     break
 
 
@@ -473,10 +476,10 @@ if __name__ == '__main__':
             timing_analysis()
         elif args.run_test_images:
             # run frozen model on test images and show results
-            run_tl_detector_on_test_images()
+            run_tl_detector_on_test_images(waitkey=args.waitkey)
         elif args.run_pascal:
             # Calculate PASCAL values for given dataset
-            evaluate_model(args.run_pascal.split(','), args.waitkey)
+            evaluate_model(args.run_pascal.split(','), waitkey=args.waitkey)
         elif args.show_graph_node_names:
             # show all graph node names
             print('Operations in Optimized Graph:')
