@@ -92,22 +92,22 @@ Background information, performance and runtime analysis results can be read in 
     ```
 5. Convert the dataset to TFRecord format
    - Currently the Bosch Small Traffic light and the Capstone (sim+real) datasets are converted. The LARA dataset consists of several ambiguous labels and thus is ignored for the first test runs.
-   - The following command splits the dataset into a 85% training and 15% test set without image augmentation.
+   - The following command splits the dataset into a 95% training and 5% test set without image augmentation.
    ```
    python DatasetToTFRecordConverter.py \
           --train_output_file datasets/train_bosch_capstone.record \
           --test_output_file datasets/test_bosch_capstone.record \
-          --train_ratio 0.85 \
+          --train_ratio 0.95 \
           --augmentation_rate 0.0
    ```
-   - The following command splits the dataset into a 85% training and 15% test set with 65% image augmentation and total number of images (train + test set) of 15.000 images.
+   - The following command splits the dataset into a 95% training and 5% test set with 65% image augmentation and total number of images (train + test set) of 20.000 images.
    ```
    python DatasetToTFRecordConverter.py \
           --train_output_file datasets/train_bosch_capstone_augmented.record \
           --test_output_file datasets/test_bosch_capstone_augmented.record \
-          --train_ratio 0.85 \
+          --train_ratio 0.95 \
           --augmentation_rate 0.65 \
-          --number_images 15000
+          --number_images 20000
    ```
 6. Change to the directory to `CarND-Capstone/tl_model/model/research/object_detection`
 7. Prepare the model configuration in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_config`
