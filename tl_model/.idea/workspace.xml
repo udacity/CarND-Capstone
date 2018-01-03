@@ -3,8 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="162256c2-e8e4-49c0-8f55-920482da9dd9" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change beforePath="$PROJECT_DIR$/DataAugmentation.py" afterPath="$PROJECT_DIR$/DataAugmentation.py" />
-      <change beforePath="$PROJECT_DIR$/DatasetHandler.py" afterPath="$PROJECT_DIR$/DatasetHandler.py" />
+      <change beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/object_detection_tl_test.ipynb" afterPath="$PROJECT_DIR$/model/research/object_detection/object_detection_tl_test.ipynb" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_freeze/_STORE_FROZEN_MODEL_HERE.txt" afterPath="" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_0.png" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_bosch_green_0.png" />
@@ -27,6 +26,7 @@
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_red_2.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_red_2.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_yellow_0.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_yellow_0.jpg" />
       <change beforePath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_yellow_1.jpg" afterPath="$PROJECT_DIR$/model/research/object_detection/tl_model_test_results/bbox_sim_yellow_1.jpg" />
+      <change beforePath="$PROJECT_DIR$/tl_model_eval.py" afterPath="$PROJECT_DIR$/tl_model_eval.py" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -38,11 +38,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="DatasetHandler.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="DatasetHandler.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="352">
-              <caret line="555" column="83" lean-forward="true" selection-start-line="555" selection-start-column="83" selection-end-line="555" selection-end-column="83" />
+            <state relative-caret-position="257">
+              <caret line="563" column="139" lean-forward="false" selection-start-line="563" selection-start-column="139" selection-end-line="563" selection-end-column="139" />
               <folding>
                 <element signature="e#22#31#0" expanded="true" />
               </folding>
@@ -53,8 +53,8 @@
       <file leaf-file-name="DataAugmentation.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/DataAugmentation.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2294">
-              <caret line="328" column="42" lean-forward="true" selection-start-line="328" selection-start-column="42" selection-end-line="328" selection-end-column="42" />
+            <state relative-caret-position="255">
+              <caret line="212" column="24" lean-forward="false" selection-start-line="212" selection-start-column="24" selection-end-line="212" selection-end-column="24" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
               </folding>
@@ -62,11 +62,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="tl_model_eval.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tl_model_eval.py">
+      <file leaf-file-name="DatasetToTFRecordConverter.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DatasetToTFRecordConverter.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3210">
-              <caret line="214" column="11" lean-forward="false" selection-start-line="214" selection-start-column="11" selection-end-line="214" selection-end-column="11" />
+            <state relative-caret-position="453">
+              <caret line="60" column="13" lean-forward="false" selection-start-line="60" selection-start-column="13" selection-end-line="60" selection-end-column="13" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -74,10 +74,32 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="tl_model_eval.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1016">
+              <caret line="297" column="0" lean-forward="false" selection-start-line="297" selection-start-column="0" selection-end-line="297" selection-end-column="0" />
+              <folding>
+                <element signature="e#0#9#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="object_detection_evaluation.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/model/research/object_detection/utils/object_detection_evaluation.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="191">
+              <caret line="35" column="0" lean-forward="false" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="rfcn_resnet101_coco_traffic_light.config" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="952">
+            <state relative-caret-position="-240">
               <caret line="101" column="28" lean-forward="false" selection-start-line="101" selection-start-column="28" selection-end-line="101" selection-end-column="28" />
               <folding />
             </state>
@@ -88,20 +110,8 @@
         <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="1066">
-              <caret line="134" column="14" lean-forward="true" selection-start-line="134" selection-start-column="14" selection-end-line="134" selection-end-column="14" />
+              <caret line="134" column="14" lean-forward="false" selection-start-line="134" selection-start-column="14" selection-end-line="134" selection-end-column="14" />
               <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="DatasetToTFRecordConverter.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/DatasetToTFRecordConverter.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="871">
-              <caret line="231" column="5" lean-forward="true" selection-start-line="224" selection-start-column="2" selection-end-line="231" selection-end-column="5" />
-              <folding>
-                <element signature="e#0#9#0" expanded="true" />
-              </folding>
             </state>
           </provider>
         </entry>
@@ -117,7 +127,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>bosch_</find>
       <find>id</find>
       <find>id=</find>
       <find>1029</find>
@@ -147,6 +156,7 @@
       <find>%%</find>
       <find>draw</find>
       <find>MODEL_NUM_CLASSES</find>
+      <find>brightness</find>
     </findStrings>
     <replaceStrings>
       <replace>capstone</replace>
@@ -179,11 +189,12 @@
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_adam_50classes.config" />
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config" />
         <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config" />
-        <option value="$PROJECT_DIR$/DatasetToTFRecordConverter.py" />
         <option value="$PROJECT_DIR$/model/research/object_detection/exporter.py" />
         <option value="$PROJECT_DIR$/tl_model_eval.py" />
-        <option value="$PROJECT_DIR$/DataAugmentation.py" />
         <option value="$PROJECT_DIR$/DatasetHandler.py" />
+        <option value="$PROJECT_DIR$/DataAugmentation.py" />
+        <option value="$PROJECT_DIR$/DatasetToTFRecordConverter.py" />
+        <option value="$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py" />
       </list>
     </option>
   </component>
@@ -255,14 +266,6 @@
               <item name="model" type="462c0819:PsiDirectoryNode" />
               <item name="research" type="462c0819:PsiDirectoryNode" />
               <item name="object_detection" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="TL_Model" type="b2602c69:ProjectViewProjectNode" />
-              <item name="tl_model" type="462c0819:PsiDirectoryNode" />
-              <item name="model" type="462c0819:PsiDirectoryNode" />
-              <item name="research" type="462c0819:PsiDirectoryNode" />
-              <item name="object_detection" type="462c0819:PsiDirectoryNode" />
-              <item name="utils" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -349,7 +352,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="tl_model" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DatasetHandler.py" />
-      <option name="PARAMETERS" value="--bosch_label_file datasets/dataset_bosch_small_tlr/dataset_train_rgb/train.yaml -s" />
+      <option name="PARAMETERS" value="--bosch_label_file datasets/dataset_bosch_small_tlr/dataset_train_rgb/train.yaml --show_generator --augmentation_rate 1.0" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -450,14 +453,14 @@
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="SDK_HOME" value="$USER_HOME$/miniconda3/envs/carnd-term3/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/model/research/object_detection" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="tl_model" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tl_model_eval.py" />
-      <option name="PARAMETERS" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py" />
+      <option name="PARAMETERS" value="-m tl_model_freeze_300classes_rajeev/frozen_inference_graph.pb -r" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -514,9 +517,9 @@
     <recent_temporary>
       <list size="4">
         <item index="0" class="java.lang.String" itemvalue="Python.tl_model_eval" />
-        <item index="1" class="java.lang.String" itemvalue="Python.DatasetToTFRecordConverter" />
-        <item index="2" class="java.lang.String" itemvalue="Python.test_byte_image" />
-        <item index="3" class="java.lang.String" itemvalue="Python.DatasetHandler Bosch" />
+        <item index="1" class="java.lang.String" itemvalue="Python.DatasetHandler Bosch" />
+        <item index="2" class="java.lang.String" itemvalue="Python.DatasetToTFRecordConverter" />
+        <item index="3" class="java.lang.String" itemvalue="Python.test_byte_image" />
       </list>
     </recent_temporary>
   </component>
@@ -546,7 +549,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-1" y="23" width="1920" height="1129" extended-state="6" />
+    <frame x="-2" y="23" width="1920" height="1129" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -601,6 +604,18 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/tl_model_eval.py</url>
+          <line>209</line>
+          <option name="timeStamp" value="72" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py</url>
+          <line>114</line>
+          <option name="timeStamp" value="81" />
+        </line-breakpoint>
+      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">
@@ -608,60 +623,11 @@
           </properties>
         </breakpoint>
       </default-breakpoints>
-      <option name="time" value="70" />
+      <option name="time" value="84" />
     </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/tl_model.iml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../../CarND-Behavioral-Cloning-P3/model.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3989">
-          <caret line="271" column="26" lean-forward="false" selection-start-line="271" selection-start-column="26" selection-end-line="271" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/read_label_files.py" />
-    <entry file="file://$PROJECT_DIR$/../../../CarND-Behavioral-Cloning-P3/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="502">
-            <caret line="74" column="0" lean-forward="false" selection-start-line="74" selection-start-column="0" selection-end-line="75" selection-end-column="0" />
-          </first_editor>
-          <second_editor />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
-        <state split_layout="SPLIT">
-          <first_editor relative-caret-position="375">
-            <caret line="25" column="5" lean-forward="false" selection-start-line="25" selection-start-column="5" selection-end-line="25" selection-end-column="5" />
-          </first_editor>
-          <second_editor />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/datasets/dataset_bosch_small_tlr/dataset_test_rgb/test.yaml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="276">
-          <caret line="417" column="0" lean-forward="false" selection-start-line="415" selection-start-column="0" selection-end-line="417" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/datasets/dataset_lara/Lara3D_UrbanSeq1_JPG/files.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/datasets/dataset_lara/Lara_UrbanSeq1_GroundTruth_cvml.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-286453">
@@ -752,21 +718,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/miniconda3/envs/carnd-term3/lib/python3.5/site-packages/sklearn/model_selection/_split.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="31">
-          <caret line="1919" column="4" lean-forward="false" selection-start-line="1919" selection-start-column="4" selection-end-line="1919" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/datasets/test.record" />
-    <entry file="file://$PROJECT_DIR$/model/research/object_detection/train.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1702">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/environment.yml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="30">
@@ -796,13 +748,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/test_byte_image.py" />
-    <entry file="file://$USER_HOME$/Library/Caches/IdeaIC2017.3/python_stubs/1535028065/cv2/cv2/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="121">
-          <caret line="7105" column="4" lean-forward="false" selection-start-line="7105" selection-start-column="4" selection-end-line="7105" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/traffic_light_label_map.pbtxt">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="210">
@@ -814,13 +759,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="472">
           <caret line="113" column="40" lean-forward="true" selection-start-line="113" selection-start-column="40" selection-end-line="113" selection-end-column="40" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/model/research/object_detection/utils/dataset_util.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="435">
-          <caret line="29" column="0" lean-forward="false" selection-start-line="29" selection-start-column="0" selection-end-line="29" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -883,20 +821,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tl_model_eval.py">
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3210">
-          <caret line="214" column="11" lean-forward="false" selection-start-line="214" selection-start-column="11" selection-end-line="214" selection-end-column="11" />
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="-1428">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config">
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/trainer.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="952">
-          <caret line="101" column="28" lean-forward="false" selection-start-line="101" selection-start-column="28" selection-end-line="101" selection-end-column="28" />
+        <state relative-caret-position="-3918">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
         </state>
       </provider>
@@ -904,37 +840,129 @@
     <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light_50classes.config">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1066">
-          <caret line="134" column="14" lean-forward="true" selection-start-line="134" selection-start-column="14" selection-end-line="134" selection-end-column="14" />
+          <caret line="134" column="14" lean-forward="false" selection-start-line="134" selection-start-column="14" selection-end-line="134" selection-end-column="14" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DatasetToTFRecordConverter.py">
+    <entry file="file://$USER_HOME$/miniconda3/envs/carnd-term3/lib/python3.5/site-packages/tensorflow/python/framework/tensor_shape.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="871">
-          <caret line="231" column="5" lean-forward="true" selection-start-line="224" selection-start-column="2" selection-end-line="231" selection-end-column="5" />
+        <state relative-caret-position="198">
+          <caret line="581" column="0" lean-forward="false" selection-start-line="581" selection-start-column="0" selection-end-line="581" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tl_model_eval.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-153">
+          <caret line="50" column="31" lean-forward="true" selection-start-line="50" selection-start-column="31" selection-end-line="50" selection-end-column="31" />
           <folding>
-            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#0#9#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/utils/object_detection_evaluation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="191">
+          <caret line="35" column="0" lean-forward="false" selection-start-line="35" selection-start-column="0" selection-end-line="35" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/utils/dataset_util.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-426">
+          <caret line="21" column="55" lean-forward="false" selection-start-line="21" selection-start-column="46" selection-end-line="21" selection-end-column="55" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/miniconda3/envs/carnd-term3/lib/python3.5/site-packages/tensorflow/python/ops/parsing_ops.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="224">
+          <caret line="46" column="6" lean-forward="false" selection-start-line="46" selection-start-column="6" selection-end-line="46" selection-end-column="6" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/miniconda3/envs/carnd-term3/lib/python3.5/site-packages/tensorflow/python/ops/gen_image_ops.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="356">
+          <caret line="604" column="0" lean-forward="true" selection-start-line="604" selection-start-column="0" selection-end-line="604" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_config/rfcn_resnet101_coco_traffic_light.config">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-240">
+          <caret line="101" column="28" lean-forward="false" selection-start-line="101" selection-start-column="28" selection-end-line="101" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/miniconda3/envs/carnd-term3/lib/python3.5/site-packages/sklearn/model_selection/_split.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="1919" column="4" lean-forward="false" selection-start-line="1919" selection-start-column="4" selection-end-line="1919" selection-end-column="4" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/miniconda3/envs/carnd-term3/lib/python3.5/site-packages/sklearn/utils/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="276" column="4" lean-forward="false" selection-start-line="276" selection-start-column="4" selection-end-line="276" selection-end-column="4" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="257">
+          <caret line="563" column="139" lean-forward="false" selection-start-line="563" selection-start-column="139" selection-end-line="563" selection-end-column="139" />
+          <folding>
+            <element signature="e#22#31#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Library/Caches/IdeaIC2017.3/python_stubs/1535028065/cv2/cv2/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="161">
+          <caret line="10597" column="4" lean-forward="false" selection-start-line="10597" selection-start-column="4" selection-end-line="10597" selection-end-column="4" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/DataAugmentation.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2294">
-          <caret line="328" column="42" lean-forward="true" selection-start-line="328" selection-start-column="42" selection-end-line="328" selection-end-column="42" />
+        <state relative-caret-position="255">
+          <caret line="212" column="24" lean-forward="false" selection-start-line="212" selection-start-column="24" selection-end-line="212" selection-end-column="24" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DatasetHandler.py">
+    <entry file="file://$PROJECT_DIR$/DatasetToTFRecordConverter.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="352">
-          <caret line="555" column="83" lean-forward="true" selection-start-line="555" selection-start-column="83" selection-end-line="555" selection-end-column="83" />
+        <state relative-caret-position="453">
+          <caret line="60" column="13" lean-forward="false" selection-start-line="60" selection-start-column="13" selection-end-line="60" selection-end-column="13" />
           <folding>
-            <element signature="e#22#31#0" expanded="true" />
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/model/research/object_detection/tl_model_eval.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1016">
+          <caret line="297" column="0" lean-forward="false" selection-start-line="297" selection-start-column="0" selection-end-line="297" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
           </folding>
         </state>
       </provider>
