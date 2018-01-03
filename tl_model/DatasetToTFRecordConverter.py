@@ -17,7 +17,7 @@ class DatasetToTFRecordConverter:
         https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/using_your_own_dataset.md
     """
 
-    def __init__(self, width, height, number_images_to_generate=None, train_ratio=1.0, augmentation_rate=0.0):
+    def __init__(self, width, height, number_images_to_generate=None, train_ratio=1.0, shuffle=True, augmentation_rate=0.0):
         """ Initialize the dataset handler with datasets.
 
         :param width:             Target image width.
@@ -26,6 +26,7 @@ class DatasetToTFRecordConverter:
                                   the specified number of images.
                                   Number of images = train set + test set
         :param train_ratio:       Size of the training dataset [%].
+        :param shuffle:           If true the datasets are shuffled.
         :param augmentation_rate: Rate (0..1) of total images which will be randomly augmented.
                                   E.g. 0.6 augments 60% of the images and 40% are raw images
         """
@@ -51,7 +52,8 @@ class DatasetToTFRecordConverter:
         stop_at_end = (number_images_to_generate is None)
 
         if train_ratio < 1.0:
-            self.train_samples, self.test_samples = self.dataset_handler.split_dataset(train_ratio=train_ratio)
+            self.train_samples, self.test_samples = self.dataset_handler.split_dataset(train_ratio=train_ratio,
+                                                                                       shuffle=shuffle)
 
             self.test_generator = self.dataset_handler.generator(self.test_samples,
                                                                  batch_size=1,
@@ -59,7 +61,11 @@ class DatasetToTFRecordConverter:
                                                                  bbox=True,
                                                                  stop_at_end=stop_at_end)
         else:
-            self.train_samples = self.dataset_handler.shuffle_dataset()
+            if shuffle:
+                self.train_samples = self.dataset_handler.shuffle_dataset()
+            else:
+                self.train_samples = self.dataset_handler.samples
+
             self.test_samples = None
             self.test_generator = None
 
@@ -216,6 +222,15 @@ if __name__ == '__main__':
         dest='number_images',
         default=None,
         metavar='SIZE'
+    )
+
+    parser.add_argument(
+        '--shuffle',
+        help='Shuffles the train + test set.',
+        dest='shuffle_images',
+        default=True,
+        type=bool,
+        metavar='BOOL'
     )
 
     parser.add_argument(
