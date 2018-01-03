@@ -80,13 +80,13 @@ Background information, performance and runtime analysis results can be read in 
 ### How to train the model
 
 1. Ensure the conda environment `carnd-term3` is installed and activated
-   - ***The current Tensorflow Object-Detection API requires Tensorflow v1.4. For the final submission we have to find an earlier version which supports v1.3.***
+   - ***INFO: The current Tensorflow Object-Detection API requires Tensorflow v1.4. For the final submission we have to use Tensorflow v1.3. The frozen model is compatible to v1.3.***
 2. Download the datasets and setup the directory layout as described above.
 3. Download the pre-trained model from the [Tensorflow detection model zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md)
    - Choose the [rfcn_resnet101_coco_2017_11_08](http://download.tensorflow.org/models/object_detection/rfcn_resnet101_coco_2017_11_08.tar.gz) model and unzip it into `CarND-Capstone/tl_model/model/research/object_detection/tl_model_config`.
 4. Prepare Tensorflow object detection API according these [instructions](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md)
    - All required packages are already installed in the conda environment `carnd-term3`
-   - Each time you open a new terminal, ensure you've updated the python path in the `model/research/` directory.
+   - **Each time you open a new terminal, ensure you've updated the python path in the `model/research/` directory.** Alternatively, you can add the path into your `.baschrc`.
     ```
     export PYTHONPATH=$PYTHONPATH:`pwd`:`pwd`/slim
     ```
@@ -121,7 +121,7 @@ Background information, performance and runtime analysis results can be read in 
     ```
    - All checkpoints are stored in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_training`
    - If you need the checkpoints, move the content of this directory to a safe place before you run the training.
-9. Run the evaluation script in a separate terminal. This script performs an TL inference after each checkpoint and shows the images including bounding boxes in Tensorboard.
+9. Run the evaluation script in a separate terminal. This script performs a TL inference after each checkpoint and shows the PASCAL measures and 30 test images including detected traffic lights with a score >= 0.5 in Tensorboard.
     ```
     python eval.py \
            --logtostderr \
