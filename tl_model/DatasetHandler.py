@@ -403,7 +403,7 @@ class DatasetHandler:
                         ((annotation['class'].lower().find('red') >= 0 and len(annotation['class']) == len('red')) or \
                          (annotation['class'].lower().find('yellow') >= 0 and len(annotation['class']) == len('yellow')) or \
                          (annotation['class'].lower().find('green') >= 0 and len(annotation['class']) == len('green')) or \
-                         (annotation['class'].lower().find('off') >= 0 and len(annotation['class']) == len('off'))):
+                         (annotation['class'].lower().find('undefined') >= 0 and len(annotation['class']) == len('undefined'))):
 
                     class_id, class_text = self.get_class_id_text(annotation['class'])
                     annotation = {'class_id': class_id,
