@@ -14,6 +14,7 @@ plt.style.use('ggplot')
 
 PATH_TEST_IMAGES = 'test_images'
 PATH_LABEL_MAP = 'tl_model_config/traffic_light_label_map.pbtxt'
+PATH_MARKED_IMAGES = 'marked_images'
 TIMING_ANALYSIS_RUNS = 10
 
 
@@ -369,7 +370,7 @@ def evaluate_model(tfrecord_files, waitkey=False):
             groundtruth_boxes.append([y_min.values[i] * height, x_min.values[i] * width, y_max.values[i] * height, x_max.values[i] * width])
             groundtruth_classes.append(class_label.values[i])
 
-        if len(groundtruth_classes) > 0 or len(scores[0]) > 0:
+        if len(groundtruth_classes) > 0:
             groundtruth_dict = {InputDataFields.groundtruth_boxes: np.array(groundtruth_boxes, dtype=np.float32),
                                 InputDataFields.groundtruth_classes: np.array(groundtruth_classes)}
             evaluator.add_single_ground_truth_image_info(num_images, groundtruth_dict)
@@ -473,10 +474,23 @@ def show_tfrecord_file(tfrecord_files, waitkey=False):
         print('GT Classes:  {}'.format(class_label.values))
 
         # Press 'q' to quit
-        print('Press any key for next image or q to quit')
+        print('Press any key for next image, "m" to safe image (GT invalid) and "q" to quit')
         wait = 0 if waitkey else 1
+        key = cv2.waitKey(wait)
 
-        if cv2.waitKey(wait) & 0xFF == ord('q'):
+        if key & 0xFF == ord('m'):
+            # Safe marked image
+            if not os.path.exists(PATH_MARKED_IMAGES):
+                os.mkdir(PATH_MARKED_IMAGES)
+
+            #marked_image_filename = str(filename, 'utf-8').replace('/', '_')
+            path = str(filename, 'utf-8')
+            idx = path.find('datasets')
+            marked_image_filename = os.path.join(PATH_MARKED_IMAGES, path[idx:len(path)].replace('/', '_'))
+
+            print('Save marked image: {}'.format(marked_image_filename))
+            cv2.imwrite(marked_image_filename, image)
+        elif key & 0xFF == ord('q'):
             break
 
 
