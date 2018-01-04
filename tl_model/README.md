@@ -109,6 +109,10 @@ Background information, performance and runtime analysis results can be read in 
           --augmentation_rate 0.65 \
           --number_images 20000
    ```
+   - To visualize the content of the TFRecord file the following tool can be used.
+   ```
+   python tl_model_eval.py --show_tfrecord ../../../datasets/train_bosch_capstone_augmented.record --waitkey
+   ```
 6. Change to the directory to `CarND-Capstone/tl_model/model/research/object_detection`
 7. Prepare the model configuration in `CarND-Capstone/tl_model/model/research/object_detection/tl_model_config`
    - The `rfcn_resnet101_coco_traffic_light.config` specifies the whole training process. In the `train_config` chapter you can find some hyperparameters like the `batch_size`, the `learning_rate`and the `num_steps`.
