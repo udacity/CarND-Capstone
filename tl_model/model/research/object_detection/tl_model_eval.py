@@ -13,6 +13,7 @@ from object_detection.core.standard_fields import DetectionResultFields, InputDa
 plt.style.use('ggplot')
 
 PATH_TEST_IMAGES = 'test_images'
+PATH_LABEL_MAP = 'tl_model_config/traffic_light_label_map.pbtxt'
 TIMING_ANALYSIS_RUNS = 10
 
 
@@ -241,9 +242,6 @@ def evaluate_model(tfrecord_files, waitkey=False):
     :param tfrecord_files:  List of TFRecord files.
     :param waitkey:         If true, wait for keyboard input after each TL detection.
     """
-
-    label_map_path = 'tl_model_config/traffic_light_label_map.pbtxt'
-
     feature_set = {'image/height': tf.FixedLenFeature([], tf.int64),
                    'image/width': tf.FixedLenFeature([], tf.int64),
                    'image/filename': tf.FixedLenFeature([], tf.string),
@@ -290,12 +288,13 @@ def evaluate_model(tfrecord_files, waitkey=False):
     num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
     # Load label map and initialize PASCAL evaluator
-    label_map = label_map_util.load_labelmap(label_map_path)
+    label_map = label_map_util.load_labelmap(PATH_LABEL_MAP)
     max_num_classes = max([item.id for item in label_map.item])
     categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes)
     evaluator = object_detection_evaluation.PascalDetectionEvaluator(categories)
 
     num_images = 0
+    timings = np.array([])
 
     while 1:
         # load next image from TFRecord file
@@ -323,11 +322,18 @@ def evaluate_model(tfrecord_files, waitkey=False):
         image_expanded = np.expand_dims(image, axis=0)
 
         # Detect traffic lights
+        t0 = time.time()
         (boxes, scores, classes, num) = tl_sess.run([detection_boxes,
                                                      detection_scores,
                                                      detection_classes,
                                                      num_detections],
                                                     feed_dict={image_tensor: image_expanded})
+        t1 = time.time()
+        dt = (t1 - t0) * 1000
+
+        # skip first timing measurement because in includes the TF initialization timme
+        if num_images > 0:
+            timings = np.append(timings, dt)
 
         num_images += 1
 
@@ -339,7 +345,7 @@ def evaluate_model(tfrecord_files, waitkey=False):
         #print('scores:')
         #print(scores)
 
-        # Show reaults in image
+        # Show results in image
         image = draw_gt_bounding_boxes(image, class_label.values, class_text.values,
                                        [x_min.values, x_max.values, y_min.values, y_max.values],
                                        line_thickness=1)
@@ -350,6 +356,10 @@ def evaluate_model(tfrecord_files, waitkey=False):
         print('--------------------------------------------------------------------------------------')
         print('TL-Model Performance (num_images={:05d}):'.format(num_images))
         print('GT TLs / Detected TLs: {:2d}/{:2d}'.format(len(class_label.values), len(np.where(scores >= 0.5)[0])))
+
+        if num_images > 1:
+            print('Timing: Last: {:6.3f}s Mean: {:6.3f}s Min: {:6.3f}s Max: {:6.3f}s StdDev: {:6.3f}s'.format(
+                dt, timings.mean(), timings.min(), timings.max(), timings.std()))
 
         # Add groundtruth to evaluator
         groundtruth_boxes = []
@@ -369,11 +379,10 @@ def evaluate_model(tfrecord_files, waitkey=False):
             scores = np.squeeze(scores, axis=0)
             classes = np.squeeze(classes, axis=0)
 
-            for i in range(len(boxes_absolute)):
-                boxes_absolute[i][0] *= height
-                boxes_absolute[i][1] *= width
-                boxes_absolute[i][2] *= height
-                boxes_absolute[i][3] *= width
+            boxes_absolute[:, 0] *= height
+            boxes_absolute[:, 2] *= height
+            boxes_absolute[:, 1] *= width
+            boxes_absolute[:, 3] *= width
 
             detections_dict = {DetectionResultFields.detection_boxes: boxes_absolute,
                                DetectionResultFields.detection_scores: scores,
@@ -393,6 +402,84 @@ def evaluate_model(tfrecord_files, waitkey=False):
             break
 
 
+def show_tfrecord_file(tfrecord_files, waitkey=False):
+    """ Show the content of the TFRecord file.
+    
+    :param tfrecord_files:  List of TFRecord files.
+    :param waitkey:         If true, wait for keyboard input after each TL detection.
+    """
+    feature_set = {'image/height': tf.FixedLenFeature([], tf.int64),
+                   'image/width': tf.FixedLenFeature([], tf.int64),
+                   'image/filename': tf.FixedLenFeature([], tf.string),
+                   'image/source_id': tf.FixedLenFeature([], tf.string),
+                   'image/encoded': tf.FixedLenFeature([], tf.string),
+                   'image/format': tf.FixedLenFeature([], tf.string),
+                   'image/object/bbox/xmin': tf.VarLenFeature(tf.float32),
+                   'image/object/bbox/xmax': tf.VarLenFeature(tf.float32),
+                   'image/object/bbox/ymin': tf.VarLenFeature(tf.float32),
+                   'image/object/bbox/ymax': tf.VarLenFeature(tf.float32),
+                   'image/object/class/text': tf.VarLenFeature(tf.string),
+                   'image/object/class/label': tf.VarLenFeature(tf.int64)}
+
+    filename_queue = tf.train.string_input_producer(tfrecord_files, num_epochs=None)
+    reader = tf.TFRecordReader()
+    _, serialized_example = reader.read(filename_queue)
+    features = tf.parse_single_example(serialized_example, features=feature_set)
+
+    f_width = features['image/width']
+    f_height = features['image/height']
+    f_filename = features['image/filename']
+    f_source_id = features['image/source_id']
+    f_encoded_image = features['image/encoded']
+    f_format = features['image/format']
+    f_xmin = features['image/object/bbox/xmin']
+    f_xmax = features['image/object/bbox/xmax']
+    f_ymin = features['image/object/bbox/ymin']
+    f_ymax = features['image/object/bbox/ymax']
+    f_class_text = features['image/object/class/text']
+    f_class_label = features['image/object/class/label']
+
+    sess = tf.Session()
+    init = tf.global_variables_initializer()
+    sess.run(init)
+    tf.train.start_queue_runners(sess=sess)
+
+    num_images = 0
+
+    while 1:
+        # load next image from TFRecord file
+        width, height, filename, source_id, encoded_image, format, x_min, x_max, y_min, y_max, class_text, class_label \
+            = sess.run([f_width, f_height, f_filename, f_source_id, f_encoded_image, f_format,
+                        f_xmin, f_xmax, f_ymin, f_ymax,
+                        f_class_text, f_class_label])
+
+        if format is b'jpeg':
+            image_tf = tf.image.decode_jpeg(encoded_image, channels=3)
+        else:
+            image_tf = tf.image.decode_png(encoded_image, channels=3)
+
+        image_tf = tf.reshape(image_tf, [height, width, 3])
+        image = sess.run(image_tf)
+        num_images += 1
+
+        # Show ground truth data in image
+        image = draw_gt_bounding_boxes(image, class_label.values, class_text.values,
+                                       [x_min.values, x_max.values, y_min.values, y_max.values],
+                                       line_thickness=1)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        cv2.imshow('Traffic Light Dataset ({})'.format(tfrecord_files[0]), image)
+        print('Image {:05d}: {}'.format(num_images, str(filename, 'utf-8')))
+        print('Image size:  {}x{}'.format(width, height))
+        print('GT Classes:  {}'.format(class_label.values))
+
+        # Press 'q' to quit
+        print('Press any key for next image or q to quit')
+        wait = 0 if waitkey else 1
+
+        if cv2.waitKey(wait) & 0xFF == ord('q'):
+            break
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='tl_model_eval', description='TL Model Evaluation.')
 
@@ -401,7 +488,6 @@ if __name__ == '__main__':
         help='Path to frozen TL model file.',
         dest='tl_model',
         metavar='PB_file',
-        required=True
     )
 
     parser.add_argument(
@@ -437,6 +523,13 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
+        '-st', '--show_tfrecord',
+        help='Shows the content of the TFRecord file.',
+        dest='show_tfrecord',
+        metavar='TFRECORD_FILE'
+    )
+
+    parser.add_argument(
         '-w', '--waitkey',
         help='Waits for keyboard input ater each TL detection.',
         action='store_true',
@@ -454,7 +547,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 2:
         # no arguments found
         parser.print_usage()
         parser.exit(-1)
@@ -485,3 +578,6 @@ if __name__ == '__main__':
             print('Operations in Optimized Graph:')
             for op in detection_graph.get_operations():
                 print(op.name)
+    elif args.show_tfrecord:
+        # Shows the content of the TFRecord file
+        show_tfrecord_file(args.show_tfrecord.split(','), waitkey=args.waitkey)
