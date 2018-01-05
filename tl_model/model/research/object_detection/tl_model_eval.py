@@ -359,7 +359,7 @@ def evaluate_model(tfrecord_files, waitkey=False):
         print('GT TLs / Detected TLs: {:2d}/{:2d}'.format(len(class_label.values), len(np.where(scores >= 0.5)[0])))
 
         if num_images > 1:
-            print('Timing: Last: {:6.3f}s Mean: {:6.3f}s Min: {:6.3f}s Max: {:6.3f}s StdDev: {:6.3f}s'.format(
+            print('Timing: Last: {:6.3f}ms Mean: {:6.3f}ms Min: {:6.3f}ms Max: {:6.3f}ms StdDev: {:6.3f}ms'.format(
                 dt, timings.mean(), timings.min(), timings.max(), timings.std()))
 
         # Add groundtruth to evaluator
