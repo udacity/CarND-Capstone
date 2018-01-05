@@ -237,11 +237,12 @@ def run_tl_detector_on_test_images(min_score_thresh=0.5, waitkey=False):
                     break
 
 
-def evaluate_model(tfrecord_files, waitkey=False):
+def evaluate_model(tfrecord_files, waitkey=False, export_path=None):
     """ Applies the PASACAL measurement on the test dataset.
 
     :param tfrecord_files:  List of TFRecord files.
     :param waitkey:         If true, wait for keyboard input after each TL detection.
+    :param export_path:     Path to export images with overlay. If None, no images are exported.
     """
     feature_set = {'image/height': tf.FixedLenFeature([], tf.int64),
                    'image/width': tf.FixedLenFeature([], tf.int64),
@@ -293,6 +294,10 @@ def evaluate_model(tfrecord_files, waitkey=False):
     max_num_classes = max([item.id for item in label_map.item])
     categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes)
     evaluator = object_detection_evaluation.PascalDetectionEvaluator(categories)
+
+    # chekc if export path exists
+    if export_path is not None and not os.path.exists(export_path):
+        os.mkdir(export_path)
 
     num_images = 0
     timings = np.array([])
@@ -395,6 +400,12 @@ def evaluate_model(tfrecord_files, waitkey=False):
             for key in metrics:
                 print('{:52s}: {:.4f}'.format(key, metrics[key]))
 
+        if export_path is not None:
+            #path = str(filename, 'utf-8')
+            #idx = path.find('datasets')
+            image_filename = os.path.join(export_path, 'image_{:05d}.png'.format(num_images))
+            cv2.imwrite(image_filename, image)
+
         # Press 'q' to quit
         print('Press q to quit')
         wait = 0 if waitkey else 1
@@ -483,7 +494,6 @@ def show_tfrecord_file(tfrecord_files, waitkey=False):
             if not os.path.exists(PATH_MARKED_IMAGES):
                 os.mkdir(PATH_MARKED_IMAGES)
 
-            #marked_image_filename = str(filename, 'utf-8').replace('/', '_')
             path = str(filename, 'utf-8')
             idx = path.find('datasets')
             marked_image_filename = os.path.join(PATH_MARKED_IMAGES, path[idx:len(path)].replace('/', '_'))
@@ -559,6 +569,14 @@ if __name__ == '__main__':
         default=False
     )
 
+    parser.add_argument(
+        '-e', '--export_images',
+        help='Export images with overlay to specified path.',
+        dest='export_path',
+        metavar='EXPORT_PATH',
+        default=None
+    )
+
     args = parser.parse_args()
 
     if len(sys.argv) < 2:
@@ -586,7 +604,7 @@ if __name__ == '__main__':
             run_tl_detector_on_test_images(waitkey=args.waitkey)
         elif args.run_pascal:
             # Calculate PASCAL values for given dataset
-            evaluate_model(args.run_pascal.split(','), waitkey=args.waitkey)
+            evaluate_model(args.run_pascal.split(','), waitkey=args.waitkey, export_path=args.export_path)
         elif args.show_graph_node_names:
             # show all graph node names
             print('Operations in Optimized Graph:')
