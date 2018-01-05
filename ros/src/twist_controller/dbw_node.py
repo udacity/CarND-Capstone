@@ -88,7 +88,7 @@ class DBWNode(object):
 
         # TODO: Subscribe to all the topics you need to
         # Subscribe to all the topics you need to
-        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=5)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=2)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=5)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
 
