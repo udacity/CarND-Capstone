@@ -57,14 +57,14 @@ roslaunch launch/styx.launch
 4. Run the simulator
 
 ### Real world testing
-1. Download [training bag](https://drive.google.com/file/d/0B2_h37bMVw3iYkdJTlRSUlJIamM/view?usp=sharing) that was recorded on the Udacity self-driving car (a bag demonstraing the correct predictions in autonomous mode can be found [here](https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc))
+1. Download [training bag](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/traffic_light_bag_file.zip) that was recorded on the Udacity self-driving car.
 2. Unzip the file
 ```bash
-unzip traffic_light_bag_files.zip
+unzip traffic_light_bag_file.zip
 ```
 3. Play the bag file
 ```bash
-rosbag play -l traffic_light_bag_files/loop_with_traffic_light.bag
+rosbag play -l traffic_light_bag_file/traffic_light_training.bag
 ```
 4. Launch your project in site mode
 ```bash
