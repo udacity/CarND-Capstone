@@ -49,7 +49,7 @@ class Bridge(object):
             '/vehicle/steering_cmd': self.callback_steering,
             '/vehicle/throttle_cmd': self.callback_throttle,
             '/vehicle/brake_cmd': self.callback_brake,
-	    '/final_waypoints': self.callback_path
+        '/final_waypoints': self.callback_path
         }
 
         self.subscribers = [rospy.Subscriber(e.topic, TYPE[e.type], self.callbacks[e.topic])
@@ -192,15 +192,15 @@ class Bridge(object):
         self.server('brake', data={'brake': str(data.pedal_cmd)})
 
     def callback_path(self, data):
-	x_values = []
-	y_values = []
-	z_values = []
-	for waypoint in data.waypoints:
-		x = waypoint.pose.pose.position.x
-		y = waypoint.pose.pose.position.y
-		z = waypoint.pose.pose.position.z+0.5
-		x_values.append(x)
-		y_values.append(y)
-		z_values.append(z)
+        x_values = []
+        y_values = []
+        z_values = []
+        for waypoint in data.waypoints:
+            x = waypoint.pose.pose.position.x
+            y = waypoint.pose.pose.position.y
+            z = waypoint.pose.pose.position.z+0.5
+            x_values.append(x)
+            y_values.append(y)
+            z_values.append(z)
 
-	self.server('drawline', data={'next_x': x_values, 'next_y': y_values, 'next_z': z_values})
+        self.server('drawline', data={'next_x': x_values, 'next_y': y_values, 'next_z': z_values})
