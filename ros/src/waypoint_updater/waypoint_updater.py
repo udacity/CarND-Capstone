@@ -39,7 +39,7 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # TODO: Add other member variables you need below	
 
         rospy.spin()
 
