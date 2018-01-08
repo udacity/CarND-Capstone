@@ -9,7 +9,8 @@ MAX_SPEED = 40.0
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
-        # TODO: Implement        
+        # TODO: Implement     
+        control(*args, **kwargs)   
         pass
 
     def control(self, *args, **kwargs):
@@ -17,10 +18,10 @@ class Controller(object):
         # TODO: Change the arg, kwarg list to suit your needs
 
         velocity = rospy.Publisher('/current_velocity', double, queue_size=255)
-        
+        print('velocity: ',velocity)
         if (velocity < MAX_SPEED):
-            velocity += ONE_MPH        
-
+            velocity = velocity + ONE_MPH        
+	print('new velocity: ',velocity)
         # Return throttle, brake, steer
         return velocity, 0., 0.
 
