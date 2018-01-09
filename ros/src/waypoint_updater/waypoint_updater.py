@@ -28,8 +28,9 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -37,16 +38,47 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.saved_base_waypoints = None
+        self.current_pose = None
+        self.num_waypoints = None
+        self.default_speed = 4.0 # unit: m/s
 
         rospy.spin()
 
     def pose_cb(self, msg):
+        '''
+        Messsage type: geometry_msgs/PoseStamped
+        '''
         # TODO: Implement
-        pass
+        self.current_pose = msg
 
-    def waypoints_cb(self, waypoints):
+        # Check availability
+        if (self.saved_base_waypoints is None) or (self.current_pose is None):
+            return
+
+        # find closest point
+        cidx = self.find_closest_wp_idx()
+
+        # initial publish msg type
+        lane = Lane()
+
+        for i in range(LOOKAHEAD_WPS):
+            np = Waypoint()
+            cwp = self.saved_base_waypoints[(cidx + i) % self.num_waypoints]
+            np.pose.pose.position = cwp.pose.pose.position
+            np.twist.twist.linear.x = self.default_speed
+            lane.waypoints.append(np)
+
+        self.final_waypoints_pub.publish(lane)
+
+
+    def waypoints_cb(self, msg):
+        '''
+        Message Type: styx_msgs/Lane
+        '''
         # TODO: Implement
-        pass
+        self.saved_base_waypoints = msg.waypoints
+        self.num_waypoints = len(msg.waypoints)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -69,6 +101,30 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    def distance_2p(self, p1, p2):
+        '''
+        input : two waypoint pose
+        output: distance between 2 waypoint pose
+        '''
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        return dl(p1,p2)
+
+    def find_closest_wp_idx(self):
+        '''
+        search for closest waypoint to the current position
+        input: waypoints[], current_pose
+        output : waypoint index
+        '''
+        closest_idx = None
+        closest_dist = 1e10
+        for idx, wp in enumerate(self.saved_base_waypoints):
+            dist = self.distance_2p(wp.pose.pose.position, self.current_pose.pose.position)
+            if dist < closest_dist:
+                closest_dist = dist
+                closest_idx = idx
+
+        return closest_idx
 
 
 if __name__ == '__main__':
