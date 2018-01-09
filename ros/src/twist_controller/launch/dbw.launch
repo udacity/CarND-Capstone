@@ -12,4 +12,8 @@
         <param name="max_lat_accel" value="3." />
         <param name="max_steer_angle" value="8." />
     </node>
+
+    <!-- The look away node -->
+    <node name="twist_controller" type="twist_controller" pkg="twist_controller"/>
+
 </launch>

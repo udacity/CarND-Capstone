@@ -23,18 +23,22 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+PUBLISH_RATE = 20 # Publishing rate (Hz)
 
+max_local_distance = 20.0 # Max waypoint distance we admit for a local minimum (m)
 
 class WaypointUpdater(object):
     def __init__(self):
+        
+        print('Object Waypoints created')
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        current_pose = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        base_waypoints = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb)
+        traffic_waypoint = rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        obstacle_waypoint = rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb)
 
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
@@ -43,20 +47,20 @@ class WaypointUpdater(object):
 
         rospy.spin()
 
+    # Position of the car
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        return msg.pose
 
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+    # Waypoints (not complete yet)
+    def waypoints_cb(self, msg):
+        return msg.waypoints
 
+    # Callback for /traffic_waypoint message. (not complete yet)
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        return msg.data
 
+    # Callback for /obstacle_waypoint message. We will implement it later
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
     def get_waypoint_velocity(self, waypoint):
