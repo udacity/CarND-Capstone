@@ -34,12 +34,17 @@ class WaypointUpdater(object):
         rospy.logdebug('Object Waypoints updater created')
 
         current_pose = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        #rospy.logdebug('Current position x:', current_pose.Pose.position.x)
+        
         base_waypoints = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        #rospy.logdebug('Base waypoints ', base_waypoints)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         traffic_waypoint = rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        obstacle_waypoint = rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb)
+        #rospy.logdebug('Traffic waypoints ', traffic_waypoint)
 
+        obstacle_waypoint = rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb)
+        #rospy.logdebug('Obstacle waypoints ', obstacle_waypoint)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -49,6 +54,8 @@ class WaypointUpdater(object):
 
     # Position of the car
     def pose_cb(self, msg):
+        position = msg.pose.position
+        # rospy.loginfo("Point Position: [ %f, %f, %f ]"%(position.x, position.y, position.z)) line for check the points (is running no need to activate because is writing a lot)
         return msg.pose
 
     # Waypoints (not complete yet)
@@ -76,6 +83,22 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    # function Closest Waypoints
+    def ClosestWaypoint(self, x, y, maps_x, maps_y):
+
+        closestWaypoint = 0
+
+        for i in range (0, len(maps_x)):
+            map_x = maps_x[i]
+            map_y = maps_y[i]
+            #dist = distance(x,y,map_x,map_y) we need to change this calling and adapt to the function distance
+
+            if (dist < closestLen):
+               closestLen = dist
+               closestWaypoint = i
+
+         return closestWaypoint
 
 
 if __name__ == '__main__':
