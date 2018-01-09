@@ -27,10 +27,10 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-        
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        
+
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -58,7 +58,7 @@ class WaypointUpdater(object):
 
         # find closest point
         cidx = self.find_closest_wp_idx()
-        
+
         # initial publish msg type
         lane = Lane()
 
@@ -68,7 +68,7 @@ class WaypointUpdater(object):
             np.pose.pose.position = cwp.pose.pose.position
             np.twist.twist.linear.x = self.default_speed
             lane.waypoints.append(np)
-        
+
         self.final_waypoints_pub.publish(lane)
 
 
@@ -115,7 +115,7 @@ class WaypointUpdater(object):
         search for closest waypoint to the current position
         input: waypoints[], current_pose
         output : waypoint index
-        ''' 
+        '''
         closest_idx = None
         closest_dist = 1e10
         for idx, wp in enumerate(self.saved_base_waypoints):
