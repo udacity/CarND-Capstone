@@ -30,8 +30,8 @@ max_local_distance = 20.0 # Max waypoint distance we admit for a local minimum (
 class WaypointUpdater(object):
     def __init__(self):
         
-        print('Object Waypoints created')
-        rospy.init_node('waypoint_updater')
+        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
+        rospy.logdebug('Object Waypoints updater created')
 
         current_pose = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         base_waypoints = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
