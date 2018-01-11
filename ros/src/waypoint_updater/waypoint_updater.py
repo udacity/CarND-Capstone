@@ -83,22 +83,50 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+    
+    # Distance to any point
+    def distanceAny(self, x1, y1, x2, y2):
+        return math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
 
     # function Closest Waypoints
-    def ClosestWaypoint(self, x, y, maps_x, maps_y):
+    def ClosestWaypoint(self, position, waypoints):
 
-        closestWaypoint = 0
+	closestLen = 100000 #large number
+	closestWaypoint = 0
 
-        for i in range (0, len(maps_x)):
-            map_x = maps_x[i]
-            map_y = maps_y[i]
-            #dist = distance(x,y,map_x,map_y) we need to change this calling and adapt to the function distance
+	for i in range(0, len(waypoints)):
+            
+                x = position.x
+                y = position.y    
+                map_x = waypoints[i].pose.pose.position.x
+                map_y = waypoints[i].pose.pose.position.y
+		
+                dist = self.distanceAny(x,y,map_x,map_y)
+		if(dist < closestLen):
+			closestLen = dist
+			closestWaypoint = i
 
-            if (dist < closestLen):
-               closestLen = dist
-               closestWaypoint = i
+	return closestWaypoint
 
-         return closestWaypoint
+     # function Next Waypoints
+     def NextWaypoint(position, theta, waypoints):
+
+	closestWaypoint = self.ClosestWaypoint(position, waypoints)
+
+        map_x = waypoints[closestWaypoint].pose.pose.position.x
+        map_y = waypoints[closestWaypoint].pose.pose.position.y
+
+        heading = math.atan2((map_y - position.y), (map_x - position.x))
+
+        angle = abs(yaw - heading)
+
+	if (angle > math.pi/4):
+		closestWaypoint += 1 
+                if (closestWaypoint > len(waypoints)-1):
+                    closestWaypoint -= 1
+
+	return closestWaypoint
+
 
 
 if __name__ == '__main__':
