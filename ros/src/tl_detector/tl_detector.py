@@ -8,6 +8,8 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
+
+import waypoint_helper
 import tf
 import cv2
 import yaml
@@ -29,10 +31,11 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
+        self.traffic_lights_pos = waypoint_helper.get_traffic_lights()
 
-        self.tl_classifier = TLClassifier()
+        # Need to set the server parameter for site or test
+        self.run_mode = rospy.get_param("/run_mode", "site")
+        self.tl_classifier = TLClassifier(self.run_mode)
         print("Traffic light classifier created")
 
         self.listener = tf.TransformListener()
@@ -65,12 +68,18 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
-        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
 
         # Publishers
-        self.tl_state = rospy.Publisher('/tl_state', Int32, queue_size=1)
+        # For publishing the waypoint index of a red traffic light
+        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        # For publishing the upcomming traffic light state
+        self.upcoming_traffic_light_state_pub = rospy.Publisher('/traffic_light_state', Int32, queue_size=1)
+        # For publishing the upcomming traffic light position
+        # Note: no information on the z
+        self.upcoming_traffic_light_pos_pub = rospy.Publisher('/traffic_light_pos', geometry_msgs.msg.Point, queue_size=1)
+
         self.tl_detection_out = rospy.Publisher('/tl_detection_out', Image, queue_size=1)
 
         self.lock = threading.RLock()
@@ -120,20 +129,6 @@ class TLDetector(object):
 
         self.lock.release()
 
-    def get_closest_waypoint(self, pose):
-        """Identifies the closest path waypoint to the given position
-            https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
-        Args:
-            pose (Pose): position to match a waypoint to
-
-        Returns:
-            int: index of the closest waypoint in self.waypoints
-
-        """
-        #TODO implement
-        #This should be implemented in waypoint updater and published
-        return 0
-
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
@@ -166,25 +161,32 @@ class TLDetector(object):
 
         """
 
-        if(not self.has_image):
+        if(not self.has_image or not self.pose or not self.waypoints or not self.traffic_lights_pos):
             return False
 
         state = TrafficLight.UNKNOWN   # Default state
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+        closest_traffic_light_idx, closest_traffic_light = waypoint_helper.get_closest_traffic_light(
+                                self.traffic_positions.lights, self.pose.position, self.waypoints)
 
-        if self.classifier_ready is True:
-            state = self.tl_classifier.get_classification(cv_image)
+        if closest_traffic_light:
+            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
-            self.tl_detection_out.publish(self.bridge.cv2_to_imgmsg(
-                self.tl_classifier.detection_image, "rgb8"))
+            if self.classifier_ready is True:
+                state = self.tl_classifier.get_classification(cv_image)
 
-        #### TODO, calculate distance
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+                self.tl_detection_out.publish(self.bridge.cv2_to_imgmsg(
+                    self.tl_classifier.detection_image, "rgb8"))
 
-        # Publish state
-        self.tl_state.publish(Int32(state))
+
+            # Publish state
+            self.upcoming_traffic_light_state_pub.publish(Int32(state))
+            # Publish pos
+            self.upcoming_traffic_light_pos_pub.publish(closest_traffic_light.pose.pose.position)
+
+            return closest_traffic_light_idx, state
+
+        self.waypoints = None
 
         return -1, state
 

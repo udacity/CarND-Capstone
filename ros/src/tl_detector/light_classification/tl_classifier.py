@@ -14,23 +14,25 @@ from io import StringIO
 import time
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self, run_mode):
 
         # Default value returned by the classifier
         self.detected_light_state = TrafficLight.UNKNOWN
         # Source is simulation by default, set to false for loading the classifier for real data
-        #TODO: get this from launcher
-        self.source_simulation = True
         self.enabled = True
 
         #Detection result image
         self.detection_image = None
 
         cwd = os.path.dirname(os.path.realpath(__file__))
-        if self.source_simulation is True:
-            garph_source_path = cwd + '/networks/faster_rcnn_resnet50_low_fine_tuned_model_4class_v1_sim/frozen_inference_graph.pb'
-        else:
+
+        if run_mode == "simulator":
+            graph_source_path = cwd + '/networks/faster_rcnn_resnet50_low_fine_tuned_model_4class_v1_sim/frozen_inference_graph.pb'
+        elif run_mode == "site":
             graph_source_path = cwd + '/networks/faster_rcnn_resnet50_low_fine_tuned_model_4class_v1_real_train2/frozen_inference_graph.pb'
+
+        else:
+            raise ValueError("The class can be initialized with simulator or site mode only ...")
 
         labels_source_path = cwd + '/networks/label_map_4class.txt'
         num_classes = 4
