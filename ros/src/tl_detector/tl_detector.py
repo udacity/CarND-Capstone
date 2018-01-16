@@ -8,8 +8,12 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
-import cv2
+import numpy as np
 import yaml
+import time
+from light_detector import LightDetector
+from PIL import Image as PILImage
+import cv2
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -33,7 +37,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        #sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.capture_image_cb)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -49,6 +53,12 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+        model_subhash = '/data/models-master/research/train-ssd-sim-data/fine_tuned_model/frozen_inference_graph.pb'
+        model_mmsarode = '/data/CarND-Capstone/traffic-light-detection/object-detection/fine_tuned_model/frozen_inference_graph.pb'
+        label_path = '/data/CarND-Capstone/traffic-light-detection/object-detection/data/label_map.pbtxt'
+        num_classes = 4
+        self.light_detector = LightDetector(model_mmsarode, label_path, num_classes)
+
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -59,6 +69,14 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+
+    def capture_image_cb(self, msg):
+        cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+        image = PILImage.fromarray(cv_image)
+        image, classes, dt = self.light_detector.infer(image)
+        rospy.loginfo("LD: Classes found %s %s", dt, classes)
+        cv2.imwrite("image_dump2/sim_"+str(time.time())+".jpg", image)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index

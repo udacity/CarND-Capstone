@@ -88,7 +88,7 @@ class WaypointUpdater(object):
                     # plt.show()
                 else:
                     self.traffic_wp = -1
-            self.publish_final_waypoints(next_wp)
+            #self.publish_final_waypoints(next_wp)
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
@@ -191,7 +191,7 @@ class WaypointUpdater(object):
         rospy.loginfo("next_wp %s %s", next_wp, self.t - rospy.get_time())
         self.t = rospy.get_time()
         stop_wp = self.traffic_wp
-        if stop_wp > -1 and next_wp > stop_wp - 150:
+        if False and stop_wp > -1 and next_wp > stop_wp - 150:
             final_wps = self.stop_trajectory(next_wp, stop_wp)
             #rospy.loginfo("Stopping speeds %s ", [w.twist.twist.linear.x for w in final_wps])
             self.final_waypoints_pub.publish(Lane(None, final_wps))
