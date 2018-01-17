@@ -26,7 +26,7 @@ class TLDetector(object):
         self.tl_poses = list()       # traffic light waypoint positions in Pose object
         self.tl_wp_indices = list()  # traffic light waypoint indices initialization to empty list
 
-        self.simulator = True if rospy.get_param('~sim') == 1 else False
+        self.simulator = True if rospy.get_param('~sim') == 0 else False
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
