@@ -55,6 +55,9 @@ class TLDetector(object):
 
         model = 'light_classification/subhash_frozen_inference_graph.pb'
         label_path = 'light_classification/subhash_label_map.pbtxt'
+        # model = 'light_classification/mmsarode_frozen_inference_graph.pb'
+        # label_path = 'light_classification/mmsarode_label_map.pbtxt'
+
         num_classes = 4
         self.light_detector = LightDetector(model, label_path, num_classes)
         rospy.loginfo("Sess: %s", self.light_detector.session)
@@ -72,10 +75,10 @@ class TLDetector(object):
 
     def capture_image_cb(self, msg):
         if self.light_detector:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-            image = PILImage.fromarray(cv_image)
-            image, classes, dt = self.light_detector.infer(image)
+            cv_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
+            #cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+            #image = PILImage.fromarray(cv_image)
+            image, classes, dt = self.light_detector.infer(cv_image)
             rospy.loginfo("LD: Classes found %s %s", dt, classes)
             cv2.imwrite("image_dump2/sim_"+str(time.time())+".jpg", image)
 

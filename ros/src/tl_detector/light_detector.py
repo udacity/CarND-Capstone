@@ -29,15 +29,15 @@ class LightDetector(object):
                 self.category_index = label_map_util.create_category_index(categories)
 
 
-    def load_image_into_numpy_array(self, image):
-        (im_width, im_height) = image.size
-        return np.array(image.getdata()).reshape(
-            (im_height, im_width, 3)).astype(np.uint8)
+    # def load_image_into_numpy_array(self, image):
+    #     (im_width, im_height) = image.size
+    #     return np.array(image.getdata()).reshape(
+    #         (im_height, im_width, 3)).astype(np.uint8)
 
     def infer(self, image):
         start = time.time()
-        image_np = self.load_image_into_numpy_array(image)
-        image_np_expanded = np.expand_dims(image_np, axis=0)
+        #image_np = self.load_image_into_numpy_array(image)
+        image_np_expanded = np.expand_dims(image, axis=0)
         (boxes, scores, classes, num) = self.session.run(
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: image_np_expanded})
@@ -52,4 +52,4 @@ class LightDetector(object):
         #   line_thickness=8,min_score_thresh=0.5)
 
         final_classes = [c for c, s in zip(classes[0], scores[0]) if s > 0.5]
-        return image_np, final_classes, time.time() - start
+        return image_np_expanded, final_classes, time.time() - start
