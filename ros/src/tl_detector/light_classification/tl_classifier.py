@@ -139,3 +139,26 @@ class TLClassifier(object):
 
 if __name__ == "__main__":
     classifier = TLClassifier(simulator = True)
+
+    # Red
+    # Red
+    # Green
+    # Green
+    # Green
+    # Yellow
+    # Unknown
+    # Green
+    # Red
+
+    # Those are the paths for our test images
+    path = '/home/student/CarND-Capstone/ros/src/tl_detector/light_classification/test_data/sim'
+    # path = 'test_data/site'
+    image_paths = [ os.path.join(path, 'image{}.jpg'.format(i)) for i in range(0, 9) ]
+
+
+    # Load the images and store them into a list
+    images = []
+    for image_path in image_paths:
+        print image_path
+        image = cv2.imread(image_path)
+        print classifier.get_classification(image)
