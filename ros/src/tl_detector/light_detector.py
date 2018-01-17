@@ -9,6 +9,7 @@ from object_detection.utils import label_map_util
 class LightDetector(object):
     def __init__(self, path_to_ckpt, label_path, num_classes):
         self.detection_graph = tf.Graph()
+        self.session = tf.Session(graph=self.detection_graph)
         with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
             with tf.gfile.GFile(path_to_ckpt, 'rb') as fid:
@@ -34,22 +35,21 @@ class LightDetector(object):
             (im_height, im_width, 3)).astype(np.uint8)
 
     def infer(self, image):
-        with tf.Session(graph=self.detection_graph) as sess:
-            image_np = self.load_image_into_numpy_array(image)
-            image_np_expanded = np.expand_dims(image_np, axis=0)
-            start = time.time()
-            (boxes, scores, classes, num) = sess.run(
-                [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
-                feed_dict={self.image_tensor: image_np_expanded})
+        start = time.time()
+        image_np = self.load_image_into_numpy_array(image)
+        image_np_expanded = np.expand_dims(image_np, axis=0)
+        (boxes, scores, classes, num) = self.session.run(
+            [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
+            feed_dict={self.image_tensor: image_np_expanded})
 
-            vis_util.visualize_boxes_and_labels_on_image_array(
-              image_np,
-              np.squeeze(boxes),
-              np.squeeze(classes).astype(np.int32),
-              np.squeeze(scores),
-              self.category_index,
-              use_normalized_coordinates=True,
-              line_thickness=8,min_score_thresh=0.5)
+        # vis_util.visualize_boxes_and_labels_on_image_array(
+        #   image_np,
+        #   np.squeeze(boxes),
+        #   np.squeeze(classes).astype(np.int32),
+        #   np.squeeze(scores),
+        #   self.category_index,
+        #   use_normalized_coordinates=True,
+        #   line_thickness=8,min_score_thresh=0.5)
 
-            final_classes = [c for c, s in zip(classes[0], scores[0]) if s > 0.5]
-            return image_np, final_classes, time.time() - start
+        final_classes = [c for c, s in zip(classes[0], scores[0]) if s > 0.5]
+        return image_np, final_classes, time.time() - start

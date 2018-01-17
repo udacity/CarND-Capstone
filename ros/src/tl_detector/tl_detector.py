@@ -53,11 +53,11 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        model_subhash = '/data/models-master/research/train-ssd-sim-data/fine_tuned_model/frozen_inference_graph.pb'
-        model_mmsarode = '/data/CarND-Capstone/traffic-light-detection/object-detection/fine_tuned_model/frozen_inference_graph.pb'
-        label_path = '/data/CarND-Capstone/traffic-light-detection/object-detection/data/label_map.pbtxt'
+        model = 'light_classification/subhash_frozen_inference_graph.pb'
+        label_path = 'light_classification/subhash_label_map.pbtxt'
         num_classes = 4
-        self.light_detector = LightDetector(model_mmsarode, label_path, num_classes)
+        self.light_detector = LightDetector(model, label_path, num_classes)
+        rospy.loginfo("Sess: %s", self.light_detector.session)
 
         rospy.spin()
 
@@ -71,12 +71,13 @@ class TLDetector(object):
         self.lights = msg.lights
 
     def capture_image_cb(self, msg):
-        cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-        image = PILImage.fromarray(cv_image)
-        image, classes, dt = self.light_detector.infer(image)
-        rospy.loginfo("LD: Classes found %s %s", dt, classes)
-        cv2.imwrite("image_dump2/sim_"+str(time.time())+".jpg", image)
+        if self.light_detector:
+            cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+            image = PILImage.fromarray(cv_image)
+            image, classes, dt = self.light_detector.infer(image)
+            rospy.loginfo("LD: Classes found %s %s", dt, classes)
+            cv2.imwrite("image_dump2/sim_"+str(time.time())+".jpg", image)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
