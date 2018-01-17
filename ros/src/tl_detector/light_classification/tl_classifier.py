@@ -8,6 +8,7 @@ import os
 import cv2
 import numpy as np
 import rospy
+import rospkg
 
 def load_graph(graph_file, config, verbose = False):
     with tf.Session(graph=tf.Graph(), config=config) as sess:
@@ -75,17 +76,29 @@ class TLClassifier(object):
         jit_level = tf.OptimizerOptions.ON_1
         self.config.graph_options.optimizer_options.global_jit_level = jit_level
 
-        # self.graph_classification = load_graph('models/model_classification.pb', self.config)
+        rp = rospkg.RosPack()
+        model_dir = os.path.join(rp.get_path('tl_detector'), 'light_classification/models')
+        rospy.loginfo(model_dir)
 
-        # if simulator:
-            # self.graph_detection = load_graph('models/model_detection_simulator.pb', self.config)
-        # else:
-            # self.graph_detection = load_graph('models/model_detection_site.pb', self.config)
+        self.graph_classification = load_graph(model_dir + '/model_classification.pb', self.config)
+        if simulator:
+            self.graph_detection = load_graph(model_dir + '/model_detection_simulator.pb', self.config)
+        else:
+            self.graph_detection = load_graph(model_dir + '/model_detection_site.pb', self.config)
         rospy.loginfo("Models loaded!")
 
-        pass
+        self.session_classification = tf.Session(graph=self.graph_classification, config=self.config)
+        self.session_detection = tf.Session(graph=self.graph_detection, config=self.config)
 
+        self.image_tensor = self.graph_detection.get_tensor_by_name('image_tensor:0')
+        self.detection_boxes = self.graph_detection.get_tensor_by_name('detection_boxes:0')
+        self.detection_scores = self.graph_detection.get_tensor_by_name('detection_scores:0')
+        self.detection_classes = self.graph_detection.get_tensor_by_name('detection_classes:0')
 
+        self.in_graph = self.graph_classification.get_tensor_by_name('input_1_1:0')
+        self.out_graph = self.graph_classification.get_tensor_by_name('output_0:0')
+
+        self.labels = {0: TrafficLight.RED, 1: TrafficLight.GREEN, 2: TrafficLight.YELLOW}
 
 
     def get_classification(self, image):
@@ -99,7 +112,30 @@ class TLClassifier(object):
 
         """
         #TODO implement light color prediction
-        return TrafficLight.UNKNOWN
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        box = self.detection(image)
+        if box == None:
+            return TrafficLight.UNKNOWN
+
+        left, right, top, bottom = box
+        img_crop = image[top:bottom, left:right]
+        traffic_light = cv2.resize(img_crop, (32, 32))
+        return self.classification(traffic_light)
+
+    def detection(self, image):
+        im_height, im_width, _ = image.shape
+        image_expanded = np.expand_dims(image, axis=0)
+
+        with self.session_detection.as_default(), self.graph_detection.as_default():
+            boxes, scores, classes = self.session_detection.run([self.detection_boxes, self.detection_scores, self.detection_classes],
+                feed_dict={self.image_tensor: image_expanded})
+            return extractBox(boxes, scores, classes, 0.1, im_width, im_height)
+
+    def classification(self, image):
+        with self.session_classification.as_default(), self.graph_classification.as_default():
+            sfmax = list(self.session_classification.run(tf.nn.softmax(self.out_graph.eval(feed_dict={self.in_graph: [image]}))))
+            sf_ind = sfmax.index(max(sfmax))
+            return self.labels[sf_ind]
 
 if __name__ == "__main__":
     classifier = TLClassifier(simulator = True)
