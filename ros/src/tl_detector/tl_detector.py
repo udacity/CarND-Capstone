@@ -37,7 +37,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.capture_image_cb)
+        #sub6 = rospy.Subscriber('/image_color', Image, self.capture_image_cb)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -80,7 +80,7 @@ class TLDetector(object):
             #image = PILImage.fromarray(cv_image)
             image, classes, dt = self.light_detector.infer(cv_image)
             rospy.loginfo("LD: Classes found %s %s", dt, classes)
-            cv2.imwrite("image_dump2/sim_"+str(time.time())+".jpg", image)
+            #cv2.imwrite("image_dump2/sim_"+str(time.time())+".jpg", image)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index

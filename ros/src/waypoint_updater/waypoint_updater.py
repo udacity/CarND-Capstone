@@ -43,11 +43,15 @@ class WaypointUpdater(object):
 
 
         # FIXME Only for debugging
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
+        #rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
         traffic_light_config_string = rospy.get_param("/traffic_light_config")
         self.traffic_light_config = yaml.load(traffic_light_config_string)
         self.traffic_lights = None
         self.traffic_lights_wps = None
+
+        # FIXME Only for debugging
+        self.published_wps = []
+        self.iteration = 0
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -88,10 +92,11 @@ class WaypointUpdater(object):
                     # plt.show()
                 else:
                     self.traffic_wp = -1
-            #self.publish_final_waypoints(next_wp)
+            self.publish_final_waypoints(next_wp)
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
+        self.track = Track(self.wps)
 
     def current_velocity_cb(self, msg):
         self.current_velocity = msg.twist
@@ -111,15 +116,6 @@ class WaypointUpdater(object):
 
             # for l in self.traffic_lights:
             #     self.traffic_lights_wps.append(self.next_waypoint(l.pose.pose.position, l.pose.pose.orientation))
-
-            # lights = np.array([[l.pose.pose.position.x, l.pose.pose.position.y] for l in self.traffic_lights])
-            # stops = np.array([[self.wps[w].pose.pose.position.x, self.wps[w].pose.pose.position.y] for w in self.traffic_lights_wps])
-            # wps = np.array([[w.pose.pose.position.x, w.pose.pose.position.y] for w in self.wps])
-            # plt.plot(wps[:,0], wps[:,1], "b.")
-            # plt.plot(stops[:,0], stops[:,1], "ro")
-            # plt.plot(self.pose.position.x, self.pose.position.y, "g+")
-            # plt.show()
-            # plt.plot(lights[:,0], lights[:,1], "go")
 
             # lin = np.array([w.twist.twist.linear.x for w in self.wps])
             # plt.plot(lin[100:])
@@ -167,6 +163,18 @@ class WaypointUpdater(object):
         # for i, w in enumerate(wps):
         #     adj_vel = init_vel + max_inc * i
         #     w.twist.twist.linear.x = max(w.twist.twist.linear.x, adj_vel)
+
+        # [self.published_wps.append(w) for w in wps]
+        # self.iteration += 1
+        # rospy.loginfo("Iteration %s", self.iteration)
+        # if (self.iteration > 1000):
+        #     xs = [w.pose.pose.position.x for w in self.published_wps]
+        #     ys = [w.pose.pose.position.y for w in self.published_wps]
+        #     self.track.plot(0, last_wp)
+        #     plt.plot(xs, ys, "r+")
+        #     plt.show()
+        #     exit(0)
+        #for w in wps: w.twist.twist.linear.x = 3
         return wps
 
     def stop_trajectory(self, next_wp, stop_wp):
@@ -223,6 +231,22 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+class Track(object):
+
+    def __init__(self, wps):
+        self.wps = wps
+
+    def plot(self, start=0, stop=100):
+        # lights = np.array([[l.pose.pose.position.x, l.pose.pose.position.y] for l in self.traffic_lights])
+        # stops = np.array([[self.wps[w].pose.pose.position.x, self.wps[w].pose.pose.position.y] for w in self.traffic_lights_wps])
+        wps = np.array([[w.pose.pose.position.x, w.pose.pose.position.y] for w in self.wps[start:stop]])
+        plt.plot(wps[:,0], wps[:,1])
+        # plt.plot(stops[:,0], stops[:,1], "ro")
+        # plt.plot(self.pose.position.x, self.pose.position.y, "g+")
+        # plt.show()
+        # plt.plot(lights[:,0], lights[:,1], "go")
+
 
 
 if __name__ == '__main__':
