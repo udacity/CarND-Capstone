@@ -99,7 +99,6 @@ class DBWNode(object):
             if self.dbw_enabled and self.current_twist and self.proposed_twist:
                 throttle, brake, steer = self.controller.control(
                     self.current_twist, self.proposed_twist, 1/50.)
-                rospy.loginfo("controls %s %s %s %s", throttle, brake, steer, self.proposed_twist.angular.z)
                 self.publish(throttle, brake, steer)
             rate.sleep()
 

@@ -60,43 +60,52 @@ class WaypointUpdater(object):
         self.wps = None
         self.traffic_wp = None
         self.current_velocity = None
+        self.next_wp = None
 
         self.t = rospy.get_time()
 
         rospy.spin()
+        # self.loop()
+
+
+    # def loop(self):
+    #     rate = rospy.Rate(50) # 50Hz
+    #     while not rospy.is_shutdown():
+    #         if self.next_wp:
+    #             self.publish_final_waypoints(self.next_wp)
+    #         rate.sleep()
+
 
     def pose_cb(self, msg):
         self.pose = msg.pose
         if self.wps:
-            next_wp = self.next_waypoint(self.pose.position, self.pose.orientation)
+            next_wp = self.track.next_waypoint(self.pose.position, self.pose.orientation, self.next_wp)
             # FIXME Only for debugging
-            if self.traffic_lights_wps:
-                closest_light = 0
-                for i in range(len(self.traffic_lights_wps)-1):
-                    if self.traffic_lights_wps[i] < next_wp\
-                            and next_wp <= self.traffic_lights_wps[i+1]:
-                        closest_light = i+1
-                tl = self.traffic_lights[closest_light]
-                red = tl.state == TrafficLight.RED
-                yellow = tl.state == TrafficLight.YELLOW and self.traffic_wp != self.traffic_lights_wps[closest_light]
-                if red or yellow:
-                    self.traffic_wp = self.traffic_lights_wps[closest_light]
-                    # rospy.loginfo("closest light %s to %s", self.traffic_wp, next_wp)
-                    # wps = np.array([[w.pose.pose.position.x, w.pose.pose.position.y] for w in self.wps])
-                    # plt.plot(wps[:,0], wps[:,1], "b.")
-                    # plt.plot(self.pose.position.x, self.pose.position.y, "b+")
-                    # wp_pos = self.wps[next_wp].pose.pose.position
-                    # stop_pos = self.wps[self.traffic_wp].pose.pose.position
-                    # plt.plot(wp_pos.x, wp_pos.y, "go")
-                    # plt.plot(stop_pos.x, stop_pos.y, "ro")
-                    # plt.show()
-                else:
-                    self.traffic_wp = -1
+            # if self.traffic_lights_wps:
+            #     closest_light = 0
+            #     for i in range(len(self.traffic_lights_wps)-1):
+            #         if self.traffic_lights_wps[i] < next_wp\
+            #                 and next_wp <= self.traffic_lights_wps[i+1]:
+            #             closest_light = i+1
+            #     tl = self.traffic_lights[closest_light]
+            #     red = tl.state == TrafficLight.RED
+            #     yellow = tl.state == TrafficLight.YELLOW and self.traffic_wp != self.traffic_lights_wps[closest_light]
+            #     if red or yellow:
+            #         self.traffic_wp = self.traffic_lights_wps[closest_light]
+            #     else:
+            #         self.traffic_wp = -1
+            self.next_wp = next_wp
+            rospy.loginfo("Time tt %s", rospy.get_time() - self.t)
+            self.t = rospy.get_time()
             self.publish_final_waypoints(next_wp)
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
         self.track = Track(self.wps)
+        # posn = self.wps[1200].pose.pose.position
+        # self.track.plot(1100, 1500, posn)
+        # plt.show()
+        # exit(0)
 
     def current_velocity_cb(self, msg):
         self.current_velocity = msg.twist
@@ -109,7 +118,7 @@ class WaypointUpdater(object):
         if self.wps and not self.traffic_lights_wps:
             self.traffic_lights_wps = []
             for i, [x, y] in enumerate(self.traffic_light_config['stop_line_positions']):
-                self.traffic_lights_wps.append(self.next_waypoint(
+                self.traffic_lights_wps.append(self.trck.next_waypoint(
                     Point(x,y,0),
                     self.traffic_lights[i].pose.pose.orientation))
                 rospy.loginfo("trafficl %s", self.traffic_lights_wps)
@@ -142,18 +151,6 @@ class WaypointUpdater(object):
         w.twist.twist.angular.y = wp.twist.twist.angular.y
         w.twist.twist.angular.z = wp.twist.twist.angular.z
         return w
-
-    def next_waypoint(self, position, orient=None):
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        dist = [dl(w.pose.pose.position, position) for w in self.wps]
-        min_wp = np.argmin(dist)
-        if orient:
-            _, _, theta = tf.transformations.euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])
-            head = lambda a, b: math.atan2(a.y - b.y, a.x - b.x)
-            heading = head(self.wps[min_wp].pose.pose.position, position)
-            if abs(heading - theta) > np.pi/4:
-                min_wp = (min_wp + 1) % len(self.wps)
-        return min_wp
 
     def cruise_trajectory(self, next_wp):
         last_wp = next_wp + LOOKAHEAD_WPS
@@ -196,8 +193,6 @@ class WaypointUpdater(object):
         return wps
 
     def publish_final_waypoints(self, next_wp):
-        rospy.loginfo("next_wp %s %s", next_wp, self.t - rospy.get_time())
-        self.t = rospy.get_time()
         stop_wp = self.traffic_wp
         if False and stop_wp > -1 and next_wp > stop_wp - 150:
             final_wps = self.stop_trajectory(next_wp, stop_wp)
@@ -237,11 +232,36 @@ class Track(object):
     def __init__(self, wps):
         self.wps = wps
 
-    def plot(self, start=0, stop=100):
+    def next_waypoint(self, position, orient=None, around_wp = None):
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        if around_wp:
+            cand_wps = self.wps[around_wp: around_wp+100]
+        else:
+            cand_wps = self.wps
+        dist = [dl(w.pose.pose.position, position) for w in cand_wps]
+        min_wp = np.argmin(dist)
+        if around_wp:
+            min_wp += around_wp
+        if orient:
+            _, _, theta = tf.transformations.euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])
+            head = lambda a, b: math.atan2(a.y - b.y, a.x - b.x)
+            heading = head(self.wps[min_wp].pose.pose.position, position)
+            if abs(heading - theta) > np.pi/4:
+                min_wp = (min_wp + 1) % len(self.wps)
+        return min_wp
+
+    def plot(self, start=0, stop=-1, position=None):
+        if stop < 0:
+            stop = len(self.wps)
         # lights = np.array([[l.pose.pose.position.x, l.pose.pose.position.y] for l in self.traffic_lights])
         # stops = np.array([[self.wps[w].pose.pose.position.x, self.wps[w].pose.pose.position.y] for w in self.traffic_lights_wps])
         wps = np.array([[w.pose.pose.position.x, w.pose.pose.position.y] for w in self.wps[start:stop]])
         plt.plot(wps[:,0], wps[:,1])
+        if position:
+            plt.plot(position.x, position.y-100, "r*")
+            next_wp = self.next_waypoint(position)
+            next_posn = self.wps[next_wp].pose.pose.position
+            plt.plot(next_posn.x, next_posn.y, "gs")
         # plt.plot(stops[:,0], stops[:,1], "ro")
         # plt.plot(self.pose.position.x, self.pose.position.y, "g+")
         # plt.show()
