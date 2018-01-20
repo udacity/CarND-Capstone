@@ -106,12 +106,14 @@ class TLDetector(object):
         if self.state != state:
             self.state_count = 0
             self.state = state
+        
         #elif self.state_count >= STATE_COUNT_THRESHOLD:
         elif self.state_count >= rospy.get_param('~state_count_threshold', 3):
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
+            
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         
@@ -160,7 +162,7 @@ class TLDetector(object):
         '''
         x, y, z, s = q
         
-        # Precalculate repeatedly used values
+        # Precalculate repeatedly used values.
         x2 = x**2
         xy = x * y
         xz = x * z
@@ -174,7 +176,7 @@ class TLDetector(object):
         sy = s * y
         sx = s * x
         
-        # Calculate rotation matrix
+        # Calculate rotation matrix.
         R11 = 1 - 2.0 * (y2 + z2)
         R12 = 2.0 * (xy - sz)
         R13 = 2.0 * (xz + sy)
@@ -206,13 +208,13 @@ class TLDetector(object):
         
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         
-        # Point_in_world (Point): 3D location of a point in the world
+        # Point_in_world (Point): 3D location of a point in the world.
         focal_len_x = self.config['camera_info']['focal_length_x']
         focal_len_y = self.config['camera_info']['focal_length_y']
         image_width = self.config['camera_info']['image_width']
         image_height = self.config['camera_info']['image_height']
         
-        # Get transform between pose of camera and world frame
+        # Get transform between pose of camera and world frame.
         rotation = None
         transform = None
         
@@ -229,8 +231,8 @@ class TLDetector(object):
             x = -1
             y = -1
         
-        # Use rotation and transform to calculate 2D position of light in image
-        light_pos_z = 1 # Doesn't work with correct z value
+        # Use rotation and transform to calculate 2D position of light in image.
+        light_pos_z = 1 # Doesn't work with correct z values.
         world_point = np.array([light_pos_x, light_pos_y, light_pos_z]).reshape(1, 3, 1)
         
         camera_mat = np.matrix([[focal_len_x, 0, image_width / 2],
@@ -238,14 +240,14 @@ class TLDetector(object):
                                [0, 0, 1]])
         dist_coeff = None
         
-        # 4x1 -> quaternion to rotation matrix at z-axis
+        # 4x1 -> quaternion to rotation matrix at z-axis.
         rot_vec, _ = cv2.Rodrigues(self.QuaterniontoRotationMatrix(rot))
         ret, _ = cv2.projectPoints(world_point, rot_vec, np.array(trans).reshape(3, 1), camera_mat, dist_coeff)
         
-        #Unpack values and return
+        # Unpack values and return.
         ret = ret.reshape(2,)
         
-        #For some reason x & y are swapped
+        # For some reason x & y are swapped.
         x = int(round(ret[1]))
         y = int(round(ret[0]))
         
@@ -253,17 +255,17 @@ class TLDetector(object):
         if x >= 0 and x < image_width and y >= 0 and y <= image_height:
             visible = True
         
-        # Show car image
+        # Show car image.
         if DISPLAY_CAMERA:
             image_tmp = np.copy(cv_image)
-            # Draw a circle
+            # Draw a circle.
             cv2.circle(image_tmp, (x, y), 20, (255, 0, 0), thickness = 2)
             cv2.imshow('image', image_tmp)
             cv2.waitKey(1)
         
         state = TrafficLight.UNKNOWN
         if visible:
-            #Get classification
+            # Get classification.
             state = self.light_classifier.get_classification(cv_image)
         
         return state
@@ -280,7 +282,7 @@ class TLDetector(object):
         """
         #light = None
         
-        # List of positions that correspond to the line to stop in front of for a given intersection
+        # List of positions that correspond to the line to stop in front of for a given intersection.
         #stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
@@ -292,7 +294,7 @@ class TLDetector(object):
                 #light_positions = self.config['manual_light_positions']
                 light_wp = sys.maxsize
                 
-                # Only one complete circle, no minimum distance considered, yet
+                # Only one complete circle, no minimum distance considered, yet.
                 for i in range(0, len(light_positions)):
                     index = self.get_closest_waypoint(float(light_positions[i][0]), float(light_positions[i][1]))
                     if index > waypoint_start_index and index < light_wp:
