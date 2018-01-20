@@ -24,6 +24,16 @@ Team members is provided in the table below:
 
 #### How to run the program with the simulator
 
+**Note:** The file used as a detection model must be unzipped in the same folder because it has a large size, it's in the path: 
+
+    **/ros/src/tl_detector/model/model_detection.zip**
+
+should look like this:
+
+    **/ros/src/tl_detector/model/model_detection.rb**
+
+---
+
 Make and run styx.
 ```bash
 1.  cd ros
