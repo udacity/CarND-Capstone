@@ -1,3 +1,89 @@
+# Capstone Project Starter Code
+
+The goal of this project is the integration of all systems that manage the real driving of a vehicle (Carla) using previously a simulator which will interface with your ROS code and has traffic light detection.
+
+<!--more-->
+
+[//]: # (Image References)
+
+[image1]: /imgs/ros-graph-v2.png "ROS System"
+[image2]: /imgs/tl-detector.png "ROS System"
+[image3]: /imgs/waypoint-updater.png "ROS System"
+[image4]: /imgs/dbw-node.png "ROS System"
+
+#### TEAM SKYNET
+
+Team members is provided in the table below:
+
+| Full Name                      | Slack      | Email                                                                                  |
+| :----------------------------- | :--------- | :------------------------- |
+| Dennis Korotyaev (Team Leader) | @4skynet   | nemiroff.den@gmail.com     |
+| Samip Shah                     | @shahsamip | samipshah86@gmail.com      |
+| Abhay Carande Luna             | @abhaycl   | abhaycl@hotmail.com        |
+| Marcelo Nascimento             | @mzumbin   | mzumbin@gmail.com          |
+
+#### How to run the program with the simulator
+
+Make and run styx.
+```bash
+1.  cd ros
+2.  catkin_make
+3.  source devel/setup.sh
+4.  roslaunch launch/styx.launch
+```
+Run the simulator.
+
+
+The summary of the files and folders int repo is provided in the table below:
+
+| File/Folder                  | Definition                                                                                            |
+| :--------------------------- | :---------------------------------------------------------------------------------------------------- |
+| data/*                       | Folder that contains the data used by the nodes.                                                      |
+| imgs/*                       | Folder that contains the images to visualize.                                                         |
+| ros/*                        | Folder that contains all project source files.                                                        |
+| ros/src/tl_detector/         | It contains everything related to the traffic light detection node.                                   |
+| ros/src/waypoint_updater/    | It contains everything related to the Waypoint updater node.                                          |
+| ros/src/twist_controller/    | It contains everything related to the Dbw node.                                                       |
+| ros/src/styx/                | It contains a server for communicating with the simulator, and a bridge to translate and publish simulator messages to ROS topics. |
+| ros/src/styx_msgs/           | It contains the definitions of the custom ROS message types used in the project.                      |
+| ros/src/waypoint_loader/     | It contains the loads the static waypoint data and publishes to /base_waypoints.                      |
+| ros/src/waypoint_follower/   | It contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic. |
+|                              |                                                                                                       |
+| pylintrc                     |                                                                                                       |
+|                              |                                                                                                       |
+| requirements.txt             | Contains the correct versions to use with practice according to the architecture used in the vehicle. |
+|                              |                                                                                                       |
+
+---
+The specifications and necessary requirements are detailed below, it is the documentation provided in the Capstone repository by Udacity for the correct realization of the final practice.
+
+### Ros System
+
+The ROS system used by the simulator and the actual vehicle is:
+
+![Final score][image1]
+
+The ROS system is composed mainly of the following sections:
+
+    * Traffic light detection node.
+    * Waypoint updater node.
+    * Dbw node.
+
+#### Traffic light detection node
+
+![Final score][image2]
+
+#### Waypoint updater node
+
+![Final score][image3]
+
+#### Dbw node
+
+![Final score][image4]
+
+---
+### Documentation Provided in the Capstone Repository
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 Please use **one** of the two installation options, either native **or** docker installation.
