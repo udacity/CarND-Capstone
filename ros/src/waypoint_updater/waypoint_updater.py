@@ -52,12 +52,14 @@ class WaypointUpdater(object):
     def set_closest_mapindex(self):
         distance = sys.float_info.max
         leastd_index = self.map_index
-        for index in range(0, len(self.base_lane.waypoints)):
-            wayp = self.base_lane.waypoints[self.map_index + index]
+        base_lane_len = len(self.base_lane.waypoints)
+        for index in range(0, base_lane_len):
+            tindex = ((self.map_index + index) % base_lane_len)
+            wayp = self.base_lane.waypoints[tindex]
             newdist = self.pose_distance(wayp)
             if distance > newdist:
                 distance = newdist
-                leastd_index = self.map_index + index 
+                leastd_index = tindex
             else:
                 break
 
@@ -73,7 +75,13 @@ class WaypointUpdater(object):
         # create lane object
         lane_op = Lane()
         # copy waypoints ahead of pose and pass it to lane_op
-        lane_op.waypoints = self.base_lane.waypoints[self.map_index:self.map_index+LOOKAHEAD_WPS]
+        base_lane_len = len(self.base_lane.waypoints)
+        if self.map_index + LOOKAHEAD_WPS < base_lane_len:
+            lane_op.waypoints = self.base_lane.waypoints[self.map_index:self.map_index+LOOKAHEAD_WPS]
+        else:
+            start = self.map_index
+            end = (self.map_index + LOOKAHEAD_WPS) % base_lane_len
+            lane_op.waypoints = self.base_lane.waypoints[start:] + self.base_lane.waypoints[0:end]
         # publish lane object
         self.final_waypoints_pub.publish(lane_op)
 
