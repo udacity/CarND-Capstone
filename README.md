@@ -26,11 +26,11 @@ Team members is provided in the table below:
 
 **Note:** The file used as a detection model must be unzipped in the same folder because it has a large size, it's in the path: 
 
-    **/ros/src/tl_detector/model/model_detection.zip**
+  **/ros/src/tl_detector/model/model_detection.zip**
 
 should look like this:
 
-    **/ros/src/tl_detector/model/model_detection.rb**
+  **/ros/src/tl_detector/model/model_detection.rb**
 
 ---
 
@@ -43,6 +43,7 @@ Make and run styx.
 ```
 Run the simulator.
 
+---
 
 The summary of the files and folders int repo is provided in the table below:
 
@@ -60,9 +61,7 @@ The summary of the files and folders int repo is provided in the table below:
 | ros/src/waypoint_follower/   | It contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic. |
 |                              |                                                                                                       |
 | pylintrc                     |                                                                                                       |
-|                              |                                                                                                       |
 | requirements.txt             | Contains the correct versions to use with practice according to the architecture used in the vehicle. |
-|                              |                                                                                                       |
 
 ---
 The specifications and necessary requirements are detailed below, it is the documentation provided in the Capstone repository by Udacity for the correct realization of the final practice.
