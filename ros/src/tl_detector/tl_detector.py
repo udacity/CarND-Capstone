@@ -191,7 +191,7 @@ class TLDetector(object):
     
     
     #def get_light_state(self, light):
-    def get_light_state(ºself, light_pos_x, light_pos_y, light_pos_z):
+    def get_light_state(self, light_pos_x, light_pos_y, light_pos_z):
         """Determines the current color of the traffic light
         
         Args:

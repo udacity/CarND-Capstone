@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node"/>
+    <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node">
         <param name="state_count_threshold" value="3" type="int" />
         <param name="use_classifier" value="true" type="bool" />
     </node>

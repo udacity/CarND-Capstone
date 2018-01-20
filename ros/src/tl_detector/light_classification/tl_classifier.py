@@ -115,8 +115,8 @@ class TLClassifier(object):
             rospy.logerr('Classification model not found at {}'.format(model_clas_path))
             
             # Activate optimizations for Tensorflow.
-		    # log_device_placement = True
-            self.config = tf.ConfigProto(device_count = {'GPU': 1, 'CPU': 1})<
+            # log_device_placement = True
+            self.config = tf.ConfigProto(device_count = {'GPU': 1, 'CPU': 1})
             self.config.gpu_options.allow_growth = True
             self.config.gpu_options.per_process_gpu_memory_fraction = 1
         else:
