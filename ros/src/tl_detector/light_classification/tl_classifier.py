@@ -21,7 +21,7 @@ class Timer:
 
     def __exit__(self, *args):
         message = '{} in {} seconds'.format(self.message, time.clock() - self.start)
-        rospy.loginfo(message)
+        rospy.logdebug(message)
 
 
 # Function to load a graph from a proto buf file.
@@ -101,7 +101,7 @@ class TLClassifier(object):
             rp = rospkg.RosPack()
             model_det_dir = os.path.join(rp.get_path('tl_detector'), 'model')
 
-        rospy.loginfo('Using model directory {}'.format(model_det_dir))
+        rospy.logdebug('Using model directory {}'.format(model_det_dir))
 
         model_det_path = os.path.join(model_det_dir, 'model_detection.pb')
         if not os.path.exists(model_det_path):
