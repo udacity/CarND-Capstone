@@ -11,6 +11,7 @@ import numpy as np
 import rospkg
 import math
 
+
 class TLPublisher(object):
     def __init__(self):
         rospy.init_node('tl_publisher')
