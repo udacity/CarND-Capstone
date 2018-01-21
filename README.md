@@ -1,15 +1,15 @@
 # Capstone Project Starter Code
 
 The goal of this project is the integration of all systems that manage the real driving of a vehicle (Carla) using previously a simulator which will interface with your ROS code and has traffic light detection.
-
 <!--more-->
 
 [//]: # (Image References)
 
 [image1]: /imgs/ros-graph-v2.png "ROS System"
-[image2]: /imgs/tl-detector.png "ROS System"
-[image3]: /imgs/waypoint-updater.png "ROS System"
-[image4]: /imgs/dbw-node.png "ROS System"
+[image2]: /imgs/tl-detector.png "Traffic light detection node"
+[image3]: /imgs/waypoint-updater.png "Waypoint updater node"
+[image4]: /imgs/dbw-node.png "Dbw node"
+[image5]: /imgs/squeezenet.png "Squeezenet"
 
 #### TEAM SKYNET
 
@@ -74,13 +74,19 @@ The ROS system used by the simulator and the actual vehicle is:
 
 The ROS system is composed mainly of the following sections:
 
-    * Traffic light detection node.
-    * Waypoint updater node.
-    * Dbw node.
+  * Traffic light detection node.
+  * Waypoint updater node.
+  * Dbw node.
 
 #### Traffic light detection node
 
 ![Final score][image2]
+
+The classification model used is [SqueezeNet](https://arxiv.org/pdf/1602.07360.pdf) which is composed as shown in the image below:
+
+![Final score][image5]
+
+We have used the MS COCO dataset class as a pre-trainer, only class 10 is needed for traffic lights.
 
 #### Waypoint updater node
 
