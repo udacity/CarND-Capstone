@@ -24,8 +24,11 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number.
+<<<<<<< HEAD
 MAX_ACCELERATION = 1.0 # Maximal acceleration [m/s^2]
 MAX_DECELERATION = 1.0 # Maximal deceleration [m/s^2]
+=======
+>>>>>>> branch 'waypoint_updater_full' of https://github.com/aniketk1/CarND-Capstone
 
 
 class WaypointUpdater(object):
@@ -43,15 +46,24 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below.
         self.base_waypoints          = None # Waypoint list as it is published for the first time
         self.pose                    = None # Current pose
+<<<<<<< HEAD
         self.waypoint_index_for_stop = -1   # Index for waypoint in base waypoints which is nearest to stop line of traffic light.
+=======
+        self.waypoint_index_for_stop = None # Index for waypoint in base waypoints which is nearest to stop line of traffic light.
+>>>>>>> branch 'waypoint_updater_full' of https://github.com/aniketk1/CarND-Capstone
         rospy.spin()
 
     def pose_cb(self, msg):
         # Callback for /current_pose message.
         # TODO: Implement
         self.pose = msg.pose
+<<<<<<< HEAD
         # Check that base waypoints are already received.
+=======
+        # Check that base_waypoints are already received.
+>>>>>>> branch 'waypoint_updater_full' of https://github.com/aniketk1/CarND-Capstone
         if self.base_waypoints is not None:
+<<<<<<< HEAD
             next_waypoint_index = self.get_next_waypoint_index(self.pose, self.base_waypoints)
             # Create a fixed number of waypoints ahead of the car.
             start  = next_waypoint_index
@@ -69,6 +81,21 @@ class WaypointUpdater(object):
             # else decelerate.
             else:
                 lookahead_waypoints = decelerate(lookahead_waypoints, start)
+=======
+            closest_waypoint_index = self.get_next_waypoint_index(self.pose, self.base_waypoints)
+            # Create a fixed number of waypoints ahead of the car.
+            start  = closest_waypoint_index
+            end    = closest_waypoint_index + LOOKAHEAD_WPS
+            length = len(self.base_waypoints)
+            if end <= length:
+                lookahead_waypoints = deepcopy(self.base_waypoints[start:end])
+            else:
+                lookahead_waypoints = (deepcopy(self.base_waypoints[start:length])
+                                    +  deepcopy(self.base_waypoints[0:length-end]))
+            # TODO: Set waypoint velocity
+            for index, waypoint in enumerate(lookahead_waypoints):
+                self.set_waypoint_velocity(waypoint, 20*0.44704)
+>>>>>>> branch 'waypoint_updater_full' of https://github.com/aniketk1/CarND-Capstone
             # Create the Lane object and fill in waypoints.
             lane                 = Lane()
             lane.waypoints       = lookahead_waypoints
@@ -140,6 +167,7 @@ class WaypointUpdater(object):
                 closest_waypoint_index = 0
         return closest_waypoint_index
 
+<<<<<<< HEAD
     def accelerate(self, waypoints, base_offset):
         # TODO: Adjusts the target velocities for the waypoints leading up to top
         # speed in order to accelerate the vehicle.
@@ -170,6 +198,8 @@ class WaypointUpdater(object):
                 velocity = 0.
             wp.twist.twist.linear.x = min(velocity, wp.twist.twist.linear.x)
         return waypoints
+=======
+>>>>>>> branch 'waypoint_updater_full' of https://github.com/aniketk1/CarND-Capstone
 
 if __name__ == '__main__':
     try:
