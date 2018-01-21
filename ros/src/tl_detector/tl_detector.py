@@ -297,7 +297,7 @@ class TLDetector(object):
                 # Only one complete circle, no minimum distance considered, yet.
                 for i in range(0, len(light_positions)):
                     index = self.get_closest_waypoint(float(light_positions[i][0]), float(light_positions[i][1]))
-                    if index > waypoint_start_index and index < light_wp:
+                    if index > car_position and index < light_wp:
                         light_wp = index;
                         light_pos = light_positions[i]
                 
