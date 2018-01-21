@@ -1,15 +1,16 @@
 # Capstone Project Starter Code
 
 The goal of this project is the integration of all systems that manage the real driving of a vehicle (Carla) using previously a simulator which will interface with your ROS code and has traffic light detection.
-
 <!--more-->
 
 [//]: # (Image References)
 
 [image1]: /imgs/ros-graph-v2.png "ROS System"
-[image2]: /imgs/tl-detector.png "ROS System"
-[image3]: /imgs/waypoint-updater.png "ROS System"
-[image4]: /imgs/dbw-node.png "ROS System"
+[image2]: /imgs/tl-detector.png "Traffic light detection node"
+[image3]: /imgs/waypoint-updater.png "Waypoint updater node"
+[image4]: /imgs/dbw-node.png "Dbw node"
+[image5]: /imgs/squeezenet.png "Squeezenet"
+[image6]: /imgs/MobileNet-SSD.png "MobileNet-SSD"
 
 #### TEAM SKYNET
 
@@ -74,13 +75,25 @@ The ROS system used by the simulator and the actual vehicle is:
 
 The ROS system is composed mainly of the following sections:
 
-    * Traffic light detection node.
-    * Waypoint updater node.
-    * Dbw node.
+  * Traffic light detection node.
+  * Waypoint updater node.
+  * Dbw node.
 
 #### Traffic light detection node
 
 ![Final score][image2]
+
+The classification model used is [SqueezeNet](https://arxiv.org/pdf/1602.07360.pdf) which is composed as shown in the image below:
+
+![Final score][image5]
+
+We have used the MS COCO dataset class as a pre-trainer [ssd_mobilenet_v1_coco](http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v1_coco_11_06_2017.tar.gz) from https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md, only class 10 is needed for traffic lights.
+
+The ROS traffic light detector is implemented in the node *tl_detector* in the classes *TLDetector* and *TLClassifier*. *TLDetector* is responsible for finding the nearest traffic light location and calls *TLClassifier.get_classification* with the current camera image.
+
+*TLClassifier* initially uses the MobileNet-SSD model to detect a traffic light delimiter box with the maximum score. If the delimiter box is found, the cropped traffic light image adapts to a 32x32 image and the SqueezeNet model changes the traffic light color (red, yellow, green). If at least the last 3 images were classified as red, then TLDetector publishes the index of the traffic light waypoint in /traffic_waypoint.
+
+![Final score][image6]
 
 #### Waypoint updater node
 

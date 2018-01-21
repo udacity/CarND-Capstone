@@ -154,7 +154,7 @@ class TLClassifier(object):
         self.index2msg = {0: TrafficLight.RED, 1: TrafficLight.GREEN, 2: TrafficLight.YELLOW}
         self.index2color = {0: (255, 0, 0), 1: (0, 255, 0), 2: (255, 255, 0)}
         
-        # Ttraffic light publisher.
+        # Traffic light publisher.
         self.bridge = CvBridge()
         self.traffic_light_pub = rospy.Publisher('/tld/traffic_light', Image, queue_size = 1)
         
