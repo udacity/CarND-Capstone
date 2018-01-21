@@ -103,6 +103,21 @@ The ROS traffic light detector is implemented in the node *tl_detector* in the c
 
 ![Final score][image4]
 
+The Drive By Wire node is responsible for controlling the following elements:
+
+  * **Steering.-** It's controlled by a combination of predictive and corrective steering.
+               Predictive Steering is implemented using the class provided by YawController
+               and the corrective direction is calculated with the cross path error,
+               which is passed to a linear PID that returns the correct direction angle.
+               These values are added together to obtain the final turning angle.
+
+  * **Throttle.-** It's controlled by the linear PID when an error occurs in speed,
+               it's the difference between the current speed and the proposed speed.
+
+  * **Brake.-** If a negative value is returned by the throttle PID, it means the car needs
+               to slow down or brake. The braking torque is calculated taking into account
+               vehicle mass, fuel capacity, gas density, wheel radius and deceleration.
+
 ---
 ### Documentation Provided in the Capstone Repository
 
