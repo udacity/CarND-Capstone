@@ -11,6 +11,10 @@ The goal of this project is the integration of all systems that manage the real 
 [image4]: /imgs/dbw-node.png "Dbw node"
 [image5]: /imgs/squeezenet.png "Squeezenet"
 [image6]: /imgs/MobileNet-SSD.png "MobileNet-SSD"
+[image7]: /imgs/Red_detec.png "Red light"
+[image8]: /imgs/Yellow_detec.png "Yellow light"
+[image9]: /imgs/Green_detec.png "Green light"
+[image10]: /imgs/None_detec.png "Nothing"
 
 #### TEAM SKYNET
 
@@ -48,21 +52,21 @@ Run the simulator.
 
 The summary of the files and folders int repo is provided in the table below:
 
-| File/Folder                  | Definition                                                                                            |
-| :--------------------------- | :---------------------------------------------------------------------------------------------------- |
-| data/*                       | Folder that contains the data used by the nodes.                                                      |
-| imgs/*                       | Folder that contains the images to visualize.                                                         |
-| ros/*                        | Folder that contains all project source files.                                                        |
-| ros/src/tl_detector/         | It contains everything related to the traffic light detection node.                                   |
-| ros/src/waypoint_updater/    | It contains everything related to the Waypoint updater node.                                          |
-| ros/src/twist_controller/    | It contains everything related to the Dbw node.                                                       |
-| ros/src/styx/                | It contains a server for communicating with the simulator, and a bridge to translate and publish simulator messages to ROS topics. |
-| ros/src/styx_msgs/           | It contains the definitions of the custom ROS message types used in the project.                      |
-| ros/src/waypoint_loader/     | It contains the loads the static waypoint data and publishes to /base_waypoints.                      |
-| ros/src/waypoint_follower/   | It contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic. |
-|                              |                                                                                                       |
-| pylintrc                     |                                                                                                       |
-| requirements.txt             | Contains the correct versions to use with practice according to the architecture used in the vehicle. |
+| File/Folder                     | Definition                                                                                            |
+| :------------------------------ | :---------------------------------------------------------------------------------------------------- |
+| data/*                          | Folder that contains the data used by the nodes.                                                      |
+| imgs/*                          | Folder that contains the images to visualize.                                                         |
+| ros/*                           | Folder that contains all project source files.                                                        |
+| ros/src/tl_detector/            | It contains everything related to the traffic light detection node.                                   |
+| ros/src/waypoint_updater/       | It contains everything related to the Waypoint updater node.                                          |
+| ros/src/twist_controller/       | It contains everything related to the Dbw node.                                                       |
+| ros/src/styx/                   | It contains a server for communicating with the simulator, and a bridge to translate and publish simulator messages to ROS topics. |
+| ros/src/styx_msgs/              | It contains the definitions of the custom ROS message types used in the project.                      |
+| ros/src/waypoint_loader/        | It contains the loads the static waypoint data and publishes to /base_waypoints.                      |
+| ros/src/waypoint_follower/      | It contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic. |
+|                                 |                                                                                                       |
+| Dockerfile                      | Add image-proc package to Dockerfile.                                                           |
+| requirements.txt                | Contains the correct versions to use with practice according to the architecture used in the vehicle. |
 
 ---
 The specifications and necessary requirements are detailed below, it is the documentation provided in the Capstone repository by Udacity for the correct realization of the final practice.
@@ -95,6 +99,10 @@ The ROS traffic light detector is implemented in the node *tl_detector* in the c
 
 ![Final score][image6]
 
+Detection of traffic lights by camera:
+
+![Final score][image7] ![Final score][image8] ![Final score][image9] ![Final score][image10]
+
 #### Waypoint updater node
 
 ![Final score][image3]
@@ -102,6 +110,21 @@ The ROS traffic light detector is implemented in the node *tl_detector* in the c
 #### Dbw node
 
 ![Final score][image4]
+
+The Drive By Wire node is responsible for controlling the following elements:
+
+  * **Steering.-** It's controlled by a combination of predictive and corrective steering.
+               Predictive Steering is implemented using the class provided by YawController
+               and the corrective direction is calculated with the cross path error,
+               which is passed to a linear PID that returns the correct direction angle.
+               These values are added together to obtain the final turning angle.
+
+  * **Throttle.-** It's controlled by the linear PID when an error occurs in speed,
+               it's the difference between the current speed and the proposed speed.
+
+  * **Brake.-** If a negative value is returned by the throttle PID, it means the car needs
+               to slow down or brake. The braking torque is calculated taking into account
+               vehicle mass, fuel capacity, gas density, wheel radius and deceleration.
 
 ---
 ### Documentation Provided in the Capstone Repository
