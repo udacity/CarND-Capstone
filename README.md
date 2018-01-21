@@ -11,6 +11,10 @@ The goal of this project is the integration of all systems that manage the real 
 [image4]: /imgs/dbw-node.png "Dbw node"
 [image5]: /imgs/squeezenet.png "Squeezenet"
 [image6]: /imgs/MobileNet-SSD.png "MobileNet-SSD"
+[image7]: /imgs/Red_detec.png "Red light"
+[image8]: /imgs/Yellow_detec.png "Yellow light"
+[image9]: /imgs/Green_detect.png "Green light"
+[image10]: /imgs/None_detect.png "Nothing"
 
 #### TEAM SKYNET
 
@@ -61,7 +65,7 @@ The summary of the files and folders int repo is provided in the table below:
 | ros/src/waypoint_loader/     | It contains the loads the static waypoint data and publishes to /base_waypoints.                      |
 | ros/src/waypoint_follower/   | It contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic. |
 |                              |                                                                                                       |
-| pylintrc                     |                                                                                                       |
+| Dockerfile                   | Add image-proc package to Dockerfile.                                                           |
 | requirements.txt             | Contains the correct versions to use with practice according to the architecture used in the vehicle. |
 
 ---
@@ -94,6 +98,10 @@ The ROS traffic light detector is implemented in the node *tl_detector* in the c
 *TLClassifier* initially uses the MobileNet-SSD model to detect a traffic light delimiter box with the maximum score. If the delimiter box is found, the cropped traffic light image adapts to a 32x32 image and the SqueezeNet model changes the traffic light color (red, yellow, green). If at least the last 3 images were classified as red, then TLDetector publishes the index of the traffic light waypoint in /traffic_waypoint.
 
 ![Final score][image6]
+
+Detection of traffic lights by camera:
+
+![Final score][image7] ![Final score][image8] ![Final score][image9] ![Final score][image10]
 
 #### Waypoint updater node
 
