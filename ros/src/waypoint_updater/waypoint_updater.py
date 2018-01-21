@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+import sys
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -37,16 +38,55 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-
+        self.pose = None
+        self.base_lane = None
+        self.map_index = 0
+        self.last_distance = sys.float_info.max
         rospy.spin()
 
+    def pose_distance(self, waypoint): 
+        a=waypoint.pose.pose.position
+        b=self.pose.pose.position
+        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+    
+    def set_closest_mapindex(self):
+        distance = sys.float_info.max
+        leastd_index = self.map_index
+        base_lane_len = len(self.base_lane.waypoints)
+        for index in range(0, base_lane_len):
+            tindex = ((self.map_index + index) % base_lane_len)
+            wayp = self.base_lane.waypoints[tindex]
+            newdist = self.pose_distance(wayp)
+            if distance > newdist:
+                distance = newdist
+                leastd_index = tindex
+            else:
+                break
+
+        # check if leastd_index or leastd_index-1
+        rospy.loginfo("i: " + str(leastd_index) + " d: " + str(distance) )
+        self.map_index = leastd_index
+
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.pose = msg
+        if self.base_lane is None:
+            return
+        self.set_closest_mapindex()
+        # create lane object
+        lane_op = Lane()
+        # copy waypoints ahead of pose and pass it to lane_op
+        base_lane_len = len(self.base_lane.waypoints)
+        if self.map_index + LOOKAHEAD_WPS < base_lane_len:
+            lane_op.waypoints = self.base_lane.waypoints[self.map_index:self.map_index+LOOKAHEAD_WPS]
+        else:
+            start = self.map_index
+            end = (self.map_index + LOOKAHEAD_WPS) % base_lane_len
+            lane_op.waypoints = self.base_lane.waypoints[start:] + self.base_lane.waypoints[0:end]
+        # publish lane object
+        self.final_waypoints_pub.publish(lane_op)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.base_lane = waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement

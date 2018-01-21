@@ -1,3 +1,134 @@
+# Capstone Project Starter Code
+
+The goal of this project is the integration of all systems that manage the real driving of a vehicle (Carla) using previously a simulator which will interface with your ROS code and has traffic light detection.
+<!--more-->
+
+[//]: # (Image References)
+
+[image1]: /imgs/ros-graph-v2.png "ROS System"
+[image2]: /imgs/tl-detector.png "Traffic light detection node"
+[image3]: /imgs/waypoint-updater.png "Waypoint updater node"
+[image4]: /imgs/dbw-node.png "Dbw node"
+[image5]: /imgs/squeezenet.png "Squeezenet"
+[image6]: /imgs/MobileNet-SSD.png "MobileNet-SSD"
+[image7]: /imgs/Red_detec.png "Red light"
+[image8]: /imgs/Yellow_detec.png "Yellow light"
+[image9]: /imgs/Green_detec.png "Green light"
+[image10]: /imgs/None_detec.png "Nothing"
+
+#### TEAM SKYNET
+
+Team members is provided in the table below:
+
+| Full Name                      | Slack      | Email                                                                                  |
+| :----------------------------- | :--------- | :------------------------- |
+| Dennis Korotyaev (Team Leader) | @4skynet   | nemiroff.den@gmail.com     |
+| Samip Shah                     | @shahsamip | samipshah86@gmail.com      |
+| Abhay Carande Luna             | @abhaycl   | abhaycl@hotmail.com        |
+| Marcelo Nascimento             | @mzumbin   | mzumbin@gmail.com          |
+
+#### How to run the program with the simulator
+
+**Note:** The file used as a detection model must be unzipped in the same folder because it has a large size, it's in the path: 
+
+  **/ros/src/tl_detector/model/model_detection.zip**
+
+should look like this:
+
+  **/ros/src/tl_detector/model/model_detection.rb**
+
+---
+
+Make and run styx.
+```bash
+1.  cd ros
+2.  catkin_make
+3.  source devel/setup.sh
+4.  roslaunch launch/styx.launch
+```
+Run the simulator.
+
+---
+
+The summary of the files and folders int repo is provided in the table below:
+
+| File/Folder                     | Definition                                                                                            |
+| :------------------------------ | :---------------------------------------------------------------------------------------------------- |
+| data/*                          | Folder that contains the data used by the nodes.                                                      |
+| imgs/*                          | Folder that contains the images to visualize.                                                         |
+| ros/*                           | Folder that contains all project source files.                                                        |
+| ros/src/tl_detector/            | It contains everything related to the traffic light detection node.                                   |
+| ros/src/waypoint_updater/       | It contains everything related to the Waypoint updater node.                                          |
+| ros/src/twist_controller/       | It contains everything related to the Dbw node.                                                       |
+| ros/src/styx/                   | It contains a server for communicating with the simulator, and a bridge to translate and publish simulator messages to ROS topics. |
+| ros/src/styx_msgs/              | It contains the definitions of the custom ROS message types used in the project.                      |
+| ros/src/waypoint_loader/        | It contains the loads the static waypoint data and publishes to /base_waypoints.                      |
+| ros/src/waypoint_follower/      | It contains code from Autoware which subscribes to /final_waypoints and publishes target vehicle linear and angular velocities in the form of twist commands to the /twist_cmd topic. |
+|                                 |                                                                                                       |
+| Dockerfile                      | Add image-proc package to Dockerfile.                                                           |
+| requirements.txt                | Contains the correct versions to use with practice according to the architecture used in the vehicle. |
+
+---
+The specifications and necessary requirements are detailed below, it is the documentation provided in the Capstone repository by Udacity for the correct realization of the final practice.
+
+### Ros System
+
+The ROS system used by the simulator and the actual vehicle is:
+
+![Final score][image1]
+
+The ROS system is composed mainly of the following sections:
+
+  * Traffic light detection node.
+  * Waypoint updater node.
+  * Dbw node.
+
+#### Traffic light detection node
+
+![Final score][image2]
+
+The classification model used is [SqueezeNet](https://arxiv.org/pdf/1602.07360.pdf) which is composed as shown in the image below:
+
+![Final score][image5]
+
+We have used the MS COCO dataset class as a pre-trainer [ssd_mobilenet_v1_coco](http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v1_coco_11_06_2017.tar.gz) from https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md, only class 10 is needed for traffic lights.
+
+The ROS traffic light detector is implemented in the node *tl_detector* in the classes *TLDetector* and *TLClassifier*. *TLDetector* is responsible for finding the nearest traffic light location and calls *TLClassifier.get_classification* with the current camera image.
+
+*TLClassifier* initially uses the MobileNet-SSD model to detect a traffic light delimiter box with the maximum score. If the delimiter box is found, the cropped traffic light image adapts to a 32x32 image and the SqueezeNet model changes the traffic light color (red, yellow, green). If at least the last 3 images were classified as red, then TLDetector publishes the index of the traffic light waypoint in /traffic_waypoint.
+
+![Final score][image6]
+
+Detection of traffic lights by camera:
+
+![Final score][image7] ![Final score][image8] ![Final score][image9] ![Final score][image10]
+
+#### Waypoint updater node
+
+![Final score][image3]
+
+#### Dbw node
+
+![Final score][image4]
+
+The Drive By Wire node is responsible for controlling the following elements:
+
+  * **Steering.-** It's controlled by a combination of predictive and corrective steering.
+               Predictive Steering is implemented using the class provided by YawController
+               and the corrective direction is calculated with the cross path error,
+               which is passed to a linear PID that returns the correct direction angle.
+               These values are added together to obtain the final turning angle.
+
+  * **Throttle.-** It's controlled by the linear PID when an error occurs in speed,
+               it's the difference between the current speed and the proposed speed.
+
+  * **Brake.-** If a negative value is returned by the throttle PID, it means the car needs
+               to slow down or brake. The braking torque is calculated taking into account
+               vehicle mass, fuel capacity, gas density, wheel radius and deceleration.
+
+---
+### Documentation Provided in the Capstone Repository
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 Please use **one** of the two installation options, either native **or** docker installation.
