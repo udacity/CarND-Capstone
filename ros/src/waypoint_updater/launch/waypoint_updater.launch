@@ -1,4 +1,16 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" />
+    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater">
+        <!-- Braking acceleration used to calculate waypoint velocities -->
+        <param name="target_brake_accel" value="-1." />
+
+        <!-- Distance before red light where car will stop -->
+        <param name="stop_distance" value="5." />
+
+        <!-- Force car to stop on last waypoint even if it's not set to v = 0 by waypoint_loader. -->
+        <param name="force_stop_on_last_waypoint" value="false" />
+
+        <!-- Whether car must stop on red light (debugging option) -->
+        <param name="stop_on_red" value="true" />
+    </node>
 </launch>
