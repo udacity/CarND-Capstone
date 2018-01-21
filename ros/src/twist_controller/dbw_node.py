@@ -114,8 +114,6 @@ class DBWNode(object):
                 We will transform world coordinates to car coordinates so that all x values are in the direction of the car and
 		        all y values represent lateral movement
                 """
-                cross_track_err = cte_calculator.get_cross_track_error(self.final_waypoints, self.current_pose)
-                
                 origin = self.final_waypoints[0].pose.pose.position
                 
                 # Given a list of waypoints, returns a list of [x,y] coordinates associated with those wp.
