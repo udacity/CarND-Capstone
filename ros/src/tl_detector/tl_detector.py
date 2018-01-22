@@ -24,7 +24,7 @@ ProcessingIterations = 0
 
 class TLDetector(object):
     def __init__(self):
-        self.log_level = rospy.INFO # rospy.DEBUG | rospy.INFO
+        self.log_level = rospy.DEBUG # rospy.DEBUG | rospy.INFO
         rospy.init_node('tl_detector', log_level=self.log_level)
 
         self.pose = None
