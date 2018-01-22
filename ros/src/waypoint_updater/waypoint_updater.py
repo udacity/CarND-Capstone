@@ -276,7 +276,7 @@ class WaypointUpdater(object):
             max_v = 0.5 # Velocity
             
             dl = lambda a, b: math.sqrt((a.x  - b.x)**2 + (a.y - b.y)**2  + (a.z - b.z)**2)
-            ddif = dl(self.base_waypoints[self.next_waypoint].pose.pose.position, waypoints[self.next_waypoint].pose.pose.position)
+            ddif = dl(self.base_waypoints[self.next_waypoint].pose.pose.position, wps[self.next_waypoint].pose.pose.position)
             if ddif < max_d:
                 is_same_wp = True
             
@@ -296,17 +296,17 @@ class WaypointUpdater(object):
         
         # Uncomment for debug.
         # Stamp waypoint index in PoseStamped and TwistStamped headers of internal messages.
-        #for idx in range(len(waypoints)):
-        #    waypoints[idx].pose.header.seq = idx
-        #    waypoints[idx].twist.header.seq = idx
+        #for idx in range(len(wps)):
+        #    wps[idx].pose.header.seq = idx
+        #    wps[idx].twist.header.seq = idx
         
-        self.base_wp_orig_v = [self.get_waypoint_velocity(waypoints, idx) for idx in range(num_wp)]
+        self.base_wp_orig_v = [self.get_waypoint_velocity(wps, idx) for idx in range(num_wp)]
         
         if debug and not self.base_waypoints:
-            dist = self.distance(waypoints, 0, num_wp - 1)
+            dist = self.distance(wps, 0, num_wp - 1)
             rospy.loginfo("Received: %d waypoints, %.1f m, %.1f m/wp in t=%f", num_wp, dist, dist / num_wp, time.time() - t)
         
-        self.base_waypoints = waypoints
+        self.base_waypoints = wps
         
         if self.unsubscribe_base_wp:
             self.base_wp_sub.unregister()
