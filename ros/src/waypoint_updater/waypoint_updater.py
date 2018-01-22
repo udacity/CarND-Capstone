@@ -31,7 +31,7 @@ MAX_ACC   = 10 # m/s3
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
+        rospy.init_node('waypoint_updater', log_level=rospy.INFO)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -122,6 +122,10 @@ class WaypointUpdater(object):
                     # rospy.logerr("stop detected , slow down till {} and then accelerate".format(rel_idx))
                     lane_op.waypoints[:rel_idx] = self.decelerateToZero(lane_op.waypoints[:rel_idx])
                     lane_op.waypoints[rel_idx:] = self.accelerateToMax(lane_op.waypoints[rel_idx:])
+                    rospy.logdebug(
+                        "waypoint_updater: velocities {} index {}"
+                        .format([self.get_waypoint_velocity(wp) for wp in lane_op.waypoints[rel_idx - 3:rel_idx + 3]], rel_idx)
+                    )
                 else:
                     rospy.logdebug("waypoint_updater: traffic light out of range")
                     # no need to consider yet
@@ -131,14 +135,14 @@ class WaypointUpdater(object):
                     # rospy.logerr("stop detected , slow down till {} and then accelerate".format(rel_idx))
                     lane_op.waypoints[:rel_idx] = self.decelerateToZero(lane_op.waypoints[:rel_idx])
                     lane_op.waypoints[rel_idx:] = self.accelerateToMax(lane_op.waypoints[rel_idx:])
+                    rospy.logdebug(
+                        "waypoint_updater: velocities {} index {}"
+                        .format([self.get_waypoint_velocity(wp) for wp in lane_op.waypoints[rel_idx - 3:rel_idx + 3]], rel_idx)
+                    )
                 else:
                     rospy.logdebug("waypoint_updater: traffic light out of range")
                     # no need to consider it yet
         # publish lane object
-        rospy.logdebug(
-            "waypoint_updater: velocities {}"
-            .format([self.get_waypoint_velocity(wp) for wp in lane_op.waypoints])
-        )
 
         self.final_waypoints_pub.publish(lane_op)
 
@@ -147,11 +151,14 @@ class WaypointUpdater(object):
         self.base_lane_len = len(self.base_lane.waypoints)
 
     def traffic_cb(self, msg):
-        self.nearest_tl_idx = msg.data
-        rospy.logdebug(
-            "waypoint_updater: Received nearest traffic light index {}"
-            .format(self.nearest_tl_idx)
-        )
+        if msg.data == -1:
+            self.nearest_tl_idx = None
+        else:
+            self.nearest_tl_idx = msg.data
+            rospy.logdebug(
+                "waypoint_updater: Received nearest traffic light index {}"
+                .format(self.nearest_tl_idx)
+            )
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -171,7 +178,7 @@ class WaypointUpdater(object):
         if self.max_velocity is None:
             self.max_velocity = self.kmph2mps(rospy.get_param('/waypoint_loader/velocity'))
         first = waypoints[0]
-        first.twist.twist.linear.x = 0
+        first.twist.twist.linear.x = 0.0
         for wp in waypoints[1:]:
             dist = self.distanceBetweenPoints(wp.pose.pose.position, first.pose.pose.position)
             vel = math.sqrt(2 * MAX_ACC * dist)
