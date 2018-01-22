@@ -7,6 +7,7 @@ from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
 import math
+import time
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -41,9 +42,10 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below.
-        self.base_waypoints          = None # Waypoint list as it is published for the first time
-        self.pose                    = None # Current pose
-        self.waypoint_index_for_stop = -1   # Index for waypoint in base waypoints which is nearest to stop line of traffic light.
+        self.base_waypoints            = None # Waypoint list as it is published for the first time
+        self.pose                      = None # Current pose
+        self.waypoint_index_for_stop   = -1   # Index for waypoint in base waypoints which is closest to stop line of traffic light
+        self.closest_waypoint_index    = None # Index for waypoint in base waypoints which is closest to current position
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -52,16 +54,12 @@ class WaypointUpdater(object):
         self.pose = msg.pose
         # Check that base waypoints are already received.
         if self.base_waypoints is not None:
+            start_time = time.time()
             next_waypoint_index = self.get_next_waypoint_index(self.pose, self.base_waypoints)
             # Create a fixed number of waypoints ahead of the car.
-            start  = next_waypoint_index
-            end    = next_waypoint_index + LOOKAHEAD_WPS
-            length = len(self.base_waypoints)
-            if end <= length:
-                lookahead_waypoints = deepcopy(self.base_waypoints[start:end])
-            else:
-                lookahead_waypoints = (deepcopy(self.base_waypoints[start:length])
-                                    +  deepcopy(self.base_waypoints[0:length-end]))
+            start = next_waypoint_index
+            end   = next_waypoint_index + LOOKAHEAD_WPS
+            lookahead_waypoints = self.base_waypoints[start:end]
             # TODO: If stop position is not valid accelerate,
             if self.waypoint_index_for_stop < 0:
                 #lookahead_waypoints = accelerate(lookahead_waypoints, start)
@@ -76,6 +74,10 @@ class WaypointUpdater(object):
             lane.header.stamp    = rospy.Time.now()
             # Publish /final_waypoints topic.
             self.final_waypoints_pub.publish(lane)
+            end_time = time.time()
+            # Log duration.
+            #rospy.logwarn('waypoint_updater.py - pose_cb - duration: %5.3f',
+            #              (end_time - start_time) * 1000.0)
 
     def waypoints_cb(self, msg):
         # Callback for /base_waypoints message.
@@ -114,12 +116,20 @@ class WaypointUpdater(object):
         closest_distance = 100000 # large number
         closest_index    = 0
         current_position = pose.position
-        for index, waypoint in enumerate(waypoints):
+        # If closest waypoint was already found, reduce search to its neighborhood.
+        if self.closest_waypoint_index == None:
+            start = 0
+            waypoints_reduced = waypoints
+        else:
+            start = self.closest_waypoint_index - 10
+            waypoints_reduced = waypoints[start:start + 100]
+        for index, waypoint in enumerate(waypoints_reduced):
             waypoint_position = waypoint.pose.pose.position
-            dist = self.calc_distance_of_points(current_position, waypoint_position)
-            if closest_distance > dist:
-                closest_distance = dist
-                closest_index = index
+            distance = self.calc_distance_of_points(current_position, waypoint_position)
+            if closest_distance > distance:
+                closest_distance = distance
+                closest_index = index + start
+        self.closest_waypoint_index = closest_index
         return closest_index
 
     def get_next_waypoint_index(self, pose, waypoints):
