@@ -221,7 +221,7 @@ class WaypointUpdater(object):
                     if last_wp_idx <= 0:
                         pass
                     
-			        else:
+                    else:
                         dist = self.distance(final_wps, 0, last_wp_idx)
                         step = dist / last_wp_idx
                         # Generate waypoint velocity by traversing the waypoint list backwards:
