@@ -281,7 +281,7 @@ class WaypointUpdater(object):
                 is_same_wp = True
             
             else:
-                is_same_wp False
+                is_same_wp = False
             
             if not is_same_wp:
                 # We can't assume to know the previous waypoint.
