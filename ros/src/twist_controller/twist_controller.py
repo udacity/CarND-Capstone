@@ -50,7 +50,7 @@ class Controller(object):
         #correct_steering = self.steering_pid.step(cross_track_err, dura_secs)
         #steering = predict_steering + correct_steering
 
-        return throttle, brake, predict_steering
+        return throttle, brake, filtered_steering
 
 
     def reset(self):
