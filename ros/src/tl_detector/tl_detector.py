@@ -24,7 +24,7 @@ ProcessingIterations = 0
 
 class TLDetector(object):
     def __init__(self):
-        self.log_level = rospy.DEBUG    # rospy.DEBUG | rospy.INFO
+        self.log_level = rospy.DEBUG # rospy.DEBUG | rospy.INFO
         rospy.init_node('tl_detector', log_level=self.log_level)
 
         self.pose = None
@@ -139,7 +139,6 @@ class TLDetector(object):
         position = np.asarray([position_x, position_y])
         dist_squared = np.sum((self.waypoints_array - position)**2, axis=1)
         index = np.argmin(dist_squared)
-
         rospy.logdebug(
             'tl.detector.get_closest_waypoint({}) found at = {}, distance = {}, time = {}'
             .format(position, index, np.sqrt(dist_squared[index]), time.time())  # should -start_time
