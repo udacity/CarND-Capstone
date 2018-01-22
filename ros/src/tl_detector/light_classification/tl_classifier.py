@@ -3,6 +3,8 @@ from styx_msgs.msg import TrafficLight
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
+        self.seq = 0
+
         pass
 
     def get_classification(self, image):
