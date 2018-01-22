@@ -107,6 +107,14 @@ Detection of traffic lights by camera:
 
 ![Final score][image3]
 
+Waypoint updater publishes the next 200 waypoints ahead of the car position, with the velocity that the car needs to have at that point. Each 1/20 seconds, it does:
+
+  * Update of closest waypoint. It does a local search from current waypoint until it finds a local minimum in the distance. If the local minimum is not near (less than 20m) then it assumes it has lost track and does perform a global search on the whole waypoint list.
+    
+  * Update of velocity. If there is a red ligth ahead, it updates waypoint velocities so that the car stops ~stop_distance (node parameter, default: 5m) meters behind the red light waypoint. Waypoint velocities before the stop point are updated considering a constant ~target_brake_accel (default: -1.0 m/s^2).
+
+Besides, the car is forced to stop at the last waypoint if either its velocity in /base_waypoints is set to 0 or the parameter ~force_stop_on_last_waypoint is true.
+
 #### Dbw node
 
 ![Final score][image4]
