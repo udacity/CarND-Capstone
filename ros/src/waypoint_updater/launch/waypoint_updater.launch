@@ -10,7 +10,7 @@
         <!-- Force car to stop on last waypoint even if it's not set to v = 0 by waypoint_loader. -->
         <param name="force_stop_on_last_waypoint" value="false" />
 
-        <!-- Whether car must stop on red lights (debugging option) -->
+        <!-- Whether car must stop on red light (debugging option) -->
         <param name="stop_on_red" value="true" />
     </node>
 </launch>
