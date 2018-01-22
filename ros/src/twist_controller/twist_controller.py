@@ -67,6 +67,11 @@ class Controller(object):
         #     plt.plot(self.errs[150:])
         #     plt.show()
 
+        # self.errs.append(proposed_linear)
+        # if (len(self.errs) > 3000):
+        #     plt.plot(self.errs)
+        #     plt.show()
+
         steer = self.yaw_controller.get_steering(proposed_linear, proposed_angular, current_linear)
         #steer = self.yaw_controller.steer_ratio * proposed_angular
         return throttle, brake, steer

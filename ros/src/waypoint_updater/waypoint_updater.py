@@ -28,6 +28,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 
+MAX_DECEL = 5
+
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -53,7 +55,7 @@ class WaypointUpdater(object):
         self.published_wps = []
         self.iteration = 0
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=10)
 
         # TODO: Add other member variables you need below
         self.pose = None
@@ -102,6 +104,7 @@ class WaypointUpdater(object):
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
         self.track = Track(self.wps)
+        self.track.update_traffic_lights(self.traffic_light_config)
         # posn = self.wps[1200].pose.pose.position
         # self.track.plot(1100, 1500, posn)
         # plt.show()
@@ -118,7 +121,7 @@ class WaypointUpdater(object):
         if self.wps and not self.traffic_lights_wps:
             self.traffic_lights_wps = []
             for i, [x, y] in enumerate(self.traffic_light_config['stop_line_positions']):
-                self.traffic_lights_wps.append(self.trck.next_waypoint(
+                self.traffic_lights_wps.append(self.track.next_waypoint(
                     Point(x,y,0),
                     self.traffic_lights[i].pose.pose.orientation))
                 rospy.loginfo("trafficl %s", self.traffic_lights_wps)
@@ -136,21 +139,21 @@ class WaypointUpdater(object):
 
 
     def copy_waypoint(self, wp):
-        w = Waypoint()
-        w.pose.pose.position.x = wp.pose.pose.position.x
-        w.pose.pose.position.y = wp.pose.pose.position.y
-        w.pose.pose.position.z = wp.pose.pose.position.z
-        w.pose.pose.orientation.x = wp.pose.pose.orientation.x
-        w.pose.pose.orientation.y = wp.pose.pose.orientation.y
-        w.pose.pose.orientation.z = wp.pose.pose.orientation.z
-        w.pose.pose.orientation.w = wp.pose.pose.orientation.w
-        w.twist.twist.linear.x = wp.twist.twist.linear.x
-        w.twist.twist.linear.y = wp.twist.twist.linear.y
-        w.twist.twist.linear.z = wp.twist.twist.linear.z
-        w.twist.twist.angular.x = wp.twist.twist.angular.x
-        w.twist.twist.angular.y = wp.twist.twist.angular.y
-        w.twist.twist.angular.z = wp.twist.twist.angular.z
-        return w
+        # w = Waypoint()
+        # w.pose.pose.position.x = wp.pose.pose.position.x
+        # w.pose.pose.position.y = wp.pose.pose.position.y
+        # w.pose.pose.position.z = wp.pose.pose.position.z
+        # w.pose.pose.orientation.x = wp.pose.pose.orientation.x
+        # w.pose.pose.orientation.y = wp.pose.pose.orientation.y
+        # w.pose.pose.orientation.z = wp.pose.pose.orientation.z
+        # w.pose.pose.orientation.w = wp.pose.pose.orientation.w
+        # w.twist.twist.linear.x = wp.twist.twist.linear.x
+        # w.twist.twist.linear.y = wp.twist.twist.linear.y
+        # w.twist.twist.linear.z = wp.twist.twist.linear.z
+        # w.twist.twist.angular.x = wp.twist.twist.angular.x
+        # w.twist.twist.angular.y = wp.twist.twist.angular.y
+        # w.twist.twist.angular.z = wp.twist.twist.angular.z
+        return wp
 
     def cruise_trajectory(self, next_wp):
         last_wp = next_wp + LOOKAHEAD_WPS
@@ -171,32 +174,34 @@ class WaypointUpdater(object):
         #     plt.plot(xs, ys, "r+")
         #     plt.show()
         #     exit(0)
-        #for w in wps: w.twist.twist.linear.x = 3
+        for w in wps: w.twist.twist.linear.x = 10.0
         return wps
 
     def stop_trajectory(self, next_wp, stop_wp):
-        curr_vel = self.current_velocity.linear.x
+        #curr_vel = self.current_velocity.linear.x
+        curr_vel = float(self.wps[next_wp].twist.twist.linear.x)
         last_wp = next_wp + LOOKAHEAD_WPS
         wps = [self.copy_waypoint(w) for w in self.wps[next_wp : last_wp]]
         gap = stop_wp - next_wp
         if gap > 0:
             dec_vel = curr_vel/gap
-            #dec_vel = 5*0.02
             init_vel = curr_vel
         else:
             dec_vel = 0
             init_vel = 0
         for i, w in enumerate(wps):
-            w.twist.twist.linear.x = init_vel - dec_vel*(i+1)
-            if w.twist.twist.linear.x < 0: w.twist.twist.linear.x = 0
-        rospy.loginfo("Stopping %s %s %s %s %s", next_wp, curr_vel, gap, dec_vel, [w.twist.twist.linear.x for w in wps])
+            w.twist.twist.linear.x = init_vel - dec_vel * i
+            if w.twist.twist.linear.x < 0.5: w.twist.twist.linear.x = 0
         return wps
 
     def publish_final_waypoints(self, next_wp):
-        stop_wp = self.traffic_wp
-        if False and stop_wp > -1 and next_wp > stop_wp - 150:
+        #stop_wp = self.traffic_wp
+        stop_wp = self.track.traffic_lights_wps[1]
+        dist = self.distance(self.wps, next_wp, stop_wp)
+        curr_vel = self.current_velocity.linear.x
+        stop_dist = 100 # (curr_vel / MAX_DECEL) * curr_vel * 2
+        if stop_wp > -1 and dist < stop_dist:
             final_wps = self.stop_trajectory(next_wp, stop_wp)
-            #rospy.loginfo("Stopping speeds %s ", [w.twist.twist.linear.x for w in final_wps])
             self.final_waypoints_pub.publish(Lane(None, final_wps))
         else:
             # orient = self.pose.orientation
@@ -227,15 +232,17 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+
 class Track(object):
 
     def __init__(self, wps):
         self.wps = wps
+        self.traffic_lights_wps = None
 
     def next_waypoint(self, position, orient=None, around_wp = None):
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         if around_wp:
-            cand_wps = self.wps[around_wp: around_wp+100]
+            cand_wps = self.wps[around_wp: around_wp+20]
         else:
             cand_wps = self.wps
         dist = [dl(w.pose.pose.position, position) for w in cand_wps]
@@ -249,6 +256,22 @@ class Track(object):
             if abs(heading - theta) > np.pi/4:
                 min_wp = (min_wp + 1) % len(self.wps)
         return min_wp
+
+    def distance(self, wp1, wp2):
+        dist = 0
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        for i in range(wp1, wp2+1):
+            dist += dl(self.wps[wp1].pose.pose.position, self.wps[i].pose.pose.position)
+            wp1 = i
+        return dist
+
+
+    def update_traffic_lights(self, traffic_light_config):
+        if not self.traffic_lights_wps:
+            self.traffic_lights_wps = []
+            for i, [x, y] in enumerate(traffic_light_config['stop_line_positions']):
+                self.traffic_lights_wps.append(self.next_waypoint(
+                    Point(x, y, 0)))
 
     def plot(self, start=0, stop=-1, position=None):
         if stop < 0:
