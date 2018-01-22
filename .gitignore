@@ -7,3 +7,4 @@ profile.tmp
 .DS_Store
 ros/src/tl_detector/light_classification/checkpoints/*
 ros/src/tl_detector/light_classification/dataset/*
+ros/src/tl_detector/light_classification/notebooks/.ipynb_checkpoints/*
