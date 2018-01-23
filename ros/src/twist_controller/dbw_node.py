@@ -31,7 +31,8 @@ that we have created in the `__init__` function.
 
 '''
 
-MIN_SPEED = 2.5
+MIN_SPEED = 5
+MAX_SPEED = 20.0
 
 class DBWNode(object):
     def __init__(self):
@@ -58,7 +59,8 @@ class DBWNode(object):
 
         # TODO: Create `TwistController` object
         # self.controller = TwistController(<Arguments you wish to provide>)
-	self.controller = Controller(wheel_base, steer_ratio, MIN_SPEED, max_lat_accel, max_steer_angle)
+	self.controller = Controller(wheel_base, steer_ratio, MIN_SPEED, MAX_SPEED, max_lat_accel, max_steer_angle
+					,vehicle_mass, fuel_capacity, brake_deadband, decel_limit, accel_limit, wheel_radius)
 
         # TODO: Subscribe to all the topics you need to
 	rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size = 1)
