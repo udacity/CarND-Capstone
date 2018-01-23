@@ -6,8 +6,6 @@ import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32
-import tf
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -37,31 +35,25 @@ PUBLISH_RATE = 20
 
 # Max waypoint distance we admit for a local minimum (m).
 max_local_distance = 20.0
-
 # Force publishing if next traffic light changes.
 publi_light_change = True
 update_wp_cur_pose = True
 debug = True
 
-MAX_JERK  = 10 # m/s2
-MAX_ACC   = 10 # m/s3
-
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater', log_level=rospy.INFO)
+        rospy.init_node('waypoint_updater')
         
-
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         #rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        
-        # DONE: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
+        # Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         # Subscribers and publishers are added.
         self.base_wp_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size = 1)
-        
-        # TODO: Add other member variables you need below
+
+        # Add other member variables you need below
         # Variables are added.
         # List of waypoints received from /base_waypoints.
         self.base_waypoints = []
@@ -82,7 +74,7 @@ class WaypointUpdater(object):
         # The stop is activated or deactivated with the last waypoint.
         self.force_stop_on_last_waypoint = rospy.get_param('~force_stop_on_last_waypoint', True)
         self.unsubscribe_base_wp = rospy.get_param('/unregister_base_waypoints', False)
-		    # Brake activation on target.
+		# Brake activation on target.
         self.accel = rospy.get_param('~target_brake_accel', -1.0)
         # Distance in meters where the car will stop before the red light.
         self.stop_distance = rospy.get_param('~stop_distance', 5.0)
@@ -334,20 +326,24 @@ class WaypointUpdater(object):
             # Is updated and published if the following traffic light has changed.
             if publi_light_change:
                 self.update_and_publish()
-
+    
+    
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         # In this section there is nothing to do, the obstacle control is not necessary in this version.
         pass
-
+    
+    
     #def get_waypoint_velocity(self, waypoint):
     #    return waypoint.twist.twist.linear.x
     def get_waypoint_velocity(self, wps, waypoint):
         return wps[waypoint].twist.twist.linear.x
-
+    
+    
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
-
+    
+    
     def distance(self, waypoints, wp1, wp2):
         dist = 0
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
