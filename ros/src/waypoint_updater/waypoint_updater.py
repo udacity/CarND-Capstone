@@ -41,7 +41,6 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below.
         self.base_waypoints            = None # Waypoint list as it is published for the first time
         self.pose                      = None # Current pose
         self.waypoint_index_for_stop   = -1   # Index for waypoint in base waypoints which is closest to stop line of traffic light
@@ -60,13 +59,17 @@ class WaypointUpdater(object):
             start = next_waypoint_index
             end   = next_waypoint_index + LOOKAHEAD_WPS
             lookahead_waypoints = self.base_waypoints[start:end]
-            # TODO: If stop position is not valid accelerate,
-            if self.waypoint_index_for_stop < 0:
-                #lookahead_waypoints = accelerate(lookahead_waypoints, start)
-                pass
-            # else decelerate.
-            else:
-                lookahead_waypoints = decelerate(lookahead_waypoints, start)
+			# Save velocities of base waypoints. To be fast, this saves only
+			# values that are possibly changed.
+            original_velocities = []
+            for i in range(LOOKAHEAD_WPS):
+                original_velocities.append(self.base_waypoints[start+i].twist.twist.linear.x)
+            # TODO: Test deceleration.
+            #if next_waypoint_index >= self.waypoint_index_for_stop:
+            #    self.waypoint_index_for_stop = next_waypoint_index + 400
+            # If stop position is valid, decelerate.
+            if self.waypoint_index_for_stop >= 0:
+                lookahead_waypoints = self.decelerate(lookahead_waypoints, start)
             # Create the Lane object and fill in waypoints.
             lane                 = Lane()
             lane.waypoints       = lookahead_waypoints
@@ -74,6 +77,9 @@ class WaypointUpdater(object):
             lane.header.stamp    = rospy.Time.now()
             # Publish /final_waypoints topic.
             self.final_waypoints_pub.publish(lane)
+			# Restore velocities of base waypoints.
+            for i in range(LOOKAHEAD_WPS):
+                self.base_waypoints[start+i].twist.twist.linear.x = original_velocities[i]
             end_time = time.time()
             # Log duration.
             #rospy.logwarn('waypoint_updater.py - pose_cb - duration: %5.3f',
@@ -169,6 +175,8 @@ class WaypointUpdater(object):
         # Adjusts the target velocities for the waypoints leading up to red
         # traffic lights in order to bring the vehicle to a smooth and full stop.
         stop_index = self.waypoint_index_for_stop - base_offset
+        if stop_index >= LOOKAHEAD_WPS:
+            return waypoints
         for wp in waypoints[stop_index:]:
             wp.twist.twist.linear.x = 0.
         stop_wp = waypoints[stop_index]
