@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
+from geometry_msgs.msg import PoseStamped, Pose, Point
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
@@ -23,8 +23,13 @@ class TLDetector(object):
 
         self.pose = None
         self.waypoints = None
+        self.stop_waypoints = None
         self.camera_image = None
         self.lights = []
+
+        # traffic_light_config_string = rospy.get_param("/traffic_light_config")
+        # traffic_light_config = yaml.load(traffic_light_config_string)
+        # self.stop_line_positions = traffic_light_config['stop_line_positions']
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -61,32 +66,53 @@ class TLDetector(object):
         num_classes = 4
         self.light_detector = LightDetector(model, label_path, num_classes)
 
-        traffic_light_config_string = rospy.get_param("/traffic_light_config")
-        self.traffic_light_config = yaml.load(traffic_light_config_string)
-
         rospy.spin()
 
     def pose_cb(self, msg):
         self.pose = msg.pose
 
-    def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+    def closest_waypoint(self, wps, position, orient=None, around_wp = None):
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        if around_wp:
+            cand_wps = wps[around_wp: around_wp+20]
+        else:
+            cand_wps = wps
+        dist = [dl(w.pose.pose.position, position) for w in cand_wps]
+        min_wp = np.argmin(dist)
+        if around_wp:
+            min_wp += around_wp
+        if orient:
+            _, _, theta = tf.transformations.euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])
+            head = lambda a, b: math.atan2(a.y - b.y, a.x - b.x)
+            heading = head(wps[min_wp].pose.pose.position, position)
+            if abs(heading - theta) > np.pi/4:
+                min_wp = (min_wp + 1) % len(wps)
+        return min_wp
+
+    def waypoints_cb(self, msg):
+        if not self.waypoints:
+            self.waypoints = msg.waypoints
+            self.stop_waypoints = []
+            for [x, y] in self.config['stop_line_positions']:
+                stop_wp = self.closest_waypoint(self.waypoints, Point(x,y,0))
+                self.stop_waypoints.append(stop_wp)
+
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
     def capture_image_cb(self, msg):
-        # near_tl = False
-        # if self.traffic_light_config:
-        #     for i, [x, y] in enumerate(self.traffic_light_config['stop_line_positions']):
-        #         dist = math.sqrt((x - self.pose.position.x)**2 + (y - self.pose.position.y)**2)
-        #         if dist < 50: near_tl = True
         if self.light_detector:
             cv_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
             image, classes, dt = self.light_detector.infer(cv_image)
-            # if classes.count(2.0) > 0:
-            #     rospy.loginfo("LD: REDDDDD ")
-            rospy.loginfo("LD: Classes found %s %s", dt, classes)
+            if classes.count(2.0) > 1 or classes.count(3.0) > 1:
+                waypoints = [self.waypoints[i] for i in self.stop_waypoints]
+                stop_wp = self.closest_waypoint(waypoints, self.pose.position)
+                light_wp = self.stop_waypoints[stop_wp]
+                rospy.loginfo("LD: Stop %s  %s ", light_wp, classes)
+                self.upcoming_red_light_pub.publish(Int32(light_wp))
+
+            rospy.loginfo("LD: Classes %s %s", classes, dt)
             #cv2.imwrite("image_dump2/sim_"+str(time.time())+".jpg", image)
 
     def image_cb(self, msg):

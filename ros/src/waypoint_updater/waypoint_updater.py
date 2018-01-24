@@ -40,7 +40,7 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-        #rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_waypoint_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_waypoint_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
 
 
@@ -55,7 +55,7 @@ class WaypointUpdater(object):
         self.published_wps = []
         self.iteration = 0
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=10)
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
         self.pose = None
@@ -195,12 +195,12 @@ class WaypointUpdater(object):
         return wps
 
     def publish_final_waypoints(self, next_wp):
-        #stop_wp = self.traffic_wp
-        stop_wp = self.track.traffic_lights_wps[1]
-        dist = self.distance(self.wps, next_wp, stop_wp)
-        curr_vel = self.current_velocity.linear.x
-        stop_dist = 100 # (curr_vel / MAX_DECEL) * curr_vel * 2
-        if stop_wp > -1 and dist < stop_dist:
+        stop_wp = self.traffic_wp
+        # stop_wp = self.track.traffic_lights_wps[1]
+        # dist = self.distance(self.wps, next_wp, stop_wp)
+        # curr_vel = self.current_velocity.linear.x
+        # stop_dist = 100 # (curr_vel / MAX_DECEL) * curr_vel * 2
+        if stop_wp > -1: # and dist < stop_dist:
             final_wps = self.stop_trajectory(next_wp, stop_wp)
             self.final_waypoints_pub.publish(Lane(None, final_wps))
         else:
