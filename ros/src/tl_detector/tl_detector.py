@@ -1,15 +1,18 @@
 #!/usr/bin/env python
-import rospy
-from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
-from styx_msgs.msg import TrafficLightArray, TrafficLight
-from styx_msgs.msg import Lane
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-from light_classification.tl_classifier import TLClassifier
-import tf
 import cv2
+import math
+import numpy as np
+import PIL.Image as PILImage
+import rospy
+import tf
 import yaml
+from cv_bridge import CvBridge
+from geometry_msgs.msg import Pose, PoseStamped
+from sensor_msgs.msg import Image
+from std_msgs.msg import Int32
+
+from light_classification.tl_classifier import TLClassifier
+from styx_msgs.msg import Lane, TrafficLight, TrafficLightArray
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -32,7 +35,7 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+        #sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
         config_string = rospy.get_param("/traffic_light_config")
@@ -48,17 +51,26 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        
+        self.stop_line_positions = self.config['stop_line_positions']
+        self.light_pos_waypoint = []
+        self.car_position_index = None
+
+        self.safe_for_light_distance = 18
 
         rospy.spin()
 
     def pose_cb(self, msg):
+        """The call back function of the current car pose"""
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints = waypoints
+        """This is the call_back function when we got the base way points""" 
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -70,6 +82,8 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
+        
+        #Process traffic light status
         light_wp, state = self.process_traffic_lights()
 
         '''
@@ -78,6 +92,7 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -90,7 +105,7 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_waypoint(self, pose):
+    def get_closest_waypoint(self, pose, flag="light"):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
@@ -100,8 +115,24 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        closest_waypoint_dist = 100000
+        closest_waypoint_ind = -1
+
+        #Use loop to find closest one, based on https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
+        for i in range(0, len(self.waypoints)):
+            if flag == "light":
+                waypoint_distance = self.distance_point([self.waypoints[i].pose.pose.position.x,self.waypoints[i].pose.pose.position.y] \
+                                                   , [pose[0], pose[1]])
+            else:
+                waypoint_distance = self.distance_point([self.waypoints[i].pose.pose.position.x,self.waypoints[i].pose.pose.position.y] \
+                                                   , [pose.position.x, pose.position.y])
+            if waypoint_distance <= closest_waypoint_dist:
+                closest_waypoint_dist = waypoint_distance
+                closest_waypoint_ind = i   
+
+        return closest_waypoint_ind
+
+    
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -116,12 +147,21 @@ class TLDetector(object):
         if(not self.has_image):
             self.prev_light_loc = None
             return False
-
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+         
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
-
+    
+    def distance_point(self,pos1,pos2):
+        """
+        Calculate the euclidian distance between two points
+        """
+        x = pos1[0] - pos2[0]
+        y = pos1[1] - pos2[1]
+        return math.sqrt(x*x + y*y)
+        
+        
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -131,19 +171,44 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        # Wait untill we got waypoints
+        if self.waypoints is None or self.pose is None:
+            return -1, TrafficLight.UNKNOWN
+
         light = None
-
         # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+        
 
-        #TODO find the closest visible traffic light (if one exists)
+        if len(self.light_pos_waypoint) == 0: #This part only calculate once
+            for i in range(len(self.stop_line_positions)):
+                #Fit the stopline points to the base way points
+                light_pos = self.get_closest_waypoint(self.stop_line_positions[i],"light")
+                self.light_pos_waypoint.append(light_pos)
 
-        if light:
+
+        
+        self.car_position_index = self.get_closest_waypoint(self.pose.pose,"car")
+        if self.car_position_index > max(self.light_pos_waypoint):
+            light_wp_id = min(self.light_pos_waypoint)
+        else:
+            light_delta = self.light_pos_waypoint[:]
+            # Calculate the distance between all Light and the current car 
+            light_delta[:] = [x - self.car_position_index for x in light_delta]
+            # Find the nearest light in front of the car
+            light_wp_id = min(i for i in light_delta if i >= 0) + self.car_position_index
+        
+        # Map back to the stopline
+        light_ind = self.light_pos_waypoint.index(light_wp_id)
+        light = self.stop_line_positions[light_ind]
+
+        light_distance = self.distance_point([light[0],light[1]], \
+                        [self.waypoints[self.car_position_index].pose.pose.position.x,self.waypoints[self.car_position_index].pose.pose.position.y] )
+        
+        if light and light_distance < self.safe_for_light_distance:
+            # Brake the car within the safe distance
             state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
+            return light_wp_id, state
+        
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
