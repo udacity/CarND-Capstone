@@ -77,40 +77,41 @@ class WaypointUpdater(object):
                 self.car_y = self.pose.position.y
 
                 # Now get the next waypoint....
-                if self.flag_waypoints_loaded:
-                    self.next_wp_index = self.find_closest_waypoint()
+                self.next_wp_index = self.find_closest_waypoint()
 
-                    msg = Lane()
-                    msg.waypoints = []
+                msg = Lane()
+                msg.waypoints = []
 
-                    start_index = self.next_wp_index
+                start_index = self.next_wp_index
 
-                    current_velocity = self.current_velocity.linear.x if self.current_velocity is not None else 0.0
-                    road_inex = start_index
+                current_velocity = self.current_velocity.linear.x if self.current_velocity is not None else 0.0
+                road_inex = start_index
 
-                    for i in range(LOOKAHEAD_WPS):
-                        # index of the trailing waypoints
-                        wp = Waypoint()
-                        wp.pose.pose.position.x = self.base_waypoints[road_inex].pose.pose.position.x
-                        wp.pose.pose.position.y = self.base_waypoints[road_inex].pose.pose.position.y
+                for i in range(LOOKAHEAD_WPS):
+                    # index of the trailing waypoints
+                    wp = Waypoint()
+                    wp.pose.pose.position.x = self.base_waypoints[road_inex].pose.pose.position.x
+                    wp.pose.pose.position.y = self.base_waypoints[road_inex].pose.pose.position.y
 
-                        if self.traffic_waypoint_index < len(self.base_waypoints) and self.traffic_waypoint_index > start_index:
-                            # We have red head of front
+                    if self.traffic_waypoint_index < len(self.base_waypoints) and self.traffic_waypoint_index > start_index:
+                        # We have red head of front
 
-                            thisDistance = self.distance(self.base_waypoints, self.traffic_waypoint_index, road_inex)
+                        thisDistance = self.distance(self.base_waypoints, self.traffic_waypoint_index, road_inex)
 
-                            if (thisDistance > self.STOPPING_DISTANCE):
-                                wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
-                            else:
-
-                                wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS * (float(thisDistance) / float(self.STOPPING_DISTANCE))
-                        else:
+                        if (thisDistance > self.STOPPING_DISTANCE):
                             wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
+                        else:
 
-                        msg.waypoints.append(wp)
-                        road_inex = (road_inex + 1) % self.num_waypoints
+                            wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS * (float(thisDistance) / float(self.STOPPING_DISTANCE))
+                    else:
+                        wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
 
-                    self.final_waypoints_pub.publish(msg)
+                    msg.waypoints.append(wp)
+                    road_inex = (road_inex + 1) % self.num_waypoints
+
+                self.final_waypoints_pub.publish(msg)
+
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg.pose
@@ -174,11 +175,11 @@ class WaypointUpdater(object):
         return is_same_dir
 
     def find_closest_waypoint(self):
-        pose = self.current_pose # fix current pose
+        pose = self.pose # fix current pose
         min_dist = sys.maxsize # set to large number
         pnt_idx = 0
 
-        for i in range(self.num_base_waypoints):
+        for i in range(self.num_waypoints):
             dist = self.pnt_dist(pose.position, self.base_waypoints[i].pose.pose.position)
             if dist < min_dist:
                 pnt_idx = i
@@ -186,7 +187,7 @@ class WaypointUpdater(object):
 
         # check if car has passed the closest waypoint already
         # or if it is the next one
-        next_pnt_idx = (pnt_idx + 1) % self.num_base_waypoints
+        next_pnt_idx = (pnt_idx + 1) % self.num_waypoints
 
         # if the closest and the following waypoint point into the same
         # direction then the closest one the one in front

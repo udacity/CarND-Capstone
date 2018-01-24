@@ -35,12 +35,12 @@ class Controller(object):
         #self.steer_PID = PID(0.2, 0.0000001, 0.5, mn = -self.max_steer_angle, mx = self.max_steer_angle) # To be adjusted
         self.lowpass = LowPassFilter(0.3, 0.3)
         self.steer_filter = LowPassFilter(0.4, 0.2)
-        
+
         params = [wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle]
         self.yaw_controller = YawController(*params)
 
         self.brake_torque = (vehicle_mass + fuel_capacity * GAS_DENSITY) * wheel_radius
-         
+
         # Get the laste timestamp
         self.last_time = rospy.get_time()
         self.dbw_enabled = False
@@ -49,33 +49,33 @@ class Controller(object):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
 
-        # linear_setpoints 
+        # linear_setpoints
         tgt_linear_setpoint = kwargs['linear_setpoint']
         tgt_angular_setpoint = kwargs['angular_setpoint']
         cur_linear_current = kwargs['linear_current']
-        
-        
-        # Target and current 
-       
+
+
+        # Target and current
+
         velocity_error = tgt_linear_setpoint - cur_linear_current
-        
+
         # Calculate he delta t
         curr_time = rospy.get_time()
         delta = curr_time - self.last_time if self.last_time else 0.1
         #delta = 0.02
         self.last_time = curr_time
-        
-        # PID set for the speed 
-        # PID set for the speed  and use low pass to filter the result for rhe speed 
+
+        # PID set for the speed
+        # PID set for the speed  and use low pass to filter the result for rhe speed
         velocity = self.lowpass.filt(self.velocity_pid.step(velocity_error, delta))
-        
+
         steer_raw = self.yaw_controller.get_steering(tgt_linear_setpoint, tgt_angular_setpoint, cur_linear_current)
         steer = self.steer_pid.step(steer_raw, delta)
         steer = self.steer_filter.filt(steer_raw)
-        
 
-        
-        
+
+
+
 
         throttle = 0.
         brake = 0.
@@ -85,7 +85,7 @@ class Controller(object):
             steer = 0. # yaw controller has trouble at low speed
             brake = abs(self.decel_limit) * self.brake_torque
         else:
-            # speeding up - set velocity to throttle 
+            # speeding up - set velocity to throttle
             if velocity > 0.:
                 throttle = velocity
             # slowing down - check deadband limit before setting brake
@@ -96,5 +96,5 @@ class Controller(object):
                 if velocity > self.brake_deadband:
                     brake = velocity * self.brake_torque
 
-        
+
         return throttle, brake, steer

@@ -87,7 +87,7 @@ class DBWNode(object):
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
         rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb, queue_size=1)
         rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
-        
+
         self.last_action = ''
         self.current_pose = None
         self.current_velocity = None
@@ -97,7 +97,7 @@ class DBWNode(object):
         self.steering_buffer = np.zeros(STEERING_BUFFER_SIZE)
 
         #init cte value
-        
+
 
         self.loop()
 
@@ -120,38 +120,36 @@ class DBWNode(object):
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
-    
-   
+
+
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
-        
+
         while not rospy.is_shutdown():
-            
-            while not rospy.is_shutdown():
-                if(self.dbw_enabled) and \
-                        (self.current_pose is not None) and \
-                        (self.current_setpoint is not None) and \
-                        (self.current_velocity is not None):
+            if(self.dbw_enabled) and \
+                    (self.current_pose is not None) and \
+                    (self.current_setpoint is not None) and \
+                    (self.current_velocity is not None):
 
-                   
-                    params = {
-                      'linear_setpoint': self.current_setpoint.twist.linear.x,
-                      'angular_setpoint': self.current_setpoint.twist.angular.z,
-                      'linear_current': self.current_velocity.twist.linear.x,
-                    
-                    }
-                    
-                    throttle, brake, steering = self.controller.control(**params)
-                    
-                    
-                    self.publish(throttle, brake, steering)
 
-                else:
-                    # Manual mode
-                    self.controller.velocity_pid.reset()
-                    self.controller.steer_pid.reset()
-                rate.sleep()
+                params = {
+                  'linear_setpoint': self.current_setpoint.twist.linear.x,
+                  'angular_setpoint': self.current_setpoint.twist.angular.z,
+                  'linear_current': self.current_velocity.twist.linear.x,
+
+                }
+
+                throttle, brake, steering = self.controller.control(**params)
+
+
+                self.publish(throttle, brake, steering)
+
+            else:
+                # Manual mode
+                self.controller.velocity_pid.reset()
+                self.controller.steer_pid.reset()
+            rate.sleep()
 
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()

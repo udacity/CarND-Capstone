@@ -60,5 +60,5 @@ class TLClassifier(object):
 
         if scores[ind] >= 0.5:
             rospy.loginfo("----Light status = %s"%(self.clasname[int(classes[ind])]))
-        
+
         return self.clsmap[int(classes[ind])]

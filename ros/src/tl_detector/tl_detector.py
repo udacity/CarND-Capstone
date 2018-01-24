@@ -51,7 +51,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-        
+
         self.stop_line_positions = self.config['stop_line_positions']
         self.light_pos_waypoint = []
         self.car_position_index = None
@@ -65,12 +65,12 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        """This is the call_back function when we got the base way points""" 
+        """This is the call_back function when we got the base way points"""
         self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
-        
+
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -82,7 +82,7 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        
+
         #Process traffic light status
         light_wp, state = self.process_traffic_lights()
 
@@ -128,11 +128,11 @@ class TLDetector(object):
                                                    , [pose.position.x, pose.position.y])
             if waypoint_distance <= closest_waypoint_dist:
                 closest_waypoint_dist = waypoint_distance
-                closest_waypoint_ind = i   
+                closest_waypoint_ind = i
 
         return closest_waypoint_ind
 
-    
+
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -147,12 +147,12 @@ class TLDetector(object):
         if(not self.has_image):
             self.prev_light_loc = None
             return False
-         
+
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
-    
+
     def distance_point(self,pos1,pos2):
         """
         Calculate the euclidian distance between two points
@@ -160,8 +160,8 @@ class TLDetector(object):
         x = pos1[0] - pos2[0]
         y = pos1[1] - pos2[1]
         return math.sqrt(x*x + y*y)
-        
-        
+
+
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -177,7 +177,7 @@ class TLDetector(object):
 
         light = None
         # List of positions that correspond to the line to stop in front of for a given intersection
-        
+
 
         if len(self.light_pos_waypoint) == 0: #This part only calculate once
             for i in range(len(self.stop_line_positions)):
@@ -186,29 +186,29 @@ class TLDetector(object):
                 self.light_pos_waypoint.append(light_pos)
 
 
-        
+
         self.car_position_index = self.get_closest_waypoint(self.pose.pose,"car")
         if self.car_position_index > max(self.light_pos_waypoint):
             light_wp_id = min(self.light_pos_waypoint)
         else:
             light_delta = self.light_pos_waypoint[:]
-            # Calculate the distance between all Light and the current car 
+            # Calculate the distance between all Light and the current car
             light_delta[:] = [x - self.car_position_index for x in light_delta]
             # Find the nearest light in front of the car
             light_wp_id = min(i for i in light_delta if i >= 0) + self.car_position_index
-        
+
         # Map back to the stopline
         light_ind = self.light_pos_waypoint.index(light_wp_id)
         light = self.stop_line_positions[light_ind]
 
         light_distance = self.distance_point([light[0],light[1]], \
                         [self.waypoints[self.car_position_index].pose.pose.position.x,self.waypoints[self.car_position_index].pose.pose.position.y] )
-        
+
         if light and light_distance < self.safe_for_light_distance:
             # Brake the car within the safe distance
             state = self.get_light_state(light)
             return light_wp_id, state
-        
+
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
