@@ -13,7 +13,7 @@ import yaml
 import time
 from light_detector import LightDetector
 from PIL import Image as PILImage
-import cv2
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -60,12 +60,14 @@ class TLDetector(object):
 
         num_classes = 4
         self.light_detector = LightDetector(model, label_path, num_classes)
-        rospy.loginfo("Sess: %s", self.light_detector.session)
+
+        traffic_light_config_string = rospy.get_param("/traffic_light_config")
+        self.traffic_light_config = yaml.load(traffic_light_config_string)
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        self.pose = msg
+        self.pose = msg.pose
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
@@ -74,6 +76,11 @@ class TLDetector(object):
         self.lights = msg.lights
 
     def capture_image_cb(self, msg):
+        # near_tl = False
+        # if self.traffic_light_config:
+        #     for i, [x, y] in enumerate(self.traffic_light_config['stop_line_positions']):
+        #         dist = math.sqrt((x - self.pose.position.x)**2 + (y - self.pose.position.y)**2)
+        #         if dist < 50: near_tl = True
         if self.light_detector:
             cv_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
             image, classes, dt = self.light_detector.infer(cv_image)
