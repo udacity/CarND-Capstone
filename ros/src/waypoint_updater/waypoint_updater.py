@@ -23,6 +23,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 KPH_TO_MPS = 1.0/3.6
+DELTA_WP = 40
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -46,6 +47,7 @@ class WaypointUpdater(object):
 
         self.pose = None
         self.pose_stamp = None
+		self.prev_position_index = None
 
         self.car_x = None
         self.car_y = None
@@ -195,12 +197,22 @@ class WaypointUpdater(object):
         pose = self.pose # fix current pose
         min_dist = sys.maxsize # set to large number
         pnt_idx = 0
+		
+		start_idx = 0
+		end_idx = self.num_waypoints
+		
+		if self.prev_position_ix is not None:
+			start_ix = self.prev_position_ix - DELTA_WP
+			end_ix = self.prev_position_ix + DELTA_WP
 
-        for i in range(self.num_waypoints):
+        #for i in range(self.num_waypoints):
+		for i in range(start_idx, end_idx):
             dist = self.pnt_dist(pose.position, self.base_waypoints[i].pose.pose.position)
             if dist < min_dist:
                 pnt_idx = i
                 min_dist = dist
+				
+		self.prev_position_index = pnt_idx
 
         # check if car has passed the closest waypoint already
         # or if it is the next one
