@@ -26,13 +26,7 @@ class TLDetector(object):
         self.tl_wp_indices = list()  # traffic light waypoint indices initialization to empty list
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-
-        #rospy.loginfo('in INIT: before')
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        #if (self.waypoints is None):
-        #    rospy.loginfo('in INIT: after, waypoint is None')
-        #else:
-        #    rospy.loginfo('in INIT: after, waypoints = %d',len(self.waypoints))
 
 
         '''
@@ -65,17 +59,15 @@ class TLDetector(object):
     def pose_cb(self, msg):
         self.pose = msg
 
-    #def waypoints_cb(self, waypoints):
-    #    self.waypoints = waypoints
 
     def waypoints_cb(self, msg):
         # Callback for waypoints message.
         self.waypoints = msg.waypoints
         self.set_tl_wp_indices()  # precomputes waypoints of tarffic lights
-        if (self.tl_wp_indices is None):
-            rospy.loginfo("cb: tl_wp_indices is None")
-        else:
-            rospy.loginfo("cb: tl_wp_indices: %d", len(self.tl_wp_indices))
+        #if (self.tl_wp_indices is None):
+        #    rospy.loginfo("cb: tl_wp_indices is None")
+        #else:
+        #    rospy.loginfo("cb: tl_wp_indices: %d", len(self.tl_wp_indices))
 
 
     def traffic_cb(self, msg):
@@ -89,14 +81,10 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-
-
         self.has_image = True
         self.camera_image = msg
 
-
         light_wp, state = self.process_traffic_lights()
-
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -139,21 +127,15 @@ class TLDetector(object):
             tl_pose = Pose()
             tl_pose.position.x = tlp[0]   #convert tl_position to Pose
             tl_pose.position.y = tlp[1]   #convert tl_position to Pose
-
             self.tl_poses.append(tl_pose)
-            ll = len(self.tl_poses)
-
+            #ll = len(self.tl_poses)
             #rospy.loginfo("Pose: %f %f", tl_pose.position.x, tl_pose.position.y)
             #for i in range(ll):
             #    rospy.loginfo("list: %f %f", self.tl_poses[i].position.x, self.tl_poses[i].position.y)
-
-
             #rospy.loginfo("------")
             #rospy.loginfo(self.tl_poses)
             temp = self.get_closest_waypoint(tl_pose)
             self.tl_wp_indices.append(temp)
-
-
 
         #rospy.loginfo('tl poses: %d',len(self.tl_poses))
         #for i in self.tl_wp_indices:
@@ -202,7 +184,6 @@ class TLDetector(object):
 
         """
 
-
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -232,8 +213,6 @@ class TLDetector(object):
         else:
             return -1, TrafficLight.UNKNOWN
 
-        #for i, p in enumerate(self.tl_poses):
-        #    rospy.loginfo('(x,y)= (%f,%f)',p.position.x,p.position.y)
 
         #TODO find the closest visible traffic light (if one exists)
         min_wp_distance = 100000  # large distance --- waypoint units
@@ -247,18 +226,12 @@ class TLDetector(object):
                 light_wp = tl_wp
                 light = self.tl_poses[i]
 
-        if(self.pose):
-            rospy.loginfo('process_tl: car wp=%d, light wp=%d, light', car_wp,light_wp)
-            rospy.loginfo('process_tl: traffic light position (%f, %f)', light.position.x, light.position.y)
-        else:
-            rospy.loginfo('process_tl: light wp=%d', light_wp)
-
         if light:
             state = self.get_light_state(light)
+            rospy.loginfo('process_tl: car wp=%d, light wp=%d, state=%d', car_wp, light_wp, state)
+            #rospy.loginfo("light_wp=%d, state=%d",light_wp,state)
             return light_wp, state
         #self.waypoints = None
-
-
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
