@@ -27,12 +27,12 @@ class TLDetector(object):
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 
-        rospy.loginfo('in INIT: before')
+        #rospy.loginfo('in INIT: before')
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        if (self.waypoints is None):
-            rospy.loginfo('in INIT: after, waypoint is None')
-        else:
-            rospy.loginfo('in INIT: after, waypoints = %d',len(self.waypoints))
+        #if (self.waypoints is None):
+        #    rospy.loginfo('in INIT: after, waypoint is None')
+        #else:
+        #    rospy.loginfo('in INIT: after, waypoints = %d',len(self.waypoints))
 
 
         '''
@@ -131,15 +131,33 @@ class TLDetector(object):
 
         self.tl_poses = list()       # traffic light waypoint positions in Pose object
         self.tl_wp_indices = list()  # traffic light waypoint indices initialization to empty list
-        tl_pose = Pose()
+
+        #rospy.loginfo('length of pos = ',type(tl_positions))
+
+
         for tlp in tl_positions:
+            tl_pose = Pose()
             tl_pose.position.x = tlp[0]   #convert tl_position to Pose
             tl_pose.position.y = tlp[1]   #convert tl_position to Pose
+
             self.tl_poses.append(tl_pose)
+            ll = len(self.tl_poses)
+
+            #rospy.loginfo("Pose: %f %f", tl_pose.position.x, tl_pose.position.y)
+            #for i in range(ll):
+            #    rospy.loginfo("list: %f %f", self.tl_poses[i].position.x, self.tl_poses[i].position.y)
+
+
+            #rospy.loginfo("------")
+            #rospy.loginfo(self.tl_poses)
             temp = self.get_closest_waypoint(tl_pose)
             self.tl_wp_indices.append(temp)
-            #rospy.loginfo('set_tl_wp_indices: tl indices %d',temp)
 
+
+
+        #rospy.loginfo('tl poses: %d',len(self.tl_poses))
+        #for i in self.tl_wp_indices:
+        #    rospy.loginfo('set: i= %d', i)
 
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
@@ -206,35 +224,34 @@ class TLDetector(object):
 
         light = None
         # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
+        #stop_line_positions = self.config['stop_line_positions']
 
 
         if (self.pose):
-            car_index = self.get_closest_waypoint(self.pose.pose)
-            rospy.loginfo("process tl: car wp=%d", car_index)
+            car_wp = self.get_closest_waypoint(self.pose.pose)
         else:
             return -1, TrafficLight.UNKNOWN
 
-        #if (self.tl_wp_indices is None):
-        #    rospy.loginfo("tl_wp_indices is None")
-        #else:
-        #    rospy.loginfo("tl_wp_indices: %d", len(self.tl_wp_indices))
-
+        #for i, p in enumerate(self.tl_poses):
+        #    rospy.loginfo('(x,y)= (%f,%f)',p.position.x,p.position.y)
 
         #TODO find the closest visible traffic light (if one exists)
         min_wp_distance = 100000  # large distance --- waypoint units
         light_wp = -1  # so far nothing detected
-        for i, tl_index in enumerate(self.tl_wp_indices):  # for each waypoint index of traffic light
-            wp_distance = tl_index - car_index  # distance between car and traffic light, wp=waypoint
+        for i, tl_wp in enumerate(self.tl_wp_indices):  # for each waypoint index of traffic light
+            wp_distance = tl_wp - car_wp  # distance between car and traffic light, wp=waypoint
             cond1 = wp_distance > 0  # light is in front
             cond2 = (wp_distance < min_wp_distance)  # new minimum found
             if (cond1 and cond2):  # choose wp_distance
                 min_wp_distance = wp_distance
-                light_wp = tl_index
+                light_wp = tl_wp
                 light = self.tl_poses[i]
 
-        rospy.loginfo('process_tl: light wp=%d', light_wp)
-        #rospy.loginfo(light)
+        if(self.pose):
+            rospy.loginfo('process_tl: car wp=%d, light wp=%d, light', car_wp,light_wp)
+            rospy.loginfo('process_tl: traffic light position (%f, %f)', light.position.x, light.position.y)
+        else:
+            rospy.loginfo('process_tl: light wp=%d', light_wp)
 
         if light:
             state = self.get_light_state(light)
