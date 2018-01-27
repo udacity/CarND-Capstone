@@ -26,7 +26,14 @@ class TLDetector(object):
         self.tl_wp_indices = list()  # traffic light waypoint indices initialization to empty list
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
+
+        rospy.loginfo('in INIT: before')
+        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        if (self.waypoints is None):
+            rospy.loginfo('in INIT: after, waypoint is None')
+        else:
+            rospy.loginfo('in INIT: after, waypoints = %d',len(self.waypoints))
+
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -40,7 +47,7 @@ class TLDetector(object):
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
-        self.set_tl_wp_indices()  # precomputes waypoints of tarffic lights
+        #self.set_tl_wp_indices()  # precomputes waypoints of tarffic lights
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
@@ -64,7 +71,12 @@ class TLDetector(object):
     def waypoints_cb(self, msg):
         # Callback for waypoints message.
         self.waypoints = msg.waypoints
-        rospy.loginfo('waypoints: %d',len(self.waypoints))
+        self.set_tl_wp_indices()  # precomputes waypoints of tarffic lights
+        if (self.tl_wp_indices is None):
+            rospy.loginfo("cb: tl_wp_indices is None")
+        else:
+            rospy.loginfo("cb: tl_wp_indices: %d", len(self.tl_wp_indices))
+
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -77,9 +89,14 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+
+
         self.has_image = True
         self.camera_image = msg
+
+
         light_wp, state = self.process_traffic_lights()
+
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -98,6 +115,8 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
+
+
 
     def set_tl_wp_indices(self):
         # AP 1/21/18
@@ -119,7 +138,7 @@ class TLDetector(object):
             self.tl_poses.append(tl_pose)
             temp = self.get_closest_waypoint(tl_pose)
             self.tl_wp_indices.append(temp)
-            rospy.loginfo('tl indices %d',temp)
+            #rospy.loginfo('set_tl_wp_indices: tl indices %d',temp)
 
 
     def get_closest_waypoint(self, pose):
@@ -134,7 +153,7 @@ class TLDetector(object):
         """
         #TODO implement
         if self.waypoints is None:
-            rospy.loginfo("not seeing waypoints")
+            #rospy.loginfo("waypoints is None")
             return -1
 
         min_dist  = 10000
@@ -164,6 +183,8 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
+
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -182,17 +203,22 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
         light = None
-        if self.waypoints is not None:
-            rospy.loginfo('waypoints: %d', len(self.waypoints))
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
 
+
         if (self.pose):
             car_index = self.get_closest_waypoint(self.pose.pose)
-            rospy.loginfo("car index=%d", car_index)
+            rospy.loginfo("process tl: car wp=%d", car_index)
         else:
             return -1, TrafficLight.UNKNOWN
+
+        #if (self.tl_wp_indices is None):
+        #    rospy.loginfo("tl_wp_indices is None")
+        #else:
+        #    rospy.loginfo("tl_wp_indices: %d", len(self.tl_wp_indices))
 
 
         #TODO find the closest visible traffic light (if one exists)
@@ -207,11 +233,15 @@ class TLDetector(object):
                 light_wp = tl_index
                 light = self.tl_poses[i]
 
+        rospy.loginfo('process_tl: light wp=%d', light_wp)
+        #rospy.loginfo(light)
 
         if light:
             state = self.get_light_state(light)
             return light_wp, state
-        self.waypoints = None
+        #self.waypoints = None
+
+
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
