@@ -13,6 +13,7 @@ import yaml
 import math
 
 STATE_COUNT_THRESHOLD = 4
+CHEAT_TRAFFIC_LIGHTS  = 1
 
 class TLDetector(object):
     def __init__(self):
@@ -34,6 +35,7 @@ class TLDetector(object):
         classifier by sending the current color state of all traffic lights in the
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
+        Not using this info - AP
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
@@ -47,25 +49,32 @@ class TLDetector(object):
         self.light_classifier = TLClassifier(simulator=True)
         self.listener = tf.TransformListener()
 
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
-        self.wp2light = -1
+        self.state = TrafficLight.UNKNOWN       # state of traffic light
+        self.last_state = TrafficLight.UNKNOWN  # last state of traffic light
+        self.state_count = 0                    # consecutive occurance of same state
+        self.last_wp = -1                       # last waypoint of tarffic light
+        self.wp2light = -1                      # waypoints between car and traffic light
+        self.states   = list()                  # used with /vehicle/traffic_lights
 
         rospy.spin()
 
     def pose_cb(self, msg):
         self.pose = msg
 
-
     def waypoints_cb(self, msg):
         self.waypoints = msg.waypoints
         self.set_tl_wp_indices()  # precomputes waypoints of tarffic lights
 
-
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        if (self.lights):
+            self.states = list()
+            for tf in self.lights:
+                self.states.append(tf.state)
+            #for tf in self.states:
+            #    rospy.loginfo (tf)
+            #rospy.loginfo("  ")
+
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -86,15 +95,17 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+        if self.state != state:                                     # if state changes
+            self.state_count = 0                                    # reset counter
+            self.state = state                                      # set state
+        elif self.state_count >= STATE_COUNT_THRESHOLD:             # if confident
+            self.last_state = self.state                            # set last_state
+            light_wp = light_wp if state == TrafficLight.RED else -1# set light_wp only if red
             self.last_wp = light_wp
+            rospy.loginfo("publish light-wp = %d",light_wp)
             self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
+        else:                                                       # if not sure use use last_wp
+            rospy.loginfo("not sure ... publish light-wp = %d",self.last_wp)
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
@@ -187,8 +198,6 @@ class TLDetector(object):
             return 4
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-        #Get classification
         return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
@@ -212,6 +221,7 @@ class TLDetector(object):
         min_wp_distance = 100000  # large distance --- waypoint units
         light = None
         l_wp = -1  # so far nothing detected
+        cheat_state_index = -1
         for i, tl_wp in enumerate(self.tl_wp_indices):  # for each waypoint index of traffic light
             wp_distance = tl_wp - car_wp  # distance between car and traffic light, wp=waypoint
             cond1 = wp_distance > 0  # light is in front
@@ -220,18 +230,24 @@ class TLDetector(object):
                 min_wp_distance = wp_distance
                 l_wp = tl_wp
                 light = self.tl_poses[i]
+                cheat_state_index = i
 
         if (l_wp == -1):
             self.wp2light = 10000   #large number to ignore image
         else:
             self.wp2light = l_wp - car_wp
 
+        #rospy.loginfo("cheat index = %d", cheat_state_index)
 
         if light:
-            state = self.get_light_state(light)
+            if (CHEAT_TRAFFIC_LIGHTS and (cheat_state_index != -1)):
+                state = self.states[cheat_state_index]
+                rospy.loginfo("cheat state = %d", state)
+            else:
+                state = self.get_light_state(light)
             rospy.loginfo('process_tl: car-wp=%d, light-wp=%d, d=%d state=%d', car_wp, l_wp, self.wp2light, state)
             return l_wp, state
-        #self.waypoints = None
+
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
