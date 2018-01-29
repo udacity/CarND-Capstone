@@ -109,7 +109,7 @@ class TLDetector(object):
             red_light_waypoints = [self.waypoints[rwp] for rwp in red_light_wps]
             closest_red_light_index = self.closest_waypoint(red_light_waypoints, self.pose.position, self.pose.orientation)
             closest_red_light_wp = red_light_wps[closest_red_light_index]
-        # rospy.loginfo("LD: Stop %s", closest_red_light_wp)
+        rospy.loginfo("LD: Stop %s", closest_red_light_wp)
         self.upcoming_red_light_pub.publish(Int32(closest_red_light_wp))
 
 

@@ -161,7 +161,7 @@ class Bridge(object):
         self.publishers['lidar'].publish(self.create_point_cloud_message(zip(data['lidar_x'], data['lidar_y'], data['lidar_z'])))
 
     def publish_traffic(self, data):
-        if random.uniform(0,1) < 0.2:
+        if random.uniform(0,1) < 0.05:
             x, y, z = data['light_pos_x'], data['light_pos_y'], data['light_pos_z'],
             yaw = [math.atan2(dy, dx) for dx, dy in zip(data['light_pos_dx'], data['light_pos_dy'])]
             status = data['light_state']

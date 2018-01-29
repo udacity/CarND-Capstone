@@ -82,28 +82,15 @@ class WaypointUpdater(object):
         self.pose = msg.pose
         if self.wps:
             next_wp = self.track.next_waypoint(self.pose.position, self.pose.orientation, self.next_wp)
-            # FIXME Only for debugging
-            # if self.traffic_lights_wps:
-            #     closest_light = 0
-            #     for i in range(len(self.traffic_lights_wps)-1):
-            #         if self.traffic_lights_wps[i] < next_wp\
-            #                 and next_wp <= self.traffic_lights_wps[i+1]:
-            #             closest_light = i+1
-            #     tl = self.traffic_lights[closest_light]
-            #     red = tl.state == TrafficLight.RED
-            #     yellow = tl.state == TrafficLight.YELLOW and self.traffic_wp != self.traffic_lights_wps[closest_light]
-            #     if red or yellow:
-            #         self.traffic_wp = self.traffic_lights_wps[closest_light]
-            #     else:
-            #         self.traffic_wp = -1
             self.next_wp = next_wp
-            rospy.loginfo("Time tt %s", rospy.get_time() - self.t)
-            self.t = rospy.get_time()
+            rospy.loginfo("next_wp %s", next_wp)
             self.publish_final_waypoints(next_wp)
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
+        rospy.loginfo("wp init %s ", self.wps[0].twist.twist.linear.x)
         for w in self.wps: w.twist.twist.linear.x = 0
+        rospy.loginfo("wp init after %s ", self.wps[0].twist.twist.linear.x)
         self.track = Track(self.wps)
         self.track.update_traffic_lights(self.traffic_light_config)
         # posn = self.wps[1200].pose.pose.position
@@ -157,25 +144,23 @@ class WaypointUpdater(object):
         return wp
 
     def cruise_trajectory(self, next_wp):
+        curr_vel = float(self.wps[next_wp-1].twist.twist.linear.x)
         last_wp = next_wp + LOOKAHEAD_WPS
         wps = [self.copy_waypoint(w) for w in self.wps[next_wp : last_wp]]
+        inc_vel =  (10.0 - curr_vel)/float(last_wp - next_wp)
+        inc_vel = 1.0
+        for i, w in enumerate(wps):
+            w.twist.twist.linear.x = curr_vel + inc_vel * (i+1)
+            if w.twist.twist.linear.x > 10.0: w.twist.twist.linear.x = 10.0
         # init_vel = self.current_velocity.linear.x
         # max_inc = 1 * 0.02
         # for i, w in enumerate(wps):
         #     adj_vel = init_vel + max_inc * i
         #     w.twist.twist.linear.x = max(w.twist.twist.linear.x, adj_vel)
 
-        # [self.published_wps.append(w) for w in wps]
-        # self.iteration += 1
-        # rospy.loginfo("Iteration %s", self.iteration)
-        # if (self.iteration > 1000):
-        #     xs = [w.pose.pose.position.x for w in self.published_wps]
-        #     ys = [w.pose.pose.position.y for w in self.published_wps]
-        #     self.track.plot(0, last_wp)
-        #     plt.plot(xs, ys, "r+")
-        #     plt.show()
-        #     exit(0)
-        for w in wps: w.twist.twist.linear.x = 10.0
+        # for w in wps: w.twist.twist.linear.x = 10.0
+        sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2)]
+        rospy.loginfo("wp init cruise %s %s", inc_vel, sample)
         return wps
 
     def stop_trajectory(self, next_wp, stop_wp):
@@ -193,13 +178,14 @@ class WaypointUpdater(object):
         for i, w in enumerate(wps):
             w.twist.twist.linear.x = init_vel - dec_vel * i
             if w.twist.twist.linear.x < 0.5: w.twist.twist.linear.x = 0
-        #rospy.loginfo("stop %s ", [w.twist.twist.linear.x for w in wps])
+        sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2)]
+        rospy.loginfo("wp init stop %s ", sample)
         return wps
 
     def publish_final_waypoints(self, next_wp):
         stop_wp = self.traffic_wp
         # curr_vel = self.current_velocity.linear.x
-        if stop_wp > 400:
+        if stop_wp > -1:
             dist = self.distance(self.wps, next_wp, stop_wp)
             stop_dist = 100  # (curr_vel / MAX_DECEL) * curr_vel * 2
             if dist < stop_dist:
@@ -239,6 +225,7 @@ class Track(object):
 
     def __init__(self, wps):
         self.wps = wps
+        for w in self.wps: w.twist.twist.linear.x = 0
         self.traffic_lights_wps = None
 
     def next_waypoint(self, position, orient=None, around_wp = None):
