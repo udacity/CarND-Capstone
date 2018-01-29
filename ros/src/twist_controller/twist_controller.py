@@ -30,11 +30,16 @@ class Controller(object):
         self.torque = (vehicle_mass + fuel_capacity*GAS_DENSITY) * wheel_radius
         min_speed = 0.001
 
-        self.velocity_pid = PID(kp=0.1, ki=0.0001, kd=0.1, mn=self.decel_limit, mx=self.accel_limit)
-        self.steer_pid = PID(kp=0.5, ki=0.01, kd=0.1, mn=-max_steer_angle, mx=max_steer_angle)
+        self.velocity_pid = PID(kp=.5, ki=0, kd=0.0, mn=self.decel_limit, mx=self.accel_limit)
+        #self.velocity_pid = PID(kp=0.1, ki=0.0001, kd=0.1, mn=self.decel_limit, mx=self.accel_limit)
+        self.steer_pid = PID(kp=10, ki=0.001, kd=0.1, mn=-max_steer_angle, mx=max_steer_angle)
+        #self.steer_pid = PID(kp=0.5, ki=0.01, kd=0.1, mn=-max_steer_angle, mx=max_steer_angle)
         #self.steer_PID = PID(0.2, 0.0000001, 0.5, mn = -self.max_steer_angle, mx = self.max_steer_angle) # To be adjusted
-        self.lowpass = LowPassFilter(0.3, 0.3)
-        self.steer_filter = LowPassFilter(0.4, 0.2)
+        self.lowpass = LowPassFilter(1, 0.1)
+        self.steer_filter = LowPassFilter(0.3, 0.2)
+
+        #self.lowpass = LowPassFilter(0.3, 0.3)
+        #self.steer_filter = LowPassFilter(0.4, 0.2)
 
         params = [wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle]
         self.yaw_controller = YawController(*params)
@@ -58,6 +63,9 @@ class Controller(object):
         # Target and current
 
         velocity_error = tgt_linear_setpoint - cur_linear_current
+
+	rospy.logdebug("----xxxxxxx = ")
+	rospy.logdebug("----velocity_error = %s"%(velocity_error))
 
         # Calculate he delta t
         curr_time = rospy.get_time()

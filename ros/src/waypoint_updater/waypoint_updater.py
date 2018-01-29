@@ -12,22 +12,17 @@ import math
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
-
 As mentioned in the doc, you should ideally first implement a version which does not care
 about traffic lights or obstacles.
-
 Once you have created dbw_node, you will update this node to use the status of traffic lights too.
-
 Please note that our simulator also provides the exact location of traffic lights and their
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
-
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 KPH_TO_MPS = 1.0/3.6
-DELTA_WP = 40
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -51,7 +46,6 @@ class WaypointUpdater(object):
 
         self.pose = None
         self.pose_stamp = None
-        self.prev_position_index = None
 
         self.car_x = None
         self.car_y = None
@@ -63,7 +57,7 @@ class WaypointUpdater(object):
 
         # Flags
         self.flag_waypoints_loaded = False
-        self.STOPPING_DISTANCE = 15.
+        self.STOPPING_DISTANCE = 25
         self.traffic_waypoint_index = -1
         rospy.logout("self.STOPPING_DISTANCE = %f"%(self.STOPPING_DISTANCE))
         self.loop()
@@ -84,6 +78,7 @@ class WaypointUpdater(object):
                 msg = Lane()
                 msg.waypoints = []
 
+                #start_index is at which index out of 10902 is our car now
                 start_index = self.next_wp_index
 
                 current_velocity = self.current_velocity.linear.x if self.current_velocity is not None else 0.0
@@ -91,20 +86,40 @@ class WaypointUpdater(object):
 
                 for i in range(LOOKAHEAD_WPS):
                     # index of the trailing waypoints
+                    rospy.loginfo("i= %s",i)
                     wp = Waypoint()
                     wp.pose.pose.position.x = self.base_waypoints[road_inex].pose.pose.position.x
                     wp.pose.pose.position.y = self.base_waypoints[road_inex].pose.pose.position.y
 
-                    if self.traffic_waypoint_index < len(self.base_waypoints) and self.traffic_waypoint_index > start_index:
+
+
+                    #here you can intruduce manually the detected red light to overide the input of the traffic light detector
+                    #self.traffic_waypoint_index=753  #292 753 2047 2580 6294 7008 8540 9733
+
+                    if (self.traffic_waypoint_index < len(self.base_waypoints) and( self.traffic_waypoint_index > start_index)):
                         # We have red head of front
 
-                        thisDistance = self.distance(self.base_waypoints, self.traffic_waypoint_index, road_inex)
+                        #here the input waypoints have been swaped to make it work properly
+                        thisDistance = self.distance(self.base_waypoints,road_inex, self.traffic_waypoint_index)
 
+
+                        rospy.loginfo("thisDistance= %s",thisDistance)
+                        rospy.loginfo("road_inex= %s",road_inex)
+                        rospy.loginfo("traffic= %s",self.traffic_waypoint_index)
+                        #if we are far full speed
                         if (thisDistance > self.STOPPING_DISTANCE):
                             wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
-                        else:
+                            rospy.loginfo("if1")
 
+                        #if we are in a distance need to stop we brake gradually
+                        elif (thisDistance <= self.STOPPING_DISTANCE) and (thisDistance > 3):
                             wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS * (float(thisDistance) / float(self.STOPPING_DISTANCE))
+
+                        #if we are very close full stop
+                        elif (thisDistance <= 3) and (thisDistance > 0):
+                            wp.twist.twist.linear.x = 0
+
+
                     else:
                         wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
 
@@ -181,21 +196,11 @@ class WaypointUpdater(object):
         min_dist = sys.maxsize # set to large number
         pnt_idx = 0
 
-        start_idx = 0
-        search_horizon = self.num_waypoints
-
-        if self.prev_position_index is not None:
-            start_idx = (self.prev_position_index - DELTA_WP) % self.num_waypoints
-            search_horizon = 2 * DELTA_WP
-
-        for i in range(search_horizon):
-            idx = (start_idx + i) % self.num_waypoints
-            dist = self.pnt_dist(pose.position, self.base_waypoints[idx].pose.pose.position)
+        for i in range(self.num_waypoints):
+            dist = self.pnt_dist(pose.position, self.base_waypoints[i].pose.pose.position)
             if dist < min_dist:
-                pnt_idx = idx
+                pnt_idx = i
                 min_dist = dist
-
-        self.prev_position_index = pnt_idx
 
         # check if car has passed the closest waypoint already
         # or if it is the next one
