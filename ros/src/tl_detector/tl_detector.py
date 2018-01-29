@@ -25,11 +25,11 @@ class TLDetector(object):
         self.waypoints = None
         self.stop_waypoints = None
         self.camera_image = None
-        self.lights = []
+        self.lights_wps = None
 
-        # traffic_light_config_string = rospy.get_param("/traffic_light_config")
-        # traffic_light_config = yaml.load(traffic_light_config_string)
-        # self.stop_line_positions = traffic_light_config['stop_line_positions']
+        traffic_light_config_string = rospy.get_param("/traffic_light_config")
+        traffic_light_config = yaml.load(traffic_light_config_string)
+        self.stop_line_positions = traffic_light_config['stop_line_positions']
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -42,7 +42,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.capture_image_cb)
+        #sub6 = rospy.Subscriber('/image_color', Image, self.capture_image_cb)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -99,7 +99,19 @@ class TLDetector(object):
 
 
     def traffic_cb(self, msg):
-        self.lights = msg.lights
+        lights = msg.lights
+        # if not self.lights_wps:
+        #     rospy.loginfo("LD: Init")
+        #     self.lights_wps = [self.closest_waypoint(self.waypoints, l.pose.pose.position) for l in lights]
+        closest_red_light_wp = -1
+        red_light_wps = [self.stop_waypoints[i] for i,l in enumerate(lights) if l.state == TrafficLight.RED or l.state == TrafficLight.YELLOW]
+        if red_light_wps:
+            red_light_waypoints = [self.waypoints[rwp] for rwp in red_light_wps]
+            closest_red_light_index = self.closest_waypoint(red_light_waypoints, self.pose.position, self.pose.orientation)
+            closest_red_light_wp = red_light_wps[closest_red_light_index]
+        # rospy.loginfo("LD: Stop %s", closest_red_light_wp)
+        self.upcoming_red_light_pub.publish(Int32(closest_red_light_wp))
+
 
     def capture_image_cb(self, msg):
         if self.light_detector:

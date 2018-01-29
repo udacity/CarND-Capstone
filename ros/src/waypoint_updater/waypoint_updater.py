@@ -60,7 +60,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.pose = None
         self.wps = None
-        self.traffic_wp = None
+        self.traffic_wp = -1
         self.current_velocity = None
         self.next_wp = None
 
@@ -103,6 +103,7 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
+        for w in self.wps: w.twist.twist.linear.x = 0
         self.track = Track(self.wps)
         self.track.update_traffic_lights(self.traffic_light_config)
         # posn = self.wps[1200].pose.pose.position
@@ -192,23 +193,24 @@ class WaypointUpdater(object):
         for i, w in enumerate(wps):
             w.twist.twist.linear.x = init_vel - dec_vel * i
             if w.twist.twist.linear.x < 0.5: w.twist.twist.linear.x = 0
+        #rospy.loginfo("stop %s ", [w.twist.twist.linear.x for w in wps])
         return wps
 
     def publish_final_waypoints(self, next_wp):
         stop_wp = self.traffic_wp
-        # stop_wp = self.track.traffic_lights_wps[1]
-        # dist = self.distance(self.wps, next_wp, stop_wp)
         # curr_vel = self.current_velocity.linear.x
-        # stop_dist = 100 # (curr_vel / MAX_DECEL) * curr_vel * 2
-        if stop_wp > -1: # and dist < stop_dist:
-            final_wps = self.stop_trajectory(next_wp, stop_wp)
-            self.final_waypoints_pub.publish(Lane(None, final_wps))
-        else:
-            # orient = self.pose.orientation
-            # _, _, theta = tf.transformations.euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])
-            #rospy.loginfo("wp %s x %s y %s o %s", next_wp, self.pose.position.x, self.pose.position.y, theta)
-            final_wps = self.cruise_trajectory(next_wp)
-            self.final_waypoints_pub.publish(Lane(None, final_wps))
+        if stop_wp > 400:
+            dist = self.distance(self.wps, next_wp, stop_wp)
+            stop_dist = 100  # (curr_vel / MAX_DECEL) * curr_vel * 2
+            if dist < stop_dist:
+                final_wps = self.stop_trajectory(next_wp, stop_wp)
+                self.final_waypoints_pub.publish(Lane(None, final_wps))
+                return
+        # orient = self.pose.orientation
+        # _, _, theta = tf.transformations.euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])
+        #rospy.loginfo("wp %s x %s y %s o %s", next_wp, self.pose.position.x, self.pose.position.y, theta)
+        final_wps = self.cruise_trajectory(next_wp)
+        self.final_waypoints_pub.publish(Lane(None, final_wps))
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
