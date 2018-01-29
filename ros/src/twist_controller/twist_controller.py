@@ -26,8 +26,9 @@ class Controller(object):
 
 	self.low_pass_steer_filter = LowPassFilter(0.3, 1.0)
 
-	self.acceleration_controller  = PID(0.09, 0.00005, 0.007, self.decel_limit, self.accel_limit)
+	self.acceleration_controller  = PID(0.19, 0.00005, 0.017, self.decel_limit, self.accel_limit)
 	self.throttle_controller = PID(1.5, 0.00007, 0.01, 0.0, 0.5)	
+	self.steering_controller = PID(2.0, 0.0005, 0.1, -max_steer_angle, max_steer_angle)
 	
 	self.throttle_controller.reset()
 	self.acceleration_controller.reset()
@@ -44,11 +45,10 @@ class Controller(object):
 		if self.dbw_status:
 			self.throttle_controller.reset()
 			self.acceleration_controller.reset()
+			self.steering_controller.reset()
 		self.dbw_status = False
 		return None, None, None
-		
-
-	steering = self.yaw_controller.get_steering(linear_velocity, self.low_pass_steer_filter.filt(angular_velocity), current_velocity)
+			
 
 	current_time = time.time()
 	if self.lastControlTime is None:
@@ -60,6 +60,8 @@ class Controller(object):
 	
 	throttle = 0.0
 	brake = 0.0
+
+	steering = self.steering_controller.step(self.yaw_controller.get_steering(abs(linear_velocity), self.low_pass_steer_filter.filt(angular_velocity), current_velocity), sample_time)
 
 	acceleration = self.acceleration_controller.step(linear_velocity-current_velocity, sample_time)	
 		
