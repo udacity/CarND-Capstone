@@ -28,8 +28,8 @@ class TLDetector(object):
 
         self.simulator = True if rospy.get_param('~sim') == 0 else False
 
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size = 1)
+        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size = 1)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -39,8 +39,8 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         Not using this info - AP
         '''
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb, queue_size = 1)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size = 1)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -77,6 +77,10 @@ class TLDetector(object):
             #    rospy.loginfo (tf)
             #rospy.loginfo("  ")
 
+        if(CHEAT_TRAFFIC_LIGHTS):
+            rospy.loginfo(self.states[0])
+            self.image_cb(None)
+
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -86,6 +90,7 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+		
         self.has_image = True
         self.camera_image = msg
 

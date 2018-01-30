@@ -31,7 +31,7 @@ that we have created in the `__init__` function.
 
 '''
 
-MIN_SPEED = 2
+MIN_SPEED = 4
 MAX_SPEED = 12.0
 
 class DBWNode(object):
