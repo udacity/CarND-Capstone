@@ -23,11 +23,12 @@ class Controller(object):
 	self.decel_limit = decel_limit
 	self.accel_limit = accel_limit
 	self.wheel_radius = wheel_radius
+	self.max_speed = max_speed
 
 	self.low_pass_steer_filter = LowPassFilter(0.3, 1.0)
 
-	self.acceleration_controller  = PID(0.19, 0.00005, 0.017, self.decel_limit, self.accel_limit)
-	self.throttle_controller = PID(1.5, 0.00007, 0.01, 0.0, 0.5)	
+	self.acceleration_controller  = PID(2.60, 0.0005, 0.527, self.decel_limit, self.accel_limit)
+	self.throttle_controller = PID(1.5, 0.00007, 0.01, 0.0, 0.37)
 	self.steering_controller = PID(2.0, 0.0005, 0.1, -max_steer_angle, max_steer_angle)
 	
 	self.throttle_controller.reset()
@@ -68,7 +69,7 @@ class Controller(object):
 	if(acceleration < -self.brake_deadband):
 		brake = (self.vehicle_mass + self.fuel_capacity*GAS_DENSITY)*abs(acceleration)*self.wheel_radius
 	
-	throttle = self.throttle_controller.step(linear_velocity-current_velocity, sample_time)	
+	throttle = self.throttle_controller.step((linear_velocity-current_velocity), sample_time)	
 	
 
 	# Holding
