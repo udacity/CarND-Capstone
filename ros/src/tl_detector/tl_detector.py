@@ -56,7 +56,7 @@ class TLDetector(object):
         self.light_pos_waypoint = []
         self.car_position_index = None
 
-        self.safe_for_light_distance = 18
+        self.safe_for_light_distance = 100
 
         rospy.spin()
 
