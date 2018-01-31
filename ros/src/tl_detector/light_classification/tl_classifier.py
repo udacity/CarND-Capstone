@@ -83,8 +83,10 @@ class TLClassifier(object):
         self.graph_classification = load_graph(model_dir + '/model_classification.pb', self.config)
         if simulator:
             self.graph_detection = load_graph(model_dir + '/model_detection_simulator.pb', self.config)
+            rospy.loginfo('Loaded simulator detection model')
         else:
             self.graph_detection = load_graph(model_dir + '/model_detection_site.pb', self.config)
+            rospy.loginfo('Loaded site detection model')
         rospy.loginfo("Models loaded!")
 
         self.session_classification = tf.Session(graph=self.graph_classification, config=self.config)
