@@ -115,10 +115,10 @@ class WaypointUpdater(object):
                     self.base_waypoints[start+i].twist.twist.linear.x = original_velocities[i]
                 end_time = time.time()
                 # Log.
-                rospy.logwarn('waypoint_updater.py - loop - current_ index: %i, stop_index: %i, duration: %5.3f, dt: %5.3f, counter: %i',
-                              self.prev_base_offset, self.waypoint_index_for_stop,
-                              (end_time - start_time) * 1000.0,
-                              (start_time - self.last_start_time) * 1000.0, self.counter)
+                #rospy.logwarn('waypoint_updater.py - loop - current_ index: %i, stop_index: %i, duration: %5.3f, dt: %5.3f, counter: %i',
+                #              self.prev_base_offset, self.waypoint_index_for_stop,
+                #              (end_time - start_time) * 1000.0,
+                #              (start_time - self.last_start_time) * 1000.0, self.counter)
                 self.last_start_time = start_time
 
             rate.sleep()
