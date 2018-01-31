@@ -24,7 +24,8 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number.
+USE_TRAFFIC_LIGHT = False # If true, use traffic_lights instead of traffic_waypoint.
+LOOKAHEAD_WPS    = 200 # Number of waypoints we will publish. You can change this number.
 MAX_ACCELERATION = 1.0 # Maximal acceleration [m/s^2]
 MAX_DECELERATION = 1.0 # Maximal deceleration [m/s^2]
 
@@ -36,9 +37,9 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_test_cb, queue_size=1)
         # TODO: Add subscriber for /obstacle_waypoint when implemented.
         #rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
-        #rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_test_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -48,65 +49,84 @@ class WaypointUpdater(object):
         self.closest_waypoint_index    = None # Index for waypoint in base waypoints which is closest to current position
         self.prev_waypoint_velocities  = None # Velocities of previous final waypoints 
         self.prev_base_offset          = 0    # Base offset of previous final waypoints
-        #self.time = 0
-        rospy.spin()
+
+        #self.time           = 0
+        self.last_start_time = 0
+        self.counter         = 0
+
+        # Run loop.
+        self.loop()
+
+    def loop(self):
+        rate = rospy.Rate(50) # 50Hz
+        while not rospy.is_shutdown():
+            if (self.base_waypoints == None) or (self.pose == None):
+                continue
+
+            # Check that base waypoints are already received.
+            if self.base_waypoints is not None:
+                start_time = time.time()
+                next_waypoint_index = self.get_next_waypoint_index(self.pose, self.base_waypoints, True)
+                # Create a fixed number of waypoints ahead of the car.
+                start = next_waypoint_index
+                end   = next_waypoint_index + LOOKAHEAD_WPS
+                lookahead_waypoints = self.base_waypoints[start:end]
+                # Save velocities of base waypoints. To be fast, this saves only
+                # values that are possibly changed.
+                original_velocities = []
+                for i in range(len(lookahead_waypoints)):
+                    original_velocities.append(lookahead_waypoints[i].twist.twist.linear.x)
+
+                # TODO: Test acceleration/deceleration.
+                #if time.time() > self.time:
+                #    if self.waypoint_index_for_stop == -1:
+                #        self.waypoint_index_for_stop = next_waypoint_index + 200
+                #    else:
+                #        self.waypoint_index_for_stop = -1
+                #    self.time = time.time() + 25.
+
+                # Accelerate.
+                lookahead_waypoints = self.accelerate(lookahead_waypoints, start)
+                # Log.
+                #rospy.logwarn('waypoint_updater.py - pose_cb - acc: %5.3f',
+                #              lookahead_waypoints[0].twist.twist.linear.x)
+
+                # Decelerate.
+                lookahead_waypoints = self.decelerate(lookahead_waypoints, start)
+                # Log.
+                #rospy.logwarn('waypoint_updater.py - pose_cb - ref_vel: %5.3f',
+                #              lookahead_waypoints[0].twist.twist.linear.x)
+
+                # Save lookahead waypoint velocities and offset to base waypoints.
+                self.prev_waypoint_velocities = []
+                for i in range(len(lookahead_waypoints)):
+                    self.prev_waypoint_velocities.append(lookahead_waypoints[i].twist.twist.linear.x)
+                self.prev_base_offset = start
+
+                # Create the Lane object and fill in waypoints.
+                lane                 = Lane()
+                lane.waypoints       = lookahead_waypoints
+                lane.header.frame_id = '/world'
+                lane.header.stamp    = rospy.Time.now()
+                # Publish /final_waypoints topic.
+                self.final_waypoints_pub.publish(lane)
+                # Restore velocities of base waypoints.
+                for i in range(len(lookahead_waypoints)):
+                    self.base_waypoints[start+i].twist.twist.linear.x = original_velocities[i]
+                end_time = time.time()
+                # Log.
+                #rospy.logwarn('waypoint_updater.py - loop - current_ index: %i, stop_index: %i, duration: %5.3f, dt: %5.3f, counter: %i',
+                #              self.prev_base_offset, self.waypoint_index_for_stop,
+                #              (end_time - start_time) * 1000.0,
+                #              (start_time - self.last_start_time) * 1000.0, self.counter)
+                self.last_start_time = start_time
+
+            rate.sleep()
 
     def pose_cb(self, msg):
         # Callback for /current_pose message.
-        # TODO: Implement
         self.pose = msg.pose
-        # Check that base waypoints are already received.
-        if self.base_waypoints is not None:
-            start_time = time.time()
-            next_waypoint_index = self.get_next_waypoint_index(self.pose, self.base_waypoints)
-            # Create a fixed number of waypoints ahead of the car.
-            start = next_waypoint_index
-            end   = next_waypoint_index + LOOKAHEAD_WPS
-            lookahead_waypoints = self.base_waypoints[start:end]
-			# Save velocities of base waypoints. To be fast, this saves only
-			# values that are possibly changed.
-            original_velocities = []
-            for i in range(LOOKAHEAD_WPS):
-                original_velocities.append(self.base_waypoints[start+i].twist.twist.linear.x)
-
-            # TODO: Test acceleration/deceleration.
-            #if time.time() > self.time:
-            #    if self.waypoint_index_for_stop == -1:
-            #        self.waypoint_index_for_stop = next_waypoint_index + 200
-            #    else:
-            #        self.waypoint_index_for_stop = -1
-            #    self.time = time.time() + 25.
-
-            # Accelerate
-            lookahead_waypoints = self.accelerate(lookahead_waypoints, start)
-            # Log.
-            #rospy.logwarn('waypoint_updater.py - pose_cb - acc: %5.3f', lookahead_waypoints[0].twist.twist.linear.x)
-
-            # Decelerate
-            lookahead_waypoints = self.decelerate(lookahead_waypoints, start)
-            # Log.
-            #rospy.logwarn('waypoint_updater.py - pose_cb - dec: %5.3f', lookahead_waypoints[0].twist.twist.linear.x)
-
-            # Save lookahead waypoint velocities and offset to base waypoints
-            self.prev_waypoint_velocities = []
-            for i in range(LOOKAHEAD_WPS):
-                self.prev_waypoint_velocities.append(lookahead_waypoints[i].twist.twist.linear.x)
-            self.prev_base_offset = start
-
-            # Create the Lane object and fill in waypoints.
-            lane                 = Lane()
-            lane.waypoints       = lookahead_waypoints
-            lane.header.frame_id = msg.header.frame_id
-            lane.header.stamp    = rospy.Time.now()
-            # Publish /final_waypoints topic.
-            self.final_waypoints_pub.publish(lane)
-			# Restore velocities of base waypoints.
-            for i in range(LOOKAHEAD_WPS):
-                self.base_waypoints[start+i].twist.twist.linear.x = original_velocities[i]
-            end_time = time.time()
-            # Log duration.
-            #rospy.logwarn('waypoint_updater.py - pose_cb - duration: %5.3f',
-            #              (end_time - start_time) * 1000.0)
+        self.counter += 1
 
     def waypoints_cb(self, msg):
         # Callback for /base_waypoints message.
@@ -114,12 +134,35 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # Callback for /traffic_waypoint message.
+        if USE_TRAFFIC_LIGHT == True:
+            return
         self.waypoint_index_for_stop = msg.data
 
     def traffic_test_cb(self, msg):
-        # Callback for /traffic_waypoint message.
-        #self.waypoint_index_for_stop = msg.data
-        pass
+        # Callback for /trafficlights message.
+        if USE_TRAFFIC_LIGHT == False:
+            return
+        lights = msg.lights
+        if self.base_waypoints is not None:
+            state = 0
+            if lights:
+                # Find next traffic light ahead.
+                tl_index = self.get_next_waypoint_index(self.pose, lights, False)
+                state = lights[tl_index].state
+                if state == 0:
+                    waypoint_index_for_light = self.get_next_waypoint_index(lights[tl_index].pose.pose, self.base_waypoints, False)
+                    for i in range(waypoint_index_for_light+1, 0, -1):
+                        distance = self.calc_distance_of_points(self.base_waypoints[waypoint_index_for_light].pose.pose.position, self.base_waypoints[i].pose.pose.position)
+                        if distance > 27.5:
+                            self.waypoint_index_for_stop = i
+                            break;
+                else:
+                    self.waypoint_index_for_stop = -1
+            else:
+                self.waypoint_index_for_stop = -1
+                state = -1
+            #rospy.logwarn('waypoint_updater.py - traffic_test_cb - state: %i, wp_index: %i',
+            #              state, self.waypoint_index_for_stop)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later.
@@ -145,13 +188,13 @@ class WaypointUpdater(object):
                        + (point_2.y - point_1.y)**2
                        + (point_2.z - point_1.z)**2)
 
-    def get_closest_waypoint_index(self, pose, waypoints):
+    def get_closest_waypoint_index(self, pose, waypoints, reduce):
         # Gets index of closest waypoint.
         closest_distance = 100000 # large number
         closest_index    = 0
         current_position = pose.position
         # If closest waypoint was already found, reduce search to its neighborhood.
-        if self.closest_waypoint_index == None:
+        if (self.closest_waypoint_index == None) or (reduce == False):
             start = 0
             waypoints_reduced = waypoints
         else:
@@ -163,12 +206,13 @@ class WaypointUpdater(object):
             if closest_distance > distance:
                 closest_distance = distance
                 closest_index = index + start
-        self.closest_waypoint_index = closest_index
+        if (reduce == True):
+            self.closest_waypoint_index = closest_index
         return closest_index
 
-    def get_next_waypoint_index(self, pose, waypoints):
+    def get_next_waypoint_index(self, pose, waypoints, reduce):
         # Gets next waypoint ahead of the car.
-        closest_waypoint_index = self.get_closest_waypoint_index(pose, waypoints)
+        closest_waypoint_index = self.get_closest_waypoint_index(pose, waypoints, reduce)
         waypoint_position = waypoints[closest_waypoint_index].pose.pose.position
         current_position  = pose.position
         quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
@@ -185,7 +229,7 @@ class WaypointUpdater(object):
         return closest_waypoint_index
 
     def accelerate(self, waypoints, base_offset):
-        # TODO: Adjusts the target velocities for the waypoints leading up to top
+        # Adjusts the target velocities for the waypoints leading up to top
         # speed in order to accelerate the vehicle.
         # If available, use velocities from previous final waypoints.
         base_offset -= self.prev_base_offset
@@ -195,15 +239,18 @@ class WaypointUpdater(object):
                 waypoints[i].twist.twist.linear.x = self.prev_waypoint_velocities[base_offset+i]
         else:
             number_of_previous_points_to_use = 1
-            waypoints[0].twist.twist.linear.x = 1.
+            waypoints[0].twist.twist.linear.x = 1.0
         # Accelerate.
-        for i in range(number_of_previous_points_to_use, LOOKAHEAD_WPS):
+        for i in range(number_of_previous_points_to_use, len(waypoints)):
             distance = self.calc_distance_of_points(waypoints[i-1].pose.pose.position,
                                                     waypoints[i].pose.pose.position)
             v_0   = waypoints[i-1].twist.twist.linear.x
             v_max = waypoints[i].twist.twist.linear.x
-            velocity = v_0 + math.sqrt(2 * MAX_ACCELERATION * distance)
-            if velocity > v_max - 1.:
+            p_half = 2 * v_0 / MAX_ACCELERATION / 2
+            q = -2 * distance / MAX_ACCELERATION
+            dt = -p_half + math.sqrt(p_half * p_half - q)
+            velocity = v_0 + MAX_ACCELERATION * dt
+            if velocity > v_max - 0.01:
                 velocity = v_max
             waypoints[i].twist.twist.linear.x = min(velocity, v_max)
         return waypoints
@@ -215,7 +262,7 @@ class WaypointUpdater(object):
         if self.waypoint_index_for_stop < 0:
             return waypoints
         stop_index = self.waypoint_index_for_stop - base_offset
-        if stop_index >= LOOKAHEAD_WPS:
+        if stop_index >= len(waypoints):
             return waypoints
         if stop_index < 0:
             for wp in waypoints:
