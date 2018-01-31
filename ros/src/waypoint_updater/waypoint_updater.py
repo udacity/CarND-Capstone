@@ -63,7 +63,8 @@ class WaypointUpdater(object):
 
         # Flags
         self.flag_waypoints_loaded = False
-        self.STOPPING_DISTANCE = 15.
+        self.STOPPING_DISTANCE = 25
+        self.HARD_STOPPING_DISTANCE = 3
         self.traffic_waypoint_index = -1
         rospy.logout("self.STOPPING_DISTANCE = %f"%(self.STOPPING_DISTANCE))
         self.loop()
@@ -84,6 +85,7 @@ class WaypointUpdater(object):
                 msg = Lane()
                 msg.waypoints = []
 
+                #start_index is at which index out of 10902 is our car now
                 start_index = self.next_wp_index
 
                 current_velocity = self.current_velocity.linear.x if self.current_velocity is not None else 0.0
@@ -95,18 +97,37 @@ class WaypointUpdater(object):
                     wp.pose.pose.position.x = self.base_waypoints[road_inex].pose.pose.position.x
                     wp.pose.pose.position.y = self.base_waypoints[road_inex].pose.pose.position.y
 
+
+                    #here you can introduce manually the detected red light to overide the input of the traffic light detector
+                    #self.traffic_waypoint_index=753  #292 753 2047 2580 6294 7008 8540 9733
+
+                    #TODO: Deal with waypoint loop when car is close to
+                    # max_waypoint_index whereas traffic light is close to
+                    # min_waypoiny_index
                     if self.traffic_waypoint_index < len(self.base_waypoints) and self.traffic_waypoint_index > start_index:
                         # We have red head of front
 
-                        thisDistance = self.distance(self.base_waypoints, self.traffic_waypoint_index, road_inex)
+                        thisDistance = self.distance(self.base_waypoints, road_inex, self.traffic_waypoint_index)
 
+                        #if we are far, full speed
                         if (thisDistance > self.STOPPING_DISTANCE):
                             wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
-                        else:
 
+                        #if we are in a distance, need to stop we brake gradually
+                        elif thisDistance <= self.STOPPING_DISTANCE and thisDistance > self.HARD_STOPPING_DISTANCE:
                             wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS * (float(thisDistance) / float(self.STOPPING_DISTANCE))
+
+                        #if we are very close or already behind, full stop
+                        elif thisDistance <= self.HARD_STOPPING_DISTANCE:
+                            wp.twist.twist.linear.x = 0.0
+
+                        else:
+                            rospy.logerr("Distance calculation failed.")
+
+
                     else:
                         wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
+
 
                     msg.waypoints.append(wp)
                     road_inex = (road_inex + 1) % self.num_waypoints
