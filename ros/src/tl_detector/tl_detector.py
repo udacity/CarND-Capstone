@@ -13,7 +13,7 @@ import yaml
 import math
 
 STATE_COUNT_THRESHOLD = 4
-CHEAT_TRAFFIC_LIGHTS  = 1
+CHEAT_TRAFFIC_LIGHTS  = 0
 
 class TLDetector(object):
     def __init__(self):

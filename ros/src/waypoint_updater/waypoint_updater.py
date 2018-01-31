@@ -24,7 +24,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-USE_TRAFFIC_LIGHT = False # If true, use traffic_lights instead of traffic_waypoint.
+USE_TRAFFIC_LIGHT = True # If true, use traffic_lights instead of traffic_waypoint.
 LOOKAHEAD_WPS    = 200 # Number of waypoints we will publish. You can change this number.
 MAX_ACCELERATION = 1.0 # Maximal acceleration [m/s^2]
 MAX_DECELERATION = 1.0 # Maximal deceleration [m/s^2]
@@ -115,10 +115,10 @@ class WaypointUpdater(object):
                     self.base_waypoints[start+i].twist.twist.linear.x = original_velocities[i]
                 end_time = time.time()
                 # Log.
-                #rospy.logwarn('waypoint_updater.py - loop - current_ index: %i, stop_index: %i, duration: %5.3f, dt: %5.3f, counter: %i',
-                #              self.prev_base_offset, self.waypoint_index_for_stop,
-                #              (end_time - start_time) * 1000.0,
-                #              (start_time - self.last_start_time) * 1000.0, self.counter)
+                rospy.logwarn('waypoint_updater.py - loop - current_ index: %i, stop_index: %i, duration: %5.3f, dt: %5.3f, counter: %i',
+                              self.prev_base_offset, self.waypoint_index_for_stop,
+                              (end_time - start_time) * 1000.0,
+                              (start_time - self.last_start_time) * 1000.0, self.counter)
                 self.last_start_time = start_time
 
             rate.sleep()
