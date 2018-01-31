@@ -63,7 +63,7 @@ class WaypointUpdater(object):
 
         # Flags
         self.flag_waypoints_loaded = False
-        self.STOPPING_DISTANCE = 25
+        self.STOPPING_DISTANCE = 10
         self.HARD_STOPPING_DISTANCE = 3
         self.APPROACHING_SPEED = 10 * KPH_TO_MPS
         self.traffic_waypoint_index = -1
@@ -97,7 +97,7 @@ class WaypointUpdater(object):
                 else:
                     diff = (start_index - self.prev_position_index) % self.num_waypoints
                     waypoints = self.last_final_waypoints[diff:]
-                    road_inex = self.prev_position_index + LOOKAHEAD_WPS
+                    road_inex = (self.prev_position_index + LOOKAHEAD_WPS) % self.num_waypoints
 
 
                 for i in range(diff):

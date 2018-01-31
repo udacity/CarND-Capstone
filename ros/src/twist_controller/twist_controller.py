@@ -30,8 +30,8 @@ class Controller(object):
         self.torque = (vehicle_mass + fuel_capacity*GAS_DENSITY) * wheel_radius
         min_speed = 0.001
 
-        self.velocity_pid = PID(kp=0.1, ki=0.0001, kd=0.1, mn=self.decel_limit, mx=self.accel_limit)
-        self.steer_pid = PID(kp=0.5, ki=0.01, kd=0.1, mn=-max_steer_angle, mx=max_steer_angle)
+        self.velocity_pid = PID(kp=1., ki=0., kd=0.1, mn=self.decel_limit, mx=self.accel_limit)
+        self.steer_pid = PID(kp=10, ki=0.1, kd=0.1, mn=-max_steer_angle, mx=max_steer_angle)
         #self.steer_PID = PID(0.2, 0.0000001, 0.5, mn = -self.max_steer_angle, mx = self.max_steer_angle) # To be adjusted
         self.lowpass = LowPassFilter(0.5, 0.05)
         self.steer_filter = LowPassFilter(0.4, 0.2)
