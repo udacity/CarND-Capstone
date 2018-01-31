@@ -33,7 +33,7 @@ class Controller(object):
         self.velocity_pid = PID(kp=0.1, ki=0.0001, kd=0.1, mn=self.decel_limit, mx=self.accel_limit)
         self.steer_pid = PID(kp=0.5, ki=0.01, kd=0.1, mn=-max_steer_angle, mx=max_steer_angle)
         #self.steer_PID = PID(0.2, 0.0000001, 0.5, mn = -self.max_steer_angle, mx = self.max_steer_angle) # To be adjusted
-        self.lowpass = LowPassFilter(0.3, 0.3)
+        self.lowpass = LowPassFilter(0.5, 0.05)
         self.steer_filter = LowPassFilter(0.4, 0.2)
 
         params = [wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle]

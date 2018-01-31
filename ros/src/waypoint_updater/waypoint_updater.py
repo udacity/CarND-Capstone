@@ -65,7 +65,11 @@ class WaypointUpdater(object):
         self.flag_waypoints_loaded = False
         self.STOPPING_DISTANCE = 25
         self.HARD_STOPPING_DISTANCE = 3
+        self.APPROACHING_SPEED = 10 * KPH_TO_MPS
         self.traffic_waypoint_index = -1
+        self.last_traffic_waypoint_index =-1
+        self.last_final_waypoints = None
+        self.start_distance = 0
         rospy.logout("self.STOPPING_DISTANCE = %f"%(self.STOPPING_DISTANCE))
         self.loop()
         rospy.spin()
@@ -80,18 +84,23 @@ class WaypointUpdater(object):
                 self.car_y = self.pose.position.y
 
                 # Now get the next waypoint....
-                self.next_wp_index = self.find_closest_waypoint()
+                # start_index is at which index out of 10902 is our car now
+                start_index = self.find_closest_waypoint()
 
-                msg = Lane()
-                msg.waypoints = []
+                if self.last_final_waypoints is None or self.traffic_waypoint_index != self.last_traffic_waypoint_index:
+                    waypoints = []
+                    diff = LOOKAHEAD_WPS
+                    road_inex = start_index
+                    self.start_distance = float(self.distance(self.base_waypoints, start_index, self.traffic_waypoint_index))
+                    current_velocity = self.current_velocity.linear.x if self.current_velocity is not None else 0.0
+                    self.ref_velocity = current_velocity
+                else:
+                    diff = (start_index - self.prev_position_index) % self.num_waypoints
+                    waypoints = self.last_final_waypoints[diff:]
+                    road_inex = self.prev_position_index + LOOKAHEAD_WPS
 
-                #start_index is at which index out of 10902 is our car now
-                start_index = self.next_wp_index
 
-                current_velocity = self.current_velocity.linear.x if self.current_velocity is not None else 0.0
-                road_inex = start_index
-
-                for i in range(LOOKAHEAD_WPS):
+                for i in range(diff):
                     # index of the trailing waypoints
                     wp = Waypoint()
                     wp.pose.pose.position.x = self.base_waypoints[road_inex].pose.pose.position.x
@@ -109,17 +118,20 @@ class WaypointUpdater(object):
 
                         thisDistance = self.distance(self.base_waypoints, road_inex, self.traffic_waypoint_index)
 
-                        #if we are far, full speed
-                        if (thisDistance > self.STOPPING_DISTANCE):
-                            wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
+                        # need to stop we brake gradually
+                        if thisDistance > self.STOPPING_DISTANCE:
+                            target_vel = self.APPROACHING_SPEED
+                            coeff = (float(thisDistance) - self.STOPPING_DISTANCE) / (self.start_distance - self.STOPPING_DISTANCE)
+                            vel = target_vel + (self.ref_velocity - target_vel) * coeff
+                            wp.twist.twist.linear.x = vel
 
-                        #if we are in a distance, need to stop we brake gradually
                         elif thisDistance <= self.STOPPING_DISTANCE and thisDistance > self.HARD_STOPPING_DISTANCE:
-                            wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS * (float(thisDistance) / float(self.STOPPING_DISTANCE))
+                            vel = self.APPROACHING_SPEED
+                            wp.twist.twist.linear.x = vel * (float(thisDistance) / self.STOPPING_DISTANCE)
 
                         #if we are very close or already behind, full stop
                         elif thisDistance <= self.HARD_STOPPING_DISTANCE:
-                            wp.twist.twist.linear.x = 0.0
+                            wp.twist.twist.linear.x = 0.
 
                         else:
                             rospy.logerr("Distance calculation failed.")
@@ -129,10 +141,16 @@ class WaypointUpdater(object):
                         wp.twist.twist.linear.x = self.speed_limit * KPH_TO_MPS
 
 
-                    msg.waypoints.append(wp)
+                    waypoints.append(wp)
                     road_inex = (road_inex + 1) % self.num_waypoints
 
+                msg = Lane()
+                msg.waypoints = waypoints
+                self.last_final_waypoints = waypoints
                 self.final_waypoints_pub.publish(msg)
+
+                self.prev_position_index = start_index
+                self.last_traffic_waypoint_index = self.traffic_waypoint_index
 
             rate.sleep()
 
@@ -216,7 +234,6 @@ class WaypointUpdater(object):
                 pnt_idx = idx
                 min_dist = dist
 
-        self.prev_position_index = pnt_idx
 
         # check if car has passed the closest waypoint already
         # or if it is the next one
