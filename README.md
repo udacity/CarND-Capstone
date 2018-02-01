@@ -44,6 +44,7 @@ Make and run styx.
 1.  cd ros
 2.  catkin_make
 3.  source devel/setup.sh
+4.  unzip src/tl_detector/model/model_detection.zip
 4.  roslaunch launch/styx.launch
 ```
 Run the simulator.
