@@ -14,6 +14,8 @@ import math
 
 STATE_COUNT_THRESHOLD = 4
 CHEAT_TRAFFIC_LIGHTS  = 1
+CAR_HALF_LENGTH_WP = 4
+STOP_AREA_AHEAD_WP = 15
 
 class TLDetector(object):
     def __init__(self):
@@ -78,7 +80,7 @@ class TLDetector(object):
             #rospy.loginfo("  ")
 
         if(CHEAT_TRAFFIC_LIGHTS):
-            rospy.loginfo(self.states[0])
+            #rospy.loginfo(self.states[0])
             self.image_cb(None)
 
 
@@ -109,10 +111,10 @@ class TLDetector(object):
             self.last_state = self.state                            # set last_state
             light_wp = light_wp if state == TrafficLight.RED else -1# set light_wp only if red
             self.last_wp = light_wp
-            rospy.loginfo("publish light-wp = %d",light_wp)
+            #rospy.loginfo("publish light-wp = %d",light_wp)
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:                                                       # if not sure use use last_wp
-            rospy.loginfo("not sure ... publish light-wp = %d",self.last_wp)
+            #rospy.loginfo("not sure ... publish light-wp = %d",self.last_wp)
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
@@ -183,7 +185,7 @@ class TLDetector(object):
                 min_dist = dist  # we save the distance of the closest waypoint
 
         # returns the index of the closest waypoint
-        return min_index
+        return min_index-CAR_HALF_LENGTH_WP
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -231,10 +233,10 @@ class TLDetector(object):
         cheat_state_index = -1
         for i, tl_wp in enumerate(self.tl_wp_indices):  # for each waypoint index of traffic light
             wp_distance = tl_wp - car_wp  # distance between car and traffic light, wp=waypoint
-            cond1 = wp_distance > 0  # light is in front
-            cond2 = (wp_distance < min_wp_distance)  # new minimum found
+            cond1 = wp_distance > -STOP_AREA_AHEAD_WP  # light is in front
+            cond2 = (abs(wp_distance) < min_wp_distance)  # new minimum found
             if (cond1 and cond2):  # choose wp_distance
-                min_wp_distance = wp_distance
+                min_wp_distance = abs(wp_distance)
                 l_wp = tl_wp
                 light = self.tl_poses[i]
                 cheat_state_index = i
@@ -249,10 +251,10 @@ class TLDetector(object):
         if light:
             if (CHEAT_TRAFFIC_LIGHTS and (cheat_state_index != -1)):
                 state = self.states[cheat_state_index]
-                rospy.loginfo("cheat state = %d", state)
+                #rospy.loginfo("cheat state = %d", state)
             else:
                 state = self.get_light_state(light)
-            rospy.loginfo('process_tl: car-wp=%d, light-wp=%d, d=%d state=%d', car_wp, l_wp, self.wp2light, state)
+            #rospy.loginfo('process_tl: car-wp=%d, light-wp=%d, d=%d state=%d', car_wp, l_wp, self.wp2light, state)
             return l_wp, state
 
         return -1, TrafficLight.UNKNOWN
