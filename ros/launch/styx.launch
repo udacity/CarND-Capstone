@@ -15,6 +15,9 @@
     <!--Waypoint Updater Node -->
     <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
 
+    <!--Traffic Light Model File-->
+    <param name="traffic_light_model" type="str" value="sim_inference_graph.pb" />
+
     <!--Traffic Light Detector Node -->
     <include file="$(find tl_detector)/launch/tl_detector.launch"/>
 
