@@ -295,7 +295,8 @@ class WaypointUpdater(object):
                 waypoints[i].twist.twist.linear.x = self.prev_waypoint_velocities[base_offset+i]
         else:
             number_of_previous_points_to_use = 1
-            waypoints[0].twist.twist.linear.x = min(1.0, self.base_waypoints[base_offset].twist.twist.linear.x)
+            if waypoints[0].twist.twist.linear.x > 1.0:
+                waypoints[0].twist.twist.linear.x = 1.0
         # Accelerate.
         distance_all = 0
         for i in range(number_of_previous_points_to_use, len(waypoints)):
