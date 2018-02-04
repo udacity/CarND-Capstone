@@ -23,8 +23,10 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
+DEBUG_LOGS_ON = False
+
 # For test purposes only
-USE_TRAFFIC_LIGHTS   = True # If true, use traffic_lights instead of traffic_waypoint.
+USE_TRAFFIC_LIGHTS   = False # If true, use traffic_lights instead of traffic_waypoint.
 WAY_BEFORE_STOP_LINE = 2.75 # Offset [m] to stop line (car position is not measured at front)
 
 LOOKAHEAD_WPS    = 80  # Maximal number of waypoints to publish
@@ -148,38 +150,39 @@ class WaypointUpdater(object):
                 self.base_waypoints[start+i].twist.twist.linear.x = original_velocities[i]
             end_time_2 = time.time()
 
-            # Log debug information.
-            distance = self.calc_distance_of_points(
-                           lookahead_waypoints[0].pose.pose.position,
-                           lookahead_waypoints[-1].pose.pose.position)
-            if self.last_start_time != None:
-                dt = (start_time - self.last_start_time) * 1000.0
-                if self.dt_max < dt:
-                    self.dt_max = dt
-            else:
-                dt = 0
-            duration_1 = (end_time_1 - start_time) * 1000.0
-            if self.duration_1_max < duration_1:
-                self.duration_1_max = duration_1
-            duration_2 = (end_time_2 - end_time_1) * 1000.0
-            if self.duration_2_max < duration_2:
-                self.duration_2_max = duration_2
-            duration = (end_time_2 - start_time) * 1000.0
-            if self.duration_max < duration:
-                self.duration_max = duration
-            rospy.logwarn(
-                'waypoint_updater.py - loop - '
-                'current_index: %5i, stop_index: %5i, '
-                'duration_1: %6.3f, duration_2: %6.3f, duration: %6.3f, '
-                'duration_1_max: %6.3f, duration_2_max: %6.3f, duration_max: %6.3f, '
-                'dt: %6.3f, dt_max: %6.3f, '
-                'distance: %6.3f, len: %3i, speed: %6.3f',
-                self.prev_base_offset, self.waypoint_index_for_stop,
-                duration_1, duration_2, duration,
-                self.duration_1_max, self.duration_2_max, self.duration_max,
-                dt, self.dt_max,
-                distance, len(lookahead_waypoints), 
-                self.prev_waypoint_velocities[0])
+            if DEBUG_LOGS_ON == True:
+                # Log debug information.
+                distance = self.calc_distance_of_points(
+                               lookahead_waypoints[0].pose.pose.position,
+                               lookahead_waypoints[-1].pose.pose.position)
+                if self.last_start_time != None:
+                    dt = (start_time - self.last_start_time) * 1000.0
+                    if self.dt_max < dt:
+                        self.dt_max = dt
+                else:
+                    dt = 0
+                duration_1 = (end_time_1 - start_time) * 1000.0
+                if self.duration_1_max < duration_1:
+                    self.duration_1_max = duration_1
+                duration_2 = (end_time_2 - end_time_1) * 1000.0
+                if self.duration_2_max < duration_2:
+                    self.duration_2_max = duration_2
+                duration = (end_time_2 - start_time) * 1000.0
+                if self.duration_max < duration:
+                    self.duration_max = duration
+                rospy.logwarn(
+                    'waypoint_updater.py - loop - '
+                    'current_index: %5i, stop_index: %5i, '
+                    'duration_1: %6.3f, duration_2: %6.3f, duration: %6.3f, '
+                    'duration_1_max: %6.3f, duration_2_max: %6.3f, duration_max: %6.3f, '
+                    'dt: %6.3f, dt_max: %6.3f, '
+                    'distance: %6.3f, len: %3i, speed: %6.3f',
+                    self.prev_base_offset, self.waypoint_index_for_stop,
+                    duration_1, duration_2, duration,
+                    self.duration_1_max, self.duration_2_max, self.duration_max,
+                    dt, self.dt_max,
+                    distance, len(lookahead_waypoints), 
+                    self.prev_waypoint_velocities[0])
 
             self.last_start_time = start_time
 
