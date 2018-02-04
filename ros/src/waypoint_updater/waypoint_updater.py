@@ -26,7 +26,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 USE_TRAFFIC_LIGHT    = True # If true, use traffic_lights instead of traffic_waypoint.
-WAY_BEFORE_STOP_LINE = 2.5  # Offset [m] to stop line (car position is not measured at front)
+WAY_BEFORE_STOP_LINE = 2.75  # Offset [m] to stop line (car position is not measured at front)
 
 LOOKAHEAD_WPS    = 80  # Maximal number of waypoints to publish
 MAX_ACCELERATION = 1.0 # Maximal acceleration [m/s^2]
@@ -34,6 +34,8 @@ MAX_DECELERATION = 1.0 # Maximal deceleration [m/s^2]
 
 
 class WaypointUpdater(object):
+    
+    # TODO: Check init
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
@@ -61,7 +63,6 @@ class WaypointUpdater(object):
         #self.time           = 0
         self.last_start_time = None
         self.last_start_time_2 = 0
-        self.counter         = 0
         self.duration_max = 0;
         self.dt_max = 0;
         self.temp = 0;
@@ -69,6 +70,7 @@ class WaypointUpdater(object):
         # Run loop.
         self.loop()
 
+    # TODO: Check loop
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
@@ -82,7 +84,15 @@ class WaypointUpdater(object):
                 self.search_for_red_traffic_light()
                 end_time_1 = time.time()
 
-            next_waypoint_index, _ = self.get_next_waypoint_index(self.pose, self.base_waypoints, True)
+            if self.prev_base_offset != None:
+                start = self.prev_base_offset
+                end   = start + 250
+            else:
+                start = 0
+                end   = len(self.base_waypoints)
+            next_waypoint_index, _ = self.get_next_waypoint_index(self.pose,
+                                         self.base_waypoints[start:end])
+            next_waypoint_index += start
             # Create a fixed number of waypoints ahead of the car.
             start = next_waypoint_index
             end   = next_waypoint_index + LOOKAHEAD_WPS
@@ -142,12 +152,11 @@ class WaypointUpdater(object):
                     self.duration_max = duration
             else:
                 dt = 0
-            rospy.logwarn('waypoint_updater.py - loop - current_ index: %5i, stop_index: %5i, duration: %6.3f, duration: %6.3f, dt: %6.3f, counter: %5i, distance: %6.3f, dt_max: %6.3f, duration_max: %6.3f, len: %3i, speed: %6.3f',
+            rospy.logwarn('waypoint_updater.py - loop - current_ index: %5i, stop_index: %5i, duration: %6.3f, duration: %6.3f, dt: %6.3f, distance: %6.3f, dt_max: %6.3f, duration_max: %6.3f, len: %3i, speed: %6.3f',
                           self.prev_base_offset, self.waypoint_index_for_stop,
                           (end_time_1 - start_time) * 1000.0,
                           (end_time - end_time_1) * 1000.0,
                           dt,
-                          self.counter,
                           distance,
                           self.dt_max,
                           self.duration_max,
@@ -158,26 +167,33 @@ class WaypointUpdater(object):
             rate.sleep()
 
     def pose_cb(self, msg):
-        # Callback for /current_pose message.
+        '''
+        Callback for /current_pose message.
+        '''
         self.pose = msg.pose
-        self.counter += 1
 
     def waypoints_cb(self, msg):
-        # Callback for /base_waypoints message.
+        '''
+        Callback for /base_waypoints message.
+        '''
         self.base_waypoints = msg.waypoints
 
     def traffic_cb(self, msg):
-        # Callback for /traffic_waypoint message.
+        '''
+        Callback for /traffic_waypoint message.
+        '''
         if USE_TRAFFIC_LIGHT == True:
             return
         self.waypoint_index_for_stop = msg.data
 
     def traffic_test_cb(self, msg):
-        # Callback for /trafficlights message.
+        '''
+        Callback for /traffic_lights message.
+        '''
         self.lights = msg.lights
 
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later.
+        # TODO: Callback for /obstacle_waypoint message.
         pass
 
     def get_waypoint_velocity(self, waypoint):
@@ -190,59 +206,63 @@ class WaypointUpdater(object):
         dist = 0
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            dist += dl(waypoints[wp1].pose.pose.position,
+                       waypoints[i].pose.pose.position)
             wp1 = i
         return dist
 
     def calc_distance_of_points(self, point_1, point_2):
-        # Calculates the distance between two points in 3D.
+        '''
+        Calculates the distance between two points in 3D.
+        '''
         return math.sqrt((point_2.x - point_1.x)**2
                        + (point_2.y - point_1.y)**2
                        + (point_2.z - point_1.z)**2)
 
-    def get_closest_waypoint_index(self, pose, waypoints, reduce):
-        # Gets index of closest waypoint.
+    def get_closest_waypoint_index(self, pose, waypoints):
+        '''
+        Gets index of closest waypoint.
+        '''
         closest_distance = 100000 # large number
         closest_index    = 0
         current_position = pose.position
-        # If closest waypoint was already found, reduce search to its neighborhood.
-        if (self.closest_waypoint_index == None) or (reduce == False):
-            start = 0
-            waypoints_reduced = waypoints
-        else:
-            start = self.closest_waypoint_index - 10
-            waypoints_reduced = waypoints[start:start + 100]
-        for index, waypoint in enumerate(waypoints_reduced):
-            waypoint_position = waypoint.pose.pose.position
-            distance = self.calc_distance_of_points(current_position, waypoint_position)
+        for i in range(len(waypoints)):
+            waypoint_position = waypoints[i].pose.pose.position
+            distance = self.calc_distance_of_points(current_position,
+                                                    waypoint_position)
             if closest_distance > distance:
                 closest_distance = distance
-                closest_index = index + start
-        if (reduce == True):
-            self.closest_waypoint_index = closest_index
+                closest_index    = i
         return closest_index, closest_distance
 
-    def get_next_waypoint_index(self, pose, waypoints, reduce):
-        # Gets next waypoint ahead of the car.
-        closest_waypoint_index, closest_waypoint_distance = self.get_closest_waypoint_index(pose, waypoints, reduce)
-        waypoint_position = waypoints[closest_waypoint_index].pose.pose.position
+    def get_next_waypoint_index(self, pose, waypoints):
+        '''
+        Gets index of next waypoint ahead of the car.
+        '''
+        # Find closest waypoint.
+        closest_wp_index, closest_wp_distance = self.get_closest_waypoint_index(
+                                                    pose, waypoints)
+        waypoint_position = waypoints[closest_wp_index].pose.pose.position
         current_position  = pose.position
-        quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
+        quaternion = (pose.orientation.x, pose.orientation.y,
+                      pose.orientation.z, pose.orientation.w)
         _, _, yaw = transformations.euler_from_quaternion(quaternion)
         heading = math.atan2((waypoint_position.y - current_position.y),
                              (waypoint_position.x - current_position.x))
         angle = abs(yaw - heading)
         angle = min(2 * math.pi - angle, angle)
         # Check for angles < 90 degree to get a waypoint ahead of the car.
-        if angle > math.pi/2:
-            closest_waypoint_index += 1
-            if closest_waypoint_index == len(waypoints):
-                closest_waypoint_index = len(waypoints) - 1
-        return closest_waypoint_index, closest_waypoint_distance
+        if (angle > math.pi/2) and (closest_wp_index < len(waypoints) - 1):
+            closest_wp_index += 1
+        return closest_wp_index, closest_wp_distance
 
+    # TODO: Check accelerate
     def accelerate(self, waypoints, base_offset):
-        # Adjusts the target velocities for the waypoints leading up to top
-        # speed in order to accelerate the vehicle.
+        '''
+        Adjusts the target velocities for the waypoints leading up to top speed
+        in order to accelerate the vehicle.
+        '''
+
         # If available, use velocities from previous final waypoints.
         base_offset -= self.prev_base_offset
         if (self.prev_waypoint_velocities != None) and (self.prev_waypoint_velocities[base_offset] > 0.1):
@@ -274,9 +294,12 @@ class WaypointUpdater(object):
                 break;
         return waypoints
 
+    # TODO: Check decelerate
     def decelerate(self, waypoints, base_offset):
-        # Adjusts the target velocities for the waypoints leading up to red
-        # traffic lights in order to bring the vehicle to a smooth and full stop.
+        '''
+        Adjusts the target velocities for the waypoints leading up to red
+        traffic lights in order to bring the vehicle to a smooth and full stop.
+        '''
         # If stop position is valid, decelerate.
         if self.waypoint_index_for_stop < 0:
             return waypoints
@@ -300,6 +323,9 @@ class WaypointUpdater(object):
         return waypoints
 
     def search_for_red_traffic_light(self):
+        '''
+        Searches for red traffic lights and sets waypoint index for stop.
+        '''
         # Reset stop position.
         self.waypoint_index_for_stop = -1
         # If no traffic light data is available, do nothing.
@@ -308,9 +334,9 @@ class WaypointUpdater(object):
 
         # Find next traffic light ahead.
         traffic_light_index, distance = self.get_next_waypoint_index(
-                                            self.pose, self.lights, False)
+                                            self.pose, self.lights)
         state = self.lights[traffic_light_index].state
-        # Create pose
+        # Set pose for stop line position.
         stop_line_pose = Pose()
         stop_line_pose.position.x = self.stop_line_positions[traffic_light_index][0]
         stop_line_pose.position.y = self.stop_line_positions[traffic_light_index][1]
@@ -320,7 +346,7 @@ class WaypointUpdater(object):
             start = self.prev_base_offset
             end   = start + 250
             wp_index_next_to_sl, distance = self.get_next_waypoint_index(
-                stop_line_pose, self.base_waypoints[start:end], False)
+                stop_line_pose, self.base_waypoints[start:end])
             wp_index_next_to_sl += start
             # Check for specified distance again, because of reduced search
             # range in base waypoints.
@@ -336,29 +362,6 @@ class WaypointUpdater(object):
                     # Set stop position.
                     self.waypoint_index_for_stop = i
                     break;
-            '''
-            # Search waypoint next to traffic light.
-            start = self.prev_base_offset
-            end   = start + 250
-            wp_index_next_to_tl, distance = self.get_next_waypoint_index(
-                self.lights[traffic_light_index].pose.pose,
-                self.base_waypoints[start:end], False)
-            wp_index_next_to_tl += start
-            # Check for specified distance again, because of reduced search
-            # range in base waypoints.
-            if distance > 100.0:
-                return
-            # Search waypoint that is at least a specified distance before the
-            # traffic light.
-            tl_pos = self.lights[traffic_light_index].pose.pose.position
-            for i in range(wp_index_next_to_tl, 0, -1):
-                wp_pos = self.base_waypoints[i].pose.pose.position
-                distance = self.calc_distance_of_points(wp_pos, tl_pos)
-                if distance > WAY_STOP_LINE_TO_TRAFFIC_LIGHT:
-                    # Set stop position.
-                    self.waypoint_index_for_stop = i
-                    break;
-            '''
 
 if __name__ == '__main__':
     try:
