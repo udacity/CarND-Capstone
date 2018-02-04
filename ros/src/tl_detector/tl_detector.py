@@ -13,13 +13,9 @@ import yaml
 import math
 
 STATE_COUNT_THRESHOLD = 4
-<<<<<<< HEAD
-CHEAT_TRAFFIC_LIGHTS  = 0
-=======
 CHEAT_TRAFFIC_LIGHTS  = 1
 CAR_HALF_LENGTH_WP = 4
 STOP_AREA_AHEAD_WP = 15
->>>>>>> refs/remotes/origin/master
 
 class TLDetector(object):
     def __init__(self):
