@@ -90,7 +90,7 @@ class WaypointUpdater(object):
         # a big number to begin with
         mindist = 1000000
 
-        for i in range(1, len(self.base_waypoints)):
+        for i in range(len(self.base_waypoints)):
             x = self.base_waypoints[i].pose.pose.position.x
             y = self.base_waypoints[i].pose.pose.position.y
 
