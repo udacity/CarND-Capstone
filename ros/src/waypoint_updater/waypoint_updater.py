@@ -106,7 +106,36 @@ class WaypointUpdater(object):
         angle = abs(car_theta - heading);
         # so if the heading of the waypoint is over one quarter of pi its behind so take the next wp :)
         if (angle > np.pi / 4):
-            nwp_index += 1
+            nwp_index = (nwp_index + 1) % 
+    def get_next_waypoint_index(self):
+        # prepare car position and orientation
+        car_x = self.current_pose.position.x
+        car_y = self.current_pose.position.y
+        s = self.current_pose.orientation.w
+        car_theta = 2 * np.arccos(s)
+        # contain theta between pi and -pi
+        if car_theta > np.pi:
+            car_theta = -(2 * np.pi - car_theta)
+        # a big number to begin with
+        mindist = 1000000
+
+        for i in range(len(self.base_waypoints)):
+            x = self.base_waypoints[i].pose.pose.position.x
+            y = self.base_waypoints[i].pose.pose.position.y
+
+            dist = math.sqrt((car_x - x) * (car_x - x) + (car_y - y) * (car_y - y))
+            if (dist < mindist):
+                mindist = dist
+                nwp_x = x
+                nwp_y = y
+                nwp_index = i
+
+        # this will be the closest waypoint index without respect to heading
+        heading = np.arctan2((nwp_y - car_y), (nwp_x - car_x))
+        angle = abs(car_theta - heading);
+        # so if the heading of the waypoint is over one quarter of pi its behind so take the next wp :)
+        if (angle > np.pi / 4):
+            nwp_index = (nwp_index + 1) % len(self.base_waypoints)
 
         return nwp_index
 
