@@ -2,13 +2,55 @@
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
+from pid import PID
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
-        # TODO: Implement
-        pass
+        # PID-parameters (JS-XXX: change to dynamic reconfigure for tuning)
+        steering_Kp = 1.0
+        steering_Ki = 0.0
+        steering_Kd = 0.0
 
-    def control(self, *args, **kwargs):
-        # TODO: Change the arg, kwarg list to suit your needs
-        # Return throttle, brake, steer
-        return 1., 0., 0.
+        throttle_Kp = 1.0
+        throttle_Ki = 0.0
+        throttle_Kd = 0.0
+
+        # create PID controllers for steering and throttle
+        self.pid_steering = PID(steering_Kp, steering_Ki, steering_Kd)
+        self.pid_throttle = PID(throttle_Kp, throttle_Ki, throttle_Kd,
+                                kwargs['decel_limit'], kwargs['accel_limit'])
+
+        # other variables
+        self.dbw_enabled = False        # simulator starts with dbw disabled
+
+    def control(self, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular, dbw_enabled):
+        # reset PID controls after the safety driver enables drive-by-wire again
+        #   JS-XXX: is this necessary or would it be beter to ignore this, the pid-controllers errors
+        #           aren't updated will dbw is disabled...
+        if not self.dbw_enabled and dbw_enabled:
+            self.pid_steering.reset()
+            self.pid_throttle.reset()
+
+        self.dbw_enabled = dbw_enabled
+
+        # early out when dbw is not enabled
+        if not self.dbw_enabled:
+            return 0.0, 0.0, 0.0
+
+        # control steering
+        steer = self.control_steering(req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular)
+
+        # control velocity
+        throttle, brake = self.control_velocity(req_vel_linear, cur_vel_linear)
+
+        # return throttle, brake, steer
+        return throttle, brake, steer
+
+    def control_steering(self, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular):  
+        return 0.0
+
+    def control_velocity(self, req_vel_linear, cur_vel_linear):
+        throttle = 0.0
+        brake = 0.0
+
+        return throttle, brake
