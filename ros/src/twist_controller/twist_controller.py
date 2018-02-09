@@ -75,7 +75,10 @@ class Controller(object):
             brake = 0.0
         # brake if the negative value of the PID-controller is outside of the brake-deadband
         elif math.fabs(value) > self.brake_deadband:
-            throttle = 0
+            throttle = 0.0
             brake = (self.vehicle_mass + (self.fuel_capacity * GAS_DENSITY)) * -value * self.wheel_radius
+        else:
+            throttle = 0.0
+            brake = 0.0
 
         return throttle, brake
