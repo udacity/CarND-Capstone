@@ -3,6 +3,7 @@ GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
 from pid import PID
+from yaw_controller import YawController
 import math
 
 class Controller(object):
@@ -20,6 +21,13 @@ class Controller(object):
         self.pid_steering = PID(steering_Kp, steering_Ki, steering_Kd)
         self.pid_throttle = PID(throttle_Kp, throttle_Ki, throttle_Kd,
                                 kwargs['decel_limit'], kwargs['accel_limit'])
+
+        # yaw-controller converts angular velocity to steering angles
+        self.yaw_controller =  YawController(kwargs['wheel_base'],
+                                             kwargs['steer_ratio'], 
+                                             1,             # min-speed (JS-XXX check value)
+                                             kwargs['max_lat_accel'], 
+                                             kwargs['max_steer_angle'])
 
         # other variables
         self.dbw_enabled = False        # simulator starts with dbw disabled
@@ -52,7 +60,10 @@ class Controller(object):
         return throttle, brake, steer
 
     def control_steering(self, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular):  
-        return 0.0
+        # update the error of the PID-controller
+        pid_velocity = self.pid_steering.step(req_vel_angular - cur_vel_angular, 1)
+
+        return self.yaw_controller.get_steering(cur_vel_linear, pid_velocity, cur_vel_linear)
 
     def control_velocity(self, req_vel_linear, cur_vel_linear):
         # update the error of the PID-controller
