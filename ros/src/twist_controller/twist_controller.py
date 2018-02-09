@@ -3,6 +3,7 @@ GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
 from pid import PID
+import math
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
@@ -22,6 +23,10 @@ class Controller(object):
 
         # other variables
         self.dbw_enabled = False        # simulator starts with dbw disabled
+        self.vehicle_mass = kwargs['vehicle_mass']
+        self.fuel_capacity = kwargs['fuel_capacity']
+        self.wheel_radius = kwargs['wheel_radius']
+        self.brake_deadband = kwargs['brake_deadband']
 
     def control(self, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular, dbw_enabled):
         # reset PID controls after the safety driver enables drive-by-wire again
@@ -50,7 +55,16 @@ class Controller(object):
         return 0.0
 
     def control_velocity(self, req_vel_linear, cur_vel_linear):
-        throttle = 0.0
-        brake = 0.0
+        # update the error of the PID-controller
+        value = self.pid_throttle.step(req_vel_linear - cur_vel_linear, 1)
+
+        # engage throttle if the value of the PID-controller is positive
+        if value > 0:
+            throttle = value
+            brake = 0.0
+        # brake if the negative value of the PID-controller is outside of the brake-deadband
+        elif math.fabs(value) > self.brake_deadband:
+            throttle = 0
+            brake = (self.vehicle_mass + (self.fuel_capacity * GAS_DENSITY)) * -value * self.wheel_radius
 
         return throttle, brake
