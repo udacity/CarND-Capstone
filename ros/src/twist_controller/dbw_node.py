@@ -104,7 +104,8 @@ class DBWNode(object):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
             # get predicted throttle, brake and steering from the twist_controller
-            throttle, brake, steering = self.controller.control(self.req_vel_linear, 
+            throttle, brake, steering = self.controller.control(rospy.get_time(),
+                                                                self.req_vel_linear, 
                                                                 self.req_vel_angular,
                                                                 self.cur_vel_linear,
                                                                 self.cur_vel_angular,

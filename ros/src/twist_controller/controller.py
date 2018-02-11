@@ -11,7 +11,7 @@ class Controller(object):
         # create PID controllers for steering and throttle
         #   the gains are set by the dynamic reconfigure server when starting the node using either
         #   the defaults in the PidGains.cfg file or parameters from the launch file
-        self.pid_steering = PID(1, 0, 0)
+        self.pid_steering = PID(1, 0, 0, -kwargs['max_lat_accel'], kwargs['max_lat_accel'])
         self.pid_throttle = PID(1, 0, 0, kwargs['decel_limit'], kwargs['accel_limit'])
 
         # yaw-controller converts angular velocity to steering angles
@@ -27,6 +27,7 @@ class Controller(object):
         self.fuel_capacity = kwargs['fuel_capacity']
         self.wheel_radius = kwargs['wheel_radius']
         self.brake_deadband = kwargs['brake_deadband']
+        self.last_t = None
 
     def update_steering_gains(self, Kp, Ki, Kd):
         self.pid_steering.set_gains(Kp, Ki, Kd)
@@ -34,7 +35,7 @@ class Controller(object):
     def update_throttle_gains(self, Kp, Ki, Kd):
         self.pid_throttle.set_gains(Kp, Ki, Kd)
 
-    def control(self, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular, dbw_enabled):
+    def control(self, cur_t, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular, dbw_enabled):
         # reset PID controls after the safety driver enables drive-by-wire again
         #   JS-XXX: is this necessary or would it be beter to ignore this, the pid-controllers errors
         #           aren't updated will dbw is disabled...
@@ -45,27 +46,32 @@ class Controller(object):
         self.dbw_enabled = dbw_enabled
 
         # early out when dbw is not enabled
-        if not self.dbw_enabled:
+        if not self.dbw_enabled or self.last_t is None:
+            self.last_t = cur_t
             return 0.0, 0.0, 0.0
 
+        # time delta for sample
+        delta_t = cur_t - self.last_t
+        self.last_t = cur_t
+
         # control steering
-        steer = self.control_steering(req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular)
+        steer = self.control_steering(delta_t, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular)
 
         # control velocity
-        throttle, brake = self.control_velocity(req_vel_linear, cur_vel_linear)
+        throttle, brake = self.control_velocity(delta_t, req_vel_linear, cur_vel_linear)
 
         # return throttle, brake, steer
         return throttle, brake, steer
 
-    def control_steering(self, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular):  
+    def control_steering(self, delta_t, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular):  
         # update the error of the PID-controller
-        pid_velocity = self.pid_steering.step(req_vel_angular - cur_vel_angular, 1)
+        pid_velocity = self.pid_steering.step(req_vel_angular - cur_vel_angular, delta_t)
 
         return self.yaw_controller.get_steering(cur_vel_linear, pid_velocity, cur_vel_linear)
 
-    def control_velocity(self, req_vel_linear, cur_vel_linear):
+    def control_velocity(self, delta_t, req_vel_linear, cur_vel_linear):
         # update the error of the PID-controller
-        value = self.pid_throttle.step(req_vel_linear - cur_vel_linear, 1)
+        value = self.pid_throttle.step(req_vel_linear - cur_vel_linear, delta_t)
 
         # engage throttle if the value of the PID-controller is positive
         if value > 0:
