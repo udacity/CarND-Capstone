@@ -96,8 +96,6 @@ class DBWNode(object):
     def cb_dynamic_config(self, config, level):
         rospy.loginfo("New gains for throttle-PID: {throttle_Kp}, {throttle_Ki}, {throttle_Kd}".format(**config))
         self.controller.update_throttle_gains( config['throttle_Kp'], config['throttle_Ki'], config['throttle_Kd'])
-        rospy.loginfo("New gains for steering-PID: {steering_Kp}, {steering_Ki}, {steering_Kd}".format(**config))
-        self.controller.update_steering_gains( config['steering_Kp'], config['steering_Ki'], config['steering_Kd'])
         return config
 
     def loop(self):
