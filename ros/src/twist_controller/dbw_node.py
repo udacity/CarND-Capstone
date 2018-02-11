@@ -8,6 +8,9 @@ import math
 
 from controller import Controller
 
+from dynamic_reconfigure.server import Server
+from twist_controller.cfg import PidGainsConfig
+
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
 
@@ -65,6 +68,9 @@ class DBWNode(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.cb_current_velocity, queue_size=1)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.cb_twist_cmd, queue_size=1)
 
+        # activate dynamic configuration of the module
+        drc_srv = Server(PidGainsConfig, self.cb_dynamic_config)
+
         # variables
         self.dbw_enabled = False
         self.cur_vel_linear = 0
@@ -86,6 +92,13 @@ class DBWNode(object):
     def cb_twist_cmd(self, msg):
         self.req_vel_linear = msg.twist.linear.x
         self.req_vel_angular = msg.twist.angular.z
+
+    def cb_dynamic_config(self, config, level):
+        rospy.loginfo("New gains for throttle-PID: {throttle_Kp}, {throttle_Ki}, {throttle_Kd}".format(**config))
+        self.controller.update_throttle_gains( config['throttle_Kp'], config['throttle_Ki'], config['throttle_Kd'])
+        rospy.loginfo("New gains for steering-PID: {steering_Kp}, {steering_Ki}, {steering_Kd}".format(**config))
+        self.controller.update_steering_gains( config['steering_Kp'], config['steering_Ki'], config['steering_Kd'])
+        return config
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz

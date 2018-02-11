@@ -13,6 +13,11 @@ class PID(object):
 
         self.int_val = self.last_int_val = self.last_error = 0.
 
+    def set_gains(self, kp, ki, kd):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+
     def reset(self):
         self.int_val = 0.0
         self.last_int_val = 0.0

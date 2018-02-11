@@ -8,19 +8,11 @@ import math
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
-        # PID-parameters (JS-XXX: change to dynamic reconfigure for tuning)
-        steering_Kp = 1.0
-        steering_Ki = 0.0
-        steering_Kd = 0.0
-
-        throttle_Kp = 1.0
-        throttle_Ki = 0.0
-        throttle_Kd = 0.0
-
         # create PID controllers for steering and throttle
-        self.pid_steering = PID(steering_Kp, steering_Ki, steering_Kd)
-        self.pid_throttle = PID(throttle_Kp, throttle_Ki, throttle_Kd,
-                                kwargs['decel_limit'], kwargs['accel_limit'])
+        #   the gains are set by the dynamic reconfigure server when starting the node using either
+        #   the defaults in the PidGains.cfg file or parameters from the launch file
+        self.pid_steering = PID(1, 0, 0)
+        self.pid_throttle = PID(1, 0, 0, kwargs['decel_limit'], kwargs['accel_limit'])
 
         # yaw-controller converts angular velocity to steering angles
         self.yaw_controller =  YawController(kwargs['wheel_base'],
@@ -35,6 +27,12 @@ class Controller(object):
         self.fuel_capacity = kwargs['fuel_capacity']
         self.wheel_radius = kwargs['wheel_radius']
         self.brake_deadband = kwargs['brake_deadband']
+
+    def update_steering_gains(self, Kp, Ki, Kd):
+        self.pid_steering.set_gains(Kp, Ki, Kd)
+
+    def update_throttle_gains(self, Kp, Ki, Kd):
+        self.pid_throttle.set_gains(Kp, Ki, Kd)
 
     def control(self, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular, dbw_enabled):
         # reset PID controls after the safety driver enables drive-by-wire again
