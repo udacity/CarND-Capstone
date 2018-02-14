@@ -7,6 +7,16 @@ from yaw_controller import YawController
 from lowpass import LowPassFilter
 import math
 
+# Note: how to tune the gains of the PID controllers at runtime
+# - the gains can be changed at runtime using the ROS dynamic_reconfigure package
+# - while the ROS session is running : 
+#     - start rqt and add a Dynamic Reconfigure plugin (Plugins > Configuration)
+#     - or use the included perspective file : rqt --perspective-file src/twist_controller/launch/dbw_node.perspective
+# - select 'dbw_node' in the list to view and change the PID-gains
+# - to make changes permanent: modify PidGains.cfg in the src/twist_controller/cfg directory or add a value to the parameter list in the launch file
+#     - don't forget to run catkin_make after changing PidGains.cfg
+#     - if necessary this could enables us to use different gains on Carla (dbw.launch) than in the simulator (dbw_sim.launch)
+
 class Controller(object):
     def __init__(self, *args, **kwargs):
         # create PID controller for throttle/brake
