@@ -11,7 +11,7 @@ class PID(object):
         self.min = mn
         self.max = mx
 
-        self.int_val = self.last_int_val = self.last_error = 0.
+        self.int_val = self.last_error = 0.
 
     def set_gains(self, kp, ki, kd):
         self.kp = kp
@@ -20,16 +20,13 @@ class PID(object):
 
     def reset(self):
         self.int_val = 0.0
-        self.last_int_val = 0.0
 
     def step(self, error, sample_time):
-        self.last_int_val = self.int_val
 
         integral = self.int_val + error * sample_time;
         derivative = (error - self.last_error) / sample_time;
 
-        y = self.kp * error + self.ki * self.int_val + self.kd * derivative;
-        val = max(self.min, min(y, self.max))
+        val = self.kp * error + self.ki * integral + self.kd * derivative;
 
         if val > self.max:
             val = self.max
