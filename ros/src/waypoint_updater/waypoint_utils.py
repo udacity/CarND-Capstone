@@ -1,5 +1,8 @@
 """
 Helper functions for waypoints_updater
+
+Author: Peng Xu <robotpengxu@gmail.com>
+Date:   Feb 20 2018
 """
 # pylint: disable=invalid-name
 
