@@ -13,9 +13,12 @@ import yaml
 
 STATE_COUNT_THRESHOLD = 3
 
+DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
+
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
+        if DEBUG_LEVEL >= 1: rospy.logwarn("TL Detector loaded!")
 
         self.pose = None
         self.waypoints = None
@@ -50,7 +53,6 @@ class TLDetector(object):
         self.state_count = 0
 
         rospy.spin()
-        rospy.logwarn("TRAFFIC LIGHT DETECTION: Get closest waypoint!")
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -102,9 +104,7 @@ class TLDetector(object):
 
         """
         #TODO implement
-        rospy.logwarn("TRAFFIC LIGHT DETECTION: Get closest waypoint!")
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
+        rospy.logwarn("TL Detector get closest waypoint!")
         return 0
 
     def get_light_state(self, light):
@@ -138,14 +138,14 @@ class TLDetector(object):
         light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
-        rospy.logwarn("TRAFFIC LIGHT DETECTION: Stop line positions!")
+        if DEBUG_LEVEL >= 2: rospy.logwarn("TL Detector stop line positions!")
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
-            rospy.logwarn("TRAFFIC LIGHT DETECTION: Current pose!")
+            if DEBUG_LEVEL >= 2: rospy.logwarn("TL Detector current pose!")
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
-        rospy.logwarn("TRAFFIC LIGHT DETECTION: closest traffic light!")
+        if DEBUG_LEVEL >= 2: rospy.logwarn("TL Detector closest traffic light!")
 
         if light:
             state = self.get_light_state(light)
