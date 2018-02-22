@@ -27,18 +27,15 @@ for path in paths:
 #images = glob.glob('*data/*/*jpg', '*data/*/*png')
 traffic_lights = []
 non_traffic_lights = []
-for image in image_paths:
-    if 'non' in image:
-        non_traffic_lights.append(image)
+for image_path in image_paths:
+    if 'non' in image_path:
+        non_traffic_lights.append(image_path)
     else:
-        traffic_lights.append(image)
-
-print('Non Traffic light num images: ', len(non_traffic_lights))
-print('Traffic light num images: ', len(traffic_lights))
+        traffic_lights.append(image_path)
 
 if prototype == True:
     traffic_lights = utils.shuffle(traffic_lights)
-    sample_size = 100
+    sample_size = 10
     traffic_lights = traffic_lights[0:sample_size]
     non_traffic_lights = non_traffic_lights[0:sample_size]
     
@@ -46,19 +43,19 @@ print('Non Traffic light num images: ', len(non_traffic_lights))
 print('Traffic light num images: ', len(traffic_lights))
 
 # Define parameters for feature extraction
-color_spaces = ['RGB','HSV','LUV','HLS','YUV','YCrCb']  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-#color_spaces= ['LUV']
+#color_spaces = ['RGB','HSV','LUV','HLS','YUV','YCrCb']  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+color_spaces= ['YCrCb']
 orient = 9  # HOG orientations
-pix_per_cell = 9 # HOG pixels per cell
+pix_per_cell = 8 # HOG pixels per cell
 cell_per_block = 2 # HOG cells per block
 hog_channel = 'ALL' # Can be 0, 1, 2, or "ALL"
-spatial_size = (16, 16) # Spatial binning dimensions
-hist_bins = 32    # Number of histogram bins
+spatial_size = (48, 96) # Spatial binning dimensions
+hist_bins = 128    # Number of histogram bins
 spatial_feat = True # Spatial features on or off
 hist_feat = True # Histogram features on or off
 hog_feat = True # HOG features on or off
-visualize_feat = True # Visualize HOG
-visualize_trans = True
+visualize_feat = False # Visualize HOG
+visualize_trans = False
 
 for color_space in color_spaces:
     print("#########################################")  
@@ -71,14 +68,14 @@ for color_space in color_spaces:
                                 orient=orient, pix_per_cell=pix_per_cell, 
                                 cell_per_block=cell_per_block, 
                                 hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                                hist_feat=hist_feat, hog_feat=hog_feat, visualize=False)
+                                hist_feat=hist_feat, hog_feat=hog_feat, visualize=False, augment=True)
     else:
         tl_features, feature_image, hog_features, spatial_features, channels_hist = extract_features(traffic_lights, color_space=color_space, 
                                                                         spatial_size=spatial_size, hist_bins=hist_bins, 
                                                                         orient=orient, pix_per_cell=pix_per_cell, 
                                                                         cell_per_block=cell_per_block, 
                                                                         hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                                                                        hist_feat=hist_feat, hog_feat=hog_feat, visualize=True)
+                                                                        hist_feat=hist_feat, hog_feat=hog_feat, visualize=True, augment=True)
         fig = plt.figure(figsize=(10, 10))
         if len(hog_features) == 0:
             plt.imshow(hog_features)
@@ -87,7 +84,7 @@ for color_space in color_spaces:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             bin_edges = channels_hist[0][1]
             bin_centers = (bin_edges[1:]  + bin_edges[0:len(bin_edges)-1])/2
-            rows = 3
+            rows = 4
             cols = 3
             idx = 1
             plt.subplot(rows, cols, idx)
@@ -96,8 +93,14 @@ for color_space in color_spaces:
             
             idx += 1
             plt.subplot(rows, cols, idx)
+            aug_image = augment_image(image)
+            plt.imshow(aug_image)
+            plt.title('Augmented Image')
+            
+            idx += 1
+            plt.subplot(rows, cols, idx)
             plt.imshow(feature_image)
-            plt.title(color_space+' Image')
+            plt.title(color_space+'Feature Image')
             
             idx += 1
             plt.subplot(rows, cols, idx)
@@ -143,7 +146,7 @@ for color_space in color_spaces:
                             orient=orient, pix_per_cell=pix_per_cell, 
                             cell_per_block=cell_per_block, 
                             hog_channel=hog_channel, spatial_feat=spatial_feat, 
-                            hist_feat=hist_feat, hog_feat=hog_feat, visualize=False)
+                            hist_feat=hist_feat, hog_feat=hog_feat, visualize=False, augment=False)
     print('Non traffic light samples: ', len(non_tl_features))
     
     

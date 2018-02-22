@@ -10,6 +10,37 @@ import matplotlib.image as mpimg
 import numpy as np
 import cv2
 from skimage.feature import hog
+import random
+
+def augment_lighting(image):
+    if random.randint(0, 1) == 1:
+        aug_image = np.copy(image)
+        aug_image = cv2.cvtColor(aug_image,cv2.COLOR_RGB2HSV)
+        random_bright = .25+np.random.uniform()
+        aug_image[:,:,2] = aug_image[:,:,2]*random_bright
+        return cv2.cvtColor(aug_image,cv2.COLOR_HSV2RGB)
+    else:
+        return image
+
+def augment_image_translate(image):
+    if random.randint(0, 1) == 1:
+        aug_image = np.copy(image)
+        rows, cols, _ = aug_image.shape
+        trans_range_x = 10
+        trans_range_y = 20
+        trans_x = trans_range_x * np.random.uniform() - trans_range_x/2
+        trans_y = trans_range_y * np.random.uniform() - trans_range_y/2
+        trans_mat = np.float32([[1, 0, trans_x], [0, 1, trans_y]])
+        aug_image = cv2.warpAffine(aug_image, trans_mat, (cols, rows))
+        return aug_image
+    else:
+        return image
+
+    
+def augment_image(image):
+    aug_light = augment_lighting(image)
+    aug_trans = augment_image_translate(aug_light)
+    return aug_trans
 
 def get_hog_features(img, orient, pix_per_cell, cell_per_block, 
                         vis=False, feature_vec=True):
@@ -54,16 +85,25 @@ def color_hist(img, nbins=32, visualize=False):    #bins_range=(0, 256)
 def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
                         hist_bins=32, orient=9, 
                         pix_per_cell=8, cell_per_block=2, hog_channel=0,
-                        spatial_feat=True, hist_feat=True, hog_feat=True, visualize=False):
+                        spatial_feat=True, hist_feat=True, hog_feat=True, visualize=False, augment=False):
     # Create a list to append feature vectors to
     features = []
+    images = []
     # Iterate through the list of images
     for file in imgs:
-        file_features = []
         # Read in each one by one
         image = cv2.imread(file)
         image = cv2.resize(image, spatial_size)
+        image = cv2.normalize(image, image, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        images.append(image)
+        
+        if augment == True:
+            aug_image = augment_image(image)
+            images.append(aug_image)
+    
+    for image in images:
+        file_features = []
         # apply color conversion if other than 'RGB'
         if color_space != 'RGB':
             if color_space == 'HSV':
