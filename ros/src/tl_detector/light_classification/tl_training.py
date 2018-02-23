@@ -24,6 +24,8 @@ from gcforest.utils.config_utils import load_json
 #Set to False to run only 1 ETC Fold for testing otherwise edit as you prefer at get_toy_config method
 all_estimators = True
 
+pickle_name = "gc_classifier_v1_2_est.pkl"
+
 def get_files(dir_path):
     return [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f))]
 
@@ -218,12 +220,12 @@ def get_toy_config(all_estimators=False):
     ca_config["n_classes"] = n_classes
     ca_config["estimators"] = []
     if(all_estimators):
-        ca_config["estimators"].append(
-                  {"n_folds": 5, "type": "XGBClassifier", "n_estimators": 10, "max_depth": 5,
-                   "objective": "multi:softprob", "silent": True, "nthread": -1, "learning_rate": 0.1} )
-        ca_config["estimators"].append({"n_folds": 5, "type": "RandomForestClassifier", "n_estimators": 10, "max_depth": None, "n_jobs": -1})
-        ca_config["estimators"].append({"n_folds": 5, "type": "ExtraTreesClassifier", "n_estimators": 10, "max_depth": None, "n_jobs": -1})
-        ca_config["estimators"].append({"n_folds": 5, "type": "LogisticRegression"})
+        # ca_config["estimators"].append(
+        #           {"n_folds": 2, "type": "XGBClassifier", "n_estimators": 10, "max_depth": 5,
+        #            "objective": "multi:softprob", "silent": True, "nthread": -1, "learning_rate": 0.1} )
+        # ca_config["estimators"].append({"n_folds": 2, "type": "RandomForestClassifier", "n_estimators": 10, "max_depth": None, "n_jobs": -1})
+        ca_config["estimators"].append({"n_folds": 2, "type": "ExtraTreesClassifier", "n_estimators": 10, "max_depth": None, "n_jobs": -1})
+        ca_config["estimators"].append({"n_folds": 2, "type": "LogisticRegression"})
     else:
         ca_config["estimators"].append({"n_folds": 1, "type": "ExtraTreesClassifier", "n_estimators": 10, "max_depth": None, "n_jobs": -1})
     config["cascade"] = ca_config
@@ -253,5 +255,5 @@ acc = accuracy_score(y_test, y_pred)
 print("Test Accuracy of GcForest = {:.2f} %".format(acc * 100))
 
 # save the model to disk
-with open("gc_classifier.pkl", "wb") as f:
+with open(pickle_name, "wb") as f:
     pickle.dump(gc, f, pickle.HIGHEST_PROTOCOL)

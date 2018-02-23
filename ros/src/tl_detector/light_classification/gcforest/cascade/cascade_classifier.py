@@ -167,9 +167,9 @@ class CascadeClassifier(object):
             X_groups_train = [X_groups_train]
         if is_eval_test and not type(X_groups_test) == list:
             X_groups_test = [X_groups_test]
-        LOGGER.info("X_groups_train.shape={},y_train.shape={},X_groups_test.shape={},y_test.shape={}".format(
-            [xr.shape for xr in X_groups_train], y_train.shape,
-            [xt.shape for xt in X_groups_test] if is_eval_test else "no_test", y_test.shape if is_eval_test else "no_test"))
+        # LOGGER.info("X_groups_train.shape={},y_train.shape={},X_groups_test.shape={},y_test.shape={}".format(
+        #     [xr.shape for xr in X_groups_train], y_train.shape,
+        #     [xt.shape for xt in X_groups_test] if is_eval_test else "no_test", y_test.shape if is_eval_test else "no_test"))
 
         # check look_indexs_cycle
         look_indexs_cycle = self._check_look_indexs_cycle(X_groups_train, True)
@@ -182,10 +182,10 @@ class CascadeClassifier(object):
             _, _, _, X_test = self._check_group_dims(X_groups_test, False)
         else:
             X_test = np.zeros((0, X_train.shape[1]))
-        LOGGER.info("group_dims={}".format(group_dims))
-        LOGGER.info("group_starts={}".format(group_starts))
-        LOGGER.info("group_ends={}".format(group_ends))
-        LOGGER.info("X_train.shape={},X_test.shape={}".format(X_train.shape, X_test.shape))
+        # LOGGER.info("group_dims={}".format(group_dims))
+        # LOGGER.info("group_starts={}".format(group_starts))
+        # LOGGER.info("group_ends={}".format(group_ends))
+        # LOGGER.info("X_train.shape={},X_test.shape={}".format(X_train.shape, X_test.shape))
 
         n_trains = X_groups_train[0].shape[0]
         n_tests = X_groups_test[0].shape[0] if is_eval_test else 0
@@ -218,8 +218,8 @@ class CascadeClassifier(object):
                 for _i, i in enumerate(look_indexs):
                     X_cur_train = np.hstack((X_cur_train, X_train[:, group_starts[i]:group_ends[i]]))
                     X_cur_test = np.hstack((X_cur_test, X_test[:, group_starts[i]:group_ends[i]]))
-                LOGGER.info("[layer={}] look_indexs={}, X_cur_train.shape={}, X_cur_test.shape={}".format(
-                    layer_id, look_indexs, X_cur_train.shape, X_cur_test.shape))
+                # LOGGER.info("[layer={}] look_indexs={}, X_cur_train.shape={}, X_cur_test.shape={}".format(
+                #     layer_id, look_indexs, X_cur_train.shape, X_cur_test.shape))
                 # Fit on X_cur, predict to update X_proba
                 y_train_proba_li = np.zeros((n_trains, n_classes))
                 y_test_proba_li = np.zeros((n_tests, n_classes))
@@ -256,8 +256,8 @@ class CascadeClassifier(object):
                 # early stop
                 if self.early_stopping_rounds > 0 and layer_id - opt_layer_id >= self.early_stopping_rounds:
                     # log and save final result (opt layer)
-                    LOGGER.info("[Result][Optimal Level Detected] opt_layer_num={}, accuracy_train={:.2f}%, accuracy_test={:.2f}%".format(
-                        opt_layer_id + 1, train_acc_list[opt_layer_id], test_acc_list[opt_layer_id]))
+                    # LOGGER.info("[Result][Optimal Level Detected] opt_layer_num={}, accuracy_train={:.2f}%, accuracy_test={:.2f}%".format(
+                    #     opt_layer_id + 1, train_acc_list[opt_layer_id], test_acc_list[opt_layer_id]))
                     if data_save_dir is not None:
                         self.save_data( data_save_dir, opt_layer_id, *opt_datas)
                     # remove unused model
@@ -272,8 +272,8 @@ class CascadeClassifier(object):
                     self.save_data(data_save_dir, layer_id, *opt_datas)
                 # inc layer_id
                 layer_id += 1
-            LOGGER.info("[Result][Reach Max Layer] opt_layer_num={}, accuracy_train={:.2f}%, accuracy_test={:.2f}%".format(
-                opt_layer_id + 1, train_acc_list[opt_layer_id], test_acc_list[opt_layer_id]))
+            # LOGGER.info("[Result][Reach Max Layer] opt_layer_num={}, accuracy_train={:.2f}%, accuracy_test={:.2f}%".format(
+            #     opt_layer_id + 1, train_acc_list[opt_layer_id], test_acc_list[opt_layer_id]))
             if data_save_dir is not None:
                 self.save_data( self.max_layers - 1, *opt_datas)
             self.opt_layer_num = self.max_layers
@@ -284,13 +284,13 @@ class CascadeClassifier(object):
     def transform(self, X_groups_test):
         if not type(X_groups_test) == list:
             X_groups_test = [X_groups_test]
-        LOGGER.info("X_groups_test.shape={}".format([xt.shape for xt in X_groups_test]))
+        # LOGGER.info("X_groups_test.shape={}".format([xt.shape for xt in X_groups_test]))
         # check look_indexs_cycle
         look_indexs_cycle = self._check_look_indexs_cycle(X_groups_test, False)
         # check group_dims
         group_starts, group_ends, group_dims, X_test = self._check_group_dims(X_groups_test, False)
-        LOGGER.info("group_dims={}".format(group_dims))
-        LOGGER.info("X_test.shape={}".format(X_test.shape))
+        # LOGGER.info("group_dims={}".format(group_dims))
+        # LOGGER.info("X_test.shape={}".format(X_test.shape))
 
         n_tests = X_groups_test[0].shape[0]
         n_classes = self.n_classes
@@ -309,8 +309,8 @@ class CascadeClassifier(object):
             look_indexs = look_indexs_cycle[layer_id % len(look_indexs_cycle)]
             for _i, i in enumerate(look_indexs):
                 X_cur_test = np.hstack((X_cur_test, X_test[:, group_starts[i]:group_ends[i]]))
-            LOGGER.info("[layer={}] look_indexs={}, X_cur_test.shape={}".format(
-                layer_id, look_indexs, X_cur_test.shape))
+            # LOGGER.info("[layer={}] look_indexs={}, X_cur_test.shape={}".format(
+            #     layer_id, look_indexs, X_cur_test.shape))
             for ei, est_config in enumerate(self.est_configs):
                 est = self._get_estimator(layer_id, ei)
                 if est is None:

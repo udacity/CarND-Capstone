@@ -19,7 +19,7 @@ class TLClassifier(object):
     
     def prepare_trafficlight(self, image):
         #print(image)
-        image = cv2.cvtColor(cv2.imread(image), cv2.COLOR_BGR2RGB)
+        # image = cv2.cvtColor(cv2.imread(image), cv2.COLOR_BGR2RGB)
         image = cv2.resize(image, (24, 72))
         return np.divide(image, 255).astype (np.float32)
     
