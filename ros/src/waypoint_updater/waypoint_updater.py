@@ -120,7 +120,7 @@ class WaypointUpdater(object):
             wp.twist.twist.linear.x = self.base_waypoints[index].twist.twist.linear.x
             msg.waypoints.append(wp)
             index = (index + 1) % len(self.base_waypoints)
-        if DEBUG_LEVEL >= 2: rospy.logwarn("Waypoints published! Next Waypoint x: {0:.3f} y: {1:.3f}".format(msg.waypoints[0].pose.pose.position.x, msg.waypoints[1].pose.pose.position.x))
+        if DEBUG_LEVEL >= 2: rospy.logwarn("Waypoints published! Next Waypoint x: {0:.3f} y: {1:.3f}".format(msg.waypoints[0].pose.pose.position.x, msg.waypoints[0].pose.pose.position.y))
         self.final_waypoints_pub.publish(msg)
 
     def get_waypoint_velocity(self, waypoint):
