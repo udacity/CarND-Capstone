@@ -72,8 +72,12 @@ class DBWNode(object):
             #                                                     <proposed angular velocity>,
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
+            #                              
+            #                        <any other argument you need>)                        
+            self.publish(0.3, 0, 0)
+
+            if self.controller.dbw_enabled:
+                pass
             #   self.publish(throttle, brake, steer)
             rate.sleep()
 
