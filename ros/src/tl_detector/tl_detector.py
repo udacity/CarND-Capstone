@@ -50,6 +50,7 @@ class TLDetector(object):
         self.state_count = 0
 
         rospy.spin()
+        rospy.logwarn("TRAFFIC LIGHT DETECTION: Get closest waypoint!")
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -101,6 +102,9 @@ class TLDetector(object):
 
         """
         #TODO implement
+        rospy.logwarn("TRAFFIC LIGHT DETECTION: Get closest waypoint!")
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
         return 0
 
     def get_light_state(self, light):
@@ -134,11 +138,14 @@ class TLDetector(object):
         light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
+        rospy.logwarn("TRAFFIC LIGHT DETECTION: Stop line positions!")
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
+            rospy.logwarn("TRAFFIC LIGHT DETECTION: Current pose!")
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
+        rospy.logwarn("TRAFFIC LIGHT DETECTION: closest traffic light!")
 
         if light:
             state = self.get_light_state(light)
