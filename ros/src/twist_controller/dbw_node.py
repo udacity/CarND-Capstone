@@ -33,7 +33,7 @@ that we have created in the `__init__` function.
 
 class DBWNode(object):
     def __init__(self):
-        rospy.init_node('dbw_node')
+        rospy.init_node('dbw_node', log_level=rospy.DEBUG)
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
@@ -73,10 +73,10 @@ class DBWNode(object):
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                              
-            #                        <any other argument you need>)                        
-            self.publish(0.3, 0, 0)
+            #                        <any other argument you need>)                                    
 
             if self.controller.dbw_enabled:
+                # controller.control()          
                 pass
             #   self.publish(throttle, brake, steer)
             rate.sleep()
@@ -101,15 +101,24 @@ class DBWNode(object):
 
 
     def twist_cmd_cb(self, twist_stamped):
-        rospy.loginfo('twist cmd received')        
+        self.log_twist(twist_stamped.twist)        
+        self.controller.twist = twist_stamped.twist
 
     def current_velocity_cb(self, twist_stamped):
-        rospy.loginfo('current velocity received')        
+        pass 
     
     def dbw_enabled_cb(self, dbw_enabled):
         self.controller.dbw_enabled = dbw_enabled 
-        rospy.loginfo('dbw enabled received')               
+        rospy.loginfo('dbw enabled received')
 
+    def log_twist(self, twist_msg):
+        '''
+        Utility function to log twist messages
+        '''
+        rospy.loginfo('linear: {0:.3}, {1:.3}, {2:.3}'.format(twist_msg.linear.x, twist_msg.linear.y, twist_msg.linear.z))
+        rospy.loginfo('angular: {0:.3}, {1:.3}, {2:.3}'.format(twist_msg.angular.x, twist_msg.angular.y, twist_msg.angular.z))
+        pass
+        
 
 if __name__ == '__main__':
     DBWNode()
