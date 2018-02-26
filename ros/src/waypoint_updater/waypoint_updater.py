@@ -104,7 +104,7 @@ class WaypointUpdater(object):
 
             # Publish
             lane = utils.construct_lane_object(self.frame_id, lookahead_waypoints)
-            rospy.loginfo('Update local path waypoints ...')
+            # rospy.loginfo('Update local path waypoints ...')
             self.final_waypoints_pub.publish(lane)
             self.car_index_pub.publish(car_index)
 
