@@ -27,25 +27,43 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
+        rospy.loginfo("Gaus - Started WaypointUpdater")
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        # rospy.Subscriber('/traffic_waypoint', Waypoint, self.pose_cb)
+        # rospy.Subscriber('/obstacle_waypoint', Waypoint, self.pose_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.base_waypoints = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        x = msg.pose.position.x
+        y = msg.pose.position.y
+        rospy.loginfo("Gauss - Got pose (x, y): " + str(x) + ", " + str(y))
+
+        if self.base_waypoints is not None:
+            waypoints = self.base_waypoints.waypoints
+            waypoints_sliced = waypoints[0:LOOKAHEAD_WPS]
+
+            output_waypoints = self.base_waypoints
+            # Put the slicing here
+            # output_waypoints.waypoints = waypoints_sliced
+
+            rospy.loginfo("Gauss - Publishing waypoints of length: " + str(len(waypoints_sliced)))
+            self.final_waypoints_pub.publish(output_waypoints)
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
+        rospy.loginfo("Gauss - Got Waypoints")
+        self.base_waypoints = waypoints
         pass
 
     def traffic_cb(self, msg):
