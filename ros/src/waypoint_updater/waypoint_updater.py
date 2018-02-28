@@ -26,14 +26,15 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-        rospy.loginfo("Gaus - Started WaypointUpdater")
+        rospy.loginfo("Gauss - Started WaypointUpdater")
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints_msg', Lane, self.waypoints_cb)
 
         # @done: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        rospy.Subscriber('/traffic_waypoint', Waypoint, self.pose_cb)
-        rospy.Subscriber('/obstacle_waypoint', Waypoint, self.pose_cb)
+        # Removed for now, as those raise warnings
+        # rospy.Subscriber('/traffic_waypoint', Waypoint, self.pose_cb)
+        # rospy.Subscriber('/obstacle_waypoint', Waypoint, self.pose_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -66,6 +67,7 @@ class WaypointUpdater(object):
         self.base_waypoints_msg = waypoints
 
     def closest_waypoint_index(position, waypoints):
+        positions = waypoint.pose.pose.position for waypoint in waypoints
         return cdist([position], waypoints).argmin()
 
     def traffic_cb(self, msg):
