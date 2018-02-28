@@ -52,7 +52,7 @@ class WaypointUpdater(object):
         if self.base_waypoints_msg is not None:
             waypoints = self.base_waypoints_msg.waypoints
 
-            index = closest_waypoint_index(msg.pose.position, waypoints)
+            index = self.closest_waypoint_index(msg.pose.position, waypoints)
             waypoints_sliced = waypoints[index:index+LOOKAHEAD_WPS]
 
             output_msg = self.base_waypoints_msg
@@ -66,9 +66,9 @@ class WaypointUpdater(object):
         rospy.loginfo("Gauss - Got Waypoints")
         self.base_waypoints_msg = waypoints
 
-    def closest_waypoint_index(position, waypoints):
-        positions = waypoint.pose.pose.position for waypoint in waypoints
-        return cdist([position], waypoints).argmin()
+    def closest_waypoint_index(self, position, waypoints):
+        positions = [waypoint.pose.pose.position for waypoint in waypoints]
+        return cdist([position], positions).argmin()
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -98,3 +98,4 @@ if __name__ == '__main__':
         WaypointUpdater()
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start waypoint updater node.')
+
