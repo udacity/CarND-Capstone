@@ -97,8 +97,9 @@ RUN cd /opt/tensorflow/models/research \
 ENV PYTHONPATH=$PYTHONPATH:/opt/tensorflow/models/research:/opt/tensorflow/models/research/slim
 
 # udacity capstone
-RUN mkdir /udacity
-VOLUME ["/udacity"]
+RUN mkdir /capstone
+VOLUME ["/capstone"]
 VOLUME ["/root/.ros/log/"]
 WORKDIR /udacity/
 
+RUN pip install jupyter
