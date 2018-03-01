@@ -92,7 +92,7 @@ class Controller(object):
             throttle = 0.0
             brake = 0.0
 
-	if req_vel_linear == 0 and cur_vel_linear < 0.01:
+	if req_vel_linear == 0 and cur_vel_linear < 0.1:
 		throttle = 0.0
         	brake = 1.0
 
