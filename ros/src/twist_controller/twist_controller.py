@@ -25,13 +25,12 @@ class Controller(object):
         # Return 0 values if state not populated yet
         if self.current_velocity is None or self.twist is None:
             return 0.01, 0.0, 0.0
-
-        
+       
         throttle = self.control_throttle()
         steering = self.control_steering()
 
         # Return throttle, brake, steer
-        return throttle, steering, 0.
+        return max(0.0, throttle), min(0.0, throttle), steering
 
 
     def control_throttle(self):
