@@ -15,11 +15,6 @@ You will subscribe to `/twist_cmd` message which provides the proposed linear an
 You can subscribe to any other message that you find important or refer to the document for list
 of messages subscribed to by the reference implementation of this node.
 
-One thing to keep in mind while building this node and the `twist_controller` class is the status
-of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
-not be the case. This may cause your PID controller to accumulate error because the car could
-temporarily be driven by a human instead of your controller.
-
 We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
 wheel_base) etc should not be altered in these files.
 
@@ -31,7 +26,9 @@ that we have created in the `__init__` function.
 
 '''
 
+
 class DBWNode(object):
+
     def __init__(self):
         rospy.init_node('dbw_node')
 
@@ -53,15 +50,20 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        # assume drive by wire is disabled to begin
+        self.dbw_enabled = False
+
         # TODO: Create `Controller` object
         # self.controller = Controller(<Arguments you wish to provide>)
 
-        # TODO: Subscribe to all the topics you need to
+        # Subscribe to messages about car being under drive by wire control
+        rospy.Subscriber(
+            '/vehicle/dbw_enabled', Bool, self.handleDBWEnabledMessage)
 
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(50)  # 50Hz
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
@@ -70,8 +72,9 @@ class DBWNode(object):
             #                                                     <current linear velocity>,
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            if self.dbw_enabled:
+                #   TODO - self.publish(throttle, brake, steer)
+                pass
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -92,6 +95,10 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+    def handleDBWEnabledMessage(self, dbw_enabled_message):
+        self.dbw_enabled = dbw_enabled_message.data
+        rospy.loginfo(
+            'Drive by Wire %s', "enabled" if self.dbw_enabled else "disabled")
 
 if __name__ == '__main__':
     DBWNode()
