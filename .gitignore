@@ -4,3 +4,7 @@ build
 devel
 
 profile.tmp
+
+# Ignores for CLion
+.idea
+cmake-build-debug

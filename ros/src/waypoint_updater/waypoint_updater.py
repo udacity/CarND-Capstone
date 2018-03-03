@@ -26,7 +26,7 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-        rospy.loginfo("Gauss - Started WaypointUpdater")
+        rospy.loginfo("Gauss - Started Waypoint Updater")
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -47,7 +47,7 @@ class WaypointUpdater(object):
         # @done: Implement
         x = msg.pose.position.x
         y = msg.pose.position.y
-        rospy.loginfo("Gauss - Got pose (x, y): " + str(x) + ", " + str(y))
+        rospy.loginfo("Gauss - Got Pose (x, y): " + str(x) + ", " + str(y))
 
         if self.base_waypoints_msg is not None:
             waypoints = self.base_waypoints_msg.waypoints
@@ -59,7 +59,7 @@ class WaypointUpdater(object):
             output_msg.header = self.base_waypoints_msg.header
             output_msg.waypoints = waypoints_sliced
 
-            rospy.loginfo("Gauss - Publishing waypoints of length: " + str(len(output_msg.waypoints)))
+            rospy.loginfo("Gauss - Publishing Waypoints of length: " + str(len(output_msg.waypoints)))
             self.final_waypoints_pub.publish(output_msg)
 
     def waypoints_cb(self, waypoints):
