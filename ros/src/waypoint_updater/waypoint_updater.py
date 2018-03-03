@@ -29,14 +29,14 @@ class WaypointUpdater(object):
         rospy.loginfo("Gauss - Started WaypointUpdater")
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints_msg', Lane, self.waypoints_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # @done: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         # Removed for now, as those raise warnings
         # rospy.Subscriber('/traffic_waypoint', Waypoint, self.pose_cb)
         # rospy.Subscriber('/obstacle_waypoint', Waypoint, self.pose_cb)
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
         # @done: Add other member variables you need below
         self.base_waypoints_msg = None
@@ -55,7 +55,8 @@ class WaypointUpdater(object):
             index = self.closest_waypoint_index(msg.pose.position, waypoints)
             waypoints_sliced = waypoints[index:index+LOOKAHEAD_WPS]
 
-            output_msg = self.base_waypoints_msg
+            output_msg = Lane()
+            output_msg.header = self.base_waypoints_msg.header
             output_msg.waypoints = waypoints_sliced
 
             rospy.loginfo("Gauss - Publishing waypoints of length: " + str(len(output_msg.waypoints)))
@@ -67,8 +68,8 @@ class WaypointUpdater(object):
         self.base_waypoints_msg = waypoints
 
     def closest_waypoint_index(self, position, waypoints):
-        positions = [waypoint.pose.pose.position for waypoint in waypoints]
-        return cdist([position], positions).argmin()
+        positions = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints]
+        return cdist([[position.x, position.y]], positions).argmin()
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
