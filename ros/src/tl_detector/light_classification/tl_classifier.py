@@ -12,7 +12,7 @@ from gcforest.gcforest import GCForest
 from gcforest.utils.config_utils import load_json
 
 class TLClassifier(object):
-    def __init__(self, clf_name):
+    def __init__(self, clf_name="/home/student/CarND-Capstone_Group/CarND-Capstone_2/CarND-Capstone/ros/src/tl_detector/light_classification/gc_classifier.pkl"):
         with open(clf_name, "rb") as f:
             self.gc = pickle.load(f)
             
