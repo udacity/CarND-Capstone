@@ -22,9 +22,9 @@ from gcforest.gcforest import GCForest
 from gcforest.utils.config_utils import load_json
 
 #Set to False to run only 1 ETC Fold for testing otherwise edit as you prefer at get_toy_config method
-all_estimators = True
+all_estimators = False
 
-pickle_name = "gc_classifier_v1_2_est.pkl"
+pickle_name = "gc_classifier_v1_p27_est.pkl"
 
 def get_files(dir_path):
     return [f for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f))]
@@ -227,7 +227,7 @@ def get_toy_config(all_estimators=False):
         ca_config["estimators"].append({"n_folds": 2, "type": "ExtraTreesClassifier", "n_estimators": 10, "max_depth": None, "n_jobs": -1})
         ca_config["estimators"].append({"n_folds": 2, "type": "LogisticRegression"})
     else:
-        ca_config["estimators"].append({"n_folds": 1, "type": "ExtraTreesClassifier", "n_estimators": 10, "max_depth": None, "n_jobs": -1})
+        ca_config["estimators"].append({"n_folds": 2, "type": "ExtraTreesClassifier", "n_estimators": 10, "max_depth": None, "n_jobs": -1})
     config["cascade"] = ca_config
     return config
 

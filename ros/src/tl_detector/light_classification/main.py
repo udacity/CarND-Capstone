@@ -147,7 +147,7 @@ def detect_traffic_lights(PATH_TO_TEST_IMAGES_DIR, MODEL_NAME, Num_images, plot_
     return traffic_light_states
 
 if __name__ == "__main__":
-    clf = TLClassifier("gc_classifier_v1_2_est.pkl")
+    clf = TLClassifier("gc_classifier_v1_p27_est.pkl")
     Num_images = 18
     PATH_TO_TEST_IMAGES_DIR = './test_images'
     MODEL_NAME = 'faster_rcnn_resnet101_coco_11_06_2017'

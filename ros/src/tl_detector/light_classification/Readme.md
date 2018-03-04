@@ -4,6 +4,7 @@ Traffic Light Classifier using gcForest + Traffic Light Detector using Tensorflo
 Required packages:
  - Numpy
  - Scikit-Learn
+ - joblib
  - OpenCV2+
  - gcForest(https://github.com/kingfengji/gcForest) * included into the project as a project lib(not necessary to install it)
  - Tensorflow-gpu/ Tensorflow models
