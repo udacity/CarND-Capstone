@@ -8,11 +8,11 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
-import cv2
 import yaml
-import os
+import sys
 
 STATE_COUNT_THRESHOLD = 3
+DISTANCE_LIMIT = 200
 
 class TLDetector(object):
     def __init__(self):
@@ -50,7 +50,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-	self.tl_min_distance = 10000
+        self.tl_min_distance = 10000
 
         rospy.spin()
 
@@ -159,29 +159,28 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
-	min_distance = sys.maxsize
-	light_wp_idx = None
+        min_distance = sys.maxsize
+        light_wp_idx = None
 
-	# update waypoint position close to car_position
+        # update waypoint position close to car_position
         if (self.waypoints == None) or (car_position == None):
             return -1, TrafficLight.UNKNOWN
         else:
             car_pose = self.waypoints.waypoints[car_position].pose.pose.position
-	
-	# Find nearest traffic lights
-	num_light_idx = len(self.lights)
+
+        # Find nearest traffic lights
+        num_light_idx = len(self.lights)
         for i in range(num_light_idx):
             lt_pos = self.lights[i].pose.pose.position
             dist  = self.eucledien_distance(car_pose.x,car_pose.y,car_pose.z,lt_pos.x,lt_pos.y,lt_pos.z)
             if dist < min_distance:
 	        light_wp_idx 	= i
                 min_distance    = dist
-        print(light_wp_idx,car_pose, self.lights[light_wp_idx].pose.pose.position, min_distance)
-
-        rospy.loginfo("car_position: %d", car_position)
-
-	stop_wp_idx = None
         
+        #print(light_wp_idx,car_pose, self.lights[light_wp_idx].pose.pose.position, min_distance)
+        rospy.loginfo("car_position: %d", car_position)
+        
+        stop_wp_idx = None        
         min_dist = sys.maxsize
         close_light_idx  =  self.get_closest_waypoint(self.lights[light_wp_idx].pose.pose)
         #print(close_light_idx , car_position)
@@ -189,7 +188,7 @@ class TLDetector(object):
             light = self.lights[light_wp_idx].pose.pose.position
             state = self.get_light_state(light)
 
-	    #find stop line waypoint close to closest traffic light
+        	   #find stop line waypoint close to closest traffic light
             for i in range(0, len(stop_line_positions)):
                 stop_line_pos = PoseStamped()
                 stop_line_pos.pose.position.x = stop_line_positions[i][0]
@@ -200,19 +199,20 @@ class TLDetector(object):
                 #print("dist = " , dist)
                 dist  = self.eucledien_distance(stop_lt_pos.x,stop_lt_pos.y,stop_lt_pos.z,light.x,light.y,0)
                  
-                if (dist < min_dist) and (close_wp_idx > (car_position + 1)):
-	            stop_wp_idx 	= close_wp_idx
-                    min_dist             = dist
+                if (dist < min_dist) and (closest_wp_idx > (car_position + 1)):
+                    stop_wp_idx = closest_wp_idx
+                    min_dist    = dist
     
             #print("light state ",state)
             if stop_wp_idx is not None:
                 #rospy.loginfo("Trafficdistance: %d  %d %d", mindist, stop_wp_idx, car_position)
-                # only update traffic light if min distance is close to diatnace limit
+                
+                # only update traffic light if min distance is close to distance limit
                 stop_line_pos = self.waypoints.waypoints[stop_wp_idx].pose.pose.position
                 self.tl_min_distance = self.eucledien_distance(car_pose.x,car_pose.y,car_pose.z,stop_line_pos.x,stop_line_pos.y,stop_line_pos.z)
                 #rospy.loginfo("self.tl_min_distance = %d", self.tl_min_distance) 
                 if (self.tl_min_distance < DISTANCE_LIMIT):
-		    rospy.loginfo("stop_wp_idx = %d, state = %d",stop_wp_idx, state)
+                    rospy.loginfo("stop_wp_idx = %d, state = %d",stop_wp_idx, state)
                     return stop_wp_idx, state
                 else:
                     return -1, TrafficLight.UNKNOWN
