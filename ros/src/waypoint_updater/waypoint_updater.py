@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
-import copy
-import math
-
-import numpy as np
 import rospy
-import tf
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point, TwistStamped
+from styx_msgs.msg import Lane, Waypoint, TrafficLightArray, TrafficLight
 from std_msgs.msg import Int32
-from styx_msgs.msg import Lane
+
+import math
+import numpy as np
+import tf
+import yaml
+import matplotlib.pyplot as plt
+import copy
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
