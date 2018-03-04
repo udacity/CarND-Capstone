@@ -8,11 +8,13 @@ Created on Wed Feb 21 08:16:48 2018
 import pickle
 import cv2
 import numpy as np
+import sys
+sys.path.append('light_classification')
 from gcforest.gcforest import GCForest
 from gcforest.utils.config_utils import load_json
 
 class TLClassifier(object):
-    def __init__(self, clf_name="/home/student/CarND-Capstone_Group/CarND-Capstone_2/CarND-Capstone/ros/src/tl_detector/light_classification/gc_classifier.pkl"):
+    def __init__(self, clf_name):
         with open(clf_name, "rb") as f:
             self.gc = pickle.load(f)
             

@@ -8,11 +8,13 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
-import cv2
 import yaml
+import sys
 import os
+import math
 
 STATE_COUNT_THRESHOLD = 3
+DISTANCE_LIMIT = 100
 
 class TLDetector(object):
     def __init__(self):
@@ -43,14 +45,14 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
 	#rospy.loginfo(os.path.join(os.getcwd(), "light_classification/gc_classifier.pkl"))
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(os.path.join(os.getcwd(), "light_classification/gc_classifier_v1_p27_est.pkl"))
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-	self.tl_min_distance = 10000
+        self.tl_min_distance = 10000
 
         rospy.spin()
 
@@ -62,6 +64,10 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+
+    def euclidean_distance(self,refx,refy,refz,curx,cury,curz):
+        distance = math.sqrt((curx - refx) ** 2 + (cury - refy) ** 2 + (curz - refz) ** 2)
+	return distance
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -116,7 +122,7 @@ class TLDetector(object):
         # Find nearest points
         for i in range(len(waypt)):
             cur_wp_pos = waypt[i].pose.pose.position
-            dist  = self.eucledien_distance(pose.position.x,pose.position.y,pose.position.z,cur_wp_pos.x,cur_wp_pos.y,cur_wp_pos.z)
+            dist  = self.euclidean_distance(pose.position.x,pose.position.y,pose.position.z,cur_wp_pos.x,cur_wp_pos.y,cur_wp_pos.z)
             if dist < min_distance:
                 closest_wp_index = i
                 min_distance = dist
@@ -159,60 +165,61 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         #TODO find the closest visible traffic light (if one exists)
-	min_distance = sys.maxsize
-	light_wp_idx = None
+        min_distance = sys.maxsize
+        light_wp_idx = None
 
-	# update waypoint position close to car_position
+        # update waypoint position closest to the car_position
         if (self.waypoints == None) or (car_position == None):
             return -1, TrafficLight.UNKNOWN
         else:
             car_pose = self.waypoints.waypoints[car_position].pose.pose.position
-	
-	# Find nearest traffic lights
-	num_light_idx = len(self.lights)
+
+        # Find the nearest traffic lights
+        num_light_idx = len(self.lights)
         for i in range(num_light_idx):
             lt_pos = self.lights[i].pose.pose.position
-            dist  = self.eucledien_distance(car_pose.x,car_pose.y,car_pose.z,lt_pos.x,lt_pos.y,lt_pos.z)
+            dist  = self.euclidean_distance(car_pose.x,car_pose.y,car_pose.z,lt_pos.x,lt_pos.y,lt_pos.z)
             if dist < min_distance:
 	        light_wp_idx 	= i
                 min_distance    = dist
-        print(light_wp_idx,car_pose, self.lights[light_wp_idx].pose.pose.position, min_distance)
-
-        rospy.loginfo("car_position: %d", car_position)
-
-	stop_wp_idx = None
         
+        #rospy.loginfo("car_position: %d", car_position)
+        stop_wp_idx = None        
         min_dist = sys.maxsize
         close_light_idx  =  self.get_closest_waypoint(self.lights[light_wp_idx].pose.pose)
-        #print(close_light_idx , car_position)
+
         if ((light_wp_idx is not None) and (close_light_idx > (car_position + 1))):
             light = self.lights[light_wp_idx].pose.pose.position
             state = self.get_light_state(light)
 
-	    #find stop line waypoint close to closest traffic light
+            #find the stop line waypoint to closest traffic light
             for i in range(0, len(stop_line_positions)):
                 stop_line_pos = PoseStamped()
                 stop_line_pos.pose.position.x = stop_line_positions[i][0]
                 stop_line_pos.pose.position.y = stop_line_positions[i][1]
                 stop_line_pos.pose.position.z = 0
                 closest_wp_idx  =  self.get_closest_waypoint(stop_line_pos.pose)
-                stop_lt_pos    = self.waypoints.waypoints[closest_wp_idx].pose.pose.position
-                #print("dist = " , dist)
-                dist  = self.eucledien_distance(stop_lt_pos.x,stop_lt_pos.y,stop_lt_pos.z,light.x,light.y,0)
+                stop_lt_pos     = self.waypoints.waypoints[closest_wp_idx].pose.pose.position
+                dist            = self.euclidean_distance(stop_lt_pos.x, stop_lt_pos.y, stop_lt_pos.z, light.x, light.y,0)
                  
-                if (dist < min_dist) and (close_wp_idx > (car_position + 1)):
-	            stop_wp_idx 	= close_wp_idx
-                    min_dist             = dist
-    
-            #print("light state ",state)
+                if (dist < min_dist) and (closest_wp_idx > (car_position + 1)):
+                    stop_wp_idx = closest_wp_idx
+                    min_dist    = dist
+
             if stop_wp_idx is not None:
-                #rospy.loginfo("Trafficdistance: %d  %d %d", mindist, stop_wp_idx, car_position)
-                # only update traffic light if min distance is close to diatnace limit
+                #rospy.loginfo("Traffic distance: %d  %d %d", min_dist, stop_wp_idx, car_position)
+                
+                # only update traffic light if min distance is within distance limit
                 stop_line_pos = self.waypoints.waypoints[stop_wp_idx].pose.pose.position
-                self.tl_min_distance = self.eucledien_distance(car_pose.x,car_pose.y,car_pose.z,stop_line_pos.x,stop_line_pos.y,stop_line_pos.z)
-                #rospy.loginfo("self.tl_min_distance = %d", self.tl_min_distance) 
+                self.tl_min_distance = self.euclidean_distance(car_pose.x,car_pose.y,car_pose.z,stop_line_pos.x,stop_line_pos.y,stop_line_pos.z)
                 if (self.tl_min_distance < DISTANCE_LIMIT):
-		    rospy.loginfo("stop_wp_idx = %d, state = %d",stop_wp_idx, state)
+		    if state == 0:
+		       state_str = "RED"
+		    elif state == 1:
+		       state_str = "YELLOW"
+		    else:
+		       state_str = "GREEN"
+                    rospy.loginfo("curr_wp_idx = %d, stop_wp_idx = %d, state = %s",car_position, stop_wp_idx, state_str)
                     return stop_wp_idx, state
                 else:
                     return -1, TrafficLight.UNKNOWN
