@@ -11,10 +11,6 @@ from twist_controller import Controller
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
 
-You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
-You can subscribe to any other message that you find important or refer to the document for list
-of messages subscribed to by the reference implementation of this node.
-
 We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
 wheel_base) etc should not be altered in these files.
 
@@ -50,31 +46,42 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        self.target_linear_velocity = None
+        self.target_angular_velocity = None
+        self.current_linear_velocity = None
+
         # assume drive by wire is disabled to begin
         self.dbw_enabled = False
 
-        # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        # Create `Controller` object
+        self.controller = Controller()
 
         # Subscribe to messages about car being under drive by wire control
         rospy.Subscriber(
             '/vehicle/dbw_enabled', Bool, self.handleDBWEnabledMessage)
+
+        # Subscribe to messages from waypoint follower
+        rospy.Subscriber(
+            '/twist_cmd', TwistStamped, self.handle_target_velocity_message)
+
+        # Subscribe to messages from car reporting current velocity
+        rospy.Subscriber(
+            '/current_velocity', TwistStamped, self.handle_current_velocity_message)
 
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(50)  # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            if self.dbw_enabled:
-                #   TODO - self.publish(throttle, brake, steer)
-                pass
+            # Get predicted throttle, brake, and steering
+            if (self.can_predict_controls()):
+                throttle, brake, steering = self.controller.control(self.target_linear_velocity,
+                                                                    self.target_angular_velocity,
+                                                                    self.current_linear_velocity,
+                                                                    self.dbw_enabled)
+                if self.dbw_enabled:
+                    #   TODO - self.publish(throttle, brake, steer)
+                    pass
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -99,6 +106,17 @@ class DBWNode(object):
         self.dbw_enabled = dbw_enabled_message.data
         rospy.loginfo(
             'Drive by Wire %s', "enabled" if self.dbw_enabled else "disabled")
+
+    def handle_target_velocity_message(self, twist_velocity_command_message):
+        twist = twist_velocity_command_message.twist
+        self.target_linear_velocity = twist.linear.x
+        self.target_angular_velocity = twist.angular.z
+
+    def handle_current_velocity_message(self, twist_current_velocity_message):
+        self.current_linear_velocity = twist_current_velocity_message.twist.linear.x
+
+    def can_predict_controls(self):
+        return self.target_linear_velocity is not None and self.target_angular_velocity is not None and self.current_linear_velocity is not None
 
 if __name__ == '__main__':
     DBWNode()
