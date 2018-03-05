@@ -3,7 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-
+from scipy.spatial.distance import cdist
 import math
 
 '''
@@ -18,35 +18,58 @@ Please note that our simulator also provides the exact location of traffic light
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
 
-TODO (for Yousuf and Aaron): Stopline location for each traffic light.
+Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
 
-
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
+        rospy.loginfo("Gauss - Started Waypoint Updater")
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        # @done: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        # Removed for now, as those raise warnings
+        # rospy.Subscriber('/traffic_waypoint', Waypoint, self.pose_cb)
+        # rospy.Subscriber('/obstacle_waypoint', Waypoint, self.pose_cb)
 
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-
-        # TODO: Add other member variables you need below
+        # @done: Add other member variables you need below
+        self.base_waypoints_msg = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        # @done: Implement
+        x = msg.pose.position.x
+        y = msg.pose.position.y
+        rospy.loginfo("Gauss - Got Pose (x, y): " + str(x) + ", " + str(y))
+
+        if self.base_waypoints_msg is not None:
+            waypoints = self.base_waypoints_msg.waypoints
+
+            index = self.closest_waypoint_index(msg.pose.position, waypoints)
+            waypoints_sliced = waypoints[index:index+LOOKAHEAD_WPS]
+
+            output_msg = Lane()
+            output_msg.header = self.base_waypoints_msg.header
+            output_msg.waypoints = waypoints_sliced
+
+            rospy.loginfo("Gauss - Publishing Waypoints of length: " + str(len(output_msg.waypoints)))
+            self.final_waypoints_pub.publish(output_msg)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        # @done: Implement
+        rospy.loginfo("Gauss - Got Waypoints")
+        self.base_waypoints_msg = waypoints
+
+    def closest_waypoint_index(self, position, waypoints):
+        positions = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints]
+        return cdist([[position.x, position.y]], positions).argmin()
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -76,3 +99,4 @@ if __name__ == '__main__':
         WaypointUpdater()
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start waypoint updater node.')
+
