@@ -3,10 +3,12 @@ import os
 
 sys.path.append(os.path.abspath("../"))
 
-from waypoint_updater import WaypointUpdater
+from dbw_node import DBWNode
 
 def main():
-    print("waypoint_updater_test")
+    print("twist_controller_test")
+    node = DBWNode()
+    node.loop()
 
 if __name__ == '__main__':
     main()
