@@ -11,12 +11,14 @@ class Controller(object):
 
         # Initialize utility controllers
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-        self.throttle_pid_controller = PID(1.0, 1.0, 1.0)
-        self.steering_pid_controller = PID(1.0, 1.0, 1.0)
+        self.throttle_pid_controller = PID(kp=1.0, ki=1.0, kd=1.0)
+        self.steering_pid_controller = PID(kp=1.0, ki=1.0, kd=1.0)
 
         # Initialize state that will be updated nodes dbw is subscribed to
         self.current_velocity = None
         self.twist = None
+
+        self.time_stamped = rospy.get_time()
 
     def toggle_dbw(self, dbw_enabled):
         self.dbw_enabled = dbw_enabled
@@ -34,8 +36,13 @@ class Controller(object):
 
 
     def control_throttle(self):
+        new_timestamp = rospy.get_time()
+        duration = new_timestamp - self.timestamp
+        sample_time = duration + 1e-6  # to avoid division by zero
+        self.timestamp = new_timestamp
+
         self.velocity_error = self.twist.linear.x - self.current_velocity.linear.x
-        throttle = self.throttle_pid_controller.step(self.velocity_error, 50)
+        throttle = self.throttle_pid_controller.step(self.velocity_error, sample_time)
         throttle = max(0.0, min(1.0, throttle))
         return throttle
 
