@@ -33,7 +33,7 @@ LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this 
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater')
+        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -104,7 +104,7 @@ class WaypointUpdater(object):
 
             # Publish
             lane = utils.construct_lane_object(self.frame_id, lookahead_waypoints)
-            rospy.loginfo('Update local path waypoints ...')
+            # rospy.loginfo('Update local path waypoints ...')
             self.final_waypoints_pub.publish(lane)
             self.car_index_pub.publish(car_index)
 
