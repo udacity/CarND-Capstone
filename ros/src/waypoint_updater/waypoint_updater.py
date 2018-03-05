@@ -60,6 +60,10 @@ class WaypointUpdater(object):
             next_wp = self.next_waypoint(self.pose.position, self.pose.orientation, self.next_wp)
             self.next_wp = next_wp
             self.publish_final_waypoints(next_wp)
+        # self.plot(stop=1000, pose=self.pose)
+        # plt.show()
+        # exit(0)
+
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
@@ -76,8 +80,8 @@ class WaypointUpdater(object):
         for i, w in enumerate(wps):
             w.twist.twist.linear.x = curr_vel + inc_vel * (i+1)
             w.twist.twist.linear.x = min(w.twist.twist.linear.x, wps_base[i].twist.twist.linear.x)
-        sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2)]
-        rospy.loginfo("wp init cruise %s %s", inc_vel, sample)
+        # sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2)]
+        # rospy.loginfo("wp init cruise %s %s", inc_vel, sample)
         return wps
 
     def stop_trajectory(self, next_wp, stop_wp):
@@ -151,22 +155,24 @@ class WaypointUpdater(object):
                 min_wp = (min_wp + 1) % len(self.wps)
         return min_wp
 
-#     def plot(self, start=0, stop=-1, position=None):
-#         if stop < 0:
-#             stop = len(self.wps)
-#         # lights = np.array([[l.pose.pose.position.x, l.pose.pose.position.y] for l in self.traffic_lights])
-#         # stops = np.array([[self.wps[w].pose.pose.position.x, self.wps[w].pose.pose.position.y] for w in self.traffic_lights_wps])
-#         wps = np.array([[w.pose.pose.position.x, w.pose.pose.position.y] for w in self.wps[start:stop]])
-#         plt.plot(wps[:,0], wps[:,1])
-#         if position:
-#             plt.plot(position.x, position.y-100, "r*")
-#             next_wp = self.next_waypoint(position)
-#             next_posn = self.wps[next_wp].pose.pose.position
-#             plt.plot(next_posn.x, next_posn.y, "gs")
-#         # plt.plot(stops[:,0], stops[:,1], "ro")
-#         # plt.plot(self.pose.position.x, self.pose.position.y, "g+")
-#         # plt.show()
-#         # plt.plot(lights[:,0], lights[:,1], "go")
+    def plot(self, start=0, stop=-1, pose=None):
+        if stop < 0:
+            stop = len(self.wps)
+        # lights = np.array([[l.pose.pose.position.x, l.pose.pose.position.y] for l in self.traffic_lights])
+        # stops = np.array([[self.wps[w].pose.pose.position.x, self.wps[w].pose.pose.position.y] for w in self.traffic_lights_wps])
+        wps = np.array([[w.pose.pose.position.x, w.pose.pose.position.y] for w in self.wps[start:stop]])
+        plt.plot(wps[:,0], wps[:,1])
+        if pose:
+            position, orient = pose.position, pose.orientation
+            _, _, theta = tf.transformations.euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])
+            plt.plot([position.x, position.x+100*math.cos(theta)], [position.y, position.y+100*math.sin(theta)], "r")
+            # next_wp = self.next_waypoint(position)
+            # next_posn = self.wps[next_wp].pose.pose.position
+            # plt.plot(next_posn.x, next_posn.y, "gs")
+        # plt.plot(stops[:,0], stops[:,1], "ro")
+        # plt.plot(self.pose.position.x, self.pose.position.y, "g+")
+        # plt.show()
+        # plt.plot(lights[:,0], lights[:,1], "go")
 
 
 
