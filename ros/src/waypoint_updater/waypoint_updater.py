@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
+from scipy import spatial
 import math
 import numpy as np
 
@@ -24,10 +25,9 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 
-DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
+DEBUG_LEVEL = 1  # 0 no Messages, 1 Important Stuff, 2 Everything
 
 UPDATE_FREQUENCY = 10  # 10Hz should do the trick :)
-
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -46,6 +46,7 @@ class WaypointUpdater(object):
         self.base_waypoints = None
         self.current_pose = None
         self.next_wp_index = None
+	self.kdtree = None
 
         if DEBUG_LEVEL >= 1: rospy.logwarn("Waypoint Updater loaded!")
         rate = rospy.Rate(UPDATE_FREQUENCY)
@@ -57,8 +58,8 @@ class WaypointUpdater(object):
 
     def loop(self):
         if (self.current_pose is not None) and (self.base_waypoints is not None):
-            next_wp_index = self.get_next_waypoint_index()
-            self.publish_waypoints(next_wp_index)
+		next_wp_index = self.get_next_waypoint_index()
+        	self.publish_waypoints(next_wp_index)
 
     def pose_cb(self, msg):
         # When we get a new position then load it to the local variable
@@ -86,19 +87,30 @@ class WaypointUpdater(object):
         # contain theta between pi and -pi
         if car_theta > np.pi:
             car_theta = -(2 * np.pi - car_theta)
-        # a big number to begin with
-        mindist = 1000000
+	#check if kd-tree is loaded
+	if self.kdtree == None:
+            rospy.logwarn("Waypoint Updater - Load waypoints into k-d tree")
+            wp_item_list = []
+            for i, wp in enumerate(self.base_waypoints):
+                x = wp.pose.pose.position.x
+                y = wp.pose.pose.position.y
+                wp_item_list.append([x, y])
+            self.kdtree = spatial.KDTree(np.asarray(wp_item_list))
+            if DEBUG_LEVEL >= 1:
+                rospy.logwarn("Waypoint Updater - Begin sample waypoints in k-d tree")
+                for i, wp in enumerate(self.base_waypoints):
+                    x = wp.pose.pose.position.x
+                    y = wp.pose.pose.position.y
+                    dist, j = self.kdtree.query([x, y])
+                    rospy.logwarn("Waypoint Updater wp: {0:d} pos: {1:.3f},{2:.3f}".format(i, x, y))
+                    rospy.logwarn("Waypoint Updater kdtree: {0:d} pos: {1:.3f},{2:.3f}".format(j, self.base_waypoints[j].pose.pose.position.x, self.base_waypoints[j].pose.pose.position.y))
+                    if i > 3: break
+                rospy.logwarn("Waypoint Updater - End sample waypoints in k-d tree")
+        dist, nwp_index = self.kdtree.query([self.current_pose.position.x, self.current_pose.position.y])
+        nwp_x = self.base_waypoints[nwp_index].pose.pose.position.x
+        nwp_y = self.base_waypoints[nwp_index].pose.pose.position.y
+        		
 
-        for i in range(len(self.base_waypoints)):
-            x = self.base_waypoints[i].pose.pose.position.x
-            y = self.base_waypoints[i].pose.pose.position.y
-
-            dist = math.sqrt((car_x - x) * (car_x - x) + (car_y - y) * (car_y - y))
-            if (dist < mindist):
-                mindist = dist
-                nwp_x = x
-                nwp_y = y
-                nwp_index = i
 
         # this will be the closest waypoint index without respect to heading
         heading = np.arctan2((nwp_y - car_y), (nwp_x - car_x))
