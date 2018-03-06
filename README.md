@@ -2,7 +2,7 @@
 
 Udacity Self-Driving Car Nanodegree
 
-## !!! CURRENTLY UNDER CONSTRUCTION !!!
+<img src="./imgs/construction.gif">
 
 ### Team Members
 
