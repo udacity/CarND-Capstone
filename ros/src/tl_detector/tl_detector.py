@@ -47,11 +47,11 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
         # rospy.loginfo(os.path.join(os.getcwd(), "light_classification/gc_classifier.pkl"))
-        self.light_classifier = TLClassifier(
-            os.path.join(os.getcwd(), "light_classification/gc_classifier_v2s_p27_est.pkl"))
+        # self.light_classifier = TLClassifier(
+        #     os.path.join(os.getcwd(), "light_classification/gc_classifier_v2s_p27_est.pkl"))
 
 
-        # self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(for_real=False)
 
         self.listener = tf.TransformListener()
 
@@ -155,7 +155,7 @@ class TLDetector(object):
         # if(self.camera_image):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
-        return self.light_classifier.get_classification(cv_image, save_tl=True)
+        return self.light_classifier.get_classification(cv_image, save_tl=False)
 
         #state = self.light_classifier.get_classification(cv_image)
         #rospy.loginfo("state = %s", state)

@@ -25,22 +25,30 @@ sys.path.append('light_classification')
 from gcforest.gcforest import GCForest
 from gcforest.utils.config_utils import load_json
 
-MODEL_NAME = 'faster_rcnn_resnet101_coco_11_06_2017'
 DOWNLOAD_BASE = 'http://download.tensorflow.org/models/object_detection/'
-PATH_TO_CKPT = MODEL_NAME + '/frozen_inference_graph.pb'
-# PATH_TO_CKPT = 'light_classification/' + MODEL_NAME + '/frozen_inference_graph.pb'
-PATH_TO_LABELS = 'mscoco_label_map.pbtxt'
-PATH_TO_LABELS = 'light_classification/mscoco_label_map.pbtxt'
-# number of classes for COCO dataset
-NUM_CLASSES = 90
-N_IMAGES = 18
+PATH_TO_CKPT_SIM = 'frozen_graphs/frozen_inference_graph_sim.pb'
+PATH_TO_CKPT_REAL = 'light_classification/frozen_graphs/frozen_inference_graph_sim.pb'
+PATH_TO_LABELS = 'light_classification/label_map.pbtxt'
+NUM_CLASSES = 4
 
 class TLClassifier(object):
 
-    def __init__(self, clf_name):
-        with open(clf_name, "rb") as f:
-            self.gc = pickle.load(f)
+    def __init__(self, for_real=False):
+        if for_real:
+            frozen_inf = PATH_TO_CKPT_SIM
+        else:
+            frozen_inf = PATH_TO_CKPT_REAL
 
+        # self.category_index = {1: {'id': 1, 'name': 'Red'},
+        #                        2: {'id': 2, 'name': 'Yellow'},
+        #                        3: {'id': 3, 'name': 'Green'},
+        #                        4: {'id': 4, 'name': 'Unknown'}}
+
+        self.label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
+        self.categories = label_map_util.convert_label_map_to_categories(self.label_map,
+                                                                    max_num_classes=NUM_CLASSES,
+                                                                    use_display_name=True)
+        self.category_index = label_map_util.create_category_index(self.categories)
 
         self.detection_graph = tf.Graph()
 
@@ -51,7 +59,7 @@ class TLClassifier(object):
 
         with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
-            with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
+            with tf.gfile.GFile(frozen_inf, 'rb') as fid:
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
@@ -110,6 +118,12 @@ class TLClassifier(object):
         y_pred = self.gc.predict(X_test)
         most_freq = np.bincount(y_pred).argmax()
         return most_freq
+
+    def get_category(self, categories, index):
+        for category in categories:
+            if category['id'] == index:
+                return category
+        return None
     
     def get_classification(self, image, save_tl=False):
         """Determines the color of the traffic light in the image
@@ -134,20 +148,51 @@ class TLClassifier(object):
         image_np_expanded = np.expand_dims(image, axis=0)
         # Detect
         start_time = time.time()
-        rospy.loginfo("Detect Start time = %s", start_time)
         (boxes, scores, classes, num) = self.session.run(
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: image_np_expanded})
 
-        rospy.loginfo("Detection Seconds = %s", time.time() - start_time)
+        rospy.loginfo("Detection ms = %s", (time.time() - start_time) * 1000.0)
 
         start_time = time.time()
-        rospy.loginfo("Classifier Start time = %s", start_time)
 
-        state = self.detect_color(image, np.squeeze(boxes), np.squeeze(scores), np.squeeze(classes).astype(np.int32))
+        #state = self.detect_color(image, np.squeeze(boxes), np.squeeze(scores), np.squeeze(classes).astype(np.int32))
 
-        rospy.loginfo("Classifier Seconds = %s", time.time() - start_time)
+        rospy.loginfo("Classifier ms = %s", (time.time() - start_time) * 1000.0)
 
+
+
+        # min_score_thresh = .50
+        # for i in range(boxes.shape[0]):
+        #     if scores is None or scores[i] > min_score_thresh:
+        #         class_name = self.category_index[classes[i]]['name']
+        #         if (class_name == 'Red'):
+        #             state = TrafficLight.RED
+        #         elif (class_name == 'Yellow'):
+        #             state = TrafficLight.YELLOW
+        #         elif (class_name == 'GREEN'):
+        #             state = TrafficLight.GREEN
+        #         else:
+        #             state = TrafficLight.UNKNOWN
+
+        score_thresh = scores[0][0]
+        if score_thresh < 0.5:
+            state = TrafficLight.UNKNOWN
+        else:
+            class_index = int(classes[0][0])
+            category = self.get_category(self.categories, class_index)
+            if category is not None:
+                rospy.loginfo("%s, %s, %s", category['name'], score_thresh, class_index)
+
+
+                if (class_index == 0):
+                    state = TrafficLight.UNKNOWN
+                elif (class_index == 1):
+                    state = TrafficLight.RED
+                elif (class_index == 2):
+                    state = TrafficLight.YELLOW
+                else:
+                    state = TrafficLight.GREEN
 
         if save_tl:
 
@@ -158,14 +203,9 @@ class TLClassifier(object):
             elif (state == 2):
                 label_state = 'GREEN'
             else:
-                label_state = 'UNKNOW'
+                label_state = 'UNKNOWN'
 
-            label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
-            categories = label_map_util.convert_label_map_to_categories(label_map,
-                                                                        max_num_classes=NUM_CLASSES,
-                                                                        use_display_name=True)
-            category_index = label_map_util.create_category_index(categories)
-            self.save_origin_image(image, boxes, classes, scores, category_index, label_state)
+            self.save_origin_image(image, boxes, classes, scores, self.category_index, label_state)
 
         return state
 
