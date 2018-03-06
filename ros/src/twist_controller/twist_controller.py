@@ -1,3 +1,4 @@
+import rospy
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -18,6 +19,7 @@ class Controller(object):
         self.current_velocity = None
         self.twist = None
 
+		self.timestamp = 0
         self.time_stamped = rospy.get_time()
 
     def toggle_dbw(self, dbw_enabled):
