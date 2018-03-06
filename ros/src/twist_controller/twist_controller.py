@@ -19,7 +19,7 @@ class Controller(object):
         self.current_velocity = None
         self.twist = None
 
-		self.timestamp = 0
+        self.timestamp = 0
         self.time_stamped = rospy.get_time()
 
     def toggle_dbw(self, dbw_enabled):
