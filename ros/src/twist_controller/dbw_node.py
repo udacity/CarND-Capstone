@@ -8,6 +8,7 @@ import math
 
 from twist_controller import Controller
 
+
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
 
@@ -39,6 +40,9 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
+        # TODO - define min_speed as a parameter in the parameter server?
+        min_speed = 0.
+
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
@@ -54,7 +58,8 @@ class DBWNode(object):
         self.dbw_enabled = False
 
         # Create `Controller` object
-        self.controller = Controller()
+        self.controller = Controller(
+            wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
         # Subscribe to messages about car being under drive by wire control
         rospy.Subscriber(
@@ -77,11 +82,8 @@ class DBWNode(object):
             if (self.can_predict_controls()):
                 throttle, brake, steering = self.controller.control(self.target_linear_velocity,
                                                                     self.target_angular_velocity,
-                                                                    self.current_linear_velocity,
-                                                                    self.dbw_enabled)
-                if self.dbw_enabled:
-                    #   TODO - self.publish(throttle, brake, steer)
-                    pass
+                                                                    self.current_linear_velocity)
+                self.publish(throttle, brake, steering)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -116,7 +118,7 @@ class DBWNode(object):
         self.current_linear_velocity = twist_current_velocity_message.twist.linear.x
 
     def can_predict_controls(self):
-        return self.target_linear_velocity is not None and self.target_angular_velocity is not None and self.current_linear_velocity is not None
+        return self.dbw_enabled and self.target_linear_velocity is not None and self.target_angular_velocity is not None and self.current_linear_velocity is not None
 
 if __name__ == '__main__':
     DBWNode()
