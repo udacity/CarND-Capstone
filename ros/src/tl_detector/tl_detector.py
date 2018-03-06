@@ -50,6 +50,9 @@ class TLDetector(object):
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
+        # List of positions of stop lines for each traffic light
+        self.stop_line_positions = self.config['stop_line_positions']
+
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
@@ -189,18 +192,16 @@ class TLDetector(object):
         """
         light = None
 
-        # List of positions of stop lines for each traffic light
-        stop_line_positions = self.config['stop_line_positions']
         if (self.pose and self.waypoints):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
             if car_position > self.light_wp:
 
                 # Find the waypoint for the next closest road stop line
-                for i in range(len(stop_line_positions)):
+                for i in range(len(self.stop_line_positions)):
                     stop_line = Pose()
-                    stop_line.position.x = stop_line_positions[i][0]
-                    stop_line.position.y = stop_line_positions[i][1]
+                    stop_line.position.x = self.stop_line_positions[i][0]
+                    stop_line.position.y = self.stop_line_positions[i][1]
 
                     #cProfile.runctx('self.get_closest_waypoint(stop_line)', globals(), locals(), 'get_closest_waypoint.log')
                     light_wp = self.get_closest_waypoint(stop_line)
