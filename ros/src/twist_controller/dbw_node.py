@@ -59,7 +59,7 @@ class DBWNode(object):
 
         # Create `Controller` object
         self.controller = Controller(
-            wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+            wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, decel_limit, accel_limit, fuel_capacity, vehicle_mass, wheel_radius)
 
         # Subscribe to messages about car being under drive by wire control
         rospy.Subscriber(
@@ -108,6 +108,8 @@ class DBWNode(object):
         self.dbw_enabled = dbw_enabled_message.data
         rospy.loginfo(
             'Drive by Wire %s', "enabled" if self.dbw_enabled else "disabled")
+        if (not self.dbw_enabled):
+            self.controller.reset()
 
     def handle_target_velocity_message(self, twist_velocity_command_message):
         twist = twist_velocity_command_message.twist
