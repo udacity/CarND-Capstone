@@ -32,7 +32,8 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
         self.kdtree = None
-        self.light_wp = -1
+        self.light = 0
+        self.light_wp_list = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -71,9 +72,41 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
+        self.light_wp_list = self.get_waypoints_of_stop_lines()
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+
+    def get_waypoints_of_stop_lines(self):
+        """Determines the waypoint index of the stop lines
+
+        Returns:
+            sorted list (by waypoint idx) of dicts
+        """
+        stop_line_wp_list = []
+
+        for i in range(len(self.stop_line_positions)):
+            stop_line = Pose()
+            stop_line.position.x = self.stop_line_positions[i][0]
+            stop_line.position.y = self.stop_line_positions[i][1]
+
+            #cProfile.runctx('self.get_closest_waypoint(stop_line)', globals(), locals(), 'get_closest_waypoint.log')
+            light_wp = self.get_closest_waypoint(stop_line)
+
+            d = {}
+            d["idx"] = i
+            d["wp"] = light_wp
+            stop_line_wp_list.append(d)
+
+        sorted_list = sorted(stop_line_wp_list, key=lambda k: k['wp']) 
+
+        for x in sorted_list:
+            for y in x:
+                print(y, x[y])
+        
+        return sorted_list
+
+
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -190,56 +223,35 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
+        if (self.pose != None and self.light_wp_list != None):
+            min_light_wp = self.light_wp_list[0]["wp"]
+            max_light_wp = self.light_wp_list[-1]["wp"]
 
-        if (self.pose and self.waypoints):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+            car_position_wp = self.get_closest_waypoint(self.pose.pose)
+            light_wp = self.light_wp_list[self.light]["wp"]
 
-            if car_position > self.light_wp:
+            if (car_position_wp > light_wp):
+                if (self.light != 0 or car_position_wp < max_light_wp):
+                    self.light = (self.light+1)%len(self.light_wp_list)
+                    light_wp = self.light_wp_list[self.light]["wp"]
 
-                # Find the waypoint for the next closest road stop line
-                for i in range(len(self.stop_line_positions)):
-                    stop_line = Pose()
-                    stop_line.position.x = self.stop_line_positions[i][0]
-                    stop_line.position.y = self.stop_line_positions[i][1]
+                    if DEBUG_LEVEL >= 2:
+                        rospy.logwarn("TL Detector car wp: {0:d} pos: {1:.3f},{2:.3f}, {3:d}".format(car_position_wp, self.pose.pose.position.x, self.pose.pose.position.y,light_wp))
 
-                    #cProfile.runctx('self.get_closest_waypoint(stop_line)', globals(), locals(), 'get_closest_waypoint.log')
-                    light_wp = self.get_closest_waypoint(stop_line)
-
-                    # To display profile log file in command line window:
-                    # python
-                    # >>> import pstats
-                    # >>> pstats.Stats('./src/tl_detector/get_closest_waypoint.log').print_stats()
-
-                    if light_wp > car_position:
-                        # Road stop line and light coming ahead
-                        if light_wp != self.light_wp:
-                            # We passed a light; show next one for debugging
-                            if DEBUG_LEVEL >= 1:
-                                rospy.logwarn("TL Detector car wp: {0:d} pos: {1:.3f},{2:.3f}".format(car_position, self.pose.pose.position.x, self.pose.pose.position.y))
-                                rospy.logwarn("TL Detector stop line wp: {0:d} pos: {1:.3f},{2:.3f}".format(light_wp, stop_line.position.x, stop_line.position.y))
-                        light = i
-                        self.light_wp = light_wp
-                        break
-
+            state = self.get_light_state(self.light)
             if DEBUG_LEVEL >= 2:
-                rospy.logwarn("TL Detector car wp: {0:d} pos: {1:.3f},{2:.3f}".format(car_position, self.pose.pose.position.x, self.pose.pose.position.y))
-
-        if light:
-            state = self.get_light_state(light)
-            if DEBUG_LEVEL >= 2:
-                if self.lights[light].state == TrafficLight.RED:
+                if self.lights[self.light].state == TrafficLight.RED:
                     state_name = "RED"
-                elif self.lights[light].state == TrafficLight.YELLOW:
+                elif self.lights[self.light].state == TrafficLight.YELLOW:
                     state_name = "YELLOW"
-                elif self.lights[light].state == TrafficLight.GREEN:
+                elif self.lights[self.light].state == TrafficLight.GREEN:
                     state_name = "GREEN"
                 else:
                     state_name = "UNKNOWN"
-                rospy.logwarn("TL Detector stop line wp: {0:d} {1:s}".format(light_wp, state_name))
+                rospy.logwarn("TL Detector stop line wp: {0:d} {1:s} - car_position_wp {2:d}".format(light_wp, state_name, car_position_wp))
             return light_wp, state
-        #self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+        else:
+            return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
