@@ -31,7 +31,6 @@ UPDATE_FREQUENCY = 10  # 10Hz should do the trick :)
 
 class WaypointUpdater(object):
     def __init__(self):
-
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -46,7 +45,13 @@ class WaypointUpdater(object):
         self.base_waypoints = None
         self.current_pose = None
         self.next_wp_index = None
-	self.kdtree = None
+        self.kdtree = None
+    
+        self.last_traffic_wpi = -1
+
+        # Get originally set velocity from the waypoint loader package
+        self.orig_velocity = self.kmph2mps(rospy.get_param('/waypoint_loader/velocity'))
+
 
         if DEBUG_LEVEL >= 1: rospy.logwarn("Waypoint Updater loaded!")
         rate = rospy.Rate(UPDATE_FREQUENCY)
@@ -58,8 +63,8 @@ class WaypointUpdater(object):
 
     def loop(self):
         if (self.current_pose is not None) and (self.base_waypoints is not None):
-		next_wp_index = self.get_next_waypoint_index()
-        	self.publish_waypoints(next_wp_index)
+            next_wp_index = self.get_next_waypoint_index()
+            self.publish_waypoints(next_wp_index)
 
     def pose_cb(self, msg):
         # When we get a new position then load it to the local variable
@@ -69,9 +74,46 @@ class WaypointUpdater(object):
         # When we the waypoints we save them to the local variable
         self.base_waypoints = waypoints.waypoints
 
+    def kmph2mps(self, velocity_kmph):
+        """ converts kmph to mps """
+        return (velocity_kmph * 1000.) / (60. * 60.)
+
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        """
+        Callback for the /traffic waypoint message
+        Modifies the velocities of the waypoints in order to brake at a red traffic light
+
+        Args:
+            msg: message containing the waypoint of closest traffic light if it is red and 
+            -1 otherwise 
+        """
+        if (self.base_waypoints is not None):
+            wpi = msg.data
+            if(wpi != self.last_traffic_wpi):
+
+                # If a traffic light turns green, reset veolcity values to orignal velaues
+                if (self.last_traffic_wpi != -1):
+                    for i in range(self.last_traffic_wpi-30, self.last_traffic_wpi+10):
+                        self.set_waypoint_velocity(self.base_waypoints, i, self.orig_velocity)
+                    if DEBUG_LEVEL >= 1: rospy.logwarn("Drive between {0:d} and {1:d}".format(self.last_traffic_wpi-25, self.last_traffic_wpi+10))
+                
+                # if a red traffic light is ahead, decrease velocity values linearly 
+                # for each waypoint closer to the stop line
+                # TODO: smarter braking - also account current speed and brake-distance
+                if (wpi != -1):
+                    for i in range(wpi-30, wpi-10):
+                        wp_vel = abs(i-wpi+10)/20.0*self.orig_velocity
+                        self.set_waypoint_velocity(self.base_waypoints, i, wp_vel)
+                    for i in range(wpi-10, wpi-0):
+                        wp_vel = 0.0
+                        self.set_waypoint_velocity(self.base_waypoints, i, wp_vel)
+                    for i in range(wpi+1, wpi+10):
+                        wp_vel = abs(i-wpi)/10.0*self.orig_velocity
+                        self.set_waypoint_velocity(self.base_waypoints, i, wp_vel)
+                    if DEBUG_LEVEL >= 1: rospy.logwarn("Brake between {0:d} and {1:d}".format(wpi-25, wpi+10))
+            self.last_traffic_wpi = wpi
+
+
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -87,8 +129,8 @@ class WaypointUpdater(object):
         # contain theta between pi and -pi
         if car_theta > np.pi:
             car_theta = -(2 * np.pi - car_theta)
-	#check if kd-tree is loaded
-	if self.kdtree == None:
+        #check if kd-tree is loaded
+        if self.kdtree == None:
             rospy.logwarn("Waypoint Updater - Load waypoints into k-d tree")
             wp_item_list = []
             for i, wp in enumerate(self.base_waypoints):
@@ -109,9 +151,7 @@ class WaypointUpdater(object):
         dist, nwp_index = self.kdtree.query([self.current_pose.position.x, self.current_pose.position.y])
         nwp_x = self.base_waypoints[nwp_index].pose.pose.position.x
         nwp_y = self.base_waypoints[nwp_index].pose.pose.position.y
-        		
-
-
+                
         # this will be the closest waypoint index without respect to heading
         heading = np.arctan2((nwp_y - car_y), (nwp_x - car_x))
         angle = abs(car_theta - heading);
