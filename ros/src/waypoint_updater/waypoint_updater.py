@@ -10,6 +10,7 @@ import numpy as np
 import tf
 import yaml
 import matplotlib.pyplot as plt
+import copy
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -29,7 +30,6 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 
 MAX_DECEL = 5
-MAX_VEL = 10.0
 
 
 class WaypointUpdater(object):
@@ -48,6 +48,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.pose = None
         self.wps = None
+        self.wps_base = None
         self.traffic_wp = -1
         self.next_wp = None
 
@@ -55,7 +56,7 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         self.pose = msg.pose
-        if self.wps:
+        if self.wps and self.wps_base:
             next_wp = self.next_waypoint(self.pose.position, self.pose.orientation, self.next_wp)
             self.next_wp = next_wp
             self.publish_final_waypoints(next_wp)
@@ -66,17 +67,19 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
+        self.wps_base = copy.deepcopy(self.wps)
         for w in self.wps: w.twist.twist.linear.x = 0
 
     def cruise_trajectory(self, next_wp):
         curr_vel = float(self.wps[next_wp-1].twist.twist.linear.x)
         last_wp = next_wp + LOOKAHEAD_WPS
         wps = self.wps[next_wp : last_wp]
-        # inc_vel = (MAX_VEL - curr_vel)/float(last_wp - next_wp)
+        wps_base = self.wps_base[next_wp : last_wp]
+        # inc_vel = (self.wps_base[next_wp-1].twist.twist.linear.x - curr_vel)/float(last_wp - next_wp)
         inc_vel = 1.0
         for i, w in enumerate(wps):
             w.twist.twist.linear.x = curr_vel + inc_vel * (i+1)
-            if w.twist.twist.linear.x > MAX_VEL: w.twist.twist.linear.x = MAX_VEL
+            w.twist.twist.linear.x = min(w.twist.twist.linear.x, wps_base[i].twist.twist.linear.x)
         # sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2)]
         # rospy.loginfo("wp init cruise %s %s", inc_vel, sample)
         return wps
@@ -85,6 +88,7 @@ class WaypointUpdater(object):
         curr_vel = float(self.wps[next_wp].twist.twist.linear.x)
         last_wp = next_wp + LOOKAHEAD_WPS
         wps = self.wps[next_wp : last_wp]
+        wps_base = self.wps_base[next_wp : last_wp]
         gap = stop_wp - next_wp
         if gap > 0:
             dec_vel = curr_vel/gap
@@ -95,6 +99,7 @@ class WaypointUpdater(object):
         for i, w in enumerate(wps):
             w.twist.twist.linear.x = init_vel - dec_vel * i
             if w.twist.twist.linear.x < 0.5: w.twist.twist.linear.x = 0
+            w.twist.twist.linear.x = min(w.twist.twist.linear.x, wps_base[i].twist.twist.linear.x)
         sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2)]
         rospy.loginfo("wp init stop %s ", sample)
         return wps
