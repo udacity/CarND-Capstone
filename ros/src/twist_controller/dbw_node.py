@@ -53,10 +53,20 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        self.dbw_enabled = False
+        self.target_acceleration = 0.
+        self.target_yaw_dot = 0.
+        self.current_velocity_x = 0.
+        self.current_yaw_dot = 0.
+
         # TODO: Create `Controller` object
         # self.controller = Controller(<Arguments you wish to provide>)
 
-        # TODO: Subscribe to all the topics you need to
+        # Subscribe to topics
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_callback)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_callback)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_callback)
+
 
         self.loop()
 
@@ -73,6 +83,22 @@ class DBWNode(object):
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
             rate.sleep()
+
+    def twist_cmd_callback(self, msg):
+        self.target_acceleration = msg.twist.linear.x
+        self.target_yaw_dot = msg.twist.angular.z
+        # rospy.logwarn('twist_cmd: a:%.3f yd:%.3f', self.target_acceleration, self.target_yaw_dot)
+        # log_twist_msg(msg, 'twist_cmd:')
+
+    def current_velocity_callback(self, msg):
+        self.current_velocity_x = msg.twist.linear.x
+        self.current_yaw_dot = msg.twist.angular.z
+        # rospy.logwarn('current_velocity: v:%.3f yd:%.3f', self.current_velocity_x, self.current_yaw_dot)
+        # log_twist_msg(msg, 'current_velocity:')
+
+    def dbw_enabled_callback(self, msg):
+        self.dbw_enabled = msg.data
+        # rospy.logwarn('dbw_enabled: %d', self.dbw_enabled)
 
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
@@ -92,6 +118,15 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+
+def log_twist_msg(msg, description=None):
+    if description is None:
+        description = ''
+    else:
+        description += ' '
+    rospy.logwarn(description + 'linear: [%.3f, %.3f, %.3f] angular: [%.3f, %.3f, %.3f]',
+                   msg.twist.linear.x, msg.twist.linear.y, msg.twist.linear.z,
+                   msg.twist.angular.x, msg.twist.angular.y, msg.twist.angular.z,)
 
 if __name__ == '__main__':
     DBWNode()
