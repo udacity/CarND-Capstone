@@ -100,12 +100,11 @@ class TLDetector(object):
 
         sorted_list = sorted(stop_line_wp_list, key=lambda k: k['wp'])
 
-        for x in sorted_list:
-            for y in x:
-                print(y, x[y])
-
+        if DEBUG_LEVEL >= 1:
+            rospy.logwarn("Sorted waypoints (trafficlight_index, waypoint_index):")
+            for x in sorted_list:
+                rospy.logwarn("  idx={0:d}, wp_idx={1:d}".format(x["idx"], x["wp"]))
         return sorted_list
-
 
 
     def image_cb(self, msg):
@@ -228,7 +227,6 @@ class TLDetector(object):
 
         """
         if (self.pose != None and self.light_wp_list != None):
-            min_light_wp = self.light_wp_list[0]["wp"]
             max_light_wp = self.light_wp_list[-1]["wp"]
 
             car_position_wp = self.get_closest_waypoint(self.pose.pose)
