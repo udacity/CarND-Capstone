@@ -6,7 +6,7 @@ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
 
-from twist_controller import Controller
+from twist_controller import TwistController
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -42,7 +42,7 @@ class DBWNode(object):
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
         wheel_base = rospy.get_param('~wheel_base', 2.8498)
-        steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+        self.steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
@@ -61,8 +61,9 @@ class DBWNode(object):
 
         self.last_update_time = None
 
-        # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        # Initialize TwistController
+        # TODO: how to calculate yaw_dot_limit ? (currently set to 1)
+        self.twist_controller = TwistController(accel_limit, decel_limit, max_steer_angle)
 
         # Subscribe to topics
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_callback)
@@ -89,33 +90,43 @@ class DBWNode(object):
             if (dt>0.075):
                 rospy.logwarn('slow DBW update, dt:%.3fs freq:%.1fhz', dt, 1/dt)
 
+            # reset controller PIDs and skip calculations if DBW is off
+            if not self.dbw_enabled:
+                self.twist_controller.reset()
+                rate.sleep()
+                continue
 
+            accel, yaw_dot = self.twist_controller.control(self.target_acceleration,
+                                                           self.target_yaw_dot,
+                                                           dt)
 
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
+            throttle = 0
+            brake = 0
 
-            throttle=0.1
-            brake=0
-            steer=0
-            #rospy.loginfo('DBW t:%.3f b:%.3f s:%.3f', throttle, brake, steer)
+            if (accel<0):
+                brake = -accel
+            else:
+                throttle = accel
 
-            if self.dbw_enabled:
-                self.publish(throttle, brake, steer)
+            steer = yaw_dot * self.steer_ratio
+
+            # rospy.loginfo('DBW a:%.3f         y:%.3f', self.target_acceleration, self.target_yaw_dot)
+            # rospy.loginfo('DBW t:%.3f b:%.3f s:%.3f', throttle, brake, steer)
+
+            self.publish(throttle, brake, steer)
             rate.sleep()
 
     def twist_cmd_callback(self, msg):
-        self.target_acceleration = msg.twist.linear.x
+        self.target_acceleration = msg.twist.linear.x - self.current_velocity_x
         self.target_yaw_dot = msg.twist.angular.z
         # rospy.loginfo('twist_cmd: a:%.3f yd:%.3f', self.target_acceleration, self.target_yaw_dot)
         # log_twist_msg(msg, 'twist_cmd:')
 
     def current_velocity_callback(self, msg):
         self.current_velocity_x = msg.twist.linear.x
+        # TODO: remove this check if y velocity always 0
+        if (abs(msg.twist.linear.y)>0.001):
+            rospy.logerr('current_velocity y!=0   y:%.3f',msg.twist.linear.y)
         self.current_yaw_dot = msg.twist.angular.z
         # rospy.loginfo('current_velocity: v:%.3f yd:%.3f', self.current_velocity_x, self.current_yaw_dot)
         # log_twist_msg(msg, 'current_velocity:')
