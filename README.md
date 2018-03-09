@@ -42,9 +42,23 @@ This project includes some visualization tools for monitoring data while running
 #### RViz (3D scene view)
 
 * **Setup:**
+    To visualize the car's position relative to the waypoints and traffic lights in an RViz 3D scene, a **visualization node** is used to publish a **/visualization_marker_array** topic to populate the objects and a **/visualization_basewp_path** topic to populate a path line.
+
+    The visualization node publishes when the parameter *vis_enabled == True*, set by default in the **styx.launch** file.  When using **site.launch** in the actual vehicle, the visualization node is not launched to reduce bandwidth.
+
+    RViz is included in the ROS desktop install, so no additional setup is needed.
 
 * **Operation:**
+    RViz can be run either as a stand-alone program or as a plug-in within RQT, but there is a bug in the RQT plug-in that causes a crash when rendering the base waypoint path so **RViz should be run as stand-alone**.  To use it as a stand-alone program, after roslaunching the styx program and connecting to the simulator, start another shell in the /ros/ folder and run:
 
+    ```
+    source devel/setup.bash
+    rviz
+    ```
+
+    A basic RViz layout can by loaded by going to the RViz menu *File > Open Config* and select the **rviz_basic.rviz** file.  In the RViz layout, the view can be switched between saved view settings in the *Views* list on the right side.  The mouse wheel and left/middle buttons can be used to move/zoom the camera.
+
+    [<img src="./imgs/screen_rviz_basic.png" width="800">](./imgs/screen_rviz_basic.png)
 
 ---
 

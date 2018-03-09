@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="visualization" type="vis_node.py" name="vis_node">
+        <param name="vis_enabled" value="True" />
+        <param name="vis_rate" value="5" />
+    </node>
+</launch>
