@@ -11,6 +11,7 @@ import tf
 import numpy as np
 import yaml
 import time
+import cv2
 from light_detector import LightDetector
 from PIL import Image as PILImage
 import math
@@ -37,8 +38,12 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        #sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+        # Debugging subscribers
+        sub2 = rospy.Subscriber('/image_raw', Image, self.capture_image_cb)
+        # sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+
         sub4 = rospy.Subscriber('/image_color', Image, self.image_cb)
+
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -107,17 +112,10 @@ class TLDetector(object):
 
     def capture_image_cb(self, msg):
         if self.light_detector:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
-            image, classes, dt = self.light_detector.infer(cv_image)
-            if classes.count(2.0) > 1 or classes.count(3.0) > 1:
-                waypoints = [self.waypoints[i] for i in self.stop_wps]
-                stop_wp = self.closest_waypoint(waypoints, self.pose.position)
-                light_wp = self.stop_wps[stop_wp]
-                rospy.loginfo("LD: Stop %s  %s ", light_wp, classes)
-                self.upcoming_red_light_pub.publish(Int32(light_wp))
-
-            rospy.loginfo("LD: Classes %s %s", classes, dt)
-            #cv2.imwrite("image_dump2/sim_"+str(time.time())+".jpg", image)
+            cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            image_path = "image_dump/site_"+str(time.time())+".jpg"
+            cv2.imwrite(image_path, cv_image)
+            rospy.loginfo('image path - %s', image_path)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
