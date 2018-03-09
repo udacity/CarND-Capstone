@@ -1,3 +1,56 @@
+# Self-Driving Car Engineer Nanodegree
+
+## Capstone Project - System Integration
+
+As the Capstone Project of the Self-Driving Car Engineer Nanodegree, the System Integration project aims at integrating three key modules, Perception, Planning and Control, into a complete solution to the Autonomous Driving. The final code will be tested on Carla, the Udacity’s Self Driving Lincoln MKZ, around a test track in Califonia.
+
+### Team: Speedy Easter Bunny
+
+**Peng Xu**
+
+**Ravel Antunes**
+
+**William O Grady**
+
+**Danilo Canivel**
+
+**Naveen Pandey**
+
+### Architecture
+
+### Perception
+
+#### 1. Traffic Light Classifier
+
+#### 2. Traffic Light Detection
+
+### Planning
+
+#### 1. Waypoint Loader Node
+
+#### 2. Waypoint Updater Node
+
+### Control
+
+#### 1. Waypoint Follower Node
+
+#### 2. Drive By Wire (DBW) Node
+
+##### 1) Throttle Controller
+
+##### 2) Steering Controller
+
+##### 3) Braking Controller
+
+### Test on Simulator
+
+### Test on Carla
+
+### Conclusion
+
+------------------
+(Below are original readme.)
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 Please use **one** of the two installation options, either native **or** docker installation.
