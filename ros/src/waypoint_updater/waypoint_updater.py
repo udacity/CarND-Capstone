@@ -155,7 +155,7 @@ class WaypointUpdater(object):
                 min_wp = (min_wp + 1) % len(self.wps)
         return min_wp
 
-    def plot(self, start=0, stop=-1, pose=None):
+    def plot(self, start=0, stop=-1, pose=None, plot_wps=None):
         if stop < 0:
             stop = len(self.wps)
         # lights = np.array([[l.pose.pose.position.x, l.pose.pose.position.y] for l in self.traffic_lights])
@@ -165,14 +165,10 @@ class WaypointUpdater(object):
         if pose:
             position, orient = pose.position, pose.orientation
             _, _, theta = tf.transformations.euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])
-            plt.plot([position.x, position.x+100*math.cos(theta)], [position.y, position.y+100*math.sin(theta)], "r")
-            # next_wp = self.next_waypoint(position)
-            # next_posn = self.wps[next_wp].pose.pose.position
-            # plt.plot(next_posn.x, next_posn.y, "gs")
-        # plt.plot(stops[:,0], stops[:,1], "ro")
-        # plt.plot(self.pose.position.x, self.pose.position.y, "g+")
-        # plt.show()
-        # plt.plot(lights[:,0], lights[:,1], "go")
+            plt.plot(position.x, position.y, "rs")
+            plt.plot(position.x+20*math.cos(theta), position.y+20*math.sin(theta), "r*")
+        if plot_wps:
+            plt.plot([w.pose.pose.position.x for w in plot_wps], [w.pose.pose.position.y for w in plot_wps], "g.")
 
 
 

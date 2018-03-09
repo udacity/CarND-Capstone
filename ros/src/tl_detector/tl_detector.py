@@ -12,7 +12,6 @@ import numpy as np
 import yaml
 import time
 import cv2
-from light_detector import LightDetector
 from PIL import Image as PILImage
 import math
 
@@ -51,7 +50,6 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -65,7 +63,7 @@ class TLDetector(object):
         # label_path = 'light_classification/mmsarode_label_map.pbtxt'
 
         num_classes = 4
-        self.light_detector = LightDetector(model, label_path, num_classes)
+        self.light_classifier = TLClassifier(model, label_path, num_classes)
 
         rospy.spin()
 
@@ -111,7 +109,7 @@ class TLDetector(object):
 
 
     def capture_image_cb(self, msg):
-        if self.light_detector:
+        if self.light_classifier:
             cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
             image_path = "image_dump/site_"+str(time.time())+".jpg"
             cv2.imwrite(image_path, cv_image)
@@ -180,7 +178,7 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
-        image, classes, dt = self.light_detector.infer(cv_image)
+        image, classes, dt = self.light_classifier.get_classification(cv_image)
 
 
         # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
