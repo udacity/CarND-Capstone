@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32
 
 import math
 
@@ -31,22 +32,29 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        # not yet implemented, so leaving commented out
+        #rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        # holds the current vehicle pose from /current_pose topic
+        self.current_pose = None
+
+        # holds list of waypoints that will be loaded over /base_waypoints topic
+        self.base_waypoints = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.current_pose = msg.pose
+        print("current pose set!")
+        self.publish_waypoints()
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.base_waypoints = waypoints.waypoints
+        print("waypoints set!")
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -62,14 +70,37 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
+    def position_distance(self, a, b):
+        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
     def distance(self, waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            dist += position_distance(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
 
+    def nearest_waypoint(self):
+        nearest_waypoint_index = 0
+        nearest_distance = self.position_distance(self.base_waypoints[0].pose.pose.position, self.current_pose.position)
+
+        for waypoint_index in range(len(self.base_waypoints)):
+            waypoint = self.base_waypoints[waypoint_index]
+            distance = self.position_distance(waypoint.pose.pose.position, self.current_pose.position)
+            if distance < nearest_distance:
+                nearest_waypoint_index = waypoint_index
+                nearest_distance = distance
+
+        return nearest_waypoint_index
+
+    def publish_waypoints(self):
+        nearest_waypoint_index = self.nearest_waypoint()
+        closing_waypoint_index = nearest_waypoint_index + LOOKAHEAD_WPS
+
+        waypoints_to_publish = self.base_waypoints[nearest_waypoint_index:closing_waypoint_index]
+        #print("publishing {} waypoints".format(len(waypoints_to_publish)))
+
+        self.final_waypoints_pub.publish(Lane(waypoints=waypoints_to_publish))
 
 if __name__ == '__main__':
     try:
