@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
 from scipy import spatial
@@ -34,6 +34,7 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.vel_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
@@ -46,8 +47,9 @@ class WaypointUpdater(object):
         self.current_pose = None
         self.next_wp_index = None
         self.kdtree = None
-    
         self.last_traffic_wpi = -1
+        self.current_vel = None
+        self.brake_range = []
 
         # Get originally set velocity from the waypoint loader package
         self.orig_velocity = self.kmph2mps(rospy.get_param('/waypoint_loader/velocity'))
@@ -59,16 +61,19 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             self.loop()
             rate.sleep()
-            # rospy.spin()
 
     def loop(self):
         if (self.current_pose is not None) and (self.base_waypoints is not None):
-            next_wp_index = self.get_next_waypoint_index()
-            self.publish_waypoints(next_wp_index)
+            self.next_wp_index = self.get_next_waypoint_index()
+            self.publish_waypoints(self.next_wp_index)
 
     def pose_cb(self, msg):
         # When we get a new position then load it to the local variable
         self.current_pose = msg.pose
+
+    def vel_cb(self, msg):
+        self.current_vel = msg.twist.linear.x
+
 
     def waypoints_cb(self, waypoints):
         # When we the waypoints we save them to the local variable
@@ -87,8 +92,47 @@ class WaypointUpdater(object):
             msg: message containing the waypoint of closest traffic light if it is red and 
             -1 otherwise 
         """
+
+        if DEBUG_LEVEL >= 1: rospy.logwarn("traffic_cb - current wpi {0:d}, current speed {1:f}"
+            .format(self.next_wp_index, self.current_vel))
+
         if (self.base_waypoints is not None):
             wpi = msg.data
+
+            # Red traffic light ahead - check if brakes have to ba applied or not
+            if (wpi != -1):
+                dist = self.distance(self.base_waypoints, self.next_wp_index, wpi)
+                brake_dist = (self.current_vel**2)/(2*2)
+                index_dist = wpi - self.next_wp_index
+                if (index_dist): 
+                    s_per_idx = dist/index_dist
+                else:
+                    s_per_idx = 0.9
+                
+                if DEBUG_LEVEL >= 1: 
+                    rospy.logwarn("closest stopline wp {0:d}, distance {1:f}".format(wpi, dist))
+                    rospy.logwarn("brake distance {0:f}".format(brake_dist))
+                    rospy.logwarn("s_per_idx {0:f}".format(s_per_idx))
+
+                if (dist < brake_dist):
+                    for i in range(self.next_wp_index, wpi):
+                        v_new = self.current_vel - np.sqrt(2*3*s_per_idx*(i-self.next_wp_index))
+                        if (v_new < 0.0):
+                            v_new = 0.0
+                        rospy.logwarn("i {0:d} - v_new {1:f}".format(i, v_new))
+                        self.set_waypoint_velocity(self.base_waypoints, i, v_new)
+                    self.brake_range.append((self.next_wp_index, wpi))
+                    if DEBUG_LEVEL >= 1: rospy.logwarn("Brake between {0:d} and {1:d}".format(self.next_wp_index, wpi))
+            
+            # No red traffic light: reset velocities to the original value
+            if (wpi == -1):
+                for range_tuple in self.brake_range:
+                    for i in range(range_tuple[0], range_tuple[1]):
+                        self.set_waypoint_velocity(self.base_waypoints, i, self.orig_velocity)
+                    if DEBUG_LEVEL >= 1: rospy.logwarn("Reset between {0:d} and {1:d}".format(range_tuple[0],range_tuple[1]))
+                    self.brake_range.remove(range_tuple)
+
+            """
             if(wpi != self.last_traffic_wpi):
 
                 # If a traffic light turns green, reset veolcity values to orignal velaues
@@ -112,7 +156,7 @@ class WaypointUpdater(object):
                         self.set_waypoint_velocity(self.base_waypoints, i, wp_vel)
                     if DEBUG_LEVEL >= 1: rospy.logwarn("Brake between {0:d} and {1:d}".format(wpi-25, wpi+10))
             self.last_traffic_wpi = wpi
-
+            """
 
 
     def obstacle_cb(self, msg):

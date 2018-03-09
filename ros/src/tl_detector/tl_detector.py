@@ -19,7 +19,7 @@ import cProfile
 
 STATE_COUNT_THRESHOLD = 3
 
-DEBUG_LEVEL = 1  # 0 no Messages, 1 Important Stuff, 2 Everything
+DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
 USE_GROUND_TRUTH = True
 
 class TLDetector(object):
@@ -98,14 +98,13 @@ class TLDetector(object):
             d["wp"] = light_wp
             stop_line_wp_list.append(d)
 
-        sorted_list = sorted(stop_line_wp_list, key=lambda k: k['wp']) 
+        sorted_list = sorted(stop_line_wp_list, key=lambda k: k['wp'])
 
-        for x in sorted_list:
-            for y in x:
-                print(y, x[y])
-        
+        if DEBUG_LEVEL >= 1:
+            rospy.logwarn("Sorted waypoints (trafficlight_index, waypoint_index):")
+            for x in sorted_list:
+                rospy.logwarn("  idx={0:d}, wp_idx={1:d}".format(x["idx"], x["wp"]))
         return sorted_list
-
 
 
     def image_cb(self, msg):
@@ -130,6 +129,10 @@ class TLDetector(object):
         if self.state != state:
             self.state_count = 0
             self.state = state
+            if DEBUG_LEVEL >= 1:
+                light_colors = {TrafficLight.RED: 'RED', TrafficLight.YELLOW: 'YELLOW', TrafficLight.GREEN: 'GREEN'}
+                if self.state in light_colors:
+                    rospy.logwarn("TL Detector stop line wp: {0:d} {1:s}".format(light_wp, light_colors[self.state]))
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
@@ -224,7 +227,6 @@ class TLDetector(object):
 
         """
         if (self.pose != None and self.light_wp_list != None):
-            min_light_wp = self.light_wp_list[0]["wp"]
             max_light_wp = self.light_wp_list[-1]["wp"]
 
             car_position_wp = self.get_closest_waypoint(self.pose.pose)
@@ -239,16 +241,6 @@ class TLDetector(object):
                         rospy.logwarn("TL Detector car wp: {0:d} pos: {1:.3f},{2:.3f}, {3:d}".format(car_position_wp, self.pose.pose.position.x, self.pose.pose.position.y,light_wp))
 
             state = self.get_light_state(self.light)
-            if DEBUG_LEVEL >= 2:
-                if self.lights[self.light].state == TrafficLight.RED:
-                    state_name = "RED"
-                elif self.lights[self.light].state == TrafficLight.YELLOW:
-                    state_name = "YELLOW"
-                elif self.lights[self.light].state == TrafficLight.GREEN:
-                    state_name = "GREEN"
-                else:
-                    state_name = "UNKNOWN"
-                rospy.logwarn("TL Detector stop line wp: {0:d} {1:s} - car_position_wp {2:d}".format(light_wp, state_name, car_position_wp))
             return light_wp, state
         else:
             return -1, TrafficLight.UNKNOWN
