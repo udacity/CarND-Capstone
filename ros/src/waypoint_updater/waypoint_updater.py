@@ -29,7 +29,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
-
+STALE_TIME = 1
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -45,27 +45,30 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
         self.car_index_pub = rospy.Publisher('car_index', Int32, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # other member variables you need below
         self.pose = None
         self.frame_id = None
         self.base_waypoints = None
+        self.traffic_index = -1  # Where in base waypoints list the traffic light is
+        self.traffic_time_received = rospy.get_time()  # When traffic light info was received
+        self.stop_distance = 0.25
+        self.slowdown_rate = 0.5
 
         self.run()
 
     def pose_cb(self, msg):
-        # DONE: Implement
         """ Update vehicle location """
         self.pose = msg.pose
         self.frame_id = msg.header.frame_id
 
     def waypoints_cb(self, msg):
-        # DONE: Implement
         """ Store the given map """
         self.base_waypoints = msg.waypoints
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        # Callback for /traffic_waypoint message. Implement
+        self.traffic_index = msg.data
+        self.traffic_time_received = rospy.get_time()
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -85,6 +88,23 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    def get_distance_speed_tuple(self, index):
+        """
+        Return tuple of distance from traffic light
+        and target speed for slowing down
+        """
+        d = utils.distance(self.base_waypoints, index, self.traffic_index)
+        car_wp = self.base_waypoints[index]
+        car_speed = car_wp.twist.twist.linear.x
+        speed = 0.0
+
+        if d > self.stop_distance:
+            speed = (d - self.stop_distance) * (car_speed ** (1-self.slowdown_rate))
+
+        if speed < 1.0:
+            speed = 0.0
+        return d, speed
+
     def run(self):
         """
         Continuously publish local path waypoints with target velocities
@@ -101,6 +121,22 @@ class WaypointUpdater(object):
 
             # Get subset waypoints ahead
             lookahead_waypoints = utils.get_next_waypoints(self.base_waypoints, car_index, LOOKAHEAD_WPS)
+
+            # Traffic light must be new and near ahead
+            is_fresh = rospy.get_time() - self.traffic_time_received < STALE_TIME
+            is_close = False
+
+            if (self.traffic_index - car_index) > 0:
+                d = utils.distance(self.base_waypoints, car_index, self.traffic_index)
+                car_wp = self.base_waypoints[car_index]
+                if d < car_wp.twist.twist.linear.x ** self.slowdown_coefficient:
+                    is_close = True
+
+            # Set target speeds
+            if is_fresh and is_close:
+                # Slow down and stop
+                for i, waypoint in enumerate(lookahead_waypoints):
+                    _, waypoint.twist.twist.linear.x = self.get_distance_speed_tuple(car_index + i)
 
             # Publish
             lane = utils.construct_lane_object(self.frame_id, lookahead_waypoints)
