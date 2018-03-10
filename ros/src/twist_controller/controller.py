@@ -27,7 +27,7 @@ class Controller(object):
         # yaw-controller converts angular velocity to steering angles
         self.yaw_controller =  YawController(kwargs['wheel_base'],
                                              kwargs['steer_ratio'], 
-                                             1,             # min-speed (JS-XXX check value)
+                                             1,            
                                              kwargs['max_lat_accel'], 
                                              kwargs['max_steer_angle'])
 
@@ -47,8 +47,6 @@ class Controller(object):
 
     def control(self, cur_t, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular, dbw_enabled):
         # reset PID controls after the safety driver enables drive-by-wire again
-        #   JS-XXX: is this necessary or would it be beter to ignore this, the pid-controllers errors
-        #           aren't updated will dbw is disabled...
         if not self.dbw_enabled and dbw_enabled:
             self.pid_throttle.reset()
 
