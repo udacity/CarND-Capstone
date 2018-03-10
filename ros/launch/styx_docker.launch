@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Simulator Bridge -->
+    <include file="/capstone/ros/src/styx/launch/server.launch" />
+
+    <!--DBW Node -->
+    <include file="/capstone/ros/src/twist_controller/launch/dbw_sim.launch"/>
+
+    <!--Waypoint Loader -->
+    <include file="/capstone/ros/src/waypoint_loader/launch/waypoint_loader.launch"/>
+
+    <!--Waypoint Follower Node -->
+    <include file="/capstone/ros/src/waypoint_follower/launch/pure_pursuit.launch"/>
+
+    <!--Waypoint Updater Node -->
+    <include file="/capstone/ros/src/waypoint_updater/launch/waypoint_updater.launch"/>
+
+    <!--Traffic Light Detector Node -->
+    <include file="/capstone/ros/src/tl_detector/launch/tl_detector.launch"/>
+
+    <!--Traffic Light Locations and Camera Config -->
+    <param name="traffic_light_config" textfile="/capstone/ros/src/tl_detector/sim_traffic_light_config.yaml" />
+</launch>
