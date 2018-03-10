@@ -87,13 +87,20 @@ class Controller(object):
         # brake if the negative value of the PID-controller is outside of the brake-deadband
         elif math.fabs(value) > self.brake_deadband:
             throttle = 0.0
-            brake = (self.vehicle_mass + (self.fuel_capacity * GAS_DENSITY)) * -value * self.wheel_radius
+            brake = self.compute_brake(value)
         else:
             throttle = 0.0
             brake = 0.0
 
-	if req_vel_linear == 0 and cur_vel_linear < 0.1:
-		throttle = 0.0
-        	brake = 1.0
+        # apply the brakes a bit when the car is supposed to be standing still
+        # (to avoid the car creeping forward due to the small jitter of the PID-controller)
+        # note: doesn't override larger values coming from the PID-controller
+        if req_vel_linear == 0 and cur_vel_linear < 0.5:
+            throttle = 0.0
+            brake = max(brake, self.compute_brake(-1.0))
 
         return throttle, brake
+
+    def compute_brake(self, pid_value):
+        return (self.vehicle_mass + (self.fuel_capacity * GAS_DENSITY)) * -pid_value * self.wheel_radius
+
