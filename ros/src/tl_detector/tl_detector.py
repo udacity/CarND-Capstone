@@ -3,10 +3,9 @@ import rospy
 import tf
 import yaml
 import sys
-import os
 import math
 from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
+from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
@@ -26,6 +25,7 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.lights = []
+        self.light_classifier = TLClassifier(for_real=False)
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -46,13 +46,6 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        # rospy.loginfo(os.path.join(os.getcwd(), "light_classification/gc_classifier.pkl"))
-        # self.light_classifier = TLClassifier(
-        #     os.path.join(os.getcwd(), "light_classification/gc_classifier_v2s_p27_est.pkl"))
-
-
-        self.light_classifier = TLClassifier(for_real=False)
-
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN

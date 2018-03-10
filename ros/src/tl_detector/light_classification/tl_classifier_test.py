@@ -6,9 +6,8 @@ Created on Wed Feb 21 08:16:48 2018
 This need to be runned at the cli just when you want to generate a new trained model
 """
 from tl_classifier import TLClassifier
-from sklearn.metrics import accuracy_score
 
-clf = TLClassifier("gc_classifier.pkl")
+clf = TLClassifier(for_real=False)
 
 
 test_red = ['../../../../data/trafficlights/google/red1.png',
