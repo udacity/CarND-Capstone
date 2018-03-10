@@ -26,27 +26,47 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
+
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.base_waypoints = None
+        self.current_pose = None
+        self.waypoints_ahead = None
+
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
-
-        rospy.spin()
+        self.updater_loop()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.current_pose = msg.pose
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.base_waypoints = waypoints.waypoints
+
+    def updater_loop(self):
+        rate = rospy.Rate(5)
+
+        while not rospy.is_shutdown():
+
+            if self.current_pose and self.base_waypoints:
+                
+                # locate vehicle and update waypoints ahead
+                ego_veh_wp           = self.ego_veh_waypoint(self.current_pose,self.base_waypoints)
+                self.waypoints_ahead = self.base_waypoints[ego_veh_wp:ego_veh_wp+LOOKAHEAD_WPS]
+
+                # publish
+                final_waypoints_msg              = Lane()
+                final_waypoints_msg.header.stamp = rospy.Time.now()
+                final_waypoints_msg.waypoints    = self.waypoints_ahead
+                self.final_waypoints_pub.publish(final_waypoints_msg)
+
+            rate.sleep()
+
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -70,6 +90,17 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    def ego_veh_waypoint(self, pose, waypoints):
+        dist_from_current_pose = 100000
+        ego_veh_wp_idx = 0
+        dist = 0
+        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        for i in range(len(waypoints)):
+            dist = dl(pose.position, waypoints[i].pose.pose.position)
+            if (dist < dist_from_current_pose):
+                dist_from_current_pose = dist
+                ego_veh_wp_idx = i
+        return ego_veh_wp_idx  
 
 if __name__ == '__main__':
     try:
