@@ -59,6 +59,9 @@ class WaypointUpdater(object):
                 ego_veh_wp           = self.ego_veh_waypoint(self.current_pose,self.base_waypoints)
                 self.waypoints_ahead = self.base_waypoints[ego_veh_wp:ego_veh_wp+LOOKAHEAD_WPS]
 
+                # example on how to log a singal 
+                # rospy.loginfo(self.current_pose.position)
+
                 # publish
                 final_waypoints_msg              = Lane()
                 final_waypoints_msg.header.stamp = rospy.Time.now()
