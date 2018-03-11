@@ -110,7 +110,7 @@ class DBWNode(object):
         self.twist = msg.twist
     
     def dbw_enabled_cb(self, msg):
-        self.controller.dbw_enabled = bool(msg.data)
+        self.dbw_enabled = bool(msg.data)
 
     def log_twist(self, twist_msg):
         """
