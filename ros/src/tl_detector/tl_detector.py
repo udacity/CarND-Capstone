@@ -27,6 +27,8 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
 
+        self.light_classifier = TLClassifier(for_real=False)
+        
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -49,9 +51,6 @@ class TLDetector(object):
         # rospy.loginfo(os.path.join(os.getcwd(), "light_classification/gc_classifier.pkl"))
         # self.light_classifier = TLClassifier(
         #     os.path.join(os.getcwd(), "light_classification/gc_classifier_v2s_p27_est.pkl"))
-
-
-        self.light_classifier = TLClassifier(for_real=False)
 
         self.listener = tf.TransformListener()
 
