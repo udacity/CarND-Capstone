@@ -7,6 +7,8 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from std_msgs.msg import ColorRGBA, Int32, Header
 from copy import deepcopy
+from dynamic_reconfigure.server import Server
+from visualization.cfg import DynReconfConfig
 
 '''
 This node publishes a visualization_marker_array topic for RViz to do 3D
@@ -20,8 +22,8 @@ class VisNode(object):
     def __init__(self):
         rospy.init_node('vis_node')
 
-        self.vis_enabled = rospy.get_param('~vis_enabled', False)
-        self.vis_rate = rospy.get_param('~vis_rate', 10)
+        self.vis_enabled = False  # default until dyn_reconf takes over
+        self.vis_rate = 5  # default until dyn_reconf takes over
 
         self.subs = {}
         self.pubs = {}
@@ -55,6 +57,8 @@ class VisNode(object):
                     '/traffic_waypoint', Int32,
                     self.handle_traffic_waypoint_msg)
 
+        self.dyn_reconf_srv = Server(DynReconfConfig, self.dyn_vars_cb)
+
         self.loop()
 
     # Callback to handle ground truth traffic lights message
@@ -67,7 +71,7 @@ class VisNode(object):
         self.basewp_poses = []  # clear again just in case
         for wp_idx in range(len(base_wp_msg.waypoints)):
             self.base_waypoints.append(base_wp_msg.waypoints[wp_idx])
-            if wp_idx % 30 == 0:  # thin out points for path msg
+            if wp_idx % 100 == 0:  # thin out points for path msg
                 self.basewp_poses.append(base_wp_msg.waypoints[wp_idx].pose)
         self.subs['/base_waypoints'].unregister()
 
@@ -86,6 +90,17 @@ class VisNode(object):
     # Callback to handle detected traffic light waypoint message
     def handle_traffic_waypoint_msg(self, traffic_waypoint_msg):
         self.traffic_waypoint = traffic_waypoint_msg.data
+
+    # Callback to adjust dynamic variables
+    def dyn_vars_cb(self, config, level):
+
+        if self.vis_rate != config['dyn_vis_rate']:
+            self.vis_rate = config['dyn_vis_rate']  # store new rate
+            self.rate = rospy.Rate(self.vis_rate)  # apply new rate
+
+        self.vis_enabled = config['dyn_vis_enabled']  # store new flag
+
+        return config
 
     # Helper function to set traffic light RGBA color from status #
     def set_traffic_light_color(self, tl_status, alpha):
@@ -114,7 +129,8 @@ class VisNode(object):
         return tl_color
 
     def loop(self):
-        rate = rospy.Rate(self.vis_rate)
+        self.rate = rospy.Rate(self.vis_rate)
+
         while not rospy.is_shutdown():
             if self.vis_enabled:
                 marker_array = MarkerArray()
@@ -237,7 +253,7 @@ class VisNode(object):
                 basewp_path.poses = self.basewp_poses
                 self.pubs['/visualization_basewp_path'].publish(basewp_path)
 
-            rate.sleep()
+            self.rate.sleep()
 
 
 if __name__ == '__main__':
