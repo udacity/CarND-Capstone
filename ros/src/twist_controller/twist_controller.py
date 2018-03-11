@@ -20,18 +20,18 @@ class Controller(object):
         	self.set_controllers()
         	return 0.0, 0.0, 0.0
 
-        # pedal and brake controllers
+        # throttle and brake controllers
     	linear_velocity_error = linear_velocity - current_velocity
-    	pedal = self.pid_pedal.step(linear_velocity_error, time_elapsed)
-    	brake = self.pid_pedal.step(-linear_velocity_error, time_elapsed)
+    	throttle = self.pid_throttle.step(linear_velocity_error, time_elapsed)
+    	brake = self.pid_brake.step(-linear_velocity_error, time_elapsed)
 
     	# steering controller
     	steer = self.yawcontroller.get_steering(linear_velocity, angular_velocity, current_velocity)
     	steer = self.lowpass_flt.filt(steer)
 
-        return pedal, brake, steer
+        return throttle, brake, steer
 
     def set_controllers(self):
-    	self.pid_pedal = PID(0.35, 0.0, 0.0, 0.0, 1.0)
+    	self.pid_throttle = PID(0.35, 0.0, 0.0, 0.0, 1.0)
     	self.pid_brake = PID(0.30, 0.0, 0.0, 0.0, 1.0)
     	self.lowpass_flt = LowPassFilter(0.2, 1.0)
