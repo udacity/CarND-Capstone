@@ -11,9 +11,18 @@ from flask import Flask, render_template
 from bridge import Bridge
 from conf import conf
 
+'''
+Modified msgs from queue list to a dictionary to disable queuing messages sent
+to simulator and only send the latest topic data in case of lag while running
+in a VM.  This method is based on:
+https://carnd.slack.com/archives/C6NVDVAQ3/p1504347106000056?thread_ts=1504061507.000179&cid=C6NVDVAQ3
+https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c88ec1c39d50
+'''
+
 sio = socketio.Server()
 app = Flask(__name__)
-msgs = []
+#msgs = []
+msgs = {}
 
 dbw_enable = False
 
@@ -23,7 +32,8 @@ def connect(sid, environ):
 
 def send(topic, data):
     s = 1
-    msgs.append((topic, data))
+    #msgs.append((topic, data))
+    msgs[topic] = data
     #sio.emit(topic, data=json.dumps(data), skip_sid=True)
 
 bridge = Bridge(conf, send)
@@ -36,7 +46,8 @@ def telemetry(sid, data):
         bridge.publish_dbw_status(dbw_enable)
     bridge.publish_odometry(data)
     for i in range(len(msgs)):
-        topic, data = msgs.pop(0)
+        #topic, data = msgs.pop(0)
+        topic, data = msgs.popitem()
         sio.emit(topic, data=data, skip_sid=True)
 
 @sio.on('control')
