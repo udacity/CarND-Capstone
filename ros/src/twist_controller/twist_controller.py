@@ -16,6 +16,7 @@ class Controller(object):
         self.vehicle_mass = vehicle_mass
         self.wheel_radius = wheel_radius
         self.current_timestep = None
+        self.previous_acceleration = 0.
 
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
@@ -42,14 +43,21 @@ class Controller(object):
     def compute_acceleration(self, error):
         last_timestep = self.current_timestep
         self.current_timestep = int(round(time.time() * 1000))
-        
+
+        if (last_timestep == self.current_timestep):
+            rospy.loginfo(
+                'No timestep advance since last acceleration computation; returning previous acceleration')
+            return self.previous_acceleration
+
         # TODO - modify PID instance to modify error value to prevent sudden control jumps when re-engaging DBW
         # after a period of inactivity
         if last_timestep is None:
             # attempted to compute values for first time; do not accellerate
             return 0.
 
-        return self.velocity_pid_controller.step(error, self.current_timestep - last_timestep)
+        self.previous_acceleration = self.velocity_pid_controller.step(
+            error, self.current_timestep - last_timestep)
+        return self.previous_acceleration
 
     def compute_brake_torque(self, deceleration):
         # deceleration in m/s^2 needs to be converted to torque in Nm.
