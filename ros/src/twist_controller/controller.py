@@ -27,7 +27,7 @@ class Controller(object):
         # yaw-controller converts angular velocity to steering angles
         self.yaw_controller =  YawController(kwargs['wheel_base'],
                                              kwargs['steer_ratio'], 
-                                             1,             # min-speed (JS-XXX check value)
+                                             1,            
                                              kwargs['max_lat_accel'], 
                                              kwargs['max_steer_angle'])
 
@@ -47,8 +47,6 @@ class Controller(object):
 
     def control(self, cur_t, req_vel_linear, req_vel_angular, cur_vel_linear, cur_vel_angular, dbw_enabled):
         # reset PID controls after the safety driver enables drive-by-wire again
-        #   JS-XXX: is this necessary or would it be beter to ignore this, the pid-controllers errors
-        #           aren't updated will dbw is disabled...
         if not self.dbw_enabled and dbw_enabled:
             self.pid_throttle.reset()
 
@@ -87,13 +85,20 @@ class Controller(object):
         # brake if the negative value of the PID-controller is outside of the brake-deadband
         elif math.fabs(value) > self.brake_deadband:
             throttle = 0.0
-            brake = (self.vehicle_mass + (self.fuel_capacity * GAS_DENSITY)) * -value * self.wheel_radius
+            brake = self.compute_brake(value)
         else:
             throttle = 0.0
             brake = 0.0
 
-	if req_vel_linear == 0 and cur_vel_linear < 0.1:
-		throttle = 0.0
-        	brake = 1.0
+        # apply the brakes a bit when the car is supposed to be standing still
+        # (to avoid the car creeping forward due to the small jitter of the PID-controller)
+        # note: doesn't override larger values coming from the PID-controller
+        if req_vel_linear == 0 and cur_vel_linear < 0.5:
+            throttle = 0.0
+            brake = max(brake, self.compute_brake(-1.0))
 
         return throttle, brake
+
+    def compute_brake(self, pid_value):
+        return (self.vehicle_mass + (self.fuel_capacity * GAS_DENSITY)) * -pid_value * self.wheel_radius
+
