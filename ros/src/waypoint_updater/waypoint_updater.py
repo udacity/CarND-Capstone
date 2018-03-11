@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 import tf
@@ -32,13 +33,15 @@ class WaypointUpdater(object):
         self.base_waypoints = None
         self.current_pose = None
         self.waypoints_ahead = None
+        self.traffic_light_state = None
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
         self.updater_loop()
 
@@ -59,8 +62,8 @@ class WaypointUpdater(object):
                 ego_veh_wp           = self.ego_veh_waypoint(self.current_pose,self.base_waypoints)
                 self.waypoints_ahead = self.base_waypoints[ego_veh_wp:ego_veh_wp+LOOKAHEAD_WPS]
 
-                # example on how to log a singal 
-                # rospy.loginfo(self.current_pose.position)
+                # control vehicle speed depeding on traffic light state
+                self.adaptive_cruise_control(self.base_waypoints, ego_veh_wp, self.traffic_light_state)                
 
                 # publish
                 final_waypoints_msg              = Lane()
@@ -72,8 +75,7 @@ class WaypointUpdater(object):
 
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.traffic_light_state = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -123,6 +125,16 @@ class WaypointUpdater(object):
             ego_veh_wp_idx += 1
 
         return ego_veh_wp_idx  
+
+
+    def adaptive_cruise_control(self, waypoints, waypoint, traffic_light_state):
+        # simple cruise controller based on "distance" from traffic light
+
+        if traffic_light_state > 0.0:
+            self.set_waypoint_velocity(waypoints, waypoint, 0)
+        else:
+            self.set_waypoint_velocity(waypoints, waypoint, 21)
+
 
 if __name__ == '__main__':
     try:
