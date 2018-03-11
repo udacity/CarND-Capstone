@@ -5,6 +5,7 @@ import csv
 import math
 
 from geometry_msgs.msg import Quaternion
+from visualization_msgs.msg import Marker, MarkerArray
 
 from styx_msgs.msg import Lane, Waypoint
 
@@ -14,6 +15,21 @@ import rospy
 CSV_HEADER = ['x', 'y', 'z', 'yaw']
 MAX_DECEL = 1.0
 
+def waypointToMarker(waypoint, frame_id, ts=rospy.Time(0), idx=0, color=[0.0, 1.0, 0.0]):
+    marker = Marker()
+    marker.header.frame_id = frame_id
+    marker.header.stamp = ts
+    marker.id = idx
+    marker.pose.position = waypoint.pose.pose.position
+    marker.pose.orientation = waypoint.pose.pose.orientation
+    marker.scale.x = 5
+    marker.scale.y = 1
+    marker.scale.z = 1
+    marker.color.a = 1
+    marker.color.r = color[0]
+    marker.color.g = color[1]
+    marker.color.b = color[2]
+    return marker
 
 class WaypointLoader(object):
 
@@ -21,6 +37,7 @@ class WaypointLoader(object):
         rospy.init_node('waypoint_loader', log_level=rospy.DEBUG)
 
         self.pub = rospy.Publisher('/base_waypoints', Lane, queue_size=1, latch=True)
+        self.marker_pub = rospy.Publisher('/base_waypoints_markers', MarkerArray, queue_size=1, latch=True)
 
         self.velocity = self.kmph2mps(rospy.get_param('~velocity'))
         self.new_waypoint_loader(rospy.get_param('~path'))
@@ -30,7 +47,8 @@ class WaypointLoader(object):
         if os.path.isfile(path):
             waypoints = self.load_waypoints(path)
             self.publish(waypoints)
-            rospy.loginfo('Waypoint Loded')
+            self.publish_markers(waypoints)
+            rospy.loginfo('Waypoints Loaded')
         else:
             rospy.logerr('%s is not a file', path)
 
@@ -78,6 +96,19 @@ class WaypointLoader(object):
         lane.waypoints = waypoints
         self.pub.publish(lane)
 
+    def publish_markers(self, waypoints):
+        color_grey = [0.8, 0.8, 0.8]
+        array = MarkerArray()
+        nth = 1
+        max_waypoints = 500
+        if len(waypoints) > max_waypoints:
+            nth = int(len(waypoints) / max_waypoints)
+        for i, waypoint in enumerate(waypoints):
+            if i % nth == 0:
+                marker = waypointToMarker(waypoint, '/world', idx=i, color=color_grey)
+                array.markers.append(marker)
+        self.marker_pub.publish(array)
+        rospy.loginfo("Marking every {}th waypoint, for {} waypoints total...".format(nth, len(array.markers)))
 
 if __name__ == '__main__':
     try:
