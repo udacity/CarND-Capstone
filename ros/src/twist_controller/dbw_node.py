@@ -53,10 +53,8 @@ class DBWNode(object):
 
         self.reset()
 
-        # TODO: Create `Controller` object
         self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
-        # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/current_velocity', TwistStamped, callback = self.current_velocity_cb, queue_size = 1)
         rospy.Subscriber('/twist_cmd', TwistStamped, callback = self.twist_cmd_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, callback = self.dbw_enabled_cb, queue_size = 1)
@@ -66,26 +64,19 @@ class DBWNode(object):
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
             
+            # compute throttle, brake and steer command in autonomous mode
             if self.dbw_enabled:
-                self.time_elapsed = rospy.get_time() - self.previous_time
+                self.time_elapsed = rospy.get_time() - self.previous_time 
                 self.previous_time = rospy.get_time()
-                pedal, brake, steer = self.controller.control(self.linear_velocity,
+                throttle, brake, steer = self.controller.control(self.linear_velocity,
                                                              self.angular_velocity,
                                                              self.current_velocity, 
                                                              self.dbw_enabled,
                                                              self.time_elapsed)
-                self.publish(pedal, brake, steer)
+                self.publish(throttle, brake, steer)
             else:
                 self.reset()          
-
-            # log node subsriber
-            # rospy.loginfo('Current velocity: %s', self.current_velocity)
-            # rospy.loginfo('Linear velocity demand velocity: %s', self.linear_velocity)
-            # rospy.loginfo('Angular velocity demand velocity: %s', self.angular_velocity)
-            # rospy.loginfo('DBW node enable: %s', self.dbw_enabled)
 
             rate.sleep()
 
@@ -118,6 +109,7 @@ class DBWNode(object):
         self.dbw_enabled = msg.data
 
     def reset(self):
+        # reset when not in autonomous mode
         self.current_velocity = 0
         self.linear_velocity = 0
         self.angular_velocity = 0
