@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-
 """
 Author: Peng Xu <robotpengxu@gmail.com>
-Date:   Feb 20 2018
+Date:   Feb 20, March 9, 2018
 """
 
 
@@ -25,11 +24,11 @@ Please note that our simulator also provides the exact location of traffic light
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
 
-TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 STALE_TIME = 1
+
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -93,7 +92,7 @@ class WaypointUpdater(object):
         Return tuple of distance from traffic light
         and target speed for slowing down
         """
-        d = utils.distance(self.base_waypoints, index, self.traffic_index)
+        d = self.distance(self.base_waypoints, index, self.traffic_index)
         car_wp = self.base_waypoints[index]
         car_speed = car_wp.twist.twist.linear.x
         speed = 0.0
@@ -129,7 +128,7 @@ class WaypointUpdater(object):
             if (self.traffic_index - car_index) > 0:
                 d = utils.distance(self.base_waypoints, car_index, self.traffic_index)
                 car_wp = self.base_waypoints[car_index]
-                if d < car_wp.twist.twist.linear.x ** self.slowdown_coefficient:
+                if d < car_wp.twist.twist.linear.x ** self.slowdown_rate:
                     is_close = True
 
             # Set target speeds
