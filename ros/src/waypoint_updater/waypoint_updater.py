@@ -67,7 +67,7 @@ class WaypointUpdater(object):
                 self.waypoints_ahead = self.base_waypoints[ego_veh_wp:ego_veh_wp + LOOKAHEAD_WPS]
 
                 # control vehicle speed depeding on traffic light state
-                self.adaptive_cruise_control(self.base_waypoints, ego_veh_wp, self.traffic_light_state)
+                self.adaptive_cruise_control(self.base_waypoints, self.waypoints_ahead, ego_veh_wp, self.traffic_light_state)
 
                 # publish
                 final_waypoints_msg = Lane()
@@ -129,8 +129,8 @@ class WaypointUpdater(object):
 
         return ego_veh_wp_idx
 
-    def adaptive_cruise_control(self, waypoints, waypoint, traffic_light_state):
-        # simple cruise controller based on "distance" from traffic light
+    def adaptive_cruise_control(self, waypoints, waypoints_ahead, waypoint, traffic_light_state):
+        # simple cruise controller based on "distance" from traffic light and end of destination
 
         wheel_base = rospy.get_param('~wheel_base', 2.8498)
 
@@ -150,6 +150,12 @@ class WaypointUpdater(object):
         else:
             # ramp speed up with acceleration of 0.041(m/s)/ros_rate
             self.desired_vel = max(self.desired_vel + self.acceleration, 0.5)
+
+            # stop the vehicle at the destination (first slow down vehicle, then stop)
+            if len(waypoints_ahead) < 2: # stop at the last 2 waypoints
+                self.desired_vel = 0.
+            elif len(waypoints_ahead) < (LOOKAHEAD_WPS/4):  # ramp the velocity down at the last 25% of the LOOKAHEAD_WPS
+                self.desired_vel = max(self.max_vel * len(waypoints_ahead) / (LOOKAHEAD_WPS/4), 0.5)  # simple ramp function
 
         self.desired_vel = min(self.desired_vel, self.max_vel)
         self.set_waypoint_velocity(waypoints, waypoint, self.desired_vel)
