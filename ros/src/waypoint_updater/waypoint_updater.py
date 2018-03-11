@@ -3,7 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-
+import tf
 import math
 
 '''
@@ -94,6 +94,8 @@ class WaypointUpdater(object):
         return dist
 
     def ego_veh_waypoint(self, pose, waypoints):
+        
+        # find waypoint closest to vehicle's current pose
         dist_from_current_pose = 100000
         ego_veh_wp_idx = 0
         dist = 0
@@ -103,6 +105,23 @@ class WaypointUpdater(object):
             if (dist < dist_from_current_pose):
                 dist_from_current_pose = dist
                 ego_veh_wp_idx = i
+
+        # heading of the vehicle given current pose and next waypoint
+        x_map = waypoints[ego_veh_wp_idx].pose.pose.position.x
+        y_map = waypoints[ego_veh_wp_idx].pose.pose.position.y
+        heading = math.atan2((x_map-pose.position.x), ((y_map-pose.position.y)))
+
+        # convert from quaternion to euler coordinates
+        pose_quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) 
+        (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(pose_quaternion)
+
+        # difference between heading angle (heading) and current angle based on velocity vector (yaw)
+        angle = math.fabs(yaw - heading)
+
+        # if angle is greater than 45 deg vehicle's current pose is behind the next waypoint
+        if angle > math.pi / 4.0:
+            ego_veh_wp_idx += 1
+
         return ego_veh_wp_idx  
 
 if __name__ == '__main__':
