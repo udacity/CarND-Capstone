@@ -27,6 +27,8 @@ as well as to verify your TL classifier.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+SLOWDOWN_WPS = 100
+HARDBRAKE_WPS = 25
 STALE_TIME = 1
 STOP_DISTANCE = 3.00  # Distance in 'm' from TL stop line from which the car starts to stop.
 STOP_HYST = 3  # Margin of error for a stopping car.
@@ -91,6 +93,9 @@ class WaypointUpdater(object):
 
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
+
+    def kmph_to_mps(self, kmph):
+        return 0.278 * kmph
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
@@ -172,14 +177,14 @@ class WaypointUpdater(object):
             best_index += 1
         return best_index
 
-    def get_next_waypoints(self, waypoints, start):
+    def cruise_waypoints(self, waypoints, start):
         """Return a list of n waypoints ahead of the vehicle"""
         next_waypoints = []
         init_vel = self.velocity.linear.x
         end = start + LOOKAHEAD_WPS
         if end > len(waypoints) - 1:
            end = len(waypoints) - 1
-        a = self.accel_limit
+        a = 0.5 * self.accel_limit
         for idx in range(start, end):
             dist = self.distance(waypoints, start, idx+1)
             speed = math.sqrt(init_vel**2 + 2 * a * dist)
@@ -189,22 +194,21 @@ class WaypointUpdater(object):
             next_waypoints.append(waypoints[idx])
         return next_waypoints
 
-    def kmph_to_mps(self, kmph):
-        return 0.278 * kmph
-
-    def slowdown_waypoints(self, waypoints, start, tl_index):
+    def slowdown_waypoints(self, waypoints, start):
         next_waypoints = []
         dist_to_TL = self.distance(waypoints, start, self.traffic_index)
-        slow_decel = (self.velocity.linear.x ** 2)/(2 * dist_to_TL)
+        slow_decel = (2 * dist_to_TL) / self.velocity.linear.x
         if slow_decel > self.decel_limit:
            slow_decel = self.decel_limit
         init_vel = self.velocity.linear.x
-        end = start + LOOKAHEAD_WPS
+        end = start + SLOWDOWN_WPS
+        if end > len(waypoints) - 1:
+           end = len(waypoints) - 1
         for idx in range(start, end):
             dist = self.distance(waypoints, start, idx+1)
-            if idx < tl_index:
+            if idx < self.traffic_index:
                 vel2 = init_vel ** 2 - 2 * slow_decel * dist
-                if vel2 < 0.1:
+                if vel2 < 0.5:
                    vel2 = 0.0
                 velocity = math.sqrt(vel2)
                 self.set_waypoint_velocity(waypoints, idx, velocity)
@@ -215,15 +219,33 @@ class WaypointUpdater(object):
                 next_waypoints.append(waypoints[idx])
         return next_waypoints
 
-    def stop_waypoints(self, waypoints, start):
+    def hardbrake_waypoints(self, waypoints, start):
         next_waypoints = []
-        end = start + LOOKAHEAD_WPS
+        end = start + HARDBRAKE_WPS
         if end > len(waypoints) - 1:
            end = len(waypoints) - 1
         for idx in range(start, end):
             velocity = 0.0
             self.set_waypoint_velocity(waypoints, idx, velocity)
             next_waypoints.append(waypoints[idx])
+        return next_waypoints
+
+    def get_next_waypoints(self, waypoints, car_index):
+        """Return a list of n waypoints ahead of the vehicle"""
+
+        # Traffic light must be new
+        is_fresh = rospy.get_time() - self.traffic_time_received < STALE_TIME
+
+        if is_fresh and (self.traffic_index - car_index) > 0:
+            if self.traffic_index - car_index > SLOWDOWN_WPS:
+                rospy.logdebug('Should slow down here ...')
+                next_waypoints = self.slowdown_waypoints(waypoints, car_index)
+            else:
+                rospy.logdebug('Should hard brake here ...')
+                next_waypoints = self.hardbrake_waypoints(waypoints, car_index)
+        else:
+            # Get subset waypoints ahead
+            next_waypoints = self.cruise_waypoints(waypoints, car_index)
         return next_waypoints
 
     def run(self):
@@ -245,15 +267,8 @@ class WaypointUpdater(object):
             # Where in base waypoints list the car is
             car_index = self.get_closest_waypoint_index(self.pose, self.base_waypoints)
 
-            # Traffic light must be new
-            is_fresh = rospy.get_time() - self.traffic_time_received < STALE_TIME
-            if is_fresh and (self.traffic_index - car_index) > 0:
-                rospy.logdebug('Should slow down here ...')
-                # lookahead_waypoints = self.slowdown_waypoints(self.base_waypoints, car_index, self.traffic_index)
-                lookahead_waypoints = self.stop_waypoints(self.base_waypoints, car_index)
-            else:
-                # Get subset waypoints ahead
-                lookahead_waypoints = self.get_next_waypoints(self.base_waypoints, car_index)
+            # generate new path
+            lookahead_waypoints = self.get_next_waypoints(self.base_waypoints, car_index)
 
             # Publish
             lane = self.construct_lane_object(lookahead_waypoints)
