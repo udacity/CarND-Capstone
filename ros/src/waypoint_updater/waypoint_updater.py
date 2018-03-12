@@ -244,6 +244,7 @@ class WaypointUpdater(object):
             # Set target speeds
             if is_fresh and is_close:
                 # Slow down and stop
+                rospy.logdebug('constructing stop waypoints ...')
                 for i, waypoint in enumerate(lookahead_waypoints):
                     _, waypoint.twist.twist.linear.x = self.get_distance_speed_tuple(car_index + i)
 
