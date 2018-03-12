@@ -292,7 +292,7 @@ class WaypointUpdater(object):
         lane = Lane()
         lane.waypoints = list(new_wps_list)
         lane.header.frame_id = '/world'
-        lane.header.stamp = rospy.Time()
+        lane.header.stamp = rospy.Time.now()
         self.pubs['/final_waypoints'].publish(lane)
         self.final_waypoints = list(new_wps_list)
         self.final_waypoints_start_ptr = start_wps_ptr

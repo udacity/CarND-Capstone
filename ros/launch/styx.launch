@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <launch>
+    <!-- Enable message timing statistics for rqt_graph analysis -->
+    <rosparam param="enable_statistics">true</rosparam>
+
     <!-- Simulator Bridge -->
     <include file="$(find styx)/launch/server.launch" />
 

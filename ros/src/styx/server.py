@@ -5,8 +5,7 @@ eventlet.monkey_patch(socket=True, select=True, time=True)
 
 import eventlet.wsgi
 import socketio
-import time
-from flask import Flask, render_template
+from flask import Flask
 
 from bridge import Bridge
 from conf import conf
@@ -21,22 +20,22 @@ https://github.com/amakurin/CarND-Capstone/commit/9809bc60d51c06174f8c8bfe6c40c8
 
 sio = socketio.Server()
 app = Flask(__name__)
-#msgs = []
 msgs = {}
 
 dbw_enable = False
+
 
 @sio.on('connect')
 def connect(sid, environ):
     print("connect ", sid)
 
+
 def send(topic, data):
-    s = 1
-    #msgs.append((topic, data))
     msgs[topic] = data
-    #sio.emit(topic, data=json.dumps(data), skip_sid=True)
+
 
 bridge = Bridge(conf, send)
+
 
 @sio.on('telemetry')
 def telemetry(sid, data):
@@ -46,29 +45,38 @@ def telemetry(sid, data):
         bridge.publish_dbw_status(dbw_enable)
     bridge.publish_odometry(data)
     for i in range(len(msgs)):
-        #topic, data = msgs.pop(0)
         topic, data = msgs.popitem()
         sio.emit(topic, data=data, skip_sid=True)
+
 
 @sio.on('control')
 def control(sid, data):
     bridge.publish_controls(data)
 
+
 @sio.on('obstacle')
 def obstacle(sid, data):
-    bridge.publish_obstacles(data)
+    # Disable publishing obstacle data because these are publishing at high
+    # frequency and are not used for anything
+
+    # bridge.publish_obstacles(data)
+    pass
+
 
 @sio.on('lidar')
 def obstacle(sid, data):
     bridge.publish_lidar(data)
 
+
 @sio.on('trafficlights')
 def trafficlights(sid, data):
     bridge.publish_traffic(data)
 
+
 @sio.on('image')
 def image(sid, data):
     bridge.publish_camera(data)
+
 
 if __name__ == '__main__':
 

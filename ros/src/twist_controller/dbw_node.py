@@ -87,18 +87,25 @@ class DBWNode(object):
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
+        header = Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = '/world'
+
         tcmd = ThrottleCmd()
+        tcmd.header = header
         tcmd.enable = True
         tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
         tcmd.pedal_cmd = throttle
         self.throttle_pub.publish(tcmd)
 
         scmd = SteeringCmd()
+        scmd.header = header
         scmd.enable = True
         scmd.steering_wheel_angle_cmd = steer
         self.steer_pub.publish(scmd)
 
         bcmd = BrakeCmd()
+        bcmd.header = header
         bcmd.enable = True
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
