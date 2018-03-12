@@ -24,7 +24,7 @@ class Controller(object):
         self.throttle_control = ThrottleController()
         self.brake_control = BrakeController(vehicle_mass, wheel_radius, decel_limit, brake_deadband, fuel_capacity)
         self.yaw_control = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-        self.throttle_pid = PID(kp=1.0, ki=1.0, kd=1.0)
+        self.throttle_pid = PID(kp=2.0, ki=1.0, kd=1.0)
         self.steering_pid = PID(kp=2.0, ki=1.0, kd=1.0)
 
         # Initialize state that will be updated nodes dbw is subscribed to

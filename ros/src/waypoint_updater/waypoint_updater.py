@@ -201,10 +201,11 @@ class WaypointUpdater(object):
         if end > len(waypoints) - 1:
            end = len(waypoints) - 1
         a = self.decel_limit
+        vel1 = init_vel
         for idx in range(start, end):
-            dist = self.distance(waypoints, start, idx+1)
+            dist = self.distance(waypoints, idx, idx+1)
             if idx < self.traffic_index:
-                vel2 = init_vel ** 2 - 2 * a * dist
+                vel2 = vel1 - a * dist / vel1
                 if vel2 < 1.0:
                    vel2 = 0.0
                 velocity = math.sqrt(vel2)
