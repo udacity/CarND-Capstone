@@ -33,7 +33,7 @@ that we have created in the `__init__` function.
 
 class DBWNode(object):
     def __init__(self):
-        rospy.init_node('dbw_node', log_level=rospy.DEBUG)
+        rospy.init_node('dbw_node', log_level=rospy.INFO)
 
         # read ros parameters
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
@@ -49,7 +49,7 @@ class DBWNode(object):
         min_speed = 0.1
 
         # class variables
-        self.dbw_enabled = True  # dbw_enabled = false => manual driving
+        self.dbw_enabled = False  # dbw_enabled = false => manual driving
         self.velocity = None
         self.twist = None
 
