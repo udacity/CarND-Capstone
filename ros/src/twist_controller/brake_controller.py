@@ -1,5 +1,6 @@
 """
-Author: Peng Xu <robotpengxu@gmail.com>
+Author: Ravel Antunes <ravelantunes@gmail.com>
+        Peng Xu <robotpengxu@gmail.com>
 Date:   March 10, 2018
 """
 
