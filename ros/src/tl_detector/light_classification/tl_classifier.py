@@ -182,7 +182,7 @@ class TLClassifier(object):
             class_index = int(classes[0][0])
             category = self.get_category(self.categories, class_index)
             if category is not None:
-                rospy.loginfo("%s, %s, %s", category['name'], score_thresh, class_index)
+                rospy.logdebug("%s, %s, %s", category['name'], score_thresh, class_index)
 
 
                 if (class_index == 0):
