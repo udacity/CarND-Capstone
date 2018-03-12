@@ -27,6 +27,7 @@ as well as to verify your TL classifier.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+STALE_TIME = 1
 STOP_DISTANCE = 3.00  # Distance in 'm' from TL stop line from which the car starts to stop.
 STOP_HYST = 3  # Margin of error for a stopping car.
 DECEL_FACTOR = 0.1  # Multiplier to the decel limit.
@@ -191,6 +192,23 @@ class WaypointUpdater(object):
     def kmph_to_mps(self, kmph):
         return 0.278 * kmph
 
+    def get_distance_speed_tuple(self, index):
+        """
+        Return tuple of distance from traffic light
+        and target speed for slowing down
+        """
+        d = self.distance(self.base_waypoints, index, self.traffic_index)
+        car_wp = self.base_waypoints[index]
+        car_speed = car_wp.twist.twist.linear.x
+        speed = 0.0
+
+        if d > self.stop_distance:
+            speed = (d - self.stop_distance) * (car_speed ** (1-self.slowdown_rate))
+
+        if speed < 1.0:
+            speed = 0.0
+        return d, speed
+
     def run(self):
         """
         Continuously publish local path waypoints with target velocities
@@ -212,6 +230,22 @@ class WaypointUpdater(object):
 
             # Get subset waypoints ahead
             lookahead_waypoints = self.get_next_waypoints(self.base_waypoints, car_index)
+
+            # Traffic light must be new and near ahead
+            is_fresh = rospy.get_time() - self.traffic_time_received < STALE_TIME
+            is_close = False
+
+            if (self.traffic_index - car_index) > 0:
+                d = self.distance(self.base_waypoints, car_index, self.traffic_index)
+                car_wp = self.base_waypoints[car_index]
+                if d < car_wp.twist.twist.linear.x ** self.slowdown_rate:
+                    is_close = True
+
+            # Set target speeds
+            if is_fresh and is_close:
+                # Slow down and stop
+                for i, waypoint in enumerate(lookahead_waypoints):
+                    _, waypoint.twist.twist.linear.x = self.get_distance_speed_tuple(car_index + i)
 
             # Publish
             lane = self.construct_lane_object(lookahead_waypoints)
