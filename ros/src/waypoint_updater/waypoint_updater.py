@@ -139,14 +139,15 @@ class WaypointUpdater(object):
 
     def next_waypoint(self, position, orient=None, around_wp = None):
         dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        SPAN_WP = 20
         if around_wp:
-            cand_wps = self.wps[around_wp: around_wp+20]
+            cand_wps = [self.wps[i % len(self.wps)] for i in range(around_wp, around_wp + SPAN_WP)]
         else:
             cand_wps = self.wps
         dist = [dl(w.pose.pose.position, position) for w in cand_wps]
         min_wp = np.argmin(dist)
         if around_wp:
-            min_wp += around_wp
+            min_wp = (min_wp + around_wp) % len(self.wps)
         if orient:
             _, _, theta = tf.transformations.euler_from_quaternion([orient.x, orient.y, orient.z, orient.w])
             head = lambda a, b: math.atan2(a.y - b.y, a.x - b.x)
