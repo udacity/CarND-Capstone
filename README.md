@@ -20,9 +20,24 @@ As the Capstone Project of the Self-Driving Car Engineer Nanodegree, the System 
 
 ### Perception
 
-#### 1. Traffic Light Classifier
+#### 1. Traffic Light Detector Node
 
-#### 2. Traffic Light Detection
+The purpose of the traffic light detector node is to publish the waypoint location and state (colour of nearest traffic light) at that time. This node calls the traffic light classification algorithm and passes in the current frame in order to determine the colour of the lights. 
+
+The node was implemented with the following algorithm:
+
+1. The closest lights to the ego vehicle is identified, its waypoint index index is recorded based on its position.
+2. Once the nearest light is located, the nearest stop line to the traffic light is found. As before the resulting data is the waypoint index
+3. Next step after the traffic lights and stop line way points are found is to call the Traffic Light Classification algorithm (see below) and determine the colour of the lights
+4. Once the ego vehicle is close enough to the lights we report the current colour and stop line waypoint index.
+
+#### 2. Traffic Light Classification
+
+Multiple approaches were investigated to determine the colour of the lights. These approaches first included the use of a SVM classifier and a GCForest classifier but finally ended with using inference based ssd_inception trained model. This model was based on the following [blog](https://becominghuman.ai/traffic-light-detection-tensorflow-api-c75fdbadac62)
+
+The data collection stage itself took a bit of time as data from both the simulator and real world was required. Note also 2 models were trained, one for real world testing and the other for the simulator.
+
+# WIP
 
 ### Planning
 
