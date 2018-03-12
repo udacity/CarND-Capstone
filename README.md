@@ -33,7 +33,7 @@ The node was implemented with the following algorithm:
 
 #### 2. Traffic Light Classification
 
-Multiple approaches were investigated to determine the colour of the lights. These approaches first included the use of a SVM classifier and a GCForest classifier but finally ended with using inference based ssd_inception trained model. This model was based on the following [model](https://becominghuman.ai/traffic-light-detection-tensorflow-api-c75fdbadac62)
+Multiple approaches were investigated to determine the colour of the lights. These approaches first included the use of a SVM classifier and a GCForest classifier but finally ended with using inference based ssd_inception trained model. This model was based on the following [blog](https://becominghuman.ai/traffic-light-detection-tensorflow-api-c75fdbadac62)
 
 The data collection stage itself took a bit of time as data from both the simulator and real world was required. Note also 2 models were trained, one for real world testing and the other for the simulator.
 
