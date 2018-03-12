@@ -202,6 +202,8 @@ class WaypointUpdater(object):
            end = len(waypoints) - 1
         dist_to_tl =  self.distance(waypoints, start, self.traffic_index)
         a = init_vel ** 2 / (2 * dist_to_tl) + 1e-6
+        if a > self.decel_limit:
+            a = self.decel_limit
         for idx in range(start, end):
             dist = self.distance(waypoints, start, idx+1)
             if idx < self.traffic_index:
