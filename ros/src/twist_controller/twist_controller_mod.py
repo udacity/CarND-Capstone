@@ -2,7 +2,9 @@ import time
 
 import rospy
 
+from dynamic_reconfigure.server import Server
 from pid import PID
+from twist_controller.cfg import DynReconfConfig
 from yaw_controller import YawController
 
 GAS_DENSITY = 2.858
@@ -17,12 +19,27 @@ class Controller(object):
         self.wheel_radius = wheel_radius
         self.current_timestep = None
         self.previous_acceleration = 0.
+        self.max_deceleration = max_deceleration
+        self.max_acceleration = max_acceleration
 
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
+        self.dynamic_reconf_server = Server(
+            DynReconfConfig, self.handle_dynamic_variable_update)
+
+    def handle_dynamic_variable_update(self, config, level):
+        # reset PID controller to use new parameters
+        self.setup_pid_controller(config['dyn_velo_proportional_control'], config[
+                                  'dyn_velo_integral_control'], config['dyn_velo_differential_control'])
+
+        return config
+
+    def setup_pid_controller(self, p, i, d):
+        rospy.loginfo("Initializing PID controller with P: {}, I: {}, D: {}"
+                      .format(p, i, d))
         self.velocity_pid_controller = PID(
-            0.1, 0.000005, 0.05, max_deceleration, max_acceleration)
+            p, i, d, self.max_deceleration, self.max_acceleration)
 
     def control(self, target_linear_velocity, target_angular_velocity, current_linear_velocity):
         # use velocity pid controller to compute new velocity
