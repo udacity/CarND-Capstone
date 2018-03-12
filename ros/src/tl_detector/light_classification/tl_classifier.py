@@ -152,13 +152,13 @@ class TLClassifier(object):
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: image_np_expanded})
 
-        rospy.loginfo("Detection ms = %s", (time.time() - start_time) * 1000.0)
+        rospy.logdebug("Detection ms = %s", (time.time() - start_time) * 1000.0)
 
         start_time = time.time()
 
         #state = self.detect_color(image, np.squeeze(boxes), np.squeeze(scores), np.squeeze(classes).astype(np.int32))
 
-        rospy.loginfo("Classifier ms = %s", (time.time() - start_time) * 1000.0)
+        rospy.logdebug("Classifier ms = %s", (time.time() - start_time) * 1000.0)
 
 
 

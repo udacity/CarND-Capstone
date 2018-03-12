@@ -20,7 +20,7 @@ DISTANCE_LIMIT = 100
 
 class TLDetector(object):
     def __init__(self):
-        rospy.init_node('tl_detector')
+        rospy.init_node('tl_detector', log_level=rospy.INFO)
 
         self.pose = None
         self.waypoints = None
@@ -236,8 +236,8 @@ class TLDetector(object):
                         state_str = "YELLOW"
                     else:
                         state_str = "GREEN"
-                    rospy.loginfo("curr_wp_idx = %d, stop_wp_idx = %d, state = %s", car_position, stop_wp_idx,
-                                  state_str)
+                    rospy.logdebug("curr_wp_idx = %d, stop_wp_idx = %d, state = %s",
+                                   car_position, stop_wp_idx, state_str)
                     return stop_wp_idx, state
                 else:
                     return -1, TrafficLight.UNKNOWN
