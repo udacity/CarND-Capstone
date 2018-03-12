@@ -57,8 +57,9 @@ class WaypointUpdater(object):
         self.traffic_index = -1  # Where in base waypoints list the traffic light is
         self.traffic_time_received = rospy.get_time()  # When traffic light info was received
         self.stop_distance = 0.25
-        self.slowdown_rate = 0.5
+
         # ROS parameters
+        self.slowdown_rate = None
         self.cruise_speed = None
         self.decel_limit = None
         self.accel_limit = None
@@ -216,6 +217,7 @@ class WaypointUpdater(object):
         rate = rospy.Rate(10)
 
         # ROS parameters
+        self.slowdown_rate = rospy.get_param('~slowdown_rate', 1.7)
         self.cruise_speed = self.kmph_to_mps(rospy.get_param('~/waypoint_loader/velocity', 40.0))
         self.decel_limit = abs(rospy.get_param('~/twist_controller/decel_limit', -5))
         self.accel_limit = rospy.get_param('~/twist_controller/accel_limit', 1)
