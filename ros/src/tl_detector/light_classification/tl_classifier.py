@@ -28,11 +28,6 @@ class TLClassifier(object):
                 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=num_classes, use_display_name=True)
                 self.category_index = label_map_util.create_category_index(categories)
 
-    # def load_image_into_numpy_array(self, image):
-    #     (im_width, im_height) = image.size
-    #     return np.array(image.getdata()).reshape(
-    #         (im_height, im_width, 3)).astype(np.uint8)
-
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -44,14 +39,13 @@ class TLClassifier(object):
 
         """
         start = time.time()
-        #image_np = self.load_image_into_numpy_array(image)
         image_np_expanded = np.expand_dims(image, axis=0)
         (boxes, scores, classes, num) = self.session.run(
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: image_np_expanded})
 
         # vis_util.visualize_boxes_and_labels_on_image_array(
-        #   image_np,
+        #   image,
         #   np.squeeze(boxes),
         #   np.squeeze(classes).astype(np.int32),
         #   np.squeeze(scores),
@@ -60,4 +54,4 @@ class TLClassifier(object):
         #   line_thickness=8,min_score_thresh=0.5)
 
         final_classes = [c for c, s in zip(classes[0], scores[0]) if s > 0.5]
-        return image_np_expanded, final_classes, time.time() - start
+        return image, final_classes, time.time() - start
