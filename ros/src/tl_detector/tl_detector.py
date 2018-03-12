@@ -10,9 +10,11 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
+import time
 
 STATE_COUNT_THRESHOLD = 3
-GOUND_TRUTH_PASS = True  
+GROUND_TRUTH_PASS = True  
 #Variable to use ground truth data until the classifier has been developed
 
 class TLDetector(object):
@@ -103,7 +105,7 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        if GOUND_TRUTH_PASS:
+        if GROUND_TRUTH_PASS:
 			light_wp, state = self.process_ground_truth_lights()
         else:        
 			light_wp, state = self.process_traffic_lights()
@@ -140,13 +142,13 @@ class TLDetector(object):
         wp_id = None
         wps = waypoints.waypoints
 
-        x = pos_x.pose.pose.position.x
-        y = pos_y.pose.pose.position.y
+        x = pos_x
+        y = pos_y
 
         wpx = wps[0].pose.pose.position.x
         wpy = wps[0].pose.pose.position.y
 
-        min_dist = math.sqrt((x - wps_x)**2 + (y - wps_y)**2)
+        min_dist = math.sqrt((x - wpx)**2 + (y - wpy)**2)
 
         # check all the waypoints to see which one is the closest to our current position
         for i, waypoint in enumerate(wps):
@@ -158,6 +160,7 @@ class TLDetector(object):
                 min_dist = dist     # we save the distance of the closest waypoint
 
 		# returns the index of the closest waypoint
+	rospy.loginfo('waypoint: %s', wp_id)
         return wp_id
 
 
