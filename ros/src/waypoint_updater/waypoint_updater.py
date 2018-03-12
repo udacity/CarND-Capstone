@@ -210,6 +210,29 @@ class WaypointUpdater(object):
             speed = 0.0
         return d, speed
 
+    def slowdown_waypoints(self, waypoints, start, tl_index):
+        next_waypoints = []
+        dist_to_TL = self.distance(waypoints, start, self.traffic_index)
+        slow_decel = (self.velocity.linear.x ** 2)/(2 * dist_to_TL)
+        if slow_decel > self.decel_limit:
+           slow_decel = self.decel_limit
+        init_vel = self.velocity.linear.x
+        end = start + LOOKAHEAD_WPS
+        for idx in range(start, end):
+            dist = self.distance(waypoints, start, idx+1)
+            if idx < tl_index:
+                vel2 = init_vel ** 2 - 2 * slow_decel * dist
+                if vel2 < 0.1:
+                   vel2 = 0.0
+                velocity = math.sqrt(vel2)
+                self.set_waypoint_velocity(waypoints, idx, velocity)
+                next_waypoints.append(waypoints[idx])
+            else:
+                velocity = 0.0
+                self.set_waypoint_velocity(waypoints, idx, velocity)
+                next_waypoints.append(waypoints[idx])
+        return next_waypoints
+
     def run(self):
         """
         Continuously publish local path waypoints with target velocities
@@ -233,24 +256,10 @@ class WaypointUpdater(object):
             # Get subset waypoints ahead
             lookahead_waypoints = self.get_next_waypoints(self.base_waypoints, car_index)
 
-            # Traffic light must be new and near ahead
+            # Traffic light must be new
             is_fresh = rospy.get_time() - self.traffic_time_received < STALE_TIME
-            is_close = False
-
-            if (self.traffic_index - car_index) > 0:
-                d = self.distance(self.base_waypoints, car_index, self.traffic_index)
-                car_wp = self.base_waypoints[car_index]
-                if d < car_wp.twist.twist.linear.x ** self.slowdown_rate:
-                    is_close = True
-
-            rospy.logdebug('is_fresh: %d; is_close: %d' % (is_fresh, is_close))
-
-            # Set target speeds
-            if is_fresh and is_close:
-                # Slow down and stop
-                rospy.logdebug('constructing stop waypoints ...')
-                for i, waypoint in enumerate(lookahead_waypoints):
-                    _, waypoint.twist.twist.linear.x = self.get_distance_speed_tuple(car_index + i)
+            if is_fresh and (self.traffic_index - car_index) > 0:
+                lookahead_waypoints = self.slowdown_waypoints(self.base_waypoints, car_index, self.traffic_index)
 
             # Publish
             lane = self.construct_lane_object(lookahead_waypoints)
