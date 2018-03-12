@@ -4,3 +4,10 @@ build
 devel
 
 profile.tmp
+
+.DS_Store
+data/.DS_Store
+ros/.DS_Store
+ros/src/.DS_Store
+ros/src/tl_detector/.DS_Store
+ros/src/tl_detector/light_classification/.DS_Store
