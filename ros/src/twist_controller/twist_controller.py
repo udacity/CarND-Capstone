@@ -39,14 +39,18 @@ class Controller(object):
         if not dbw_enabled:
             return 0.0, 0.0, 0.0
 
+        rospy.loginfo('DBW enabled ...')
+
         dt = rospy.get_time() - self.timestamp
 
         error = target_v.x - current_v.x
 
         if error > 0:
             throttle, brake = self.throttle_control.control(error, dt)
+            rospy.logdebug('throttle = %f, brake = %f' % (throttle, brake))
         else:
             throttle, brake = self.brake_control.control(error, dt)
+            rospy.logdebug('throttle = %f, brake = %f' % (throttle, brake))
 
         steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
 

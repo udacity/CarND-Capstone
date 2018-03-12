@@ -38,7 +38,7 @@ class BrakeController(object):
 
         throttle, brake = 0., 0.
         # no controls if we are in the deadband
-        if abs(acceleration) < self.brake_deadband:
+        if abs(accel) < self.brake_deadband:
             return throttle, brake
 
         # calculate torque = M*acc*R
