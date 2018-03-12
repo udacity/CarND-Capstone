@@ -39,7 +39,7 @@ class Controller(object):
         if not dbw_enabled:
             return 0.0, 0.0, 0.0
 
-        rospy.loginfo('DBW enabled ...')
+        rospy.logdebug('DBW enabled ...')
 
         dt = rospy.get_time() - self.timestamp
 
