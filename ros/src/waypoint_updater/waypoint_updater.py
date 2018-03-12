@@ -28,7 +28,7 @@ as well as to verify your TL classifier.
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 SLOWDOWN_WPS = 100
-HARDBRAKE_WPS = 25
+HARDBRAKE_WPS = 50
 STALE_TIME = 1
 STOP_DISTANCE = 3.00  # Distance in 'm' from TL stop line from which the car starts to stop.
 STOP_HYST = 3  # Margin of error for a stopping car.
@@ -196,19 +196,16 @@ class WaypointUpdater(object):
 
     def slowdown_waypoints(self, waypoints, start):
         next_waypoints = []
-        dist_to_TL = self.distance(waypoints, start, self.traffic_index)
-        slow_decel = (2 * dist_to_TL) / self.velocity.linear.x
-        if slow_decel > self.decel_limit:
-           slow_decel = self.decel_limit
         init_vel = self.velocity.linear.x
         end = start + SLOWDOWN_WPS
         if end > len(waypoints) - 1:
            end = len(waypoints) - 1
+        a = self.decel_limit
         for idx in range(start, end):
             dist = self.distance(waypoints, start, idx+1)
             if idx < self.traffic_index:
-                vel2 = init_vel ** 2 - 2 * slow_decel * dist
-                if vel2 < 0.5:
+                vel2 = init_vel ** 2 - 2 * a * dist
+                if vel2 < 1.0:
                    vel2 = 0.0
                 velocity = math.sqrt(vel2)
                 self.set_waypoint_velocity(waypoints, idx, velocity)
@@ -237,7 +234,7 @@ class WaypointUpdater(object):
         is_fresh = rospy.get_time() - self.traffic_time_received < STALE_TIME
 
         if is_fresh and (self.traffic_index - car_index) > 0:
-            if self.traffic_index - car_index > SLOWDOWN_WPS:
+            if self.traffic_index - car_index > HARDBRAKE_WPS:
                 rospy.logdebug('Should slow down here ...')
                 next_waypoints = self.slowdown_waypoints(waypoints, car_index)
             else:
