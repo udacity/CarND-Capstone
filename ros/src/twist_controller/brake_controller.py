@@ -36,11 +36,6 @@ class BrakeController(object):
         accel = error / dt
         accel = max(self.decel_limit, accel)
 
-        throttle, brake = 0., 0.
-        # no controls if we are in the deadband
-        if abs(accel) < self.brake_deadband:
-            return throttle, brake
-
         # calculate torque = M*acc*R
         torque = self.vehicle_mass * accel * self.wheel_radius
 
