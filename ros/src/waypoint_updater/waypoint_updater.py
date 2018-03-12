@@ -250,7 +250,7 @@ class WaypointUpdater(object):
 
             # Publish
             lane = self.construct_lane_object(lookahead_waypoints)
-            # rospy.loginfo('Update local path waypoints ...')
+            rospy.logdebug('Update local path waypoints ...')
             self.final_waypoints_pub.publish(lane)
             self.car_index_pub.publish(car_index)
 
