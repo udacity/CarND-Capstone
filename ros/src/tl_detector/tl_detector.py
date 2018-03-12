@@ -20,7 +20,7 @@ import cProfile
 STATE_COUNT_THRESHOLD = 3
 
 DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
-USE_GROUND_TRUTH = True
+USE_GROUND_TRUTH = False
 
 class TLDetector(object):
     def __init__(self):
