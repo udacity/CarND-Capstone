@@ -14,7 +14,7 @@ sys.path.append('light_classification')
 from light_classification.tl_classifier import TLClassifier
 
 STATE_COUNT_THRESHOLD = 3
-DISTANCE_LIMIT = 100
+DISTANCE_LIMIT = 150
 
 
 class TLDetector(object):
