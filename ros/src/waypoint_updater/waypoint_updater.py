@@ -215,6 +215,17 @@ class WaypointUpdater(object):
                 next_waypoints.append(waypoints[idx])
         return next_waypoints
 
+    def stop_waypoints(self, waypoints, start):
+        next_waypoints = []
+        end = start + LOOKAHEAD_WPS
+        if end > len(waypoints) - 1:
+           end = len(waypoints) - 1
+        for idx in range(start, end):
+            velocity = 0.0
+            self.set_waypoint_velocity(waypoints, idx, velocity)
+            next_waypoints.append(waypoints[idx])
+        return next_waypoints
+
     def run(self):
         """
         Continuously publish local path waypoints with target velocities
@@ -238,7 +249,8 @@ class WaypointUpdater(object):
             is_fresh = rospy.get_time() - self.traffic_time_received < STALE_TIME
             if is_fresh and (self.traffic_index - car_index) > 0:
                 rospy.logdebug('Should slow down here ...')
-                lookahead_waypoints = self.slowdown_waypoints(self.base_waypoints, car_index, self.traffic_index)
+                # lookahead_waypoints = self.slowdown_waypoints(self.base_waypoints, car_index, self.traffic_index)
+                lookahead_waypoints = self.stop_waypoints(self.base_waypoints, car_index)
             else:
                 # Get subset waypoints ahead
                 lookahead_waypoints = self.get_next_waypoints(self.base_waypoints, car_index)
