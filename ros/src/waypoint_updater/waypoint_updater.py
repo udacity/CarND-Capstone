@@ -241,6 +241,8 @@ class WaypointUpdater(object):
                 if d < car_wp.twist.twist.linear.x ** self.slowdown_rate:
                     is_close = True
 
+            rospy.logdebug('is_fresh: %d; is_close: %d' % (is_fresh, is_close))
+
             # Set target speeds
             if is_fresh and is_close:
                 # Slow down and stop
