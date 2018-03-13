@@ -22,9 +22,10 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this
-REFRESH_RATE_HZ = 5 # Number of times we update the final wyapoints per second
-UPDATE_MAX_ITER = 50 # Max number of iterations before considering relooking for the next waypoint in full path
+LOOKAHEAD_WPS   = 200   # Number of waypoints we will publish. You can change this
+REFRESH_RATE_HZ = 2     # Number of times we update the final waypoints per second
+UPDATE_MAX_ITER = 50    # Max number of iterations before considering relooking for the next waypoint in full path
+DEBUG_MODE      = False # Switch for whether debug messages are printed.
 
 def get_position(pos):
     return pos.position.x, pos.position.y, pos.position.z
@@ -34,12 +35,12 @@ def get_orientation(pos):
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater')
+        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG if DEBUG_MODE else rospy.ERROR)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        # Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         self.next_waypoint = 0
@@ -59,11 +60,11 @@ class WaypointUpdater(object):
 
 
     def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
+        # Callback for /traffic_waypoint message. Implement
         pass
 
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
+        # Callback for /obstacle_waypoint message. We will implement it later
         pass
 
     def get_waypoint_velocity(self, waypoint):
@@ -88,7 +89,10 @@ class WaypointUpdater(object):
         nb_waypoints = len(self.static_waypoints.waypoints)
         while not self.waypoint_is_ahead(self.static_waypoints.waypoints[self.next_waypoint % nb_waypoints]) and \
                 it < UPDATE_MAX_ITER:
-            self.next_waypoint += 1  # We look at the next one
+            it += 1
+            self.next_waypoint += 5  # We look at the next one
+            if self.next_waypoint > len(self.static_waypoints.waypoints) - 1:
+                self.next_waypoint = 0
 
         # Searching the next waypoint in the full path takes much longer, we want to avoid it as much as possible
         if it == UPDATE_MAX_ITER:
@@ -96,21 +100,29 @@ class WaypointUpdater(object):
 
     def search_next_waypoint(self):
         self.next_waypoint = 0
-        # TODO: Rewrite this in a clearer way
+        rospy.logwarn("Initiating search for closest waypoint...")
         # We basically search among all static waypoints the closest waypoint ahead
-        for i in range(len(self.static_waypoints)):
+        for i in range(len(self.static_waypoints.waypoints)):
             if self.waypoint_is_ahead(self.static_waypoints.waypoints[i]) and \
-                    self.distance_to_previous(self.static_waypoints.waypoints[i].pose) < \
-                    self.distance_to_previous(self.static_waypoints.waypoints[self.next_waypoint].pose):
+                    self.distance_to_previous(self.static_waypoints.waypoints[i].pose.pose) < \
+                    self.distance_to_previous(self.static_waypoints.waypoints[self.next_waypoint].pose.pose):
                 self.next_waypoint = i
-        rospy.loginfo('Found next waypoint: {}'.format(self.next_waypoint))
+        rospy.logwarn('Found next closest waypoint: {}'.format(self.next_waypoint))
+
+    def next_waypoints_circular(self):
+        wp = self.next_waypoint
+        if wp + LOOKAHEAD_WPS < len(self.static_waypoints.waypoints) - 1:
+            return self.static_waypoints.waypoints[wp:wp + LOOKAHEAD_WPS]
+        else:
+            return self.static_waypoints.waypoints[wp:] + \
+                   self.static_waypoints.waypoints[0:wp + LOOKAHEAD_WPS - len(self.static_waypoints.waypoints) + 1]
 
     def publish_update(self):
         # Emits the new waypoints, but only if we have received the base waypoints
         if self.static_waypoints:
             self.update_next_waypoint()
-            wp = self.next_waypoint
-            self.final_waypoints_pub.publish(Lane(waypoints=self.static_waypoints.waypoints[wp:wp+LOOKAHEAD_WPS]))
+            rospy.logdebug("Next waypoint: {}".format(self.next_waypoint))
+            self.final_waypoints_pub.publish(Lane(waypoints=self.next_waypoints_circular()))
 
         self.last_update = time.time()
 
