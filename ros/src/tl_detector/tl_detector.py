@@ -160,7 +160,7 @@ class TLDetector(object):
                 min_dist = dist     # we save the distance of the closest waypoint
 
 		# returns the index of the closest waypoint
-	rospy.loginfo('waypoint: %s', wp_id)
+
         return wp_id
 
 
@@ -244,8 +244,11 @@ class TLDetector(object):
 						stop_distance = (ntl_wp - position)	
 						stop_line = position
         if stop_line > 0:
+			rospy.loginfo('Light state: %s',ntl_state)
+			rospy.loginfo('Stop line: %f',stop_line)			
 			return stop_line, ntl_state 
         else:
+	        rospy.loginfo('Light state: %s',TrafficLight.UNKNOWN)
 	        return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
