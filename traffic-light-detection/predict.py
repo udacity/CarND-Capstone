@@ -43,7 +43,7 @@ model = load_model('model.h5', custom_objects={
 
 # predict
 matches = []
-test_count = 100
+test_count = 1000
 images = []
 categories = []
 #image_paths = ['rosbag_images/frame0001.jpg', 'rosbag_images/frame0050.jpg', 'rosbag_images/frame0700.jpg', 'rosbag_images/frame0900.jpg']
@@ -58,7 +58,7 @@ start = time.time()
 for i in range(len(images)):
   prediction = np.argmax(model.predict(np.array([images[i]]))[0])
   category = categories[i]
-  print(path, category, prediction)
+  #print(path, category, prediction)
   matches.append(prediction == category)
 end = time.time()
 
