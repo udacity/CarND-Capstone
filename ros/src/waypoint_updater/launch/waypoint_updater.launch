@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" />
+    <node pkg="waypoint_updater" type="waypnt_updater.py" name="waypoint_updater">
+        <!-- way to set params in param server from launch -->
+        <!-- using dynparams now                           -->
+        <!-- <param name="lookahead_wps" type="int" value="200" /> -->
+    </node>
 </launch>
