@@ -104,6 +104,7 @@ def draw_boxes(image, boxes, classes, run_time, light_debug_index):
     plt.figure(figsize=(12, 8))
     plt.imshow(image)
     plt.savefig(run_time + "/boxes_image" + str(light_debug_index) + ".jpg")
+    plt.close()
 # END TEST CODE
 
 class TLClassifier(object):
