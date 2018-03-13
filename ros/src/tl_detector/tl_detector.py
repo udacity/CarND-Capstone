@@ -14,19 +14,19 @@ sys.path.append('light_classification')
 from light_classification.tl_classifier import TLClassifier
 
 STATE_COUNT_THRESHOLD = 3
-DISTANCE_LIMIT = 100
+DISTANCE_LIMIT = 150
 
 
 class TLDetector(object):
     def __init__(self):
-        rospy.init_node('tl_detector')
+        rospy.init_node('tl_detector', log_level=rospy.INFO)
 
         self.pose = None
         self.waypoints = None
         self.camera_image = None
         self.lights = []
         self.light_classifier = TLClassifier(for_real=False)
-
+        
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -46,6 +46,7 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
+
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -230,8 +231,8 @@ class TLDetector(object):
                         state_str = "YELLOW"
                     else:
                         state_str = "GREEN"
-                    rospy.loginfo("curr_wp_idx = %d, stop_wp_idx = %d, state = %s", car_position, stop_wp_idx,
-                                  state_str)
+                    rospy.logdebug("curr_wp_idx = %d, stop_wp_idx = %d, state = %s",
+                                   car_position, stop_wp_idx, state_str)
                     return stop_wp_idx, state
                 else:
                     return -1, TrafficLight.UNKNOWN

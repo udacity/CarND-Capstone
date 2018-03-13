@@ -1,53 +1,57 @@
+"""
+Author: Ravel Antunes <ravelantunes@gmail.com>
+        Peng Xu <robotpengxu@gmail.com>
+Date:   March 10, 2018
+"""
+
+
 import rospy
+from throttle_controller import ThrottleController
+from brake_controller import BrakeController
+from yaw_controller import YawController
+from pid import PID
+import lowpass
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
-from yaw_controller import YawController
-from pid import PID
 
 class Controller(object):
-    def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
-        self.dbw_enabled = True
+    def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle,
+                 vehicle_mass, wheel_radius, decel_limit, brake_deadband, fuel_capacity):
 
         # Initialize utility controllers
-        self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-        self.throttle_pid_controller = PID(kp=1.0, ki=1.0, kd=1.0)
-        self.steering_pid_controller = PID(kp=1.0, ki=1.0, kd=1.0)
+        self.throttle_control = ThrottleController()
+        self.brake_control = BrakeController(vehicle_mass, wheel_radius, decel_limit, brake_deadband, fuel_capacity)
+        self.yaw_control = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+        self.throttle_pid = PID(kp=2.0, ki=0.0, kd=0.0)
+        self.steering_pid = PID(kp=0.4, ki=0.1, kd=0.0)
 
         # Initialize state that will be updated nodes dbw is subscribed to
-        self.current_velocity = None
+        self.velocity = None
         self.twist = None
 
-        self.timestamp = 0
-        self.time_stamped = rospy.get_time()
+        # init timestamp
+        self.timestamp = rospy.get_time()
 
-    def toggle_dbw(self, dbw_enabled):
-        self.dbw_enabled = dbw_enabled
-
-    def control(self):
+    def control(self, target_v, target_w, current_v, dbw_enabled):
         # Return 0 values if state not populated yet
-        if self.current_velocity is None or self.twist is None:
-            return 0.01, 0.0, 0.0
-       
-        throttle = self.control_throttle()
-        steering = self.control_steering()
+        if not dbw_enabled:
+            return 0.0, 0.0, 0.0
 
-        # Return throttle, brake, steer
-        return max(0.0, throttle), min(0.0, throttle), steering
+        rospy.logdebug('DBW enabled ...')
 
+        dt = rospy.get_time() - self.timestamp
 
-    def control_throttle(self):
-        new_timestamp = rospy.get_time()
-        duration = new_timestamp - self.timestamp
-        sample_time = duration + 1e-6  # to avoid division by zero
-        self.timestamp = new_timestamp
+        error = target_v.x - current_v.x
 
-        self.velocity_error = self.twist.linear.x - self.current_velocity.linear.x
-        throttle = self.throttle_pid_controller.step(self.velocity_error, sample_time)
-        throttle = max(0.0, min(1.0, throttle))
-        return throttle
+        if error > 0:
+            throttle, brake = self.throttle_control.control(error, dt)
+            rospy.logdebug('throttle = %f, brake = %f' % (throttle, brake))
+        else:
+            throttle, brake = self.brake_control.control(error, dt)
+            rospy.logdebug('throttle = %f, brake = %f' % (throttle, brake))
 
-    def control_steering(self):
-        steering = self.yaw_controller.get_steering(self.twist.linear.x, self.twist.angular.z, self.current_velocity.linear.x)
-        return steering        
+        steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
+
+        return throttle, brake, steer

@@ -119,7 +119,7 @@ class TLClassifier(object):
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: image_np_expanded})
 
-        rospy.loginfo("Detection ms = %s", (time.time() - start_time) * 1000.0)
+        rospy.logdebug("Detection ms = %s", (time.time() - start_time) * 1000.0)
 
         start_time = time.time()
 
@@ -130,9 +130,6 @@ class TLClassifier(object):
             class_index = int(classes[0][0])
             category = self.get_category(self.categories, class_index)
             if category is not None:
-                #rospy.loginfo("%s, %s, %s", category['name'], score_thresh, class_index)
-
-
                 if (class_index == 0):
                     state = TrafficLight.UNKNOWN
                 elif (class_index == 1):
