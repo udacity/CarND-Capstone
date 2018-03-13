@@ -212,7 +212,7 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
+        #DONE: implement
         #rospy.logdebug("entered get_closest_waypoint")
         pose_x = pose.position.x
         pose_y = pose.position.y
@@ -290,9 +290,8 @@ class TLDetector(object):
             rospy.logwarn("  pose:")
             self.pplog('warn',self.pose)
             
-        #TODO find the closest visible traffic light (if one exists)
-
-        #FIXME: currently doesn't test for visibility.  just reports first upcoming stop line
+        #DONE: find the closest visible traffic light (if one exists)
+        #doesn't test for visibility.  just reports first upcoming stop line.  Will some minimum distance (equiv to the 200 waypoints) be sufficent?
         wps_to_closest_tl = 1e6
         i = 0
         for tl_hash in self.tl_list: #check all lights to find closest. 
