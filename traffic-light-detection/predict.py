@@ -9,7 +9,7 @@ import time
 
 path_labels = {}
 
-with open('file_labels.csv', 'r') as csvfile:
+with open('colors_only_labels.csv', 'r') as csvfile:
   reader = csv.reader(csvfile)
   for row in reader:
     path_labels[row[0]] = row[1]
