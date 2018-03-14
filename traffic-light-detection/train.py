@@ -14,21 +14,22 @@ import scipy
 
 path_labels = {}
 
-with open('file_labels.csv', 'r') as csvfile:
+with open('colors_only_labels.csv', 'r') as csvfile:
   reader = csv.reader(csvfile)
   for row in reader:
-    path_labels[row[0]] = row[1]
+    if row[1] != 'None':
+      path_labels[row[0]] = row[1]
 
 image_size = (224, 224, 3)
 #image_size = (200, 150, 3)
 batch_size = 16
 num_classes = 4
-epochs = 64
+epochs = 96
 
 
 base_model = MobileNet(
   alpha=0.25,          # adjust down to make model smaller/faster by reducing filter count
-  depth_multiplier=1, # adjust down to make model smaller/faster by reducing resolution per layer
+  depth_multiplier=1,  # adjust down to make model smaller/faster by reducing resolution per layer
   weights='imagenet',
   #weights=None,
   include_top=False,
@@ -36,9 +37,7 @@ base_model = MobileNet(
   input_shape=image_size
 )
 
-#add a global spatial average pooling layer
 x = base_model.output
-#x = GlobalAveragePooling2D()(x)
 x = Flatten()(x)
 
 # intermediate layers
@@ -48,10 +47,10 @@ x = Dense(32, activation='relu')(x)
 predictions = Dense(num_classes, activation='softmax')(x)
 #predictions = base_model.output
 
-# this is the model we will train
 model = Model(inputs=base_model.input, outputs=predictions)
 
 # freeze all base model layers and their weights
+# not doing this for now, as we'll train the full network
 #for layer in base_model.layers:
 #    layer.trainable = False
 #for layer in model.layers[:82]:
@@ -63,7 +62,7 @@ model = Model(inputs=base_model.input, outputs=predictions)
 model.compile(optimizer='adam', loss='categorical_crossentropy')
 
 image_paths = list(path_labels.keys())
-label_categories = {'None': 0, 'Red': 1, 'Yellow': 2, 'Green': 3}
+label_categories = {'Red': 0, 'Yellow': 1, 'Green': 2}
 
 def load_image(image_path):
   return scipy.misc.imresize(scipy.misc.imread(image_path), image_size)

@@ -17,7 +17,7 @@ with open('file_labels.csv', 'r') as csvfile:
 image_size = (224, 224, 3)
 
 image_paths = list(path_labels.keys())
-label_categories = {'None': 0, 'Red': 1, 'Yellow': 2, 'Green': 3}
+label_categories = {'Red': 0, 'Yellow': 1, 'Green': 2}
 
 def load_image(image_path):
   return scipy.misc.imresize(scipy.misc.imread(image_path), image_size)
