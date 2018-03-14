@@ -3,6 +3,7 @@ from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
 
+
 # BEGIN TEST CODE
 import matplotlib
 # Force matplotlib to not use any Xwindows backend.
@@ -18,6 +19,12 @@ import math
 import time
 import os
 
+import h5py
+import keras
+from keras.models import load_model
+from numpy import zeros, newaxis
+import rospy
+
 DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
 
 # Reference: Object Detection Lab Code
@@ -25,8 +32,10 @@ DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
 # BEGIN TEST CODE
 # Colors (one for each class)
 READ_TEST_IMAGE = False
-WRITE_BOXES_IMAGE = True
-WRITE_DETECTION_IMAGE = True
+#WRITE_BOXES_IMAGE = True
+#WRITE_DETECTION_IMAGE = True
+WRITE_BOXES_IMAGE = False
+WRITE_DETECTION_IMAGE = False
 cmap = ImageColor.colormap
 print("Number of colors =", len(cmap))
 COLOR_LIST = sorted([c for c in cmap.keys()])
@@ -101,14 +110,25 @@ def draw_boxes(image, boxes, classes, run_time, light_debug_index):
         color = COLOR_LIST[class_id]
         draw.line([(left, top), (left, bot), (right, bot), (right, top), (left, top)], width=4, fill=color)
 
-    plt.figure(figsize=(12, 8))
-    plt.imshow(image)
-    plt.savefig(run_time + "/boxes_image" + str(light_debug_index) + ".jpg")
-    plt.close()
+#    plt.figure(figsize=(12, 8))
+#    plt.imshow(image)
+#    plt.savefig(run_time + "/boxes_image" + str(light_debug_index) + ".jpg")
+#    plt.close()
 # END TEST CODE
 
 class TLClassifier(object):
     def __init__(self):
+
+        print ('######################       BEFORE Loaded Model')
+        self.model = load_model('AVO7_v1_model.h5')
+        self.model._make_predict_function()
+        self.graph = tf.get_default_graph()
+        print ('######################       AFTER Loaded Model')
+        self.DO_RED_ONCE = True
+        self.DO_YELLOW_ONCE = True
+        self.DO_GREEN_ONCE = True
+
+
 
         # BEGIN TEST CODE
         plt.style.use('ggplot')
@@ -229,6 +249,50 @@ class TLClassifier(object):
         """
         #TODO implement light color prediction
 
+        image_org = image
+
         image = self.traffic_light_detection(image)
+
+        desired_dim=(32,32)
+
+#        cv2.imshow('image',image)
+#        cv2.waitKey(0)
+#        cv2.destroyAllWindows()
+        try:
+          print ('Image shape = ', image.shape)
+        except Exception as e:
+          rospy.logwarn ('################No Image shape error'+ str(e))
+          image = image_org
+          print ('USE Image ORG ....   shape = ', image.shape)
+#          return TrafficLight.UNKNOWN
+
+
+        img_resized = cv2.resize(image, desired_dim, interpolation=cv2.INTER_LINEAR)
+        img_ = np.expand_dims(np.array(img_resized), axis=0)
+
+        with self.graph.as_default():
+           predict_tl_state = self.model.predict_classes(img_)
+           print ('predict_tl_state = ', predict_tl_state[0])
+        if predict_tl_state == 0:
+           print ('Traffic Light Color = RED ', predict_tl_state[0] )
+           if self.DO_RED_ONCE:
+             cv2.imwrite('red_image.jpg',image)
+             self.DO_RED_ONCE = False
+           return TrafficLight.RED
+        elif predict_tl_state == 1:
+           print ('Traffic Light Color = YELLOW ', predict_tl_state[0])
+           if self.DO_YELLOW_ONCE:
+             cv2.imwrite('yellow_image.jpg',image)
+             self.DO_YELLOW_ONCE = False
+           return TrafficLight.YELLOW
+        elif predict_tl_state == 2:
+           print ('Traffic Light Color = GREEN ',  predict_tl_state[0])
+           if self.DO_GREEN_ONCE:
+             cv2.imwrite('green_image.jpg',image)
+             self.DO_GREEN_ONCE = False
+           return TrafficLight.GREEN
+
+
+
 
         return TrafficLight.UNKNOWN
