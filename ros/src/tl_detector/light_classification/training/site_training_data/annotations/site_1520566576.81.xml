@@ -1,0 +1,26 @@
+<annotation>
+	<folder>training_images</folder>
+	<filename>site_1520566576.81.jpg</filename>
+	<path>/home/subhash/sdc/udacity/CarND-Capstone/ros/src/tl_detector/light_classification/training_images/site_1520566576.81.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>1368</width>
+		<height>1096</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>red</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>443</xmin>
+			<ymin>381</ymin>
+			<xmax>487</xmax>
+			<ymax>512</ymax>
+		</bndbox>
+	</object>
+</annotation>
