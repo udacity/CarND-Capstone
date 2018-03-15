@@ -57,10 +57,11 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        model = 'light_classification/sim_frozen_inference_graph.pb'
-        label_path = 'light_classification/label_map.pbtxt'
-        # model = 'light_classification/mmsarode_frozen_inference_graph.pb'
-        # label_path = 'light_classification/mmsarode_label_map.pbtxt'
+
+        model = self.config['traffic_light_detection']['model']
+        label_path = self.config['traffic_light_detection']['label_map']
+
+        rospy.loginfo('model %s label %s', model, label_path)
 
         num_classes = 4
         self.light_classifier = TLClassifier(model, label_path, num_classes)
