@@ -1,7 +1,7 @@
 from keras.applications.mobilenet import MobileNet
-from keras.preprocessing import image
+from keras.preprocessing import image as preprocess
 from keras.models import Model
-from keras.layers import Dense, GlobalAveragePooling2D, Flatten
+from keras.layers import Dense, GlobalAveragePooling2D, Flatten, Dropout
 from keras import backend as K
 from keras.utils import to_categorical
 import csv
@@ -42,7 +42,9 @@ x = Flatten()(x)
 
 # intermediate layers
 x = Dense(64, activation='relu')(x)
+x = Dropout(0.1)(x)
 x = Dense(32, activation='relu')(x)
+x = Dropout(0.1)(x)
 # and a prediction layer
 predictions = Dense(num_classes, activation='softmax')(x)
 #predictions = base_model.output
@@ -85,9 +87,18 @@ def get_image_batches(batch_size):
       for image_path in image_paths[batch_i:batch_i+batch_size]:
         image = load_image(image_path)
 
-        # randomly flip horizontally to augment data
+        # augment data
+        # rotate up to 2 degrees
+        image = preprocess.random_rotation(image, 2, row_axis=0, col_axis=1, channel_axis=2)
+        # randomly shift up to 20%
+        image = preprocess.random_shift(image, 0.2, 0.2, row_axis=0, col_axis=1, channel_axis=2)
+        # randomly zoom in up to 20%
+        image = preprocess.random_zoom(image, (0.25, 0.25), row_axis=0, col_axis=1, channel_axis=2)
+        #adjust brightness
+        image = preprocess.random_brightness(image, (0.8, 1.2))
+        # randomly flip horizontally
         if np.random.random() > 0.5:
-          image = np.flip(image, 1)
+          image = preprocess.flip_axis(image, 1)
 
         x.append(image)
         y.append(get_one_hot(image_path))
