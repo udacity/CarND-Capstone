@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -90,6 +91,9 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
+    def position_distance(self, a, b):
+        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -100,8 +104,17 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        nearest_waypoint_index = 0
+        nearest_distance = self.position_distance(self.waypoints.waypoints[0].pose.pose.position, pose.position)
+
+        for waypoint_index in range(len(self.waypoints.waypoints)):
+            waypoint = self.waypoints.waypoints[waypoint_index]
+            distance = self.position_distance(waypoint.pose.pose.position, pose.position)
+            if distance < nearest_distance:
+                nearest_waypoint_index = waypoint_index
+                nearest_distance = distance
+
+        return nearest_waypoint_index
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -135,10 +148,20 @@ class TLDetector(object):
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
+        if self.pose and self.waypoints:
             car_position = self.get_closest_waypoint(self.pose.pose)
 
-        #TODO find the closest visible traffic light (if one exists)
+        if len(self.lights) > 0 and self.pose:
+            nearest_distance = 1e8 # big number
+            for current_light in self.lights:
+                if current_light.pose.pose.position.x < self.pose.pose.position.x:
+                    continue
+
+                distance = self.position_distance(current_light.pose.pose.position, self.pose.pose.position)
+                max_distance = 30
+                if distance < max_distance and distance < nearest_distance:
+                    nearest_distance = distance
+                    light = current_light
 
         if light:
             state = self.get_light_state(light)
