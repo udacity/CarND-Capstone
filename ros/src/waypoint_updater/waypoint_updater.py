@@ -27,6 +27,14 @@ REFRESH_RATE_HZ = 2     # Number of times we update the final waypoints per seco
 UPDATE_MAX_ITER = 50    # Max number of iterations before considering relooking for the next waypoint in full path
 DEBUG_MODE      = False # Switch for whether debug messages are printed.
 
+def normalize_angle(angle):
+    if angle > math.pi:
+        return angle - 2 * math.pi
+    elif angle < -math.pi:
+        return angle + 2 * math.pi
+    else:
+        return angle
+
 def get_position(pos):
     return pos.position.x, pos.position.y, pos.position.z
 
@@ -81,7 +89,7 @@ class WaypointUpdater(object):
         p_x, p_y, _ = get_position(self.previous_pos)
         heading = math.atan2(w_y-p_y, w_x-p_x)
         yaw = euler_from_quaternion(get_orientation(self.previous_pos))[2]
-        angle = yaw-heading
+        angle = normalize_angle(yaw-heading)
         return True if math.fabs(angle) < math.pi/4. else False
 
     def update_next_waypoint(self):
