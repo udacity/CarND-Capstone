@@ -87,7 +87,7 @@ class TLDetector(object):
         self.sub_image = None
 
         light_wp, state = self.process_traffic_lights()
-	#rospy.loginfo(state)
+	#rospy.loginfo(state) #
         '''
         Publish upcoming red lights at camera frequency.
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
@@ -101,7 +101,7 @@ class TLDetector(object):
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
-	    #rospy.loginfo(light_wp)
+	    rospy.loginfo('light_wp %d', light_wp) #
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
@@ -181,7 +181,7 @@ class TLDetector(object):
 
         #TODO find the closest visible traffic light (if one exists)
         closest_light_index = self.get_closest_waypoint(self.pose.pose, self.lights)
-	rospy.loginfo('closest_light_index: %d', closest_light_index)
+	rospy.loginfo('closest_light_index: %d', closest_light_index) #
 	#rospy.loginfo(self.lights)
 
 
@@ -195,8 +195,10 @@ class TLDetector(object):
         if light:
             state = self.get_light_state(light)
 	    light_wp = self.get_closest_waypoint(light.pose.pose, self.waypoints)
-	    rospy.loginfo('predicted state: %d, actual state: %d', state, light.state)
-	    rospy.loginfo(light_wp)
+	    if state == 1:
+	        state = 0 # RED is 0, currently classifier returns 1 for RED
+	    rospy.loginfo('predicted state: %d, actual state: %d', state, light.state) #
+	    #rospy.loginfo(light_wp) #
             light_pose = Pose()
 	    light_pose.position.x = light
 	    return light_wp, state
