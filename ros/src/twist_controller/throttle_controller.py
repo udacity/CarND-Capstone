@@ -14,7 +14,7 @@ from pid import PID
 class ThrottleController(object):
     """ A Speed Controller class """
 
-    def __init__(self, kp=1.0, ki=1.0, kd=1.0, decel_limit, accel_limit):
+    def __init__(self, decel_limit, accel_limit):
         self.throttle_pid = PID(kp=1.0, ki=1.0, kd=1.0, mn=decel_limit, mx=accel_limit)
 
     def control(self, error, dt):

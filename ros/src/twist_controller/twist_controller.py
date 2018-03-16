@@ -21,7 +21,7 @@ class Controller(object):
                  wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
 
         # Initialize utility controllers
-        self.throttle_control = ThrottleController(kp=1.0, ki=1.0, kd=1.0, decel_limit, accel_limit)
+        self.throttle_control = ThrottleController(decel_limit, accel_limit)
         self.brake_control = BrakeController(vehicle_mass, wheel_radius, decel_limit, brake_deadband, fuel_capacity)
         self.yaw_control = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
