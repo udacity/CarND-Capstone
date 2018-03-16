@@ -13,9 +13,8 @@ import yaml
 import pprint             #format data structures into strings, for logging
 from numpy import asarray
 from scipy import spatial #supports data structure for looking up nearest point (essentially a binary search tree)
-
 STATE_COUNT_THRESHOLD = 3
-DETECTOR_ENABLED      = False #Set True to use our actual traffic light detector instead of the message data
+DETECTOR_ENABLED      = True   #Set True to use our actual traffic light detector instead of the message data
 DEBUG_MODE            = True  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
 
 class TLDetector(object):
@@ -23,9 +22,13 @@ class TLDetector(object):
 
         if(DEBUG_MODE):
             rospy.init_node('tl_detector',log_level=rospy.DEBUG)
+            rospy.logwarn("tl_detector: debug mode enabled.  Disable for PR; submission")
         else:
             rospy.init_node('tl_detector')
 
+        if(not DETECTOR_ENABLED):
+            rospy.logwarn("tl_detector: Detector is disabled; will use data from simulator.  set DETECTOR_ENABLED = True for submission")
+            
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -50,7 +53,6 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -61,35 +63,36 @@ class TLDetector(object):
         self.wp_kdtree = None #tree to store waypoints, using scipy.spatial
         self.num_wp    = 0    #number of waypoints received from base_waypoints
         self.tl_list   = None #list to store traffic lights in waypoint order
+        self.light_classifier = TLClassifier(debug=rospy.logdebug,info=rospy.loginfo,warn=rospy.logwarn,error=rospy.logerr)
         
         rospy.spin()
 
-    def pplog(self,level,data): #generate string from prettyPrinter, and send to rospy.log<level>
+    def pplog(self,level,data): #convert data structure to string from prettyPrinter and send to rospy.log<level>
         ppstring = pprint.pformat(data,indent=4)
         if (level == 'debug'):
-            rospy.logdebug("   -- ppdata debug: --")
+            rospy.logdebug("   -- begin ppdata debug: --")
             rospy.logdebug(ppstring)
-            rospy.logdebug("   -- end pp data debug --")
+            rospy.logdebug("   -- end ppdata debug --")
             return
         if (level == 'info'):
-            rospy.loginfo("   -- ppdata info: --")
+            rospy.loginfo("   -- begin ppdata info: --")
             rospy.loginfo(ppstring)
-            rospy.loginfo("   -- end pp data info --")
+            rospy.loginfo("   -- end ppdata info --")
             return
         if (level == 'warn'):
-            rospy.logwarn("   -- ppdata warn: --")
+            rospy.logwarn("   -- begin ppdata warn: --")
             rospy.logwarn(ppstring)
-            rospy.logwarn("   -- end pp data warn --")
+            rospy.logwarn("   -- end ppdata warn --")
             return
         if (level == 'err'):
-            rospy.logerr("   -- ppdata err: --")
+            rospy.logerr("   -- begin ppdata err: --")
             rospy.logerr(ppstring)
-            rospy.logerr("   -- end pp data err --")
+            rospy.logerr("   -- end ppdata err --")
             return
         if (level == 'fatal'):
-            rospy.logfatal("   -- ppdata fatal: --")
+            rospy.logfatal("   -- begin ppdata fatal: --")
             rospy.logfatal(ppstring)
-            rospy.logfatal("   -- end pp data fatal --")
+            rospy.logfatal("   -- end ppdata fatal --")
             return
         rospy.logwarn("tl_detector: pplog received unrecognized level: %s",level)
         return
@@ -113,7 +116,7 @@ class TLDetector(object):
             wp_x = waypoint.pose.pose.position.x
             wp_y = waypoint.pose.pose.position.y
             wp_coords.append((wp_x,wp_y))
-            self.num_wp +=1
+            self.num_wp += 1
             
         self.wp_kdtree = spatial.KDTree(asarray(wp_coords))
         #tree_data = self.wp_kdtree.data
@@ -144,12 +147,13 @@ class TLDetector(object):
                 i += 1
 
             self.tl_list = sorted(self.tl_list, key=lambda k: k['wp']) #sort list by waypoint index
-            rospy.logdebug("tl_detector: traffic_cb created tl_list:")
+            rospy.logdebug("tl_detector: traffic_cb created tl_list")
             self.pplog('debug',self.tl_list)
 
         # This section updates traffic light state from data in msg;
         #    duplicates some code so that it can be easily disabled with DETECTOR_ENABLED
-        if (not DETECTOR_ENABLED and self.tl_list is not None):
+        #    Also enable when in DEBUG_MODE, to compare inference against ground truth
+        if ((DEBUG_MODE or not DETECTOR_ENABLED) and self.tl_list is not None):
             stop_line_positions = self.config['stop_line_positions']
             state_tl_list = []
             i = 0
@@ -166,8 +170,8 @@ class TLDetector(object):
             for tl_hash,state_tl_hash in zip (self.tl_list,state_tl_list): #as locations don't change, sorting by nearest waypoint will generate same order
                 tl_hash['state'] = state_tl_hash['state']
 
-            rospy.logdebug("tl_detector: traffic_cb updated states in tl_list:")
-            self.pplog('debug',self.tl_list)
+            #rospy.logdebug("tl_detector: traffic_cb updated states in tl_list:")
+            #self.pplog('debug',self.tl_list)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -193,7 +197,8 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+            #report light if red or yellow, so we don't freak out or blow the stop line when it suddenly turns red
+            light_wp = light_wp if state == TrafficLight.RED or state == TrafficLight.YELLOW else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
             rospy.logdebug("tl_detector: published waypoint of next red light's stop line: %d",light_wp)
@@ -255,16 +260,22 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        rospy.logdebug("tl_detector: entered get_light_state")
         if(not self.has_image):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         if(DETECTOR_ENABLED):
             #Get classification
-            return self.light_classifier.get_classification(cv_image)
+            #return self.light_classifier.get_classification(cv_image)
+            classifier_state =  self.light_classifier.get_classification(cv_image)
+            rospy.logdebug("tl_detector: get_light_state: classifer returned state %d; returning simulator light state %d",classifier_state,self.tl_list[light]['state'])
+            return self.tl_list[light]['state']
         else:
+            rospy.logdebug("tl_detector: get_light_state: detector not enabled; returning simulator light state %d"%self.tl_list[light]['state'])
             return self.tl_list[light]['state']
 
     def process_traffic_lights(self):
@@ -276,7 +287,7 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #rospy.logdebug("tl_detector: entered process_traffic_lights")
+        rospy.logdebug("tl_detector: entered process_traffic_lights")
         light = None
         light_wp = None
 
@@ -313,6 +324,7 @@ class TLDetector(object):
 
 if __name__ == '__main__':
     try:
+        rospy.logdebug('tl_detector: Declaring TLDetector')
         TLDetector()
     except rospy.ROSInterruptException:
-        rospy.logerr('Could not start traffic node.')
+        rospy.logerr('tl_detector: Could not start traffic node.')
