@@ -9,7 +9,6 @@ import rospy
 from throttle_controller import ThrottleController
 from brake_controller import BrakeController
 from yaw_controller import YawController
-from pid import PID
 import lowpass
 
 GAS_DENSITY = 2.858
@@ -17,15 +16,14 @@ ONE_MPH = 0.44704
 
 
 class Controller(object):
-    def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle,
-                 vehicle_mass, wheel_radius, decel_limit, brake_deadband, fuel_capacity):
+    def __init__(self, decel_limit, accel_limit,
+                 vehicle_mass, wheel_radius, brake_deadband, fuel_capacity,
+                 wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
 
         # Initialize utility controllers
-        self.throttle_control = ThrottleController()
+        self.throttle_control = ThrottleController(kp=1.0, ki=1.0, kd=1.0, decel_limit, accel_limit)
         self.brake_control = BrakeController(vehicle_mass, wheel_radius, decel_limit, brake_deadband, fuel_capacity)
         self.yaw_control = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-        self.throttle_pid = PID(kp=2.0, ki=0.0, kd=0.0)
-        self.steering_pid = PID(kp=0.4, ki=0.1, kd=0.0)
 
         # Initialize state that will be updated nodes dbw is subscribed to
         self.velocity = None

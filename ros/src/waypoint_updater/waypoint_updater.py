@@ -184,10 +184,10 @@ class WaypointUpdater(object):
         end = start + LOOKAHEAD_WPS
         if end > len(waypoints) - 1:
            end = len(waypoints) - 1
-        a = 0.5 * self.accel_limit
+        accel = 0.5 * self.accel_limit
         for idx in range(start, end):
             dist = self.distance(waypoints, start, idx+1)
-            speed = math.sqrt(init_vel**2 + 2 * a * dist)
+            speed = math.sqrt(init_vel**2 + 2 * accel * dist)
             if speed > self.cruise_speed:
                 speed = self.cruise_speed
             self.set_waypoint_velocity(waypoints, idx, speed)
@@ -200,23 +200,21 @@ class WaypointUpdater(object):
         end = start + SLOWDOWN_WPS
         if end > len(waypoints) - 1:
            end = len(waypoints) - 1
-        dist_to_tl =  self.distance(waypoints, start, self.traffic_index)
-        a = init_vel ** 2 / (2 * dist_to_tl) + 1e-6
-        if a > self.decel_limit:
-            a = self.decel_limit
+        dist_to_tl = self.distance(waypoints, start, self.traffic_index)
+        decel = init_vel ** 2 / (2 * dist_to_tl)
+        if decel > self.decel_limit:
+            decel = self.decel_limit
         for idx in range(start, end):
             dist = self.distance(waypoints, start, idx+1)
             if idx < self.traffic_index:
-                vel2 = init_vel**2 - 2 * a * dist
+                vel2 = init_vel**2 - 2 * decel * dist
                 if vel2 < 1.0:
                    vel2 = 0.0
-                velocity = math.sqrt(vel2)
-                self.set_waypoint_velocity(waypoints, idx, velocity)
-                next_waypoints.append(waypoints[idx])
+                speed = math.sqrt(vel2)
             else:
-                velocity = 0.0
-                self.set_waypoint_velocity(waypoints, idx, velocity)
-                next_waypoints.append(waypoints[idx])
+                speed = 0
+            self.set_waypoint_velocity(waypoints, idx, speed)
+            next_waypoints.append(waypoints[idx])
         return next_waypoints
 
     def hardbrake_waypoints(self, waypoints, start):
