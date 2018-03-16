@@ -94,7 +94,7 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+            light_wp = light_wp if state == TrafficLight.RED or state == TrafficLight.YELLOW else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
@@ -150,14 +150,6 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         return self.light_classifier.get_classification(cv_image, save_tl=False)
-
-        #state = self.light_classifier.get_classification(cv_image)
-        #rospy.loginfo("state = %s", state)
-        # Get classification
-        #return self.light_classifier.get_classification(cv_image)
-        # state = self.light_classifier.detect_traffic_lights(cv_image, 'faster_rcnn_resnet101_coco_11_06_2017')
-        # rospy.loginfo("state = %s", state)
-        #return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
