@@ -62,9 +62,19 @@ class WaypointUpdater(object):
 	if waypoint != -1:
 		self.set_waypoint_velocity(self.base_waypoints, waypoint, 0)
 		#self.base_waypoints[waypoint].twist.twist.linear.x = 0 # come to stop by here
-		rospy.logwarn('traffic_cb msg: %d', waypoint) #
+		rospy.logwarn('traffic_cb dest_waypoint: %d, current_waypoint: %d', waypoint, self.nearest_waypoint()) #
+		for i in range(self.nearest_waypoint(), waypoint-10):
+			rospy.logwarn('updating velocity for waypoint %d', i)
+			p = 1. - (i*1.)/(waypoint-10)
+			rospy.logwarn('p: %.3f', p)
+			cur_v = self.get_waypoint_velocity(self.base_waypoints[i])
+			new_v = cur_v * p
+			rospy.logwarn('   cur_v: %.3f, new_v: %.3f', cur_v, new_v)
+			self.set_waypoint_velocity(self.base_waypoints, i, new_v)
 		rospy.logwarn('sent stop')
-		self.publish_waypoints()
+	else:
+		self.set_waypoint_velocity(self.base_waypoints, self.nearest_waypoint(), 11)
+	self.publish_waypoints()
         #pass
 
     def obstacle_cb(self, msg):

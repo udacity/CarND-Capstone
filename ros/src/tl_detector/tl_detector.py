@@ -201,6 +201,7 @@ class TLDetector(object):
 	    #rospy.loginfo(light_wp) #
             light_pose = Pose()
 	    light_pose.position.x = light
+	    rospy.loginfo('car_wp: %d', car_position) #
 	    return light_wp, state
 
         # TODO: why are waypoints destroyed here?
