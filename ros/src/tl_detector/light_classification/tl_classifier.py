@@ -14,9 +14,9 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 PATH_TO_CKPT           = dir_path + '/models/tld_simulator_model/frozen_inference_graph.pb'
 SCORE_THRESH           = 0.65  #detection_score threshold to report a positive result, or invalidate a differeing result
-IMAGE_CAPTURE          = False #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
+IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
 IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
-DEBUG_MODE             = False #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
+DEBUG_MODE             = True #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 
 
 class TLClassifier(object):
@@ -85,7 +85,7 @@ class TLClassifier(object):
         
         self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
 
-    def run_inference_for_single_image(self,image, graph):
+    def run_inference_for_single_image(self,image):
 
         image_expand = np.expand_dims(image, 0)
         #image_size = image_expand.shape
@@ -152,21 +152,21 @@ class TLClassifier(object):
 
         """
         #DONE: implement light color prediction      
-        self.debug("tl_classifier: entered get_classification for image number %d",self.img_count)
-        cur_image_num = self.img_count
         self.img_count += 1
+        self.debug("tl_classifier: entered get_classification for image %d",self.img_count)
+        cur_image_num = self.img_count
         if(DEBUG_MODE and IMAGE_CAPTURE):
-            self.debug("tl_classifier: writing received image, numbered: %d"%self.img_count)
+            self.debug("tl_classifier: writing received image, numbered: %d"%cur_image_num)
             if not os.path.exists(IMAGE_CAPTURE_PATH):
                 self.debug("  creating directory %s"%IMAGE_CAPTURE_PATH)
                 os.makedirs(IMAGE_CAPTURE_PATH)
-            filename = IMAGE_CAPTURE_PATH + "/tc_image_%d.jpg"%self.img_count
+            filename = IMAGE_CAPTURE_PATH + "/tc_image_%d.jpg"%cur_image_num
             self.debug("  calling imwrite on file %s"%filename)
             cv2.imwrite(filename,cv2.cvtColor(image,cv2.COLOR_RGB2BGR))
 
         #image_expanded = np.exapnd_dims(image,axis=0)
-        output_dict = self.run_inference_for_single_image(image,self.detection_graph)
-        self.debug("tl_classifier: inference returned the following output_dict for image number %d:",cur_image_num)
+        output_dict = self.run_inference_for_single_image(image)
+        self.debug("tl_classifier: inference returned the following output_dict for image %d:",cur_image_num)
         self.pplog('debug',output_dict)
         class_state = -1 #used to represent 'unknown'
         light_state = TrafficLight.UNKNOWN
@@ -187,5 +187,5 @@ class TLClassifier(object):
         elif(class_state == 3):
             light_state = TrafficLight.YELLOW
 
-        self.debug("tl_classifier: returning light_state %d for image number %d",light_state,cur_image_num)
+        self.debug("tl_classifier: returning light_state %d for image %d",light_state,cur_image_num)
         return light_state

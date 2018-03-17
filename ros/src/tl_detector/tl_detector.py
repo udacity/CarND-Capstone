@@ -14,8 +14,8 @@ import pprint             #format data structures into strings, for logging
 from numpy import asarray
 from scipy import spatial #supports data structure for looking up nearest point (essentially a binary search tree)
 STATE_COUNT_THRESHOLD = 3
-DETECTOR_ENABLED      = False   #Set True to use our actual traffic light detector instead of the message data
-DEBUG_MODE            = False  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
+DETECTOR_ENABLED      = True   #Set True to use our actual traffic light detector instead of the message data
+DEBUG_MODE            = True  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
 
 class TLDetector(object):
     def __init__(self):
@@ -45,7 +45,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1,buff_size=2**24)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -69,6 +69,7 @@ class TLDetector(object):
             self.light_classifier = TLClassifier(image_size,debug=rospy.logdebug,info=rospy.loginfo,warn=rospy.logwarn,error=rospy.logerr)
 
         self.ready_classifier = True
+        self.ready_image_cb   = True
 
         rospy.spin()
 
@@ -187,12 +188,18 @@ class TLDetector(object):
 
         """
         #rospy.logdebug("tl_detector: entered image_cb")
+        self.state_count += 1
+        self.img_count += 1
+        if not self.ready_image_cb:
+            rospy.logdebug("tl_detector: image_cb received image %d, but is not ready",self.img_count)
+            return
+
+        self.ready_image_cb = False
         self.has_image = True
         self.camera_image = msg
         image_num = self.img_count
-        rospy.logdebug("tl_detector: image_cb received image number %d",image_num)
-        self.img_count += 1
-        light_wp, state = self.process_traffic_lights()
+        rospy.logdebug("tl_detector: image_cb processing image %d",image_num)
+        light_wp, state = self.process_traffic_lights(image_num)
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -213,8 +220,9 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
             rospy.logdebug("tl_detector: from image %d (vs. current image %d), published waypoint of prevously reported red light's stop line: %d",image_num,self.img_count,self.last_wp)
-        self.state_count += 1
 
+        self.ready_image_cb = True
+            
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -258,7 +266,7 @@ class TLDetector(object):
         
         return kd_index
 
-    def get_light_state(self, light):
+    def get_light_state(self, light,image_num):
         """Determines the current color of the traffic light
 
         Args:
@@ -284,16 +292,16 @@ class TLDetector(object):
                 classifier_state =  self.light_classifier.get_classification(cv_image)
                 self.ready_classifier = True
             else:
-                rospy.logdebug("tl_detector: get_light_state: skipping inference because the classifier isn't ready yet.  Returning previous value %d",self.state)
+                rospy.logdebug("tl_detector: get_light_state: skipping inference for image %d because the classifier isn't ready yet.  Returning previous value %d",image_num,self.state)
                 classifier_state = self.state
-            rospy.logdebug("tl_detector: get_light_state: classifer returned state %d, vs contemp. state %d and current sim state %d",classifier_state,contemp_state,self.tl_list[light]['state'])
+            rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned state %d, vs contemp. state %d and current sim state %d",image_num,classifier_state,contemp_state,self.tl_list[light]['state'])
             #return self.tl_list[light]['state']
             return classifier_state
         else:
             rospy.logdebug("tl_detector: get_light_state: detector not enabled; returning simulator light state %d"%self.tl_list[light]['state'])
             return self.tl_list[light]['state']
 
-    def process_traffic_lights(self):
+    def process_traffic_lights(self,image_num):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
 
@@ -330,7 +338,7 @@ class TLDetector(object):
                 light_wp = tl_hash['wp']
 
         if light is not None:
-            state = self.get_light_state(light)
+            state = self.get_light_state(light,image_num)
             return light_wp, state
 
         rospy.logwarn("tl_detector: process_traffic_lights did not find any light that was next.  this shouldn't happen")
