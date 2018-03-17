@@ -1,3 +1,71 @@
+# Self-Driving Car Engineer Nanodegree
+
+## Capstone Project - System Integration
+
+As the Capstone Project of the Self-Driving Car Engineer Nanodegree, the System Integration project aims at integrating three key modules, Perception, Planning and Control, into a complete solution to the Autonomous Driving. The final code will be tested on Carla, the Udacity’s Self Driving Lincoln MKZ, around a test track in Califonia.
+
+### Team: Speedy Easter Bunny
+
+**Peng Xu**
+
+**Ravel Antunes**
+
+**William O Grady**
+
+**Danilo Canivel**
+
+**Naveen Pandey**
+
+### Architecture
+
+### Perception
+
+#### 1. Traffic Light Detector Node
+
+The purpose of the traffic light detector node is to publish the waypoint location and state (colour of nearest traffic light) at that time. This node calls the traffic light classification algorithm and passes in the current frame in order to determine the colour of the lights. 
+
+The node was implemented with the following algorithm:
+
+1. The closest lights to the ego vehicle is identified, its waypoint index index is recorded based on its position.
+2. Once the nearest light is located, the nearest stop line to the traffic light is found. As before the resulting data is the waypoint index
+3. Next step after the traffic lights and stop line way points are found is to call the Traffic Light Classification algorithm (see below) and determine the colour of the lights
+4. Once the ego vehicle is close enough to the lights we report the current colour and stop line waypoint index.
+
+#### 2. Traffic Light Classification
+
+Multiple approaches were investigated to determine the colour of the lights. These approaches first included the use of a SVM classifier and a GCForest classifier but finally ended with using inference based ssd_inception trained model. This model was based on the following [blog](https://becominghuman.ai/traffic-light-detection-tensorflow-api-c75fdbadac62)
+
+The data collection stage itself took a bit of time as data from both the simulator and real world was required. Note also 2 models were trained, one for real world testing and the other for the simulator.
+
+# WIP
+
+### Planning
+
+#### 1. Waypoint Loader Node
+
+#### 2. Waypoint Updater Node
+
+### Control
+
+#### 1. Waypoint Follower Node
+
+#### 2. Drive By Wire (DBW) Node
+
+##### 1) Throttle Controller
+
+##### 2) Steering Controller
+
+##### 3) Braking Controller
+
+### Test on Simulator
+
+### Test on Carla
+
+### Conclusion
+
+------------------
+(Below are original readme.)
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 Please use **one** of the two installation options, either native **or** docker installation.
