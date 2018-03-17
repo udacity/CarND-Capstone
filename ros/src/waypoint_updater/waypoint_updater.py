@@ -12,6 +12,7 @@ from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
 import math
 from copy import deepcopy
+from enum import Enum
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -26,19 +27,18 @@ current status in `/vehicle/traffic_lights` message. You can use this message to
 as well as to verify your TL classifier.
 '''
 
-LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
-SLOWDOWN_WPS = 100
-HARDBRAKE_WPS = 50
-STALE_TIME = 1
-STOP_DISTANCE = 3.00  # Distance in 'm' from TL stop line from which the car starts to stop.
-STOP_HYST = 3  # Margin of error for a stopping car.
-DECEL_FACTOR = 0.1  # Multiplier to the decel limit.
-ACC_FACTOR = 0.5  # Multiplier to the accel limit
+LOOKAHEAD_WPS = 100  # Number of waypoints we will publish. You can change this number
+SAFETY_BUFFER = 0.5
+
+
+class State(Enum):
+    ACCELERATION = 1
+    DECELERATION = 2
 
 
 class WaypointUpdater(object):
     def __init__(self):
-        rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
+        rospy.init_node('waypoint_updater', log_level=rospy.INFO)
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -55,14 +55,17 @@ class WaypointUpdater(object):
         self.pose = None
         self.frame_id = None
         self.base_waypoints = None
+        self.num_waypoints = None
+        self.final_waypoints = None
+        self.current_state = State.DECELERATION
+        self.state_changed = True
         self.velocity = None
         self.traffic_index = -1  # Where in base waypoints list the traffic light is
-        self.traffic_time_received = rospy.get_time()  # When traffic light info was received
-        self.stop_distance = 0.25
 
         # ROS parameters
         self.cruise_speed = None
-        self.decel_limit = None
+        self.decel_limit_max = None
+        self.decel_limit_min = None
         self.accel_limit = None
 
         self.run()
@@ -75,6 +78,7 @@ class WaypointUpdater(object):
     def waypoints_cb(self, msg):
         """ Store the given map """
         self.base_waypoints = msg.waypoints
+        self.num_waypoints = len(msg.waypoints)
 
     def velocity_cb(self, msg):
         self.velocity = msg.twist
@@ -82,7 +86,8 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # Callback for /traffic_waypoint message. Implement
         self.traffic_index = msg.data
-        self.traffic_time_received = rospy.get_time()
+        if self.traffic_index != -1 and self.num_waypoints is not None:
+            self.traffic_index = (self.traffic_index - 5 + self.num_waypoints) % self.num_waypoints
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -177,35 +182,31 @@ class WaypointUpdater(object):
             best_index += 1
         return best_index
 
-    def cruise_waypoints(self, waypoints, start):
+    def accelerate_waypoints(self, waypoints, start):
         """Return a list of n waypoints ahead of the vehicle"""
         next_waypoints = []
         init_vel = self.velocity.linear.x
         end = start + LOOKAHEAD_WPS
-        if end > len(waypoints) - 1:
-           end = len(waypoints) - 1
         accel = 0.5 * self.accel_limit
         for idx in range(start, end):
-            dist = self.distance(waypoints, start, idx+1)
+            dist = self.distance(waypoints, start, (idx+1)%len(waypoints))
             speed = math.sqrt(init_vel**2 + 2 * accel * dist)
             if speed > self.cruise_speed:
                 speed = self.cruise_speed
             self.set_waypoint_velocity(waypoints, idx, speed)
-            next_waypoints.append(waypoints[idx])
+            next_waypoints.append(deepcopy(waypoints[idx]))
         return next_waypoints
 
-    def slowdown_waypoints(self, waypoints, start):
+    def decelerate_waypoints(self, waypoints, start):
         next_waypoints = []
         init_vel = self.velocity.linear.x
-        end = start + SLOWDOWN_WPS
-        if end > len(waypoints) - 1:
-           end = len(waypoints) - 1
+        end = start + LOOKAHEAD_WPS
         dist_to_tl = self.distance(waypoints, start, self.traffic_index)
         decel = init_vel ** 2 / (2 * dist_to_tl)
-        if decel > self.decel_limit:
-            decel = self.decel_limit
+        # if decel > self.decel_limit_max:
+        #     decel = self.decel_limit_max
         for idx in range(start, end):
-            dist = self.distance(waypoints, start, idx+1)
+            dist = self.distance(waypoints, start, (idx+1)%len(waypoints))
             if idx < self.traffic_index:
                 vel2 = init_vel**2 - 2 * decel * dist
                 if vel2 < 1.0:
@@ -214,47 +215,74 @@ class WaypointUpdater(object):
             else:
                 speed = 0
             self.set_waypoint_velocity(waypoints, idx, speed)
-            next_waypoints.append(waypoints[idx])
+            next_waypoints.append(deepcopy(waypoints[idx]))
         return next_waypoints
 
-    def hardbrake_waypoints(self, waypoints, start):
+    def continue_with_current_state(self, waypoints, start):
         next_waypoints = []
-        end = start + HARDBRAKE_WPS
-        if end > len(waypoints) - 1:
-           end = len(waypoints) - 1
-        for idx in range(start, end):
-            velocity = 0.0
-            self.set_waypoint_velocity(waypoints, idx, velocity)
-            next_waypoints.append(waypoints[idx])
-        return next_waypoints
+        j = 0
+        while j < len(self.final_waypoints):
+            if self.final_waypoints[j].pose.pose.position == waypoints[start].pose.pose.position:
+                break
+            j += 1
+        for i in range(j, len(self.final_waypoints)):
+            current_waypoint = deepcopy(waypoints[(start + i - j) % len(waypoints)])
+            current_waypoint.twist.twist.linear.x = self.final_waypoints[i].twist.twist.linear.x
+            next_waypoints.append(current_waypoint)
+        for i in range(len(next_waypoints), LOOKAHEAD_WPS):
+            current_waypoint = deepcopy(waypoints[(start + i) % len(waypoints)])
+            current_waypoint.twist.twist.linear.x = self.cruise_speed
+            next_waypoints.append(current_waypoint)
+        return  next_waypoints
 
     def get_next_waypoints(self, waypoints, car_index):
         """Return a list of n waypoints ahead of the vehicle"""
 
-        # Traffic light must be new
-        is_fresh = rospy.get_time() - self.traffic_time_received < STALE_TIME
+        # Handle state changes
+        if self.current_state == State.ACCELERATION:
+            if self.traffic_index != -1:
+                brake_distance = self.distance(waypoints, car_index, self.traffic_index) - SAFETY_BUFFER
 
-        if is_fresh and (self.traffic_index - car_index) > 0:
-            if self.traffic_index - car_index > HARDBRAKE_WPS:
-                rospy.logdebug('Should slow down here ...')
-                next_waypoints = self.slowdown_waypoints(waypoints, car_index)
-            else:
-                rospy.logdebug('Should hard brake here ...')
-                next_waypoints = self.hardbrake_waypoints(waypoints, car_index)
+                min_brake_distance = 0.5 * self.velocity.linear.x ** 2 / self.decel_limit_max
+                max_brake_distance = 0.5 * self.velocity.linear.x ** 2 / self.decel_limit_min
+                if max_brake_distance >= brake_distance >= min_brake_distance:
+                    self.current_state = State.DECELERATION
+                    self.state_changed = True
+
+        elif self.current_state == State.DECELERATION:
+            if self.traffic_index == -1:
+                self.current_state = State.ACCELERATION
+                self.state_changed = True
+
         else:
-            # Get subset waypoints ahead
-            next_waypoints = self.cruise_waypoints(waypoints, car_index)
+            rospy.logerr("WaypointUpdater: A state doesn't exist.")
+
+        # Handle states
+        if self.current_state == State.ACCELERATION and self.state_changed:
+            next_waypoints = self.accelerate_waypoints(waypoints, car_index)
+        elif self.current_state == State.ACCELERATION and not self.state_changed:
+            next_waypoints = self.continue_with_current_state(waypoints, car_index)
+        elif self.current_state == State.DECELERATION and self.state_changed:
+            next_waypoints = self.decelerate_waypoints(waypoints, car_index)
+        elif self.current_state == State.DECELERATION and not self.state_changed:
+            next_waypoints = self.continue_with_current_state(waypoints, car_index)
+        else:
+            rospy.logerr("WaypointUpdater: A state doesn't exist.")
+
+        self.state_changed = False
+
         return next_waypoints
 
     def run(self):
         """
         Continuously publish local path waypoints with target velocities
         """
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(5)
 
         # ROS parameters
         self.cruise_speed = self.kmph_to_mps(rospy.get_param('~/waypoint_loader/velocity', 40.0))
-        self.decel_limit = abs(rospy.get_param('~/twist_controller/decel_limit', -5))
+        self.decel_limit_max = abs(rospy.get_param('~/twist_controller/decel_limit', -5))
+        self.decel_limit_min = min(1.0, self.decel_limit_max / 2.0)
         self.accel_limit = rospy.get_param('~/twist_controller/accel_limit', 1)
 
         while not rospy.is_shutdown():
@@ -270,7 +298,7 @@ class WaypointUpdater(object):
 
             # Publish
             lane = self.construct_lane_object(lookahead_waypoints)
-            # rospy.logdebug('Update local path waypoints ...')
+            self.final_waypoints = deepcopy(lane.waypoints)
             self.final_waypoints_pub.publish(lane)
             self.car_index_pub.publish(car_index)
 

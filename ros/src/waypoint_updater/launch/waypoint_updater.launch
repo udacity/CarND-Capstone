@@ -1,6 +1,4 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" output="screen">
-        <param name="slowdown_rate" value="1.7" />
-    </node>
+    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" output="screen"/>
 </launch>
