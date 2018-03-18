@@ -1,3 +1,4 @@
+# Traffic Light Classification Models
 This is the documentation for the deep learning models for the traffic light detection
 
 ### Overview
@@ -12,28 +13,32 @@ We have then used transfer learning to learn the new objects - specifically, tra
 The current directory contains:
 
 - frozen models:
--- frozen_inference_graph.pb (higher accuracy - slightly longer compute for inference)
--- faster_frozen_inference_graph.pb (slightly lower accuracy - decreased compute for inference)
+  - frozen_inference_graph.pb (higher accuracy - slightly longer compute for inference)
+  - faster_frozen_inference_graph.pb (slightly lower accuracy - decreased compute for inference)
 
 - pipeline configurations 
--- pipeline.config (model trained: frozen_inference_graph.pb)
--- faster_pipeline.config (model trained: faster_frozen_inference_graph)
+  - pipeline.config (model trained: frozen_inference_graph.pb)
+  - faster_pipeline.config (model trained: faster_frozen_inference_graph)
 
 Note: Differences between faster_pipeline and pipeline configuration:
 
-*faster_pipeline: 
+*faster_pipeline:* 
 
+```
 first_stage_max_proposals: 10
 second_stage_batch_size: 10
 max_detections_per_class: 3
 max_total_detections: 6
+```
 
 
-*pipeline: 
+*pipeline:* 
 
+```
 first_stage_max_proposals: 100
 max_detections_per_class: 100
 max_total_detections: 100
+```
 
 - label map: tld_simulator_label_map.pbtxt (used for both models) 
 - jupyter notebook with examples of usage: tld_simulator_object_detection.ipynb
