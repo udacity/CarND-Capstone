@@ -93,7 +93,7 @@ def get_image_batches(batch_size):
         # randomly shift up to 20%
         image = preprocess.random_shift(image, 0.2, 0.2, row_axis=0, col_axis=1, channel_axis=2)
         # randomly zoom in up to 20%
-        image = preprocess.random_zoom(image, (0.25, 0.25), row_axis=0, col_axis=1, channel_axis=2)
+        image = preprocess.random_zoom(image, (0.8, 0.8), row_axis=0, col_axis=1, channel_axis=2)
         #adjust brightness
         image = preprocess.random_brightness(image, (0.8, 1.2))
         # randomly flip horizontally
