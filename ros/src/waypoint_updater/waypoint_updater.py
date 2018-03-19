@@ -41,11 +41,11 @@ class WaypointUpdater(object):
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
+        # TODO: Implement # call back for vehicle position
         pass
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
+        # TODO: Implement # call back for vase waypoints
         pass
 
     def traffic_cb(self, msg):
