@@ -22,7 +22,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -43,6 +43,11 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
+        self.desired_vel = 0.0  # the desired vehicle velocity at each timestep
+        self.max_vel = 11.0  # m/s
+        self.ramp_dist = 35  # distance to ramp up and down the acceleration (m)
+        self.acceleration = self.max_vel / self.ramp_dist
+
         self.updater_loop()
 
     def pose_cb(self, msg):
@@ -57,22 +62,20 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
 
             if self.current_pose and self.base_waypoints:
-                
                 # locate vehicle and update waypoints ahead
-                ego_veh_wp           = self.ego_veh_waypoint(self.current_pose,self.base_waypoints)
-                self.waypoints_ahead = self.base_waypoints[ego_veh_wp:ego_veh_wp+LOOKAHEAD_WPS]
+                ego_veh_wp = self.ego_veh_waypoint(self.current_pose, self.base_waypoints)
+                self.waypoints_ahead = self.base_waypoints[ego_veh_wp:ego_veh_wp + LOOKAHEAD_WPS]
 
                 # control vehicle speed depeding on traffic light state
-                self.adaptive_cruise_control(self.base_waypoints, ego_veh_wp, self.traffic_light_state)                
+                self.adaptive_cruise_control(self.base_waypoints, ego_veh_wp, self.traffic_light_state)
 
                 # publish
-                final_waypoints_msg              = Lane()
+                final_waypoints_msg = Lane()
                 final_waypoints_msg.header.stamp = rospy.Time.now()
-                final_waypoints_msg.waypoints    = self.waypoints_ahead
+                final_waypoints_msg.waypoints = self.waypoints_ahead
                 self.final_waypoints_pub.publish(final_waypoints_msg)
 
             rate.sleep()
-
 
     def traffic_cb(self, msg):
         self.traffic_light_state = msg.data
@@ -89,19 +92,19 @@ class WaypointUpdater(object):
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
+        dl = lambda a, b: math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+        for i in range(wp1, wp2 + 1):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
 
     def ego_veh_waypoint(self, pose, waypoints):
-        
+
         # find waypoint closest to vehicle's current pose
         dist_from_current_pose = 100000
         ego_veh_wp_idx = 0
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+        dl = lambda a, b: math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
         for i in range(len(waypoints)):
             dist = dl(pose.position, waypoints[i].pose.pose.position)
             if (dist < dist_from_current_pose):
@@ -111,10 +114,10 @@ class WaypointUpdater(object):
         # heading of the vehicle given current pose and next waypoint
         x_map = waypoints[ego_veh_wp_idx].pose.pose.position.x
         y_map = waypoints[ego_veh_wp_idx].pose.pose.position.y
-        heading = math.atan2((x_map-pose.position.x), ((y_map-pose.position.y)))
+        heading = math.atan2((x_map - pose.position.x), ((y_map - pose.position.y)))
 
         # convert from quaternion to euler coordinates
-        pose_quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w) 
+        pose_quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
         (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(pose_quaternion)
 
         # difference between heading angle (heading) and current angle based on velocity vector (yaw)
@@ -124,16 +127,32 @@ class WaypointUpdater(object):
         if angle > math.pi / 4.0:
             ego_veh_wp_idx += 1
 
-        return ego_veh_wp_idx  
-
+        return ego_veh_wp_idx
 
     def adaptive_cruise_control(self, waypoints, waypoint, traffic_light_state):
         # simple cruise controller based on "distance" from traffic light
 
+        wheel_base = rospy.get_param('~wheel_base', 2.8498)
+
         if traffic_light_state > 0.0:
-            self.set_waypoint_velocity(waypoints, waypoint, 0)
+            dist_x = self.base_waypoints[traffic_light_state].pose.pose.position.x - \
+                     self.base_waypoints[waypoint].pose.pose.position.x
+            dist_y = self.base_waypoints[traffic_light_state].pose.pose.position.y - \
+                     self.base_waypoints[waypoint].pose.pose.position.y
+
+            # calculate the distance to target location from the front of the vehicle
+            dist = math.sqrt(dist_x ** 2 + dist_y ** 2) - wheel_base
+
+            if dist < 0.3:
+                self.desired_vel = 0.
+            elif dist < self.ramp_dist:  # ramp the velocity down when close to the stop point
+                self.desired_vel = max(self.max_vel * dist / self.ramp_dist, 0.5)  # simple ramp function
         else:
-            self.set_waypoint_velocity(waypoints, waypoint, 21)
+            # ramp speed up with acceleration of 0.041(m/s)/ros_rate
+            self.desired_vel = max(self.desired_vel + self.acceleration, 0.5)
+
+        self.desired_vel = min(self.desired_vel, self.max_vel)
+        self.set_waypoint_velocity(waypoints, waypoint, self.desired_vel)
 
 
 if __name__ == '__main__':
