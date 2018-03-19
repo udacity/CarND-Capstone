@@ -17,7 +17,7 @@ STATE_COUNT_THRESHOLD = 3
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
-	rospy.logdebug('Init TL DETECTOR')
+        rospy.logdebug('Init TL DETECTOR')
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -87,7 +87,7 @@ class TLDetector(object):
         self.sub_image = None
 
         light_wp, state = self.process_traffic_lights()
-	#rospy.loginfo(state) #
+        #rospy.loginfo(state) #
         '''
         Publish upcoming red lights at camera frequency.
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
@@ -101,7 +101,7 @@ class TLDetector(object):
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
-	    rospy.loginfo('light_wp %d', light_wp) #
+            rospy.loginfo('light_wp %d', light_wp) #
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
@@ -181,28 +181,36 @@ class TLDetector(object):
 
         #TODO find the closest visible traffic light (if one exists)
         closest_light_index = self.get_closest_waypoint(self.pose.pose, self.lights)
-	rospy.loginfo('closest_light_index: %d', closest_light_index) #
-	#rospy.loginfo(self.lights)
+        rospy.loginfo('closest_light_index: %d', closest_light_index) #
+        #rospy.loginfo(self.lights)
 
 
         if closest_light_index is not None:
             closest_light = self.lights[closest_light_index]
-	    #rospy.loginfo(closest_light)
+            #rospy.loginfo(closest_light)
             closest_light_state = closest_light.state
             #self.save_image(closest_light_state)
-	    light = closest_light
+            light = closest_light
 
         if light:
-            state = self.get_light_state(light)
-	    light_wp = self.get_closest_waypoint(light.pose.pose, self.waypoints)
-	    if state == 1:
-	        state = 0 # RED is 0, currently classifier returns 1 for RED
-	    rospy.loginfo('predicted state: %d, actual state: %d', state, light.state) #
-	    #rospy.loginfo(light_wp) #
+            #state = self.get_light_state(light)
+            state = TrafficLight.UNKNOWN
+            light_wp = self.get_closest_waypoint(light.pose.pose, self.waypoints)
+
+            light_prediction_waypoints = 100
+            waypoints_to_next_light_waypoint = light_wp - car_position
+            if light_wp > (len(self.waypoints) - light_prediction_waypoints) <= light_prediction_waypoints:
+                waypoints_to_next_light_waypoint += len(self.waypoints)
+            rospy.loginfo('waypoint distance is %s', waypoints_to_next_light_waypoint)
+            if waypoints_to_next_light_waypoint >= 25 and waypoints_to_next_light_waypoint <= light_prediction_waypoints:
+                state = self.get_light_state(light)
+            if state != TrafficLight.UNKNOWN:
+                rospy.loginfo('predicted state: %d, actual state: %d', state, light.state)
+                rospy.loginfo('car_wp: %d', car_position)
+            
             light_pose = Pose()
-	    light_pose.position.x = light
-	    rospy.loginfo('car_wp: %d', car_position) #
-	    return light_wp, state
+            light_pose.position.x = light
+            return light_wp, state
 
         # TODO: why are waypoints destroyed here?
         #self.waypoints = None
