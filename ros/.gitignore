@@ -1,0 +1,8 @@
+# ROS
+build/
+devel/
+# Clion
+.idea/
+cmake-build-debug/
+# Vim
+*.swp
