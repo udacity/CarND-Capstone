@@ -17,10 +17,10 @@ STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
     def __init__(self):
-        self.pub_ready = rospy.Publisher('tl_detector_ready', Bool)
+        # self.pub_ready = rospy.Publisher('tl_detector_ready', Bool)
         rospy.init_node('tl_detector')
         rospy.logdebug('Init TL DETECTOR')
-        self.pub_ready.publish(False)
+        # self.pub_ready.publish(False)
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -214,7 +214,7 @@ class TLDetector(object):
 
             light_pose = Pose()
             light_pose.position.x = light
-            self.pub_ready.publish(True)
+            #self.pub_ready.publish(True)
             return light_wp, state
 
         # TODO: why are waypoints destroyed here?
