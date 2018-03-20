@@ -60,16 +60,16 @@ class TLDetector(object):
 
         self.has_image = False
 
+        self. rate = rospy.Rate(2)  # Hz
+
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(2)  # Hz
         while not rospy.is_shutdown():
-
             light, should_evaluate, debug_state = self.get_closest_light()
             if should_evaluate and self.sub_image is None:
                 self.sub_image = rospy.Subscriber('/image_color', Image, self.image_cb)
-            rate.sleep()
+            self.rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -95,6 +95,17 @@ class TLDetector(object):
         self.sub_image = None
 
         light_wp, state = self.process_traffic_lights()
+
+        if state==TrafficLight.RED:
+            self.rate = rospy.Rate(10)
+            self.upcoming_red_light_pub.publish(Int32(light_wp))
+        else:
+            self.rate = rospy.Rate(2)
+            self.upcoming_red_light_pub.publish(Int32(-1))
+
+
+
+
         #rospy.loginfo(state) #
         '''
         Publish upcoming red lights at camera frequency.
@@ -102,18 +113,18 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            rospy.loginfo('light_wp %d', light_wp) #
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        self.state_count += 1
+        # if self.state != state:
+        #     self.state_count = 0
+        #     self.state = state
+        # elif self.state_count >= STATE_COUNT_THRESHOLD:
+        #     self.last_state = self.state
+        #     light_wp = light_wp if state == TrafficLight.RED else -1
+        #     self.last_wp = light_wp
+        #     rospy.loginfo('light_wp %d', light_wp) #
+        #     self.upcoming_red_light_pub.publish(Int32(light_wp))
+        # else:
+        #     self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+        # self.state_count += 1
 
     def save_image(self, state):
         if hasattr(self.camera_image, 'encoding'):
