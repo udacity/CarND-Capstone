@@ -1,4 +1,5 @@
 /.vs
 /build
 /devel
+/.ros
 profile.tmp

@@ -3,5 +3,5 @@
 set "DockerUserName=paulmichalik"
 set "DockerImageName=capstone"
 set "DockerImageTag=latest"
-set "DockerContainerName=capstone"
+set "DockerContainerName=happy-capstone-win"
 set "DockerProject=Udacity/CarND-Capstone"

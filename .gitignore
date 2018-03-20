@@ -10,3 +10,4 @@ profile.tmp
 /.vs/ProjectSettings.json
 /.vs/config/applicationhost.config
 /.vs/VSWorkspaceState.json
+/.ros/log
