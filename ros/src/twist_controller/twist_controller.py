@@ -47,16 +47,18 @@ class TwistController(object):
         accel = self.LERP(self.last_accel, accel, self.accel_lerp_ratio)
         self.last_accel = accel
 
-        if accel<0:
-            accel *= self.brake_torque
-
-
         steer = self.yaw_controller.get_steering(target_velocity,
                                                  target_yaw_dot,
                                                  current_velocity)
 
         # smooth steering with LERP function
         steer = self.LERP(self.last_steer, steer, self.steer_lerp_ratio)
+
+        if accel<0:
+            accel *= self.brake_torque
+            self.last_accel = 0
+            steer = 0
+
         self.last_steer = steer
 
         return accel, steer
