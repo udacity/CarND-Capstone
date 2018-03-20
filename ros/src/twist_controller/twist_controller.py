@@ -29,8 +29,8 @@ class Controller(object):
             brake = 0.0
         else:
             throttle = 0.0
-            if linear_velocity < 0.1:
-                brake = 20.0
+            if linear_velocity < 0.2:
+                brake = 100.0
             else:
                 brake = -20.0 * linear_velocity_error
                 brake = max(brake, 1.0)
