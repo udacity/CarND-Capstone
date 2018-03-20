@@ -75,7 +75,7 @@ class WaypointUpdater(object):
             # rospy.logwarn('sent stop')
         else:
             for i in range(self.nearest_waypoint(), self.nearest_waypoint()+100):
-                self.set_waypoint_velocity(self.base_waypoints, i, 11)
+                self.set_waypoint_velocity(self.base_waypoints, i, 11.111111)
         self.publish_waypoints()
             #pass
 
@@ -122,23 +122,10 @@ class WaypointUpdater(object):
             return self.closest_waypoint_search(cur_wp, waypoints, low + 1, end)
 
     def nearest_waypoint(self):
-        nearest_waypoint_index = 0
-        nearest_distance = self.position_distance(self.base_waypoints[0].pose.pose.position, self.current_pose.position)
-
-        # s = time.time()
-
         nearest_waypoint_index, nearest_distance = self.closest_waypoint_search(self.current_pose.position,
                                                                                 self.base_waypoints,
                                                                                 0,
                                                                                 len(self.base_waypoints)-1)
-
-        # for waypoint_index in range(len(self.base_waypoints)):
-        #     waypoint = self.base_waypoints[waypoint_index]
-        #     distance = self.position_distance(waypoint.pose.pose.position, self.current_pose.position)
-        #     if distance < nearest_distance:
-        #         nearest_waypoint_index = waypoint_index
-        #         nearest_distance = distance
-
         # rospy.logwarn('nearest wp: %d', nearest_waypoint_index)
         # rospy.logwarn('nearest wp dist: %.3f', nearest_distance)
         # rospy.logwarn('nearest search: %.3f'%(1/(time.time()-s)))

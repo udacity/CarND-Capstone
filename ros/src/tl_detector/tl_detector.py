@@ -13,7 +13,6 @@ import cv2
 import yaml
 from math import sqrt
 
-STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
     def __init__(self):
@@ -53,8 +52,6 @@ class TLDetector(object):
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
 
         self.image_index = 0
 
@@ -103,28 +100,6 @@ class TLDetector(object):
             self.rate = rospy.Rate(2)
             self.upcoming_red_light_pub.publish(Int32(-1))
 
-
-
-
-        #rospy.loginfo(state) #
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        # if self.state != state:
-        #     self.state_count = 0
-        #     self.state = state
-        # elif self.state_count >= STATE_COUNT_THRESHOLD:
-        #     self.last_state = self.state
-        #     light_wp = light_wp if state == TrafficLight.RED else -1
-        #     self.last_wp = light_wp
-        #     rospy.loginfo('light_wp %d', light_wp) #
-        #     self.upcoming_red_light_pub.publish(Int32(light_wp))
-        # else:
-        #     self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        # self.state_count += 1
 
     def save_image(self, state):
         if hasattr(self.camera_image, 'encoding'):
