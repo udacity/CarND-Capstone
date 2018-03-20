@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import Int32
+from std_msgs.msg import Bool
 from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
@@ -16,8 +17,10 @@ STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
     def __init__(self):
+        self.pub_ready = rospy.Publisher('tl_detector_ready', Bool)
         rospy.init_node('tl_detector')
         rospy.logdebug('Init TL DETECTOR')
+        self.pub_ready.publish(False)
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -45,6 +48,7 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
+        rospy.logwarn('------ classifier loaded -------')
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -207,9 +211,10 @@ class TLDetector(object):
             if state != TrafficLight.UNKNOWN:
                 rospy.loginfo('predicted state: %d, actual state: %d', state, light.state)
                 rospy.loginfo('car_wp: %d', car_position)
-            
+
             light_pose = Pose()
             light_pose.position.x = light
+            self.pub_ready.publish(True)
             return light_wp, state
 
         # TODO: why are waypoints destroyed here?
