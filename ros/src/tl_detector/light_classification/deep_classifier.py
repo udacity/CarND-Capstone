@@ -30,7 +30,7 @@ class DeepClassifier(object):
 
         """
         image_size = (224, 224, 3)
-        resized_image = scipy_misc.imresize(image, image_size)
+        resized_image = scipy_misc.imresize(image[...,::-1], image_size)
         batch = np.array([resized_image])
         with self.graph.as_default():
             predictions = self.model.predict(batch)

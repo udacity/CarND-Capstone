@@ -58,24 +58,26 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-	waypoint = msg.data
-	if waypoint != -1:
-		self.set_waypoint_velocity(self.base_waypoints, waypoint, 0)
-		#self.base_waypoints[waypoint].twist.twist.linear.x = 0 # come to stop by here
-		rospy.logwarn('traffic_cb dest_waypoint: %d, current_waypoint: %d', waypoint, self.nearest_waypoint()) #
-		for i in range(self.nearest_waypoint(), waypoint-10):
-			rospy.logwarn('updating velocity for waypoint %d', i)
-			p = 1. - (i*1.)/(waypoint-10)
-			rospy.logwarn('p: %.3f', p)
-			cur_v = self.get_waypoint_velocity(self.base_waypoints[i])
-			new_v = cur_v * p
-			rospy.logwarn('   cur_v: %.3f, new_v: %.3f', cur_v, new_v)
-			self.set_waypoint_velocity(self.base_waypoints, i, new_v)
-		rospy.logwarn('sent stop')
-	else:
-		self.set_waypoint_velocity(self.base_waypoints, self.nearest_waypoint(), 11)
-	self.publish_waypoints()
-        #pass
+        waypoint = msg.data
+        rospy.logwarn('waypoint msg data: %d',waypoint)
+        if waypoint != -1:
+            self.set_waypoint_velocity(self.base_waypoints, waypoint, 0)
+            #self.base_waypoints[waypoint].twist.twist.linear.x = 0 # come to stop by here
+            # rospy.logwarn('traffic_cb dest_waypoint: %d, current_waypoint: %d', waypoint, self.nearest_waypoint()) #
+            for i in range(self.nearest_waypoint(), waypoint-10):
+                # rospy.logwarn('updating velocity for waypoint %d', i)
+                p = 1. - (i*1.)/(waypoint-10)
+                # rospy.logwarn('p: %.3f', p)
+                cur_v = self.get_waypoint_velocity(self.base_waypoints[i])
+                new_v = cur_v * p
+                # rospy.logwarn('   cur_v: %.3f, new_v: %.3f', cur_v, new_v)
+                self.set_waypoint_velocity(self.base_waypoints, i, new_v)
+            # rospy.logwarn('sent stop')
+        else:
+            for i in range(self.nearest_waypoint(), self.nearest_waypoint()+100):
+                self.set_waypoint_velocity(self.base_waypoints, i, 11)
+        self.publish_waypoints()
+            #pass
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
