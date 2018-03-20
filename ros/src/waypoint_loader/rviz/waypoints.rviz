@@ -28,7 +28,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: TrafficLightImage
 Visualization Manager:
   Class: ""
   Displays:
@@ -91,6 +91,14 @@ Visualization Manager:
       Namespaces:
         "": true
       Queue Size: 10
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /final_waypoints_markers
+      Name: FinalWaypoints
+      Namespaces:
+        "": true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
