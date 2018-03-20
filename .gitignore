@@ -5,3 +5,8 @@ devel
 
 profile.tmp
 .vscode
+/.vs/CarND-Capstone/v15
+/.vs/slnx.sqlite*
+/.vs/ProjectSettings.json
+/.vs/config/applicationhost.config
+/.vs/VSWorkspaceState.json
