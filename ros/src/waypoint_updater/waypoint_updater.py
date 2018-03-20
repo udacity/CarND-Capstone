@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
-
+import time
 import math
 
 '''
@@ -58,24 +58,26 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-	waypoint = msg.data
-	if waypoint != -1:
-		self.set_waypoint_velocity(self.base_waypoints, waypoint, 0)
-		#self.base_waypoints[waypoint].twist.twist.linear.x = 0 # come to stop by here
-		rospy.logwarn('traffic_cb dest_waypoint: %d, current_waypoint: %d', waypoint, self.nearest_waypoint()) #
-		for i in range(self.nearest_waypoint(), waypoint-10):
-			rospy.logwarn('updating velocity for waypoint %d', i)
-			p = 1. - (i*1.)/(waypoint-10)
-			rospy.logwarn('p: %.3f', p)
-			cur_v = self.get_waypoint_velocity(self.base_waypoints[i])
-			new_v = cur_v * p
-			rospy.logwarn('   cur_v: %.3f, new_v: %.3f', cur_v, new_v)
-			self.set_waypoint_velocity(self.base_waypoints, i, new_v)
-		rospy.logwarn('sent stop')
-	else:
-		self.set_waypoint_velocity(self.base_waypoints, self.nearest_waypoint(), 11)
-	self.publish_waypoints()
-        #pass
+        waypoint = msg.data
+        rospy.logwarn('waypoint msg data: %d',waypoint)
+        if waypoint != -1:
+            self.set_waypoint_velocity(self.base_waypoints, waypoint, 0)
+            #self.base_waypoints[waypoint].twist.twist.linear.x = 0 # come to stop by here
+            # rospy.logwarn('traffic_cb dest_waypoint: %d, current_waypoint: %d', waypoint, self.nearest_waypoint()) #
+            for i in range(self.nearest_waypoint(), waypoint-10):
+                # rospy.logwarn('updating velocity for waypoint %d', i)
+                p = 1. - (i*1.)/(waypoint-10)
+                # rospy.logwarn('p: %.3f', p)
+                cur_v = self.get_waypoint_velocity(self.base_waypoints[i])
+                new_v = cur_v * p
+                # rospy.logwarn('   cur_v: %.3f, new_v: %.3f', cur_v, new_v)
+                self.set_waypoint_velocity(self.base_waypoints, i, new_v)
+            # rospy.logwarn('sent stop')
+        else:
+            for i in range(self.nearest_waypoint(), self.nearest_waypoint()+100):
+                self.set_waypoint_velocity(self.base_waypoints, i, 11.111111)
+        self.publish_waypoints()
+            #pass
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -90,6 +92,9 @@ class WaypointUpdater(object):
     def position_distance(self, a, b):
         return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
 
+    def position_waypoint_distance(self, a, wp):
+        return math.sqrt((a.x-wp.pose.pose.position.x)**2 + (a.y-wp.pose.pose.position.y)**2)  #+ (a.z-b.z)**2)
+
     def distance(self, waypoints, wp1, wp2):
         dist = 0
         for i in range(wp1, wp2+1):
@@ -97,16 +102,33 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
-    def nearest_waypoint(self):
-        nearest_waypoint_index = 0
-        nearest_distance = self.position_distance(self.base_waypoints[0].pose.pose.position, self.current_pose.position)
+    def closest_waypoint_search(self, cur_wp, waypoints, begin, end):
+        if end - begin <= 3:
+            nearest_waypoint_index = -1
+            nearest_distance = 1e400
+            for i in range(begin,end+1):
+                dist = self.position_waypoint_distance(cur_wp, waypoints[i])
+                if dist<nearest_distance:
+                    nearest_distance = dist
+                    nearest_waypoint_index = i
+            return nearest_waypoint_index, nearest_distance
+        low = int((begin * 2 + end) / 3)
+        high = int((begin + end * 2) / 3)
+        dist_low = self.position_waypoint_distance(cur_wp, waypoints[low])
+        dist_high = self.position_waypoint_distance(cur_wp, waypoints[high])
+        if dist_low < dist_high:
+            return self.closest_waypoint_search(cur_wp, waypoints, begin, high - 1)
+        else:
+            return self.closest_waypoint_search(cur_wp, waypoints, low + 1, end)
 
-        for waypoint_index in range(len(self.base_waypoints)):
-            waypoint = self.base_waypoints[waypoint_index]
-            distance = self.position_distance(waypoint.pose.pose.position, self.current_pose.position)
-            if distance < nearest_distance:
-                nearest_waypoint_index = waypoint_index
-                nearest_distance = distance
+    def nearest_waypoint(self):
+        nearest_waypoint_index, nearest_distance = self.closest_waypoint_search(self.current_pose.position,
+                                                                                self.base_waypoints,
+                                                                                0,
+                                                                                len(self.base_waypoints)-1)
+        # rospy.logwarn('nearest wp: %d', nearest_waypoint_index)
+        # rospy.logwarn('nearest wp dist: %.3f', nearest_distance)
+        # rospy.logwarn('nearest search: %.3f'%(1/(time.time()-s)))
 
         return nearest_waypoint_index
 

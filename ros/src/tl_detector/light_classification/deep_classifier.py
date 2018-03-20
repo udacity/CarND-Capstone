@@ -35,7 +35,7 @@ class DeepClassifier(object):
         with self.graph.as_default():
             predictions = self.model.predict(batch)
         prediction_softmax = predictions[0]
+        #print('prediction_softmax: ', prediction_softmax)
         prediction = np.argmax(prediction_softmax)
-        print(prediction)
 
         return prediction

@@ -5,6 +5,7 @@ from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
+import csv
 
 from twist_controller import TwistController
 
@@ -42,7 +43,7 @@ class DBWNode(object):
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
         wheel_base = rospy.get_param('~wheel_base', 2.8498)
-        self.steer_ratio = rospy.get_param('~steer_ratio', 14.8)
+        steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
@@ -54,16 +55,16 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         self.dbw_enabled = False
-        self.target_acceleration = 0.
+        self.target_velocity = 0.
         self.target_yaw_dot = 0.
-        self.current_velocity_x = 0.
+        self.current_velocity = 0.
         self.current_yaw_dot = 0.
 
         self.last_update_time = None
 
         # Initialize TwistController
-        # TODO: how to calculate yaw_dot_limit ? (currently set to 1)
-        self.twist_controller = TwistController(accel_limit, decel_limit, max_steer_angle)
+        self.twist_controller = TwistController(accel_limit, -1., max_steer_angle, BrakeCmd.TORQUE_MAX,
+                                                wheel_base, steer_ratio, max_lat_accel, max_steer_angle)
 
         # Subscribe to topics
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_callback)
@@ -84,11 +85,10 @@ class DBWNode(object):
 
             current_time = rospy.Time.now()
             dt = current_time.to_sec() - self.last_update_time.to_sec()
-            #rospy.loginfo('dbw dt: %.3f', dt)
             self.last_update_time = current_time
 
             if (dt>0.075):
-                rospy.logwarn('slow DBW update, dt:%.3fs freq:%.1fhz', dt, 1/dt)
+                rospy.logwarn('slow DBW update, dt:%.3fs freq:%.1fhz', dt, 1./dt)
 
             # reset controller PIDs and skip calculations if DBW is off
             if not self.dbw_enabled:
@@ -96,9 +96,10 @@ class DBWNode(object):
                 rate.sleep()
                 continue
 
-            accel, yaw_dot = self.twist_controller.control(self.target_acceleration,
-                                                           self.target_yaw_dot,
-                                                           dt)
+            accel, steer = self.twist_controller.control(self.target_velocity,
+                                                         self.target_yaw_dot,
+                                                         self.current_velocity,
+                                                         dt)
 
             throttle = 0
             brake = 0
@@ -108,27 +109,25 @@ class DBWNode(object):
             else:
                 throttle = accel
 
-            steer = yaw_dot * self.steer_ratio
+            # record data for debugging
+            # self.data_recorder(self.target_velocity, self.target_yaw_dot, throttle, brake, steer)
 
-            # rospy.loginfo('DBW a:%.3f         y:%.3f', self.target_acceleration, self.target_yaw_dot)
+            # rospy.loginfo('DBW a:%.3f         y:%.3f', self.target_velocity, self.target_yaw_dot)
             # rospy.loginfo('DBW t:%.3f b:%.3f s:%.3f', throttle, brake, steer)
 
             self.publish(throttle, brake, steer)
             rate.sleep()
 
     def twist_cmd_callback(self, msg):
-        self.target_acceleration = msg.twist.linear.x - self.current_velocity_x
+        self.target_velocity = msg.twist.linear.x
         self.target_yaw_dot = msg.twist.angular.z
-        # rospy.loginfo('twist_cmd: a:%.3f yd:%.3f', self.target_acceleration, self.target_yaw_dot)
+        # rospy.loginfo('twist_cmd: v:%.3f yd:%.3f', self.target_velocity, self.target_yaw_dot)
         # log_twist_msg(msg, 'twist_cmd:')
 
     def current_velocity_callback(self, msg):
-        self.current_velocity_x = msg.twist.linear.x
-        # TODO: remove this check if y velocity always 0
-        if (abs(msg.twist.linear.y)>0.001):
-            rospy.logerr('current_velocity y!=0   y:%.3f',msg.twist.linear.y)
+        self.current_velocity = msg.twist.linear.x
         self.current_yaw_dot = msg.twist.angular.z
-        # rospy.loginfo('current_velocity: v:%.3f yd:%.3f', self.current_velocity_x, self.current_yaw_dot)
+        # rospy.loginfo('current_velocity: v:%.3f yd:%.3f', self.current_velocity, self.current_yaw_dot)
         # log_twist_msg(msg, 'current_velocity:')
 
     def dbw_enabled_callback(self, msg):
@@ -152,6 +151,28 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
+
+    def data_recorder(self, target_velocity, target_yaw_dot, throttle, brake, steer):
+        dbw_data_filename='/tmp/dbw_data.csv'
+        try:
+            foo = self.dbw_data
+        except:
+            self.dbw_data = []
+            with open(dbw_data_filename, 'wb') as csvfile:
+                rospy.loginfo('DBW data file: %s', csvfile.name)
+                csv_writer = csv.writer(csvfile, delimiter=',')
+                csv_writer.writerow(['time','t_speed', 't_yd', 'throttle', 'brake', 'steer', 'c_speed', 'c_yd'])
+
+        time = rospy.Time.now().to_sec()
+        self.dbw_data.append([time, target_velocity, target_yaw_dot, throttle, brake, steer, self.current_velocity, self.current_yaw_dot])
+        if len(self.dbw_data)==1000:
+            with open(dbw_data_filename, 'ab') as csvfile:
+                csv_writer = csv.writer(csvfile, delimiter=',')
+                for row in self.dbw_data:
+                    csv_writer.writerow(row)
+            rospy.loginfo('DBW data saved')
+            self.dbw_data = []
 
 
 def log_twist_msg(msg, description=None):
