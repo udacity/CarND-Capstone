@@ -210,7 +210,7 @@ class TLDetector(object):
         if light:
             light_wp = self.get_closest_waypoint(light.pose.pose, self.waypoints)
 
-            light_prediction_waypoints = 100
+            light_prediction_waypoints = 120
             waypoints_to_next_light_waypoint = light_wp - car_position
             if light_wp > (len(self.waypoints) - light_prediction_waypoints) <= light_prediction_waypoints:
                 waypoints_to_next_light_waypoint += len(self.waypoints)
