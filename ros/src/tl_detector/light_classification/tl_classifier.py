@@ -1,9 +1,9 @@
 from styx_msgs.msg import TrafficLight
+from deep_classifier import DeepClassifier
 
 class TLClassifier(object):
     def __init__(self):
-        #TODO load classifier
-        pass
+        self.classifier = DeepClassifier()
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -16,4 +16,4 @@ class TLClassifier(object):
 
         """
         #TODO implement light color prediction
-        return TrafficLight.UNKNOWN
+        return self.classifier.get_classification(image)
