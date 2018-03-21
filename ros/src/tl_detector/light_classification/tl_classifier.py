@@ -179,6 +179,8 @@ class TLClassifier(object):
             if not os.path.exists("./" + self.run_time):
                 os.makedirs("./" + self.run_time)
 
+        self.detection_session = tf.Session(graph=self.detection_graph)
+
     def traffic_light_detection(self, image):
         """Detect a traffic light in the image and return it in a new cropped image
         Args:
@@ -195,49 +197,49 @@ class TLClassifier(object):
 
         image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
 
-        with tf.Session(graph=self.detection_graph) as sess:
-            # Actual detection.
-            (boxes, scores, classes) = sess.run([self.detection_boxes, self.detection_scores, self.detection_classes],
-            feed_dict={self.image_tensor: image_np})
+        #with tf.Session(graph=self.detection_graph) as sess:
+        # Actual detection.
+        (boxes, scores, classes) = self.detection_session.run([self.detection_boxes, self.detection_scores, self.detection_classes],
+        feed_dict={self.image_tensor: image_np})
 
-            # Remove unnecessary dimensions
-            boxes = np.squeeze(boxes)
-            scores = np.squeeze(scores)
-            classes = np.squeeze(classes)
+        # Remove unnecessary dimensions
+        boxes = np.squeeze(boxes)
+        scores = np.squeeze(scores)
+        classes = np.squeeze(classes)
 
-            confidence_cutoff = 0.6
-            # Filter boxes with a confidence score less than `confidence_cutoff`
-            boxes, scores, classes = filter_boxes(confidence_cutoff, boxes, scores, classes)
+        confidence_cutoff = 0.6
+        # Filter boxes with a confidence score less than `confidence_cutoff`
+        boxes, scores, classes = filter_boxes(confidence_cutoff, boxes, scores, classes)
 
-            # The current box coordinates are normalized to a range between 0 and 1.
-            # This converts the coordinates actual location on the image.
+        # The current box coordinates are normalized to a range between 0 and 1.
+        # This converts the coordinates actual location on the image.
 
-            # BEGIN TEST CODE
-            if READ_TEST_IMAGE:
-                width, height = image.size
-            else:
-            # END TEST CODE
-                height, width, channels = image.shape
+        # BEGIN TEST CODE
+        if READ_TEST_IMAGE:
+            width, height = image.size
+        else:
+        # END TEST CODE
+            height, width, channels = image.shape
 
-            box_coords = to_image_coords(boxes, height, width)
+        box_coords = to_image_coords(boxes, height, width)
 
-            # BEGIN TEST CODE
-            # Each class with be represented by a differently colored box
-            draw_boxes(image, box_coords, classes, self.run_time, self.light_debug_index)
-            # END TEST CODE
+        # BEGIN TEST CODE
+        # Each class with be represented by a differently colored box
+        draw_boxes(image, box_coords, classes, self.run_time, self.light_debug_index)
+        # END TEST CODE
 
-            for i in range(len(boxes)):
-                bot, left, top, right = box_coords[i, ...]
-                class_id = int(classes[i])
-                if class_id == 10:
-                    light_image = image[int(bot):int(top), int(left):int(right)]
-                    if DEBUG_LEVEL >= 2:
-                        print("TL Classifier image", width, height, "light box", self.run_time, int(bot), int(top), int(left), int(right))
-                        if not READ_TEST_IMAGE and WRITE_BOXES_IMAGE:
-                            cv2.imwrite(self.run_time + "/camera_image" + str(self.light_debug_index) + ".jpg", image)
-                        if not READ_TEST_IMAGE and WRITE_BOXES_IMAGE:
-                            cv2.imwrite(self.run_time + "/light_image" + str(self.light_debug_index) + ".jpg", light_image)
-                        self.light_debug_index += 1
+        for i in range(len(boxes)):
+            bot, left, top, right = box_coords[i, ...]
+            class_id = int(classes[i])
+            if class_id == 10:
+                light_image = image[int(bot):int(top), int(left):int(right)]
+                if DEBUG_LEVEL >= 2:
+                    print("TL Classifier image", width, height, "light box", self.run_time, int(bot), int(top), int(left), int(right))
+                    if not READ_TEST_IMAGE and WRITE_BOXES_IMAGE:
+                        cv2.imwrite(self.run_time + "/camera_image" + str(self.light_debug_index) + ".jpg", image)
+                    if not READ_TEST_IMAGE and WRITE_BOXES_IMAGE:
+                        cv2.imwrite(self.run_time + "/light_image" + str(self.light_debug_index) + ".jpg", light_image)
+                    self.light_debug_index += 1
         return light_image
 
     def get_classification(self, image):
@@ -261,10 +263,10 @@ class TLClassifier(object):
         try:
           print ('Image shape = ', image.shape)
         except Exception as e:
-          rospy.logwarn ('################No Image shape error'+ str(e))
-          image = image_org
-          print ('USE Image ORG ....   shape = ', image.shape)
-#          return TrafficLight.UNKNOWN
+          #rospy.logwarn ('################No Image shape error'+ str(e))
+          #image = image_org
+          #print ('USE Image ORG ....   shape = ', image.shape)
+          return TrafficLight.UNKNOWN
 
 
         img_resized = cv2.resize(image, desired_dim, interpolation=cv2.INTER_LINEAR)

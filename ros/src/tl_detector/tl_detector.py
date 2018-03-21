@@ -21,6 +21,7 @@ STATE_COUNT_THRESHOLD = 3
 
 DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
 USE_GROUND_TRUTH = False
+PRINT_STATS = False
 
 class TLDetector(object):
     def __init__(self):
@@ -115,7 +116,14 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
 
-        light_wp, state = self.process_traffic_lights()
+        if PRINT_STATS:
+            prof = cProfile.Profile()
+            prof.enable()
+            light_wp, state = self.process_traffic_lights()
+            prof.disable()
+            prof.print_stats(sort='time')
+        else:
+            light_wp, state = self.process_traffic_lights()
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -215,6 +223,16 @@ class TLDetector(object):
         if light:
              ground_truth = self.lights[light].state
              print ('ground_truth = ', ground_truth)
+
+        # Select a reduced region of interest
+        #height, width, _ = cv_image.shape
+        #top = height * 0.20
+        #bot = height * 0.80
+        #left = width * 0.25
+        #right = width * 0.75
+        #print("IMAGE SIZE", height, width, top, bot, left, right)
+        #cv_image = cv_image[int(top):int(bot), int(left):int(right)]
+        #print("IMAGE SHAPE", cv_image.shape)
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
