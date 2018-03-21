@@ -51,12 +51,12 @@ def mobilenet_conv_block(x, kernel_size, output_channels):
 
     # depthwise conv
     x = tf.nn.depthwise_conv2d(x, W, (1, 2, 2, 1), padding='SAME')
-    x = tf.layers.batch_normalization(x)
+    x = tf.layers.batch_normalization(x, fused=True)
     x = tf.nn.relu(x)
 
     # pointwise conv
     x = tf.layers.conv2d(x, output_channels, (1, 1), padding='SAME')
-    x = tf.layers.batch_normalization(x)
+    x = tf.layers.batch_normalization(x, fused=True)
 
     return tf.nn.relu(x)
 
