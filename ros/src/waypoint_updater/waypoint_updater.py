@@ -21,7 +21,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -31,22 +31,29 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        # rospy.Subscriber('/traffic_waypoint', Lane, self.traffic_cb)
+        # rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
 
-
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-
+        self.final_waypoints_pub = rospy.Publisher(
+            'final_waypoints', Lane, queue_size=1)
+        self.base_waypoints = []
         # TODO: Add other member variables you need below
 
         rospy.spin()
 
-    def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+    def pose_cb(self, pose_stamped):
+        current_pose_idx = 0
+        for idx, waypoint in enumerate(self.base_waypoints):
+            if self.pose_equal(waypoint.pose.pose, pose_stamped.pose):
+                current_pose_idx = idx
+        final_waypoints_msg = Lane()
+        final_waypoints_msg.waypoints = self.base_waypoints[
+            current_pose_idx+1:current_pose_idx+LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publish(final_waypoints_msg)
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        self.base_waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -56,6 +63,13 @@ class WaypointUpdater(object):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
+    def pose_equal(self, pos1, pos2):
+        return (
+            abs(pos1.position.x - pos2.position.x) < 0.1 and
+            abs(pos1.position.y - pos2.position.y) < 0.1 and
+            abs(pos1.position.z - pos2.position.z) < 0.1
+        )
+
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
@@ -64,9 +78,12 @@ class WaypointUpdater(object):
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
+
+        def dl(a, b): return math.sqrt(
+            (a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
+            dist += dl(waypoints[wp1].pose.pose.position,
+                       waypoints[i].pose.pose.position)
             wp1 = i
         return dist
 
