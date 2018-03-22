@@ -15,6 +15,7 @@ class TLClassifier(object):
 
         inference_path = modelpath
 
+        # Load a(frozen) Tensorflow model into memory.
         self.detection_graph = tf.Graph()
 
         config = tf.ConfigProto()
@@ -61,6 +62,7 @@ class TLClassifier(object):
         with self.detection_graph.as_default():
             image_expanded = np.expand_dims(image, axis=0)
 
+            # Run inference
             (boxes, scores, classes, num_detections) = self.sess.run(
                 [self.boxes, self.scores, self.classes, self.num_detections],
                 feed_dict={self.image_tensor: image_expanded})
@@ -69,42 +71,27 @@ class TLClassifier(object):
             classes = np.squeeze(classes)
             scores = np.squeeze(scores)
 
-            rospy.loginfo("[TL_Classifier] Score: {0}".format(max(scores)) )
-
             for box, score, class_label in zip(boxes, scores, classes):
                 if score > self.threshold:
                     pixel = self.box_to_pixel(box, dim)
 
                     class_label = int(class_label)
                     if class_label == 1:
-                        rospy.loginfo("[TL_Classifier] {RED}")
+                        #rospy.loginfo("[TL_Classifier] {RED}")
                         return TrafficLight.RED
                         return 1#TrafficLight.RED # TrafficLight.RED has to be used
                     elif class_label == 2:
-                        rospy.loginfo("[TL_Classifier] {YELLOW}")
+                        #rospy.loginfo("[TL_Classifier] {YELLOW}")
                         return TrafficLight.YELLOW
                         return 2#TrafficLight.YELLOW # TrafficLight.YELLOW has to be used
                     elif class_label == 3:
-                        rospy.loginfo("[TL_Classifier] {GREEN}")
+                        #rospy.loginfo("[TL_Classifier] {GREEN}")
                         return TrafficLight.GREEN
                         return 3#TrafficLight.GREEN # TrafficLight.GREEN has to be used
 
-        #TODO implement light color prediction
         return TrafficLight.UNKNOWN
         return 4#TrafficLight.UNKNOWN # TrafficLight.UNKNOWN has to be used
 
-
-if __name__ == '__main__':
-    tl_cls =TLClassifier(threshold=0.3, modelpath= "../training/model_sim/inference/frozen_inference_graph.pb")
-
-    image_paths = "../training/Images/*.png"
-
-    for image_path, label in zip(sorted(glob.glob(image_paths)), [3, 3, 3, 1, 1, 1, 2, 2, 2]):
-        image =  cv2.imread(image_path)
-        traffic_light = tl_cls.get_classification(image)
-
-        if traffic_light != label:
-            raise ValueError("Simple unit test failed by picture {0}".format(image_path))
 
 
 
