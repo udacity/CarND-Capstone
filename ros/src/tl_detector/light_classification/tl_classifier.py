@@ -124,9 +124,9 @@ class TLClassifier(object):
         self.model._make_predict_function()
         self.graph = tf.get_default_graph()
         print ('######################       AFTER Loaded Model')
-        self.DO_RED_ONCE = True
-        self.DO_YELLOW_ONCE = True
-        self.DO_GREEN_ONCE = True
+        self.DO_RED_ONCE = False
+        self.DO_YELLOW_ONCE = False
+        self.DO_GREEN_ONCE = False
 
 
 
