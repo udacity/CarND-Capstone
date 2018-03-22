@@ -14,8 +14,8 @@ import pprint             #format data structures into strings, for logging
 from numpy import asarray
 from scipy import spatial #supports data structure for looking up nearest point (essentially a binary search tree)
 STATE_COUNT_THRESHOLD = 3
-DETECTOR_ENABLED      = True   #Set True to use our actual traffic light detector instead of the message data
-DEBUG_MODE            = True  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
+DETECTOR_ENABLED      = False  #Set True to use our actual traffic light detector instead of the message data
+DEBUG_MODE            = False  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
 
 class TLDetector(object):
     def __init__(self):
@@ -25,6 +25,8 @@ class TLDetector(object):
             rospy.logwarn("tl_detector: debug mode enabled.  Disable for PR; submission")
         else:
             rospy.init_node('tl_detector')
+
+        rospy.logwarn("tl_detector: intialization started; will notify when finished")
 
         if(not DETECTOR_ENABLED):
             rospy.logwarn("tl_detector: Detector is disabled; will use data from simulator.  set DETECTOR_ENABLED = True for submission")
@@ -71,7 +73,10 @@ class TLDetector(object):
         self.ready_classifier = True
         self.ready_image_cb   = True
 
+        rospy.logwarn("tl_detector: intialization finished")
+
         rospy.spin()
+
 
     def pplog(self,level,data): #convert data structure to string from prettyPrinter and send to rospy.log<level>
         ppstring = pprint.pformat(data,indent=4)

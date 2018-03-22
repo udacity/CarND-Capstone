@@ -12,12 +12,15 @@ import pprint             #format data structures into strings, for logging
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-PATH_TO_CKPT           = dir_path + '/models/tld_simulator_model/frozen_inference_graph.pb'
+SIMULATOR_TRACK        = True  #Controls whether to use simulator track model instead of parking_lot
 SCORE_THRESH           = 0.65  #detection_score threshold to report a positive result, or invalidate a differeing result
-IMAGE_CAPTURE          = True #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
+IMAGE_CAPTURE          = False #write images to file in debug mode.  Aside from initial work, doesn't make sense to enable until we add code to trigger on an incorrect result
 IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
-DEBUG_MODE             = True #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
+DEBUG_MODE             = False #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 
+PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/frozen_inference_graph.pb'
+if (SIMULATOR_TRACK):
+    PATH_TO_CKPT       = dir_path + '/models/tld_simulator_model/frozen_inference_graph.pb'
 
 class TLClassifier(object):
     def __init__(self,image_size,debug=None,info=None,warn=None,error=None):
@@ -34,11 +37,14 @@ class TLClassifier(object):
         if(error):
             self.error = error
 
-        self.debug("tl_classifier: using tensor flow version %s"%tf.__version__)
         if(DEBUG_MODE):
             self.warning("tl_classifier: DEBUG_MODE enabled.  Disable for PR or submission")
         if(IMAGE_CAPTURE):
             self.warning("tl_classifier: IMAGE_CAPTURE enabled.  Disable for PR or submission")
+        if(SIMULATOR_TRACK):
+            self.warning("tl_classifier: SIMULATOR_TRACK enabled.  Disable for submission")
+
+        self.debug("tl_classifier: using tensor flow version %s"%tf.__version__)
 
         self.img_count = 0
             
