@@ -179,7 +179,17 @@ class TLClassifier(object):
             if not os.path.exists("./" + self.run_time):
                 os.makedirs("./" + self.run_time)
 
-        self.detection_session = tf.Session(graph=self.detection_graph)
+        # Config to turn on JIT compilation
+        config = tf.ConfigProto()
+        config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
+
+        self.detection_session = tf.Session(graph=self.detection_graph, config=config)
+
+        # Prime the detection pipeline to avoid long statup time
+        image = Image.open('./camera_image0.jpg')
+        self.prime_image = True
+        self.get_classification(image)
+        self.prime_image = False
 
     def traffic_light_detection(self, image):
         """Detect a traffic light in the image and return it in a new cropped image
@@ -192,7 +202,7 @@ class TLClassifier(object):
 
         # BEGIN TEST CODE
         if READ_TEST_IMAGE:
-            image = Image.open('assets/sample1.jpg')
+            image = Image.open('./camera_image0.jpg')
         # END TEST CODE
 
         image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
@@ -211,11 +221,15 @@ class TLClassifier(object):
         # Filter boxes with a confidence score less than `confidence_cutoff`
         boxes, scores, classes = filter_boxes(confidence_cutoff, boxes, scores, classes)
 
+        # If priming the detection pipeline don't need a tf light image
+        if self.prime_image:
+            return None
+
         # The current box coordinates are normalized to a range between 0 and 1.
         # This converts the coordinates actual location on the image.
 
         # BEGIN TEST CODE
-        if READ_TEST_IMAGE:
+        if self.prime_image or READ_TEST_IMAGE:
             width, height = image.size
         else:
         # END TEST CODE
@@ -225,7 +239,7 @@ class TLClassifier(object):
 
         # BEGIN TEST CODE
         # Each class with be represented by a differently colored box
-        draw_boxes(image, box_coords, classes, self.run_time, self.light_debug_index)
+        #draw_boxes(image, box_coords, classes, self.run_time, self.light_debug_index)
         # END TEST CODE
 
         for i in range(len(boxes)):
