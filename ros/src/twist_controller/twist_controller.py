@@ -7,13 +7,15 @@ ONE_MPH = 0.44704
 
 
 class Controller(object):
-    def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle):
+    def __init__(self, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, vehicle_mass):
+        self.vehicle_mass = vehicle_mass
+        self.wheel_radius = wheel_base
+
         self.yawcontroller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
         self.set_controllers()
         pass
 
     def control(self, linear_velocity, angular_velocity, current_velocity, dbw_enabled, time_elapsed):
-        # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
 
         if not dbw_enabled:
@@ -22,18 +24,15 @@ class Controller(object):
 
         # throttle and brake controllers
         linear_velocity_error = linear_velocity - current_velocity
-        #throttle = self.pid_throttle.step(linear_velocity_error, time_elapsed)
-        #brake = self.pid_brake.step(-linear_velocity_error, time_elapsed)
         if linear_velocity_error > 0.0:
             throttle = self.pid_throttle.step(linear_velocity_error, time_elapsed)
             brake = 0.0
         else:
             throttle = 0.0
             if linear_velocity < 0.2:
-                brake = 100.0
+                brake = (self.vehicle_mass * self.wheel_radius) / 2.0
             else:
-                brake = -20.0 * linear_velocity_error
-                brake = max(brake, 1.0)
+                brake = -(self.vehicle_mass * self.wheel_radius * linear_velocity_error)
 
         # steering controller
         steer = self.yawcontroller.get_steering(linear_velocity, angular_velocity, current_velocity)

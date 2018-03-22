@@ -53,7 +53,7 @@ class DBWNode(object):
 
         self.reset()
 
-        self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
+        self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, vehicle_mass)
 
         rospy.Subscriber('/current_velocity', TwistStamped, callback = self.current_velocity_cb, queue_size = 1)
         rospy.Subscriber('/twist_cmd', TwistStamped, callback = self.twist_cmd_cb)
