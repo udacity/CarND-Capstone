@@ -22,6 +22,9 @@ class Controller(object):
         self.max_deceleration = max_deceleration
         self.max_acceleration = max_acceleration
         self.default_update_interval = default_update_interval
+        self.velocity_increase_limit_constant = 0.075
+        self.velocity_decrease_limit_constant = 0.050
+        self.braking_to_throttle_threshold_ratio = 4. / 3.
 
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
@@ -32,44 +35,56 @@ class Controller(object):
     def handle_dynamic_variable_update(self, config, level):
         # reset PID controller to use new parameters
         self.setup_pid_controllers(config['dyn_velo_proportional_control'], config[
-            'dyn_accel_proportional_control'], config['dyn_accel_integral_control'], self.max_deceleration, self.max_acceleration)
-
-        # reset acceleration cruise constant
-        self.acceleration_cruise_constant = config['dyn_acceleration_cruise_constant']
+            'dyn_velo_integral_control'], config['dyn_braking_proportional_control'], config['dyn_braking_integral_control'])
 
         return config
 
-    def setup_pid_controllers(self, velo_p, accel_p, accel_i, max_deceleration, max_acceleration):
-        rospy.loginfo("Initializing PID controllers with velo_P: {}, accel_P: {}, accel_I: {}"
-                      .format(velo_p, accel_p, accel_i))
+    def setup_pid_controllers(self, velo_p, velo_i, braking_p, braking_i):
+        rospy.loginfo("Initializing PID controllers with velo_P: {}, velo_I: {}, braking_P: {}, braking_I: {}"
+                      .format(velo_p, velo_i, braking_p, braking_i))
         # create velocity pid controller thresholded between min and max
         # acceleration values
         self.velocity_pid_controller = PID(
-            velo_p, 0, 0, max_deceleration, max_acceleration)
+            velo_p, velo_i, 0, 0, 1)
 
         # create acceleration pid controller thresholded between 0% and 100%
         # for throttle
-        self.acceleration_pid_controller = PID(accel_p, accel_i, 0.0, 0.0, 1.0)
+        self.braking_pid_controller = PID(
+            braking_p, braking_i, 0.0, 0.0, 10000)
 
     def control(self, target_linear_velocity, target_angular_velocity, current_linear_velocity):
         # compute timestep
         timestep = self.compute_timestep()
-        # use velocity pid controller to compute desired acceleration
-        acceleration_command = self.compute_acceleration_command(
-            target_linear_velocity - current_linear_velocity, timestep)
-        rospy.logwarn('Current linear velocity %.2f, target linear velocity %.2f, desired total acceleration %.2f',
-                      current_linear_velocity, target_linear_velocity, acceleration_command)
+        velocity_error = target_linear_velocity - current_linear_velocity
+
+        if (target_linear_velocity == 0 and current_linear_velocity == 0):
+            # reset integrators if we're at a stop
+            self.reset()
+
+        limit_constant = self.velocity_increase_limit_constant if velocity_error > 0 else self.velocity_decrease_limit_constant
+
+        # use throttle if we want to speed up or if we want to slow down just
+        # slightly
+        throttle_command = self.velocity_pid_controller.step(
+            velocity_error, timestep) if velocity_error > 0 or velocity_error > (-1 * limit_constant * current_linear_velocity) else 0
+
+        # use brake if we want to slow down somewhat significantly or it looks
+        # like want to stop
+        brake_command = self.braking_pid_controller.step(-velocity_error, timestep) if velocity_error < (-1 * limit_constant *
+                                                                                                         self.braking_to_throttle_threshold_ratio * current_linear_velocity) or (velocity_error < 0 and current_linear_velocity < 2.5) else 0
+
+        rospy.logdebug('Current linear velocity %.2f, target linear velocity %.2f, throttle_command %.2f, brake_command %.2f',
+                      current_linear_velocity, target_linear_velocity, throttle_command, brake_command)
 
         # Return throttle, brake, steer
-        # TODO - build "coasting" to reduce speed rather than always using positive throttle or brake
-        return (self.compute_throttle(acceleration_command, target_linear_velocity, timestep) if acceleration_command > 0. else 0.,
-                self.compute_brake_torque(abs(acceleration_command)) if acceleration_command < 0. else 0.,
+        return (throttle_command,
+                brake_command,
                 self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity))
 
     def reset(self):
         self.last_timestep = None
         self.velocity_pid_controller.reset()
-        self.acceleration_pid_controller.reset()
+        self.braking_pid_controller.reset()
 
     def compute_timestep(self):
         last_timestep = self.current_timestep
@@ -77,15 +92,3 @@ class Controller(object):
         if last_timestep == None:
             last_timestep = self.current_timestep - self.default_update_interval
         return self.current_timestep - last_timestep
-
-    def compute_acceleration_command(self, velocity_error, timestep):
-        return self.velocity_pid_controller.step(velocity_error, timestep)
-
-    def compute_throttle(self, acceleration, target_linear_velocity, timestep):
-        # compute throttle based on desired acceleration plus a small amount of
-        # additional acceleration to combat wind resistance
-        return self.acceleration_pid_controller.step(acceleration + target_linear_velocity * self.acceleration_cruise_constant, timestep)
-
-    def compute_brake_torque(self, deceleration_command):
-        # deceleration in m/s^2 needs to be converted to torque in Nm.
-        return (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * deceleration_command * self.wheel_radius
