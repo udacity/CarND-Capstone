@@ -62,7 +62,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-	
+	self.change = False
         rospy.loginfo('Red: %s', TrafficLight.RED)
         rospy.loginfo('Yellow: %s', TrafficLight.YELLOW)
         rospy.loginfo('Green: %s', TrafficLight.GREEN)
@@ -101,6 +101,7 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
+
         if GROUND_TRUTH_PASS:
             light_wp, state = self.process_ground_truth_lights()
         else:        
@@ -115,11 +116,17 @@ class TLDetector(object):
         if self.state != state:
             self.state_count = 0
             self.state = state
+            self.change = True 
+            
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
+            if self.change:
+		self.change = False
+                rospy.loginfo('Upcoming Light state: %s',state)
+                rospy.loginfo('Upcoming Stop line: %f',light_wp)
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
@@ -237,8 +244,8 @@ class TLDetector(object):
                         stop_distance = (ntl_wp - position)	
                         stop_line = position
         if stop_line > 0:
-            rospy.loginfo('Light state: %s',ntl_state)
-            rospy.loginfo('Stop line: %f',stop_line)			
+            #rospy.loginfo('Light state: %s',ntl_state)
+            #rospy.loginfo('Stop line: %f',stop_line)			
             return stop_line, ntl_state 
         else:
             rospy.loginfo('Light state: %s',TrafficLight.UNKNOWN)
