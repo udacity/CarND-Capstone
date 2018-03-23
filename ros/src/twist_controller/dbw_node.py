@@ -53,12 +53,49 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        # Set initial values for properties
 
-        # TODO: Subscribe to all the topics you need to
+        # Assume that drive-by-wire is disabled
+        self.dbw_enbl = False
+
+        # State of the car
+        self.current_twist = None
+        self.current_velocity = None
+
+        # Data from twist controller
+        self.twist = None
+        self.velocity = None
+        self.yaw = None
+
+        # DONE: Create `Controller` object
+        self.controller = Controller(vehMass=vehicle_mass,
+                                     accLim=accel_limit,
+                                     decLim=decel_limit,
+                                     wheelBase=wheel_base,
+                                     steerRatio=steer_ratio,
+                                     maxSteer=max_steer_angle)
+
+        # DONE: Subscribe to all the topics you need to
+
+        # Subscribe to topics as described
+        rospy.Subscriber('/current_velocity', TwistStamped, self.cb_curr_vel)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.cb_dbw_enbl)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.cb_twist_cmd)
 
         self.loop()
+
+    # Callbacks for subscribed topics
+    def cb_curr_vel(self,msg):
+        self.current_twist = msg.twist
+        self.current_velocity = msg.twist.linear.x
+
+    def cb_dbw_enbl(self,msg):
+        self.dbw_enbl = bool(msg.data)
+
+    def cb_twist_cmd(self,msg):
+        self.twist = msg.twist
+        self.velocity = msg.twist.linear.x
+        self.yaw = msg.twist.angular.z
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
@@ -68,6 +105,16 @@ class DBWNode(object):
             # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
             #                                                     <proposed angular velocity>,
             #                                                     <current linear velocity>,
+            if self.dbw_enbl and self.twist is not None and self.current_twist is not None:
+                throttle, brake, steer = self.controller.control(self.current_velocity,self.velocity,self.yaw)
+            else:
+                throttle = 0.
+                brake = 0.
+                steer = 0.
+
+
+            # Just accelerate a bit to check if the simulator is connected correctly
+            self.publish(throttle,brake,steer)
             #                                                     <dbw status>,
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
