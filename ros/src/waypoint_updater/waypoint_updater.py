@@ -75,7 +75,7 @@ class WaypointUpdater(object):
         # Start node
         rospy.spin()
 
-    def pose_cb(self, msg):
+    def pose_cb(self, pose):
         # TODO: Implement
         pass
 
@@ -184,6 +184,20 @@ class WaypointUpdater(object):
         return ('%s - %s - %s' % (self.get_position_string(wp),
                                   self.get_orientation_string(wp),
                                   self.get_waypoint_twist_string(wp)))
+
+    def get_pose_string(self, pose):
+        """ Converts a time-stamped pose to string and returns the string
+
+            Arguments:
+              ps -- Time-stamped pose
+
+            Return:
+              Time-stamped pose string
+        """
+        return ('t(%.2f s) - %s - %s' % 
+                (pose.header.stamp.to_sec() - self.start_time, 
+                 self.get_position_string(pose),
+                 self.get_orientation_string(pose)))
 
     def distance(self, p1, p2):
         """ Calculate the Euclidean distance between two positions ('p1', 'p2')
