@@ -51,9 +51,9 @@ class DBWNode(object):
         self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
-        self.reset()
-
         self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, vehicle_mass)
+
+        self.reset()
 
         rospy.Subscriber('/current_velocity', TwistStamped, callback = self.current_velocity_cb, queue_size = 1)
         rospy.Subscriber('/twist_cmd', TwistStamped, callback = self.twist_cmd_cb)
@@ -116,6 +116,8 @@ class DBWNode(object):
         self.dbw_enabled = False
         self.time_elapsed = 0
         self.previous_time = rospy.get_time()
+        self.controller.pid_throttle.reset()
+        self.controller.pid_brake.reset()
 
 if __name__ == '__main__':
     DBWNode()
