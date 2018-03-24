@@ -13,15 +13,17 @@ import yaml
 from scipy import spatial
 import math
 import numpy as np
+import sys
 
 # Import the Python profiling package for performance timing
 import cProfile
 
+IMAGE_SKIP_THRESHOLD = 50
 STATE_COUNT_THRESHOLD = 3
 
-DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
+DEBUG_LEVEL = 1  # 0 no Messages, 1 Important Stuff, 2 Everything
 USE_GROUND_TRUTH = False
-PRINT_STATS = True
+PRINT_STATS = False
 
 class TLDetector(object):
     def __init__(self):
@@ -35,6 +37,7 @@ class TLDetector(object):
         self.kdtree = None
         self.light = 0
         self.light_wp_list = None
+        self.image_counter = 0
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -100,12 +103,15 @@ class TLDetector(object):
 
         sorted_list = sorted(stop_line_wp_list, key=lambda k: k['wp'])
 
-        if DEBUG_LEVEL >= 1:
+        if DEBUG_LEVEL >= 2:
             rospy.logwarn("Sorted waypoints (trafficlight_index, waypoint_index):")
             for x in sorted_list:
                 rospy.logwarn("  idx={0:d}, wp_idx={1:d}".format(x["idx"], x["wp"]))
         return sorted_list
 
+    def gt_state_to_lower_char(self):
+        state_chars = {TrafficLight.RED: 'r', TrafficLight.YELLOW: 'y', TrafficLight.GREEN: 'g', TrafficLight.UNKNOWN: 'u', }
+        return state_chars[self.lights[self.light].state]
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -115,6 +121,20 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
+
+        if DEBUG_LEVEL >= 1:
+            if self.image_counter % IMAGE_SKIP_THRESHOLD:
+                # Skip image to account for image detection time
+                self.image_counter += 1
+                return self.state
+            # else, let's try to detect traffic light in image
+            sys.stdout.write("tlwp")
+            sys.stdout.write(str(self.light_wp_list[self.light]["wp"]))
+            sys.stdout.write(",")
+            sys.stdout.write(self.gt_state_to_lower_char())
+            sys.stdout.write(",")
+            sys.stdout.flush()
+        self.image_counter += 1
 
         if PRINT_STATS:
             prof = cProfile.Profile()
@@ -137,7 +157,8 @@ class TLDetector(object):
             if DEBUG_LEVEL >= 1:
                 light_colors = {TrafficLight.RED: 'RED', TrafficLight.YELLOW: 'YELLOW', TrafficLight.GREEN: 'GREEN'}
                 if self.state in light_colors:
-                    rospy.logwarn("TL Detector stop line wp: {0:d} {1:s}".format(light_wp, light_colors[self.state]))
+                    if DEBUG_LEVEL >= 2:
+                        rospy.logwarn("TL Detector stop line wp: {0:d} {1:s}".format(light_wp, light_colors[self.state]))
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
@@ -173,7 +194,7 @@ class TLDetector(object):
                 y = wp.pose.pose.position.y
                 wp_item_list.append([x, y])
             self.kdtree = spatial.KDTree(np.asarray(wp_item_list))
-            if DEBUG_LEVEL >= 1:
+            if DEBUG_LEVEL >= 2:
                 rospy.logwarn("TL Detector - Begin sample waypoints in k-d tree")
                 for i, wp in enumerate(self.waypoints.waypoints):
                     x = wp.pose.pose.position.x
@@ -213,14 +234,14 @@ class TLDetector(object):
             return False
 
 ########################################################################
-        self.camera_image.encoding = 'rgb8'
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+#        self.camera_image.encoding = 'rgb8'
+#        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 ########################################################################
-#        self.camera_image.encoding = 'bgr8'
-#        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        #self.camera_image.encoding = 'bgr8'
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 ########################################################################
 
-        if light:
+        if light and DEBUG_LEVEL >= 2:
              ground_truth = self.lights[light].state
              print ('ground_truth = ', ground_truth)
 
@@ -267,7 +288,8 @@ class TLDetector(object):
 
 
             state = self.get_light_state(self.light)
-            print ('---------Car_WP, Light_WP, Light_State = ', car_position_wp, light_wp, state )
+            if DEBUG_LEVEL >= 2:
+                print ('---------Car_WP, Light_WP, Light_State = ', car_position_wp, light_wp, state )
             return light_wp, state
         else:
             return -1, TrafficLight.UNKNOWN

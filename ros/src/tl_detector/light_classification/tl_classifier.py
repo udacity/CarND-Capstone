@@ -18,6 +18,7 @@ import cv2
 import math
 import time
 import os
+import sys
 
 import h5py
 import keras
@@ -25,19 +26,17 @@ from keras.models import load_model
 from numpy import zeros, newaxis
 import rospy
 
-DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
+DEBUG_LEVEL = 1  # 0 no Messages, 1 Important Stuff, 2 Everything
 
 # Reference: Object Detection Lab Code
 
 # BEGIN TEST CODE
 # Colors (one for each class)
 READ_TEST_IMAGE = False
-#WRITE_BOXES_IMAGE = True
-#WRITE_DETECTION_IMAGE = True
 WRITE_BOXES_IMAGE = False
-WRITE_DETECTION_IMAGE = False
+WRITE_CAMERA_IMAGE = True
+WRITE_DETECTION_IMAGE = True
 cmap = ImageColor.colormap
-print("Number of colors =", len(cmap))
 COLOR_LIST = sorted([c for c in cmap.keys()])
 # END TEST CODE
 
@@ -175,7 +174,7 @@ class TLClassifier(object):
 
         self.light_debug_index = 0
         self.run_time = time.strftime("%H:%M:%S")
-        if DEBUG_LEVEL >= 2:
+        if WRITE_CAMERA_IMAGE or WRITE_BOXES_IMAGE or WRITE_DETECTION_IMAGE:
             if not os.path.exists("./" + self.run_time):
                 os.makedirs("./" + self.run_time)
 
@@ -186,7 +185,7 @@ class TLClassifier(object):
         self.detection_session = tf.Session(graph=self.detection_graph, config=config)
 
         # Prime the detection pipeline to avoid long statup time
-        image = Image.open('./camera_image0.jpg')
+        image = cv2.imread('./camera_image0.jpg')
         self.prime_image = True
         self.get_classification(image)
         self.prime_image = False
@@ -237,24 +236,38 @@ class TLClassifier(object):
 
         box_coords = to_image_coords(boxes, height, width)
 
-        # BEGIN TEST CODE
-        # Each class with be represented by a differently colored box
-        #draw_boxes(image, box_coords, classes, self.run_time, self.light_debug_index)
-        # END TEST CODE
-
         for i in range(len(boxes)):
             bot, left, top, right = box_coords[i, ...]
             class_id = int(classes[i])
+            if DEBUG_LEVEL >= 1:
+                sys.stdout.write("d,")
+                sys.stdout.flush()
             if class_id == 10:
                 light_image = image[int(bot):int(top), int(left):int(right)]
+                if DEBUG_LEVEL >= 1:
+                    sys.stdout.write("D,")
+                    sys.stdout.flush()
                 if DEBUG_LEVEL >= 2:
                     print("TL Classifier image", width, height, "light box", self.run_time, int(bot), int(top), int(left), int(right))
-                    if not READ_TEST_IMAGE and WRITE_BOXES_IMAGE:
+                if DEBUG_LEVEL >= 1:
+                    if not READ_TEST_IMAGE and WRITE_CAMERA_IMAGE:
                         cv2.imwrite(self.run_time + "/camera_image" + str(self.light_debug_index) + ".jpg", image)
-                    if not READ_TEST_IMAGE and WRITE_BOXES_IMAGE:
+                    if not READ_TEST_IMAGE and WRITE_DETECTION_IMAGE:
                         cv2.imwrite(self.run_time + "/light_image" + str(self.light_debug_index) + ".jpg", light_image)
                     self.light_debug_index += 1
+
+        # BEGIN TEST CODE
+        # Each class with be represented by a differently colored box
+        #draw_boxes(image, box_coords, classes, self.run_time, self.light_debug_index)
+        #if not READ_TEST_IMAGE and WRITE_BOXES_IMAGE:
+             #cv2.imwrite(self.run_time + "/camera_image" + str(self.light_debug_index) + ".jpg", image)
+        # END TEST CODE
+
         return light_image
+
+    def state_to_upper_char(self, state):
+        state_chars = {TrafficLight.RED: 'R', TrafficLight.YELLOW: 'Y', TrafficLight.GREEN: 'G', TrafficLight.UNKNOWN: 'U', }
+        return state_chars[state]
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -274,38 +287,59 @@ class TLClassifier(object):
 #        cv2.imshow('image',image)
 #        cv2.waitKey(0)
 #        cv2.destroyAllWindows()
-        try:
-          print ('Image shape = ', image.shape)
-        except Exception as e:
-          #rospy.logwarn ('################No Image shape error'+ str(e))
-          #image = image_org
-          #print ('USE Image ORG ....   shape = ', image.shape)
-          return TrafficLight.UNKNOWN
 
+        if DEBUG_LEVEL >= 2:
+            try:
+              print ('Image shape = ', image.shape)
+            except Exception as e:
+              #rospy.logwarn ('################No Image shape error'+ str(e))
+              #image = image_org
+              #print ('USE Image ORG ....   shape = ', image.shape)
+              return TrafficLight.UNKNOWN
 
-        img_resized = cv2.resize(image, desired_dim, interpolation=cv2.INTER_LINEAR)
+        if image is None:
+            return TrafficLight.UNKNOWN
+
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        #img_resized = cv2.resize(image, desired_dim, interpolation=cv2.INTER_LINEAR)
+        img_resized = cv2.resize(image_rgb, desired_dim, interpolation=cv2.INTER_LINEAR)
+
         img_ = np.expand_dims(np.array(img_resized), axis=0)
 
         with self.graph.as_default():
-           predict_tl_state = self.model.predict_classes(img_)
-           print ('predict_tl_state = ', predict_tl_state[0])
+           predict_tl_state = self.model.predict_classes(img_, verbose=0)
+           if DEBUG_LEVEL >= 2:
+               print ('predict_tl_state = ', predict_tl_state[0])
         if predict_tl_state == 0:
-           print ('Traffic Light Color = RED ', predict_tl_state[0] )
+           if DEBUG_LEVEL >= 2:
+               sys.stdout.write("RED;")
+               sys.stdout.flush()
+               #print ('Traffic Light Color = RED ', predict_tl_state[0] )
            if self.DO_RED_ONCE:
              cv2.imwrite('red_image.jpg',image)
              self.DO_RED_ONCE = False
            return TrafficLight.RED
         elif predict_tl_state == 1:
-           print ('Traffic Light Color = YELLOW ', predict_tl_state[0])
+           if DEBUG_LEVEL >= 1:
+               sys.stdout.write("YELLOW;")
+               sys.stdout.flush()
+               #print ('Traffic Light Color = YELLOW ', predict_tl_state[0])
            if self.DO_YELLOW_ONCE:
              cv2.imwrite('yellow_image.jpg',image)
              self.DO_YELLOW_ONCE = False
            return TrafficLight.YELLOW
         elif predict_tl_state == 2:
-           print ('Traffic Light Color = GREEN ',  predict_tl_state[0])
+           if DEBUG_LEVEL >= 1:
+               sys.stdout.write("GREEN;")
+               sys.stdout.flush()
+               #print ('Traffic Light Color = GREEN ',  predict_tl_state[0])
            if self.DO_GREEN_ONCE:
              cv2.imwrite('green_image.jpg',image)
              self.DO_GREEN_ONCE = False
+        else:
+           sys.stdout.write("UNKNOWN;")
+           sys.stdout.flush()
            return TrafficLight.GREEN
 
 
