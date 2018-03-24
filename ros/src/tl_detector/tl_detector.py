@@ -13,19 +13,42 @@ import yaml
 import pprint             #format data structures into strings, for logging
 from numpy import asarray
 from scipy import spatial #supports data structure for looking up nearest point (essentially a binary search tree)
-
 STATE_COUNT_THRESHOLD = 3
-DETECTOR_ENABLED      = False #Set True to use our actual traffic light detector instead of the message data
-DEBUG_MODE            = True  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
+DETECTOR_ENABLED      = True  #Set True to use our actual traffic light detector instead of the message data
+DEBUG_MODE            = False  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
+PARKING_LOT_TEST      = False
 
 class TLDetector(object):
     def __init__(self):
 
+        self.ready_wp         = False
+        self.ready_classifier = False
+        self.ready_image_cb   = False
+
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+        self.img_count = 0
+
+        self.wp_kdtree = None   #tree to store waypoints, using scipy.spatial
+        self.num_wp    = None   #number of waypoints received from base_waypoints
+        self.tl_list   = None   #list to store traffic lights in waypoint order
+
         if(DEBUG_MODE):
             rospy.init_node('tl_detector',log_level=rospy.DEBUG)
+            rospy.logwarn("tl_detector: debug mode enabled.  Disable for PR; submission")
         else:
             rospy.init_node('tl_detector')
 
+        rospy.logwarn("tl_detector: intialization started; will notify when finished")
+
+        if(not DETECTOR_ENABLED):
+            rospy.logwarn("tl_detector: Detector is disabled; will use data from simulator.  set DETECTOR_ENABLED = True for submission")
+            
+        if(PARKING_LOT_TEST):
+            rospy.logwarn("tl_detector: PARKING_LOT_TEST is enabled.  set PARKING_LOT_TEST = False for submission")
+            
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -42,54 +65,55 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1,buff_size=2**24)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
-
+        image_size = (self.config['camera_info']['image_width'],self.config['camera_info']['image_height'])
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
+ 
+        self.light_classifier = None #only declare if DETECTOR_ENABLED, since lots of work is done during initialization
+        if (DETECTOR_ENABLED):
+            self.light_classifier = TLClassifier(image_size,debug=rospy.logdebug,info=rospy.loginfo,warn=rospy.logwarn,error=rospy.logerr)
 
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
+        self.ready_wp         = True
+        self.ready_classifier = True
+        self.ready_image_cb   = True
 
-        self.wp_kdtree = None #tree to store waypoints, using scipy.spatial
-        self.num_wp    = 0    #number of waypoints received from base_waypoints
-        self.tl_list   = None #list to store traffic lights in waypoint order
-        
+        rospy.logwarn("tl_detector: intialization finished")
+
         rospy.spin()
 
-    def pplog(self,level,data): #generate string from prettyPrinter, and send to rospy.log<level>
+
+    def pplog(self,level,data): #convert data structure to string from prettyPrinter and send to rospy.log<level>
         ppstring = pprint.pformat(data,indent=4)
         if (level == 'debug'):
-            rospy.logdebug("   -- ppdata debug: --")
+            rospy.logdebug("   -- begin ppdata debug: --")
             rospy.logdebug(ppstring)
-            rospy.logdebug("   -- end pp data debug --")
+            rospy.logdebug("   -- end ppdata debug --")
             return
         if (level == 'info'):
-            rospy.loginfo("   -- ppdata info: --")
+            rospy.loginfo("   -- begin ppdata info: --")
             rospy.loginfo(ppstring)
-            rospy.loginfo("   -- end pp data info --")
+            rospy.loginfo("   -- end ppdata info --")
             return
         if (level == 'warn'):
-            rospy.logwarn("   -- ppdata warn: --")
+            rospy.logwarn("   -- begin ppdata warn: --")
             rospy.logwarn(ppstring)
-            rospy.logwarn("   -- end pp data warn --")
+            rospy.logwarn("   -- end ppdata warn --")
             return
         if (level == 'err'):
-            rospy.logerr("   -- ppdata err: --")
+            rospy.logerr("   -- begin ppdata err: --")
             rospy.logerr(ppstring)
-            rospy.logerr("   -- end pp data err --")
+            rospy.logerr("   -- end ppdata err --")
             return
         if (level == 'fatal'):
-            rospy.logfatal("   -- ppdata fatal: --")
+            rospy.logfatal("   -- begin ppdata fatal: --")
             rospy.logfatal(ppstring)
-            rospy.logfatal("   -- end pp data fatal --")
+            rospy.logfatal("   -- end ppdata fatal --")
             return
         rospy.logwarn("tl_detector: pplog received unrecognized level: %s",level)
         return
@@ -103,19 +127,22 @@ class TLDetector(object):
         #self.pplog('debug',self.pose)
 
     def waypoints_cb(self, waypoints):
+        
         self.waypoints = waypoints
         
-        #rospy.logdebug("tl_detector: waypoints_cb received base waypoints:")
+        rospy.logdebug("tl_detector: waypoints_cb received base waypoints")
         #self.pplog('debug',self.waypoints)
-
+        self.num_wp = 0
         wp_coords = []
         for waypoint in self.waypoints.waypoints:
             wp_x = waypoint.pose.pose.position.x
             wp_y = waypoint.pose.pose.position.y
             wp_coords.append((wp_x,wp_y))
-            self.num_wp +=1
+            self.num_wp += 1
             
         self.wp_kdtree = spatial.KDTree(asarray(wp_coords))
+        rospy.logdebug("tl_detector: wp_kdtree populated")
+        
         #tree_data = self.wp_kdtree.data
         #rospy.logdebug("wp_kdtree populated with data:")
         #rospy.logdebug(tree_data)
@@ -123,7 +150,7 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         self.lights = msg
         
-        #rospy.logdebug("tl_detector: traffic_cb received traffic lights:")
+        rospy.logdebug("tl_detector: traffic_cb received traffic lights:")
         #self.pplog('debug',self.lights)
 
         if (self.tl_list is None and self.wp_kdtree is not None): #we've received waypoints, but haven't initialized tl_list
@@ -144,12 +171,13 @@ class TLDetector(object):
                 i += 1
 
             self.tl_list = sorted(self.tl_list, key=lambda k: k['wp']) #sort list by waypoint index
-            rospy.logdebug("tl_detector: traffic_cb created tl_list:")
-            self.pplog('debug',self.tl_list)
+            rospy.logdebug("tl_detector: traffic_cb created tl_list")
+            #self.pplog('debug',self.tl_list)
 
         # This section updates traffic light state from data in msg;
         #    duplicates some code so that it can be easily disabled with DETECTOR_ENABLED
-        if (not DETECTOR_ENABLED and self.tl_list is not None):
+        #    Also enable when in DEBUG_MODE, to compare inference against ground truth
+        if ((DEBUG_MODE or not DETECTOR_ENABLED) and self.tl_list is not None):
             stop_line_positions = self.config['stop_line_positions']
             state_tl_list = []
             i = 0
@@ -167,7 +195,7 @@ class TLDetector(object):
                 tl_hash['state'] = state_tl_hash['state']
 
             rospy.logdebug("tl_detector: traffic_cb updated states in tl_list:")
-            self.pplog('debug',self.tl_list)
+            #self.pplog('debug',self.tl_list)
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -178,9 +206,18 @@ class TLDetector(object):
 
         """
         #rospy.logdebug("tl_detector: entered image_cb")
+        self.state_count += 1
+        self.img_count += 1
+        if not self.ready_image_cb:
+            rospy.logdebug("tl_detector: image_cb received image %d, but is not ready",self.img_count)
+            return
+
+        self.ready_image_cb = False
         self.has_image = True
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
+        image_num = self.img_count
+        rospy.logdebug("tl_detector: image_cb processing image %d",image_num)
+        light_wp, state = self.process_traffic_lights(image_num)
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -193,15 +230,17 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+            #report light if red or yellow, so we don't freak out or blow the stop line when it suddenly turns red
+            light_wp = light_wp if state == TrafficLight.RED or state == TrafficLight.YELLOW else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
-            rospy.logdebug("tl_detector: published waypoint of next red light's stop line: %d",light_wp)
+            rospy.logdebug("tl_detector: from image %d (vs. current image %d), published waypoint of next red light's stop line: %d",image_num,self.img_count,light_wp)
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-            rospy.logdebug("tl_detector: published waypoint of next red light's stop line: %d",self.last_wp)
-        self.state_count += 1
+            rospy.logdebug("tl_detector: from image %d (vs. current image %d), published waypoint of prevously reported red light's stop line: %d",image_num,self.img_count,self.last_wp)
 
+        self.ready_image_cb = True
+            
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -212,7 +251,7 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
+        #DONE: implement
         #rospy.logdebug("entered get_closest_waypoint")
         pose_x = pose.position.x
         pose_y = pose.position.y
@@ -245,7 +284,7 @@ class TLDetector(object):
         
         return kd_index
 
-    def get_light_state(self, light):
+    def get_light_state(self, light,image_num):
         """Determines the current color of the traffic light
 
         Args:
@@ -255,19 +294,38 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        rospy.logdebug("tl_detector: entered get_light_state")
         if(not self.has_image):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        contemp_state = -1
+        if not PARKING_LOT_TEST:
+            contemp_state = self.tl_list[light]['state']
+        #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         if(DETECTOR_ENABLED):
             #Get classification
-            return self.light_classifier.get_classification(cv_image)
+            #return self.light_classifier.get_classification(cv_image)
+            if(self.ready_classifier == True):
+                self.ready_classifier = False
+                classifier_state =  self.light_classifier.get_classification(cv_image)
+                self.ready_classifier = True
+            else:
+                rospy.logdebug("tl_detector: get_light_state: skipping inference for image %d because the classifier isn't ready yet.  Returning previous value %d",image_num,self.state)
+                classifier_state = self.state
+            if PARKING_LOT_TEST:
+                rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned state %d",image_num,classifier_state)
+            else:
+                rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned state %d, vs contemp. state %d and current sim state %d",image_num,classifier_state,contemp_state,self.tl_list[light]['state'])
+            #return self.tl_list[light]['state']
+            return classifier_state
         else:
+            rospy.logdebug("tl_detector: get_light_state: detector not enabled; returning simulator light state %d"%self.tl_list[light]['state'])
             return self.tl_list[light]['state']
 
-    def process_traffic_lights(self):
+    def process_traffic_lights(self,image_num):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
 
@@ -276,9 +334,9 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #rospy.logdebug("tl_detector: entered process_traffic_lights")
+        rospy.logdebug("tl_detector: entered process_traffic_lights")
         light = None
-        light_wp = None
+        light_wp = 1
 
         # List of positions that correspond to the line to stop in front of for a given intersection.  already saved this to tl_list
         #stop_line_positions = self.config['stop_line_positions']
@@ -290,9 +348,8 @@ class TLDetector(object):
             rospy.logwarn("  pose:")
             self.pplog('warn',self.pose)
             
-        #TODO find the closest visible traffic light (if one exists)
-
-        #FIXME: currently doesn't test for visibility.  just reports first upcoming stop line
+        #DONE: find the closest visible traffic light (if one exists)
+        #doesn't test for visibility.  just reports first upcoming stop line.  Will some minimum distance (equiv to the 200 waypoints) be sufficent?
         wps_to_closest_tl = 1e6
         i = 0
         for tl_hash in self.tl_list: #check all lights to find closest. 
@@ -304,8 +361,8 @@ class TLDetector(object):
                 light = i
                 light_wp = tl_hash['wp']
 
-        if light is not None:
-            state = self.get_light_state(light)
+        if light is not None or PARKING_LOT_TEST:
+            state = self.get_light_state(light,image_num)
             return light_wp, state
 
         rospy.logwarn("tl_detector: process_traffic_lights did not find any light that was next.  this shouldn't happen")
@@ -314,6 +371,7 @@ class TLDetector(object):
 
 if __name__ == '__main__':
     try:
+        rospy.logdebug('tl_detector: Declaring TLDetector')
         TLDetector()
     except rospy.ROSInterruptException:
-        rospy.logerr('Could not start traffic node.')
+        rospy.logerr('tl_detector: Could not start traffic node.')
