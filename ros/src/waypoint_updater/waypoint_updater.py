@@ -6,7 +6,7 @@ import math
 import rospy
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
-
+import sys
 
 '''
 This node will publish waypoints from the car's current position to some `x`
@@ -30,8 +30,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish.
 POSE_QUEUE_SIZE = 50 # Number of previous vehicle poses to store.
 VERBOSE = 1          # Turn logging on/off
-MIN_UPDATE_DIST = 5  # Min. dist. (in m) that the ego vehicle must travel 
-                     # before the list of next waypoints is updated
+MIN_UPDATE_DIST = 0.01 # Min. dist. (in m) that the ego vehicle must travel 
+                       # before the list of next waypoints is updated
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -72,14 +72,63 @@ class WaypointUpdater(object):
         # (Starting with the waypoint just ahead of the vehicle)
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, 
                                                    queue_size = 1)
-        self.final_waypoints = deque(maxlen = LOOKAHEAD_WPS) # Fixed length
+        self.final_waypoints = Lane()
+        for i in range(LOOKAHEAD_WPS):
+          self.final_waypoints.waypoints.append(Waypoint())
 
         # Start node
         rospy.spin()
 
     def publish_waypoints(self):
-        # TODO: Implement
-        pass
+        """ Publishes new waypoints for the waypoint follower node (starting
+            with the next waypoint for the ego vehicle).
+        """
+        assert len(self.waypoints), "Track waypoints not set"
+
+        # Find waypoint closest to car
+        # (adapted from Udacity SDC-ND Path Planning Project Starter Code, 
+        #  accessed: 03/24/2018)
+        # TODO: Reduce search interval based on (known) vehicle motion and
+        #       previously selected path points (assuming the vehicle follows
+        #       the trajectory)
+        ego_pos = self.get_position(self.ego_pose)
+        closest_id = 0
+        closest_dist = sys.maxint
+        for i, wp in enumerate(self.waypoints):
+            # Calculate distance
+            dist = self.distance(ego_pos, self.get_position(wp))  
+            if (dist < closest_dist):
+                closest_id = i
+                closest_dist = dist
+
+        if VERBOSE:
+          rospy.loginfo('Closest waypoint (%i/%i) (dist: %.2f m): %s ',
+                        closest_id, len(self.waypoints), closest_dist,
+                        self.get_waypoint_string(self.waypoints[closest_id]))
+
+        # TODO: Determine if the closest waypoint is in front or behind of ego 
+        #       vehicle (for now, select next waypoint in any case)
+        first_id = (closest_id + 1) % len(self.waypoints)
+
+        if VERBOSE:
+          first_wp = self.waypoints[first_id]
+          first_dist = self.distance(ego_pos, 
+                                     self.get_position(first_wp))
+          rospy.loginfo('Next waypoint (%i/%i) (dist: %.2f m): %s ',
+                        first_id, len(self.waypoints), first_dist,
+                        self.get_waypoint_string(first_wp))
+
+        # Create list of next waypoints (consider track wrap-around)
+        # TODO: Consider last used waypoint to reduce copying
+        self.final_waypoints.header.stamp = self.ego_pose.header.stamp
+        for i in range(LOOKAHEAD_WPS):
+            self.final_waypoints.waypoints[i] = self.waypoints[first_id]
+            
+            # Consider track wrap-around
+            first_id = (first_id + 1) % len(self.waypoints)
+
+        # Publish next waypoints
+        self.final_waypoints_pub.publish(self.final_waypoints)
 
     def pose_cb(self, ego_pose):
         """ Callback function for ego vehicle pose (position, orientation)  
