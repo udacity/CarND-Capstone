@@ -152,6 +152,20 @@ class WaypointUpdater(object):
         return ('orient(%.2f, %.2f, %.2f, %.2f)' % 
                 (orient.x, orient.y, orient.z, orient.w))
 
+    def get_waypoint_twist_string(self, wp):
+        """ Returns the twist of a waypoint as a string
+
+            Arguments:
+              wp -- Waypoint
+
+            Return:
+              Twist of waypoint as a string
+        """
+        twl = wp.twist.twist.linear
+        twa = wp.twist.twist.angular
+        return ('twist[lin(%.2f, %.2f, %.2f), ang(%.2f, %.2f, %.2f)]' %
+                (twl.x, twl.y, twl.z, twa.x, twa.y, twa.z))
+
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
@@ -166,7 +180,7 @@ class WaypointUpdater(object):
               p2 -- Position 2 (x, y, z)
 
             Return:
-              Return the (Euclidean) distance between 'p1' and 'p2'
+              Euclidean distance between 'p1' and 'p2'
         """
         return math.sqrt((p1.x - p2.x)**2 
                          + (p1.y - p2.y)**2 
