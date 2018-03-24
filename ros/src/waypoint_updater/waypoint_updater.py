@@ -61,6 +61,7 @@ class WaypointUpdater(object):
         self.car_pose_y = None
         self.waypoints = None
         self.n_wp = 0
+        self.n_lookahead_wp = LOOKAHEAD_WPS
         self.nearest_idx = None
 
         rospy.spin()
@@ -79,7 +80,7 @@ class WaypointUpdater(object):
 
     def set_velocities(self):
         """Set the velocities of the next waypoints."""
-        for i in range(LOOKAHEAD_WPS):
+        for i in range(self.n_lookahead_wp):
             wp = self.nearest(offset=i)
             wp.twist.twist.linear.x = 1  # TODO: set linear velocity to something sensible
 
@@ -88,7 +89,7 @@ class WaypointUpdater(object):
         lane = Lane()
         lane.header.frame_id = 'world'
         lane.header.stamp = rospy.Time.now()
-        for i in range(LOOKAHEAD_WPS):
+        for i in range(self.n_lookahead_wp):
             wp = self.nearest(offset=i)
             lane.waypoints.append(wp)
 
@@ -102,8 +103,8 @@ class WaypointUpdater(object):
         yellow = [1.0, 1.0, 0.0]
         array = MarkerArray()
 
-        for i in range(LOOKAHEAD_WPS):
-            if i % 10 == 0:  # only publish every tenth waypoint as a marker
+        for i in range(self.n_lookahead_wp):
+            if i % (self.n_lookahead_wp / 10) == 0:  # only publish a few waypoints as a marker
                 array.markers.append(
                     waypointToMarker(self.nearest(i), 'world', ts=rospy.Time.now(), idx=i, color=yellow))
 
@@ -129,8 +130,7 @@ class WaypointUpdater(object):
             nearest_idx = self.nearest_idx
             nearest_dist = self.dist_to(self.waypoints[nearest_idx])
 
-            for i in range(100):
-                current_idx = nearest_idx + i
+            for i in range(self.n_lookahead_wp):
                 current_idx = (nearest_idx + i) % self.n_wp
                 current_waypoint = self.waypoints[current_idx]
                 if self.dist_to(current_waypoint) < nearest_dist:
@@ -148,6 +148,8 @@ class WaypointUpdater(object):
         """Subscribe to the list of all waypoints."""
         self.waypoints = lane.waypoints
         self.n_wp = len(self.waypoints)
+        if self.n_wp < self.n_lookahead_wp:
+            self.n_lookahead_wp = self.n_wp / 4 # only look 25% of all waypoints ahead
         rospy.loginfo("Received {} waypoints...".format(self.n_wp))
 
     def traffic_cb(self, msg):
