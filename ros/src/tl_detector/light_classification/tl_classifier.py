@@ -2,8 +2,8 @@ import time
 import tensorflow as tf
 import numpy as np
 
-from object_detection.utils import visualization_utils as vis_util
-from object_detection.utils import label_map_util
+# from object_detection.utils import visualization_utils as vis_util
+# from object_detection.utils import label_map_util
 
 class TLClassifier(object):
 
@@ -24,9 +24,9 @@ class TLClassifier(object):
                 self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
                 self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
                 self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
-                label_map = label_map_util.load_labelmap(label_path)
-                categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=num_classes, use_display_name=True)
-                self.category_index = label_map_util.create_category_index(categories)
+#                 label_map = label_map_util.load_labelmap(label_path)
+#                 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=num_classes, use_display_name=True)
+#                 self.category_index = label_map_util.create_category_index(categories)
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -44,14 +44,14 @@ class TLClassifier(object):
             [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
             feed_dict={self.image_tensor: image_np_expanded})
 
-        vis_util.visualize_boxes_and_labels_on_image_array(
-          image,
-          np.squeeze(boxes),
-          np.squeeze(classes).astype(np.int32),
-          np.squeeze(scores),
-          self.category_index,
-          use_normalized_coordinates=True,
-          line_thickness=8,min_score_thresh=0.5)
+#         vis_util.visualize_boxes_and_labels_on_image_array(
+#           image,
+#           np.squeeze(boxes),
+#           np.squeeze(classes).astype(np.int32),
+#           np.squeeze(scores),
+#           self.category_index,
+#           use_normalized_coordinates=True,
+#           line_thickness=8,min_score_thresh=0.5)
 
         final_classes = [c for c, s in zip(classes[0], scores[0]) if s > 0.5]
         return image, final_classes, time.time() - start
