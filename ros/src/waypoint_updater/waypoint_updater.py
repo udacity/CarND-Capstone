@@ -138,6 +138,20 @@ class WaypointUpdater(object):
             return obj.pose.pose.orientation
         assert 0, "Invalid object type (expected: 'PoseStamped', 'Waypoint')"
 
+    def get_orientation_string(self, obj):
+        """ Returns the orientation of a 'PoseStamped' or 'Waypoint' object
+            as a string
+
+            Arguments:
+              obj -- 'PoseStamped' or 'Waypoint' object
+
+            Return:
+              Orientation of 'obj' as a string
+        """
+        orient = self.get_orientation(obj)
+        return ('orient(%.2f, %.2f, %.2f, %.2f)' % 
+                (orient.x, orient.y, orient.z, orient.w))
+
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
