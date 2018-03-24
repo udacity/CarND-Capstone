@@ -157,6 +157,7 @@ class WaypointUpdater(object):
             elif len(waypoints_ahead) < (LOOKAHEAD_WPS/4):  # ramp the velocity down at the last 25% of the LOOKAHEAD_WPS
                 self.desired_vel = max(self.max_vel * len(waypoints_ahead) / (LOOKAHEAD_WPS/4), 0.5)  # simple ramp function
 
+        self.desired_vel = min(self.desired_vel, self.base_waypoints[waypoint].twist.twist.linear.x)
         self.desired_vel = min(self.desired_vel, self.max_vel)
         self.set_waypoint_velocity(waypoints, waypoint, self.desired_vel)
 
