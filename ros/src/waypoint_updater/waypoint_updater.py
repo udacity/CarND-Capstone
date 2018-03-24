@@ -98,7 +98,7 @@ class WaypointUpdater(object):
     def get_position(self, obj):
         """ Returns the position of a 'PoseStamped' or 'Waypoint' object
 
-            Args:
+            Arguments:
               obj -- 'PoseStamped' or 'Waypoint' object
 
             Return:
@@ -108,12 +108,12 @@ class WaypointUpdater(object):
             return obj.pose.position
         elif (type(obj) is Waypoint):
             return obj.pose.pose.position
-        assert 0, "Invalid object type (expected: PoseStamped, Waypoint)"
+        assert 0, "Invalid object type (expected: 'PoseStamped', 'Waypoint')"
 
     def get_orientation(self, obj):
         """ Returns the orientation of a 'PoseStamped' or 'Waypoint' object
 
-            Args:
+            Arguments:
               obj -- 'PoseStamped' or 'Waypoint' object
 
             Return:
@@ -123,7 +123,7 @@ class WaypointUpdater(object):
             return obj.pose.orientation
         elif (type(obj) is Waypoint):
             return obj.pose.pose.orientation
-        assert 0, "Invalid object type (expected: PoseStamped, Waypoint)"
+        assert 0, "Invalid object type (expected: 'PoseStamped', 'Waypoint')"
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
@@ -131,13 +131,25 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, wp1, wp2):
+    def distance(self, p1, p2):
+        """ Calculate the Euclidean distance between two positions ('p1', 'p2')
+
+            Arguments:
+              p1 -- Position 1 (x, y, z)
+              p2 -- Position 2 (x, y, z)
+
+            Return:
+              Return the (Euclidean) distance between 'p1' and 'p2'
+        """
+        return math.sqrt((p1.x - p2.x)**2 
+                         + (p1.y - p2.y)**2 
+                         + (p1.z - p2.z)**2)
+
+    def distance_path(self, waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + 
-                                    (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, 
-                       waypoints[i].pose.pose.position)
+            dist += self.distance(waypoints[wp1].pose.pose.position, 
+                                  waypoints[i].pose.pose.position)
             wp1 = i
         return dist
 
