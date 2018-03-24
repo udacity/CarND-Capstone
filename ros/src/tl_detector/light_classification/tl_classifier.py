@@ -3,7 +3,6 @@ import tensorflow as tf
 import os
 import logging
 import numpy as np
-from matplotlib import pyplot as plt
 import cv2
 import pprint             #format data structures into strings, for logging
 #MODEL_NAME = 'tld_simulator_frcnni_inference_graph'
