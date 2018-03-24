@@ -80,8 +80,12 @@ class WaypointUpdater(object):
         pass
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        """ Receives a list of track waypoints and stores them internally
+            
+            Arguments:
+              waypoints -- List of track waypoints
+        """
+        self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message.
