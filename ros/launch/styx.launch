@@ -20,4 +20,7 @@
 
     <!--Traffic Light Locations and Camera Config -->
     <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
+
+    <!--Traffic Light Visualization -->
+    <node name="traffic_light_visualizer" pkg="waypoint_updater" type="traffic_light_visualizer.py" />
 </launch>
