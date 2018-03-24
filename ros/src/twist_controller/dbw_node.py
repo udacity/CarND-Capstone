@@ -69,14 +69,14 @@ class DBWNode(object):
         self.yaw = None
 
         # DONE: Create `Controller` object
-        self.controller = Controller(vehMass=vehicle_mass,
-                                     accLim=accel_limit,
-                                     decLim=decel_limit,
-                                     wheelBase=wheel_base,
-                                     steerRatio=steer_ratio,
-                                     maxSteer=max_steer_angle,
-                                     minSpeed=min_speed,
-                                     maxLatAccel=max_lat_accel)
+        self.controller = Controller(veh_mass=vehicle_mass,
+                                     acc_lim=accel_limit,
+                                     dec_lim=decel_limit,
+                                     wheel_base=wheel_base,
+                                     steer_ratio=steer_ratio,
+                                     max_steer=max_steer_angle,
+                                     min_speed=min_speed,
+                                     max_lat_accel=max_lat_accel)
 
         # DONE: Subscribe to all the topics you need to
 
