@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+from collections import deque
+from geometry_msgs.msg import PoseStamped, Pose
+import math
 import rospy
-from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
 
-import math
 
 '''
 This node will publish waypoints from the car's current position to some `x`
@@ -24,24 +26,53 @@ classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
+# Constants
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish.
+POS_QUEUE_SIZE = 50 # Number of previous vehicle positions to store.
 
 
 class WaypointUpdater(object):
     def __init__(self):
+        """ Initialize the waypoint updater node:
+            - Subscribe to relevant topics
+            - Initialize members variables
+            - Publish 'final_waypoints' topic
+        """
         rospy.init_node('waypoint_updater')
 
+        # Set start time of the node
+        self.start_time = rospy.Time.now().to_sec()
+
+        # Subscribe to 'current pose' topic
+        # (Current ego position)
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        self.ego_pos = PoseStamped()
+        self.ego_pos_queue = deque(maxlen = POS_QUEUE_SIZE) # Fixed length
+
+        # Subscribe to 'base_waypoints' topic
+        # (List of track waypoints; will only be send once)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.waypoints = []
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint
+        # Subscribe to 'traffic_waypoint' topic
+        # (Index of waypoint closest to the next red traffic light. If the next 
+        #  traffic light is not red, 'traffic_waypoint' is expected to be -1)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        self.wp_traffic_light = -1
 
+        # Subscribe to 'obstacle_waypoint' topic
+        # (Index of waypoint closest to the next obstacle. If there is no
+        #  obstacle ahead, 'obstacle_waypoint' is expected to be -1)
+        rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_cb)
+        self.wp_obstacle = -1
 
+        # Publish waypoints ahead of the vehicle 
+        # (Starting with the waypoint just ahead of the vehicle)
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, 
-                                                   queue_size=1)
+                                                   queue_size = 1)
+        self.final_waypoints = deque(maxlen = LOOKAHEAD_WPS) # Fixed length
 
-        # TODO: Add other member variables you need below
-
+        # Start node
         rospy.spin()
 
     def pose_cb(self, msg):
