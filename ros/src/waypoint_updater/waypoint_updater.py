@@ -27,9 +27,11 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 # Constants
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish.
-POS_QUEUE_SIZE = 50 # Number of previous vehicle positions to store.
-
+LOOKAHEAD_WPS = 200  # Number of waypoints we will publish.
+POSE_QUEUE_SIZE = 50 # Number of previous vehicle poses to store.
+VERBOSE = 1          # Turn logging on/off
+MIN_UPDATE_DIST = 5  # Min. dist. (in m) that the ego vehicle must travel 
+                     # before the list of next waypoints is updated
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -46,8 +48,8 @@ class WaypointUpdater(object):
         # Subscribe to 'current pose' topic
         # (Current ego position)
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        self.ego_pos = PoseStamped()
-        self.ego_pos_queue = deque(maxlen = POS_QUEUE_SIZE) # Fixed length
+        self.ego_pose = PoseStamped()
+        self.ego_pose_queue = deque(maxlen = POSE_QUEUE_SIZE) # Fixed length
 
         # Subscribe to 'base_waypoints' topic
         # (List of track waypoints; will only be send once)
@@ -75,9 +77,39 @@ class WaypointUpdater(object):
         # Start node
         rospy.spin()
 
-    def pose_cb(self, pose):
+    def publish_waypoints(self):
         # TODO: Implement
         pass
+
+    def pose_cb(self, ego_pose):
+        """ Callback function for ego vehicle pose (position, orientation)  
+            updates. If the ego vehicle travelled a certain distance 
+            (MIN_UPDATE_DIST) since the last update, a new list of waypoints
+            is published for the waypoint follower node.
+
+            Arguments:
+              ego_pose: Current ego pose
+        """
+        # Calculate the distance the ego vehicle travelled since the last
+        # update
+        dist_travelled = self.distance(self.get_position(ego_pose),
+                                       self.get_position(self.ego_pose))
+        if VERBOSE:
+            rospy.loginfo('Ego pose: %s - dist(%.2f m)', 
+                          self.get_pose_string(ego_pose), dist_travelled)
+
+        # Update?
+        if (dist_travelled < MIN_UPDATE_DIST):
+            return
+
+        # Set pose
+        self.ego_pose = ego_pose
+        
+        # Keep a history of ego poses
+        self.ego_pose_queue.append(self.ego_pose)
+
+        # Publish waypoints update
+        self.publish_waypoints()
 
     def waypoints_cb(self, waypoints):
         """ Receives a list of track waypoints and stores them internally
