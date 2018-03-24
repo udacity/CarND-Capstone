@@ -60,6 +60,7 @@ class WaypointUpdater(object):
         self.car_pose_x = None
         self.car_pose_y = None
         self.waypoints = None
+        self.n_wp = 0
         self.nearest_idx = None
 
         rospy.spin()
@@ -110,7 +111,7 @@ class WaypointUpdater(object):
 
     def nearest(self, offset=0):
         """Get current nearest waypoint."""
-        return self.waypoints[self.nearest_idx + offset]
+        return self.waypoints[(self.nearest_idx + offset) % self.n_wp]
 
     def update_nearest_waypoint(self):
         """Find the index of the currently nearest waypoint."""
@@ -124,12 +125,13 @@ class WaypointUpdater(object):
             self.nearest_idx = nearest_idx
             rospy.loginfo("Nearest waypoint is at index {} with distance {} m.".format(nearest_idx, nearest_dist))
         else:
-            # begin check from current index TODO: Handle index wrap around (e.g. after one full round driven).
+            # begin check from current index
             nearest_idx = self.nearest_idx
             nearest_dist = self.dist_to(self.waypoints[nearest_idx])
 
             for i in range(100):
                 current_idx = nearest_idx + i
+                current_idx = (nearest_idx + i) % self.n_wp
                 current_waypoint = self.waypoints[current_idx]
                 if self.dist_to(current_waypoint) < nearest_dist:
                     nearest_idx = current_idx
@@ -145,7 +147,8 @@ class WaypointUpdater(object):
     def get_all_waypoints_cb(self, lane):
         """Subscribe to the list of all waypoints."""
         self.waypoints = lane.waypoints
-        rospy.loginfo("Received waypoints...")
+        self.n_wp = len(self.waypoints)
+        rospy.loginfo("Received {} waypoints...".format(self.n_wp))
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
