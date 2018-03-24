@@ -16,9 +16,24 @@ from scipy import spatial #supports data structure for looking up nearest point 
 STATE_COUNT_THRESHOLD = 3
 DETECTOR_ENABLED      = True  #Set True to use our actual traffic light detector instead of the message data
 DEBUG_MODE            = False  #Switch for whether debug messages are printed.  Unless agotterba sets this to true, he doesn't get debug messages even in the tl_detector log file
+PARKING_LOT_TEST      = False
 
 class TLDetector(object):
     def __init__(self):
+
+        self.ready_wp         = False
+        self.ready_classifier = False
+        self.ready_image_cb   = False
+
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+        self.img_count = 0
+
+        self.wp_kdtree = None   #tree to store waypoints, using scipy.spatial
+        self.num_wp    = None   #number of waypoints received from base_waypoints
+        self.tl_list   = None   #list to store traffic lights in waypoint order
 
         if(DEBUG_MODE):
             rospy.init_node('tl_detector',log_level=rospy.DEBUG)
@@ -30,6 +45,9 @@ class TLDetector(object):
 
         if(not DETECTOR_ENABLED):
             rospy.logwarn("tl_detector: Detector is disabled; will use data from simulator.  set DETECTOR_ENABLED = True for submission")
+            
+        if(PARKING_LOT_TEST):
+            rospy.logwarn("tl_detector: PARKING_LOT_TEST is enabled.  set PARKING_LOT_TEST = False for submission")
             
         self.pose = None
         self.waypoints = None
@@ -56,20 +74,12 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
         self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
-        self.img_count = 0
-
-        self.wp_kdtree = None #tree to store waypoints, using scipy.spatial
-        self.num_wp    = 0    #number of waypoints received from base_waypoints
-        self.tl_list   = None #list to store traffic lights in waypoint order
+ 
         self.light_classifier = None #only declare if DETECTOR_ENABLED, since lots of work is done during initialization
         if (DETECTOR_ENABLED):
             self.light_classifier = TLClassifier(image_size,debug=rospy.logdebug,info=rospy.loginfo,warn=rospy.logwarn,error=rospy.logerr)
 
+        self.ready_wp         = True
         self.ready_classifier = True
         self.ready_image_cb   = True
 
@@ -117,11 +127,12 @@ class TLDetector(object):
         #self.pplog('debug',self.pose)
 
     def waypoints_cb(self, waypoints):
+        
         self.waypoints = waypoints
         
-        #rospy.logdebug("tl_detector: waypoints_cb received base waypoints:")
+        rospy.logdebug("tl_detector: waypoints_cb received base waypoints")
         #self.pplog('debug',self.waypoints)
-
+        self.num_wp = 0
         wp_coords = []
         for waypoint in self.waypoints.waypoints:
             wp_x = waypoint.pose.pose.position.x
@@ -130,6 +141,8 @@ class TLDetector(object):
             self.num_wp += 1
             
         self.wp_kdtree = spatial.KDTree(asarray(wp_coords))
+        rospy.logdebug("tl_detector: wp_kdtree populated")
+        
         #tree_data = self.wp_kdtree.data
         #rospy.logdebug("wp_kdtree populated with data:")
         #rospy.logdebug(tree_data)
@@ -137,7 +150,7 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         self.lights = msg
         
-        #rospy.logdebug("tl_detector: traffic_cb received traffic lights:")
+        rospy.logdebug("tl_detector: traffic_cb received traffic lights:")
         #self.pplog('debug',self.lights)
 
         if (self.tl_list is None and self.wp_kdtree is not None): #we've received waypoints, but haven't initialized tl_list
@@ -159,7 +172,7 @@ class TLDetector(object):
 
             self.tl_list = sorted(self.tl_list, key=lambda k: k['wp']) #sort list by waypoint index
             rospy.logdebug("tl_detector: traffic_cb created tl_list")
-            self.pplog('debug',self.tl_list)
+            #self.pplog('debug',self.tl_list)
 
         # This section updates traffic light state from data in msg;
         #    duplicates some code so that it can be easily disabled with DETECTOR_ENABLED
@@ -181,7 +194,7 @@ class TLDetector(object):
             for tl_hash,state_tl_hash in zip (self.tl_list,state_tl_list): #as locations don't change, sorting by nearest waypoint will generate same order
                 tl_hash['state'] = state_tl_hash['state']
 
-            #rospy.logdebug("tl_detector: traffic_cb updated states in tl_list:")
+            rospy.logdebug("tl_detector: traffic_cb updated states in tl_list:")
             #self.pplog('debug',self.tl_list)
 
     def image_cb(self, msg):
@@ -285,7 +298,10 @@ class TLDetector(object):
         if(not self.has_image):
             self.prev_light_loc = None
             return False
-        contemp_state = self.tl_list[light]['state']
+
+        contemp_state = -1
+        if not PARKING_LOT_TEST:
+            contemp_state = self.tl_list[light]['state']
         #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
@@ -299,7 +315,10 @@ class TLDetector(object):
             else:
                 rospy.logdebug("tl_detector: get_light_state: skipping inference for image %d because the classifier isn't ready yet.  Returning previous value %d",image_num,self.state)
                 classifier_state = self.state
-            rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned state %d, vs contemp. state %d and current sim state %d",image_num,classifier_state,contemp_state,self.tl_list[light]['state'])
+            if PARKING_LOT_TEST:
+                rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned state %d",image_num,classifier_state)
+            else:
+                rospy.logdebug("tl_detector: get_light_state: classifer for image %d returned state %d, vs contemp. state %d and current sim state %d",image_num,classifier_state,contemp_state,self.tl_list[light]['state'])
             #return self.tl_list[light]['state']
             return classifier_state
         else:
@@ -317,7 +336,7 @@ class TLDetector(object):
         """
         rospy.logdebug("tl_detector: entered process_traffic_lights")
         light = None
-        light_wp = None
+        light_wp = 1
 
         # List of positions that correspond to the line to stop in front of for a given intersection.  already saved this to tl_list
         #stop_line_positions = self.config['stop_line_positions']
@@ -342,7 +361,7 @@ class TLDetector(object):
                 light = i
                 light_wp = tl_hash['wp']
 
-        if light is not None:
+        if light is not None or PARKING_LOT_TEST:
             state = self.get_light_state(light,image_num)
             return light_wp, state
 
