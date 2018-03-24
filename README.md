@@ -4,11 +4,11 @@
 
 | Name | Email | Scope of work |
 | ---- | ----- | ------------- |
-| Aaquib Ansari | tbd | tbd |
-| Umar Qattan | tbd | tbd |
-| Kevin Lu | tbd | tbd |
-| Yangzi Liu | tbd | tbd |
-| Michael Zoellner | tbd | tbd |
+| Aaquib Ansari | maaquib at gmail d0t com | tbd |
+| Umar Qattan | u.qattan at gmail d0t com | tbd |
+| Kevin Lu | kevinyihchyunlu at gmail d0t com | Traffic light classification |
+| Yangzi Liu | yliu163 at asu d0t edu | tbd |
+| Michael Zoellner | michael.zoellner at rwth-aachen d0t de | Team lead, DBW node |
 
 
 ## Provided by Udacity

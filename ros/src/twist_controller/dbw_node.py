@@ -45,6 +45,7 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        min_speed = 0.1
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -73,7 +74,9 @@ class DBWNode(object):
                                      decLim=decel_limit,
                                      wheelBase=wheel_base,
                                      steerRatio=steer_ratio,
-                                     maxSteer=max_steer_angle)
+                                     maxSteer=max_steer_angle,
+                                     minSpeed=min_speed,
+                                     maxLatAccel=max_lat_accel)
 
         # DONE: Subscribe to all the topics you need to
 
