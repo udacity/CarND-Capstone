@@ -172,6 +172,19 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
+    def get_waypoint_string(self, wp):
+        """ Converts a waypoint to string and returns the string
+
+            Arguments:
+              wp -- Waypoint
+
+            Return:
+              Waypoint string
+        """
+        return ('%s - %s - %s' % (self.get_position_string(wp),
+                                  self.get_orientation_string(wp),
+                                  self.get_waypoint_twist_string(wp)))
+
     def distance(self, p1, p2):
         """ Calculate the Euclidean distance between two positions ('p1', 'p2')
 
