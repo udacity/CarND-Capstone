@@ -22,7 +22,7 @@
 
 ### ROS Graph
 
-[ROS Graph](final-project-ros-graph-v2.png)
+![ROS Graph](final-project-ros-graph-v2.png "ROS Graph")
 
 ## Provided by Udacity
 
