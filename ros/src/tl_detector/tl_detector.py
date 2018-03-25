@@ -18,11 +18,17 @@ import sys
 # Import the Python profiling package for performance timing
 import cProfile
 
-IMAGE_SKIP_THRESHOLD = 50
-STATE_COUNT_THRESHOLD = 3
+IMAGE_SKIP_THRESHOLD = 2
+#IMAGE_SKIP_THRESHOLD = 50
+#STATE_COUNT_THRESHOLD = 3
+#STATE_COUNT_THRESHOLD = 1
+STATE_COUNT_THRESHOLD = 2
+
+TL_WP_SCALING = .5
 
 DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
-USE_GROUND_TRUTH = False
+#USE_GROUND_TRUTH = False
+USE_GROUND_TRUTH = True
 PRINT_STATS = False
 
 class TLDetector(object):
@@ -289,10 +295,14 @@ class TLDetector(object):
 #                print ('NOOOOOOOOOOOOOOOOOO IMAGE')
 
 
-            state = self.get_light_state(self.light)
-            if DEBUG_LEVEL >= 2:
+            if ( 0<light_wp - car_position_wp < 300 and self.has_image ):
+              state = self.get_light_state(self.light)
+              if DEBUG_LEVEL >= 2:
                 print ('---------Car_WP, Light_WP, Light_State, Ground_Truth  ', car_position_wp, light_wp, state, self.ground_truth )
-            return light_wp, state
+              return light_wp, state
+            else:
+              return -1, TrafficLight.UNKNOWN
+
         else:
             return -1, TrafficLight.UNKNOWN
 
