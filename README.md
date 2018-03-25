@@ -1,14 +1,24 @@
 # Team Mauky's System Integration Project
 
+[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+
 ## Team members
 
 | Name | Email | Scope of work |
 | ---- | ----- | ------------- |
-| Aaquib Ansari | maaquib at gmail d0t com | tbd |
-| Umar Qattan | u.qattan at gmail d0t com | tbd |
-| Kevin Lu | kevinyihchyunlu at gmail d0t com | Traffic light classification |
-| Yangzi Liu | yliu163 at asu d0t edu | tbd |
-| Michael Zoellner | michael.zoellner at rwth-aachen d0t de | Team lead, DBW node |
+| Aaqib Ansari | [maaquib@gmail.com](mailto:maaquib@gmail.com) | Twist Controller |
+| Umar Qattan | [u.qattan@gmail.com](mailto:u.qattan@gmail.com) | tbd |
+| Kevin Lu | [kevinyihchyunlu@gmail.com](mailto:kevinyihchyunlu@gmail.com) | Traffic light classification |
+| Yangzi Liu | [yliu163@asu.edu](mailto:yliu163@asu.edu) | tbd |
+| Michael Zoellner | [michael.zoellner@rwth-aachen@de](mailto:michael.zoellner@rwth-aachen@de) | Team lead, DBW node |
+
+### Submission checklist
+- [x] Smoothly follow waypoints in the simulator
+- [x] Respect the target top speed set for the waypoints
+- [ ] Stop at traffic lights when needed
+- [x] Stop and restart PID controllers depending on the state of `dbw_enabled`
+- [x] Publish throttle, steering, and brake commands at 50hz
+- [ ] Launch correctly using the launch files provided in the capstone repo
 
 
 ## Provided by Udacity

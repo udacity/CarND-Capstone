@@ -59,13 +59,13 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.base_waypoints is not None and self.pose_stamped is not None:
                 self.set_output_waypoints()
-                self.set_output_velocities()
                 self.publish_waypoints()
             rate.sleep()
         rospy.spin()
 
     def calc_yaw(self):
-        # Calculate theta from quaternions as described in https://answers.ros.org/question/69754/quaternion-transformations-in-python/
+        # Calculate theta from quaternions as described in
+        # https://answers.ros.org/question/69754/quaternion-transformations-in-python/
         current_orient = [self.pose_stamped.pose.orientation.x,
                           self.pose_stamped.pose.orientation.y,
                           self.pose_stamped.pose.orientation.z,
