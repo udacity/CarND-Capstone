@@ -119,7 +119,9 @@ class TLClassifier(object):
     def __init__(self):
 
         print ('######################       BEFORE Loaded Model')
-        self.model = load_model('AVO7_v1_model.h5')
+#        self.model = load_model('AVO7_v1_model.h5')
+#        self.model = load_model('AVO4_model.h5')
+        self.model = load_model('AVO7_v1_rebase_model.h5')
         self.model._make_predict_function()
         self.graph = tf.get_default_graph()
         print ('######################       AFTER Loaded Model')
@@ -337,10 +339,11 @@ class TLClassifier(object):
            if self.DO_GREEN_ONCE:
              cv2.imwrite('green_image.jpg',image)
              self.DO_GREEN_ONCE = False
+           return TrafficLight.GREEN
         else:
            sys.stdout.write("UNKNOWN;")
            sys.stdout.flush()
-           return TrafficLight.GREEN
+           return TrafficLight.UNKNOWN
 
 
 

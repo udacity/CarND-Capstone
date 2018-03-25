@@ -21,7 +21,7 @@ import cProfile
 IMAGE_SKIP_THRESHOLD = 50
 STATE_COUNT_THRESHOLD = 3
 
-DEBUG_LEVEL = 1  # 0 no Messages, 1 Important Stuff, 2 Everything
+DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
 USE_GROUND_TRUTH = False
 PRINT_STATS = False
 
@@ -38,6 +38,7 @@ class TLDetector(object):
         self.light = 0
         self.light_wp_list = None
         self.image_counter = 0
+        self.ground_truth = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -237,13 +238,14 @@ class TLDetector(object):
 #        self.camera_image.encoding = 'rgb8'
 #        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 ########################################################################
-        #self.camera_image.encoding = 'bgr8'
+#        #self.camera_image.encoding = 'bgr8'
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 ########################################################################
 
-        if light and DEBUG_LEVEL >= 2:
-             ground_truth = self.lights[light].state
-             print ('ground_truth = ', ground_truth)
+#        if light and DEBUG_LEVEL >= 2:
+#             ground_truth = self.lights[light].state
+#             print ('ground_truth = ', ground_truth)
+        self.ground_truth = self.lights[light].state
 
         # Select a reduced region of interest
         #height, width, _ = cv_image.shape
@@ -289,7 +291,7 @@ class TLDetector(object):
 
             state = self.get_light_state(self.light)
             if DEBUG_LEVEL >= 2:
-                print ('---------Car_WP, Light_WP, Light_State = ', car_position_wp, light_wp, state )
+                print ('---------Car_WP, Light_WP, Light_State, Ground_Truth  ', car_position_wp, light_wp, state, self.ground_truth )
             return light_wp, state
         else:
             return -1, TrafficLight.UNKNOWN
