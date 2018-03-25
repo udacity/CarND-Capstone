@@ -3,6 +3,7 @@ import time
 import rospy
 
 from dynamic_reconfigure.server import Server
+from lowpass import LowPassFilter
 from pid import PID
 from twist_controller.cfg import DynReconfConfig
 from yaw_controller import YawController
@@ -27,12 +28,17 @@ class Controller(object):
         self.braking_to_throttle_threshold_ratio = 4. / 3.
         self.manual_braking_upper_velocity_limit = 1.5
         self.braking_torque_to_stop = 50
+        self.lpf_tau = 0.1
 
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
 
         self.dynamic_reconf_server = Server(
             DynReconfConfig, self.handle_dynamic_variable_update)
+
+        self.throttle_lpf = LowPassFilter(
+            self.lpf_tau, default_update_interval)
+        self.brake_lpf = LowPassFilter(self.lpf_tau, default_update_interval)
 
     def handle_dynamic_variable_update(self, config, level):
         # reset PID controller to use new parameters
@@ -73,21 +79,35 @@ class Controller(object):
             # slightly
             throttle_command = self.velocity_pid_controller.step(
                 velocity_error, timestep)
-        elif target_linear_velocity < self.manual_braking_upper_velocity_limit:
+            self.braking_pid_controller.reset()
+        elif target_linear_velocity < self.manual_braking_upper_velocity_limit and current_linear_velocity < self.manual_braking_upper_velocity_limit:
             # vehicle seems to be coming to a stop; apply fixed braking torque
             # continuously, even if the vehicle is stopped
             brake_command = self.braking_torque_to_stop
+            self.velocity_pid_controller.reset()
         else:
             # use brake if we want to slow down somewhat significantly
             brake_command = self.braking_pid_controller.step(-velocity_error, timestep) if velocity_error < (-1 * limit_constant *
                                                                                                              self.braking_to_throttle_threshold_ratio * current_linear_velocity) or (velocity_error < 0 and current_linear_velocity < 2.5) else 0
+            self.velocity_pid_controller.reset()
+
+        # apply low pass filter on throttle and brake commands to reduce
+        # excessive jerk
+        filtered_throttle = self.throttle_lpf.filt(throttle_command)
+        filtered_brake = self.brake_lpf.filt(brake_command)
+
+        # do not apply brakes if any throttle is applied
+        if filtered_throttle < 0.001:
+            filtered_throttle = 0
+        else:
+            filtered_brake = 0
 
         rospy.logdebug('Current linear velocity %.2f, target linear velocity %.2f, throttle_command %.2f, brake_command %.2f',
-                       current_linear_velocity, target_linear_velocity, throttle_command, brake_command)
+                       current_linear_velocity, target_linear_velocity, filtered_throttle, filtered_brake)
 
         # Return throttle, brake, steer
-        return (throttle_command,
-                brake_command,
+        return (filtered_throttle,
+                filtered_brake,
                 self.yaw_controller.get_steering(target_linear_velocity, target_angular_velocity, current_linear_velocity))
 
     def reset(self):
