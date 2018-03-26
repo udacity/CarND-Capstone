@@ -13,6 +13,7 @@ import numpy as np
 import yaml
 import numpy as np
 import time
+import os
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -62,7 +63,7 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 	
-	# All stop line positions are fixed. Just need to load once
+	    # All stop line positions are fixed. Just need to load once
         self.stop_line_positions = self.config['stop_line_positions']
 
         rospy.spin()
@@ -137,7 +138,7 @@ class TLDetector(object):
 
         """
         result = -1
-	idx = -1
+        idx = -1
         #Return if light stop lines are empty
         if self.lights:
             pos_np_array = np.asarray([pose.position.x, pose.position.y])
@@ -148,17 +149,17 @@ class TLDetector(object):
 	    else:
 		result = idx
 
-        rospy.loginfo_throttle(2, 'get_closest_light_stop_line_idx\nPos: {}\nIndex:{}\nDistance: {}\nReturn: {}'.format(pos_np_array, idx, dist[idx], result))
+        rospy.loginfo_throttle(3, 'get_closest_light_stop_line_idx\nPos: {}\nIndex:{}\nDistance: {}\nReturn: {}'.format(pos_np_array, idx, dist[idx], result))
         return result
 
     # Based on observation, when car is advancing waypoint index is ascending
     # So when index is a little bit larger (within 1/8 of total waypoint number), we can conclude it's in front.
     def waypoint_is_ahead_of(self, idx_a, idx_b):
-	waypoint_num = len(self.waypoints.waypoints)
-	minimum_waypoint_num = waypoint_num/8 # only return meaningful value if diff  between two waypoint index passed in is smaller than this value
-	is_ahead = idx_a > idx_b and idx_a - idx_b < minimum_waypoint_num or idx_a < idx_b and waypoint_num - idx_b + idx_a < minimum_waypoint_num # Considering wrap-around case, if the distance between a and b is less than 1/8 of the loop
-	rospy.loginfo_throttle(2, 'waypoint_is_ahead_of\nidx_a: {}\nidx_b:{}\nIs Ahead: {}'.format(idx_a, idx_b, is_ahead))
-	return is_ahead
+    	waypoint_num = len(self.waypoints.waypoints)
+    	minimum_waypoint_num = waypoint_num/8 # only return meaningful value if diff  between two waypoint index passed in is smaller than this value
+    	is_ahead = idx_a > idx_b and idx_a - idx_b < minimum_waypoint_num or idx_a < idx_b and waypoint_num - idx_b + idx_a < minimum_waypoint_num # Considering wrap-around case, if the distance between a and b is less than 1/8 of the loop
+    	rospy.loginfo_throttle(3, 'waypoint_is_ahead_of\nidx_a: {}\nidx_b:{}\nIs Ahead: {}'.format(idx_a, idx_b, is_ahead))
+    	return is_ahead
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -173,11 +174,28 @@ class TLDetector(object):
         if(not self.has_image):
             self.prev_light_loc = None
             return False
-
+	
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
+	    #self.save_training_data(cv_image, light.state)
+	    
         #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        state = self.light_classifier.get_classification(cv_image)
+    	rospy.loginfo_throttle(3, 'get_light_state\nResult from Classifiter: {}\nGround Truth:{}\nMatch: {}'.format(state, light.state, state == light.state))
+    	return state
+
+    def save_training_data(self, img, state):
+    	training_data_dir = "training_data/"
+    	red_data_folder = os.path.join(training_data_dir, "red")
+    	not_red_data_folder = os.path.join(training_data_dir, "not_red")
+    	if not os.path.exists(red_data_folder):
+                os.makedirs(red_data_folder)
+    	if not os.path.exists(not_red_data_folder):
+                os.makedirs(not_red_data_folder)
+
+    	save_path =  os.path.join(red_data_folder, "{}_red.jpg".format(time.time())) if state == TrafficLight.RED else os.path.join(not_red_data_folder, "{}_not_red.jpg".format(time.time()))
+    	rospy.loginfo_throttle(3, 'save_training_data\nPath: {}'.format(save_path))
+    	cv2.imwrite(save_path, img)
+	    
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -189,10 +207,10 @@ class TLDetector(object):
 
         """
         light = None
-
+    	light_wp = -1
+    	state = TrafficLight.UNKNOWN
         # List of positions that correspond to the line to stop in front of for a given intersection
         if(self.pose):
-
 	    # stop line index closet to car pos within DIST_FROM_A_LIGHT_STOP_LINE. Only when distance to light stop line is within DIST_FROM_A_LIGHT_STOP_LINE, will a valid index be returned. Else will get -1
 	    idx_of_closest_light_stop_line = self.get_closest_light_stop_line_idx(self.pose.pose, DIST_FROM_A_LIGHT_STOP_LINE)
 	    if(idx_of_closest_light_stop_line > -1):
@@ -210,11 +228,12 @@ class TLDetector(object):
 		    and idx_closest_waypoint_to_light_stop_line > -1
 		    and self.waypoint_is_ahead_of(idx_closest_waypoint_to_light_stop_line, idx_closest_waypoint_to_car)):
 		    # Use the camera info now to detect if it's red light. If so, publish the stop line waypoint
-		    light_wp = self.waypoints.waypoints[idx_closest_waypoint_to_light_stop_line]
+		    light_wp = idx_closest_waypoint_to_light_stop_line
+		    light = self.lights[idx_of_closest_light_stop_line] # Used as ground truth, not for classification 
         if light:
             state = self.get_light_state(light)
-            return light_wp, state
-        return -1, TrafficLight.UNKNOWN
+    	rospy.loginfo_throttle(3, 'process_traffic_lights\nlight: {}\light_wp:{}\nstate: {}'.format(light, light_wp, state))
+        return light_wp, state
 	
 	
 if __name__ == '__main__':
