@@ -20,6 +20,9 @@
 - [x] Publish throttle, steering, and brake commands at 50hz
 - [ ] Launch correctly using the launch files provided in the capstone repo
 
+### ROS Graph
+
+![ROS Graph](final-project-ros-graph-v2.png "ROS Graph")
 
 ## Provided by Udacity
 
