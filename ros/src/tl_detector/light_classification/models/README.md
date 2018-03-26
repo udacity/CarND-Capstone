@@ -14,7 +14,7 @@ The current directory contains:
 
 - frozen models:
   - frozen_inference_graph.pb (higher accuracy - slightly longer compute for inference)
-  - faster_frozen_inference_graph.pb (slightly lower accuracy - decreased compute for inference)
+  - faster_frozen_inference_graph.pb (slightly decreased compute for inference)
 
 - pipeline configurations 
   - pipeline.config (model trained: frozen_inference_graph.pb)
@@ -53,35 +53,33 @@ The full data set of annotated simulator images (train/test split) can be downlo
 
 The current directory contains:
 
-- frozen models:
-  - `frozen_inference_graph.pb` (higher accuracy - slightly longer compute for inference)
-  - `faster_frozen_inference_graph.pb` (slightly lower accuracy - decreased compute for inference)
+- tld_ssd_inception_v2:
+  - `frozen_inference_graph.pb`
+  - `pipeline.config`
 
-- pipeline configurations 
-  - `pipeline.config` (model trained: `frozen_inference_graph.pb`)
-  - `faster_pipeline.config` (model trained: `faster_frozen_inference_graph`)
+- tld_frcnn_inception_10:
+  - `frozen_inference_graph.pb`
+  - `pipeline.config`:
 
-Note: Differences between faster_pipeline and pipeline configuration:
+  ```
+  first_stage_max_proposals: 10
+  second_stage_batch_size: 10
+  max_detections_per_class: 3
+  max_total_detections: 6
+  ```
 
-*faster_pipeline:* 
+- tld_frcnn_inception_50:
+  - `frozen_inference_graph.pb`
+  - `pipeline.config`:
 
-```
-first_stage_max_proposals: 10
-second_stage_batch_size: 10
-max_detections_per_class: 3
-max_total_detections: 6
-```
+  ```
+  first_stage_max_proposals: 50
+  second_stage_batch_size: 10
+  max_detections_per_class: 10
+  max_total_detections: 10
+  ```
 
-
-*pipeline:* 
-
-```
-first_stage_max_proposals: 100
-max_detections_per_class: 100
-max_total_detections: 100
-```
-
-- label map: `tld_parking_lot_label_map.pbtxt` and `faster_tld_parking_lot_label_map.pbtxt`
+- label map: `tld_label_map.pbtxt` 
 - jupyter notebook with examples of usage: `tld_parking_lot_object_detection.ipynb`
 
 The `tld_test_images` directory contains:
