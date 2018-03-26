@@ -23,6 +23,11 @@ Max sim highway speed is 40km/h, which is about 11m/s
 /current_pose topic refreshes at 50Hz. 
 /image_color topic refreshes at 10Hz. So we can update light detection result every 0.1s.
 It will take STATE_COUNT_THRESHOLD * 0.1s = 0.3 before the car determines there is red light ahead. During that 0.3s, the can drove about 33 meters. The max dec given in dbw lauch file is -5m/s^2, then it will take 2.2s to drop velocity to zero, which implies another 22 meters out. In conclusion when the distance from the light stop line ahead is smaller than 22 + 33 + 3 (since pose might be at center of car, needs to consider length of car. Lincoln seems huge. Thus assume car length to be 3 meters to be safe) = 58 meters, we should definitely do light detection. Given it some more buffer, setting DIST_FROM_A_LIGHT_STOP_LINE to 65 meters. This might be passed in as a parameter given different configs such as speed limit or max deceleration, etc.
+
+COMMENT FROM MICHAEL:
+0.3s * 11m/s is 3.3m.
+And I calculate stopping distance of 12 meters for a braking from 11 m/s to 0 with 5 m/s^2.
+
 """
 DIST_FROM_A_LIGHT_STOP_LINE = 65.0
 

@@ -84,10 +84,14 @@ class DBWNode(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.cb_curr_vel)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.cb_dbw_enbl)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.cb_twist_cmd)
+        rospy.Subscriber('/vehicle/hold_veh', Bool, self.cb_hold_veh)
 
         self.loop()
 
     # Callbacks for subscribed topics
+    def cb_hold_veh(self, msg):
+        self.hold_veh = msg.data
+
     def cb_curr_vel(self, msg):
         self.current_twist = msg.twist
         self.current_linear_vel = msg.twist.linear.x
@@ -109,7 +113,8 @@ class DBWNode(object):
             if self.dbw_enbl and self.proposed_twist is not None and self.current_twist is not None:
                 throttle, brake, steer = self.controller.control(self.proposed_linear_vel,
                                                                  self.proposed_angular_vel,
-                                                                 self.current_linear_vel)
+                                                                 self.current_linear_vel,
+                                                                 self.hold_veh)
                 self.publish(throttle, brake, steer)
 
             rate.sleep()

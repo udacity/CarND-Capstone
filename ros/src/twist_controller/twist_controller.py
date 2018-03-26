@@ -36,16 +36,19 @@ class Controller(object):
         self.prev_time += delta
         return delta
 
-    def control(self, proposed_linear_vel, proposed_angular_vel, current_linear_vel):
+    def control(self, proposed_linear_vel, proposed_angular_vel, current_linear_vel, hold_veh):
         linear_vel_err = proposed_linear_vel - current_linear_vel
         linear_acc = self.velocity_pid.step(linear_vel_err, self.get_sample_time())
         linear_acc = self.acc_filter.filt(linear_acc)
         brake, throttle = 0., 0.
 
-        if linear_acc > 0:
-            throttle = linear_acc
-        elif abs(linear_acc) > self.brake_deadband:
-            brake = abs(linear_acc) * self.veh_mass * self.wheel_radius
+        if hold_veh and current_linear_vel < 0.1:
+            brake = 10000
+        else:
+            if linear_acc > 0:
+                throttle = linear_acc
+            elif abs(linear_acc) > self.brake_deadband:
+                brake = abs(linear_acc) * self.veh_mass * self.wheel_radius
 
         # Get the steering angle from the Udacity-provided YawController
         steer = self.yawCtrl.get_steering(proposed_linear_vel,
