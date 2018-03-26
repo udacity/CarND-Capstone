@@ -27,8 +27,8 @@ STATE_COUNT_THRESHOLD = 2
 TL_WP_SCALING = .5
 
 DEBUG_LEVEL = 2  # 0 no Messages, 1 Important Stuff, 2 Everything
-#USE_GROUND_TRUTH = False
-USE_GROUND_TRUTH = True
+USE_GROUND_TRUTH = False
+#USE_GROUND_TRUTH = True
 PRINT_STATS = False
 
 class TLDetector(object):
