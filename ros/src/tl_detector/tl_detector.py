@@ -9,9 +9,22 @@ from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
+import numpy as np
 import yaml
+import numpy as np
+import time
 
 STATE_COUNT_THRESHOLD = 3
+
+"""
+DIST_FROM_A_LIGHT_STOP_LINE is used to decide if there is a light stop line ahead close enough that the car needs to execute light detection to decide whether to brake for red light or maintain current speed to pass a green light. Eg. when DIST_FROM_A_LIGHT_STOP_LINE is 65m, we would not worry about a light that's 500m ahead. Only when closest way point is with 65m to the target light stop line, would the car start light category detection. Note the decision would require a consecutive STATE_COUNT_THRESHOLD frames to decide. More time is also required for the car to decelerate to a complete stop before the light stop line.
+
+Max sim highway speed is 40km/h, which is about 11m/s
+/current_pose topic refreshes at 50Hz. 
+/image_color topic refreshes at 10Hz. So we can update light detection result every 0.1s.
+It will take STATE_COUNT_THRESHOLD * 0.1s = 0.3 before the car determines there is red light ahead. During that 0.3s, the can drove about 33 meters. The max dec given in dbw lauch file is -5m/s^2, then it will take 2.2s to drop velocity to zero, which implies another 22 meters out. In conclusion when the distance from the light stop line ahead is smaller than 22 + 33 + 3 (since pose might be at center of car, needs to consider length of car. Lincoln seems huge. Thus assume car length to be 3 meters to be safe) = 58 meters, we should definitely do light detection. Given it some more buffer, setting DIST_FROM_A_LIGHT_STOP_LINE to 65 meters. This might be passed in as a parameter given different configs such as speed limit or max deceleration, etc.
+"""
+DIST_FROM_A_LIGHT_STOP_LINE = 65.0
 
 class TLDetector(object):
     def __init__(self):
@@ -48,6 +61,9 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+	
+	# All stop line positions are fixed. Just need to load once
+        self.stop_line_positions = self.config['stop_line_positions']
 
         rospy.spin()
 
@@ -100,8 +116,49 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        # Ref: https://codereview.stackexchange.com/questions/28207/finding-the-closest-point-to-a-list-of-points
+        idx = -1
+        #Return if way points are empty
+        if self.waypoints:
+            pos_np_array = np.asarray([pose.position.x, pose.position.y])
+            dist = np.sqrt(np.sum((np.asarray([(w.pose.pose.position.x, w.pose.pose.position.y) for w in self.waypoints.waypoints]) - pos_np_array)**2, axis=1))
+            idx = np.argmin(dist)
+            # rospy.loginfo_throttle(10, 'get_closest_waypoint\nPos: {}\nIndex:{}\nDistance: {}'.format(pos_np_array, idx, dist[idx]))
+        return idx
+
+    def get_closest_light_stop_line_idx(self, pose, detect_range):
+        """Identifies the closest stop line position to the given position with in 
+            https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
+        Args:
+            pose (Pose): way point position to match a stop line position to
+	    detect_range (Double): min distance to light to start light detection
+        Returns:
+            int: index of the closest stop line position in self.waypoints that is within detect_range
+
+        """
+        result = -1
+	idx = -1
+        #Return if light stop lines are empty
+        if self.lights:
+            pos_np_array = np.asarray([pose.position.x, pose.position.y])
+            dist = np.sqrt(np.sum((np.asarray([(l[0], l[1]) for l in self.stop_line_positions]) - pos_np_array)**2, axis=1))
+            idx = np.argmin(dist)
+	    if(dist[idx] > detect_range):
+		result = -1;
+	    else:
+		result = idx
+
+        rospy.loginfo_throttle(2, 'get_closest_light_stop_line_idx\nPos: {}\nIndex:{}\nDistance: {}\nReturn: {}'.format(pos_np_array, idx, dist[idx], result))
+        return result
+
+    # Based on observation, when car is advancing waypoint index is ascending
+    # So when index is a little bit larger (within 1/8 of total waypoint number), we can conclude it's in front.
+    def waypoint_is_ahead_of(self, idx_a, idx_b):
+	waypoint_num = len(self.waypoints.waypoints)
+	minimum_waypoint_num = waypoint_num/8 # only return meaningful value if diff  between two waypoint index passed in is smaller than this value
+	is_ahead = idx_a > idx_b and idx_a - idx_b < minimum_waypoint_num or idx_a < idx_b and waypoint_num - idx_b + idx_a < minimum_waypoint_num # Considering wrap-around case, if the distance between a and b is less than 1/8 of the loop
+	rospy.loginfo_throttle(2, 'waypoint_is_ahead_of\nidx_a: {}\nidx_b:{}\nIs Ahead: {}'.format(idx_a, idx_b, is_ahead))
+	return is_ahead
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -134,18 +191,32 @@ class TLDetector(object):
         light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
 
-        #TODO find the closest visible traffic light (if one exists)
+	    # stop line index closet to car pos within DIST_FROM_A_LIGHT_STOP_LINE. Only when distance to light stop line is within DIST_FROM_A_LIGHT_STOP_LINE, will a valid index be returned. Else will get -1
+	    idx_of_closest_light_stop_line = self.get_closest_light_stop_line_idx(self.pose.pose, DIST_FROM_A_LIGHT_STOP_LINE)
+	    if(idx_of_closest_light_stop_line > -1):
+	    	# pos of the light stop line closest to current location of car. Note it's not necessarily ahead of car
+		light_stop_pos = Pose()
+		light_stop_pos.position.x = self.stop_line_positions[idx_of_closest_light_stop_line][0]
+		light_stop_pos.position.y = self.stop_line_positions[idx_of_closest_light_stop_line][1]
 
+	        # waypoint index closest to light stop line
+                idx_closest_waypoint_to_light_stop_line = self.get_closest_waypoint(light_stop_pos)
+	        # waypoint index closest to car pos
+                idx_closest_waypoint_to_car = self.get_closest_waypoint(self.pose.pose)
+
+	        if (idx_closest_waypoint_to_car > -1
+		    and idx_closest_waypoint_to_light_stop_line > -1
+		    and self.waypoint_is_ahead_of(idx_closest_waypoint_to_light_stop_line, idx_closest_waypoint_to_car)):
+		    # Use the camera info now to detect if it's red light. If so, publish the stop line waypoint
+		    light_wp = self.waypoints.waypoints[idx_closest_waypoint_to_light_stop_line]
         if light:
             state = self.get_light_state(light)
             return light_wp, state
-        self.waypoints = None
         return -1, TrafficLight.UNKNOWN
-
+	
+	
 if __name__ == '__main__':
     try:
         TLDetector()
