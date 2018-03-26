@@ -64,6 +64,17 @@ The current directory contains:
   max_total_detections: 6
   ```
 
+- tld_frcnn_inception_50:
+  - `frozen_inference_graph.pb`
+  - `pipeline.config`:
+
+  ```
+  first_stage_max_proposals: 50
+  second_stage_batch_size: 10
+  max_detections_per_class: 10
+  max_total_detections: 10
+  ```
+
 - label map: `tld_label_map.pbtxt` 
 - jupyter notebook with examples of usage: `tld_parking_lot_object_detection.ipynb`
 
