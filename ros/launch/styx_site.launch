@@ -7,7 +7,7 @@
     <include file="$(find twist_controller)/launch/dbw_sim.launch"/>
 
     <!--Waypoint Loader -->
-    <include file="$(find waypoint_loader)/launch/waypoint_loader.launch"/>
+    <include file="$(find waypoint_loader)/launch/waypoint_loader_site.launch"/>
 
     <!--Waypoint Follower Node -->
     <include file="$(find waypoint_follower)/launch/pure_pursuit.launch"/>
@@ -19,8 +19,5 @@
     <include file="$(find tl_detector)/launch/tl_detector.launch"/>
 
     <!--Traffic Light Locations and Camera Config -->
-    <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
-
-    <!--Traffic Light Visualization -->
-    <node name="traffic_light_visualizer" pkg="waypoint_updater" type="traffic_light_visualizer.py" />
+    <param name="traffic_light_config" textfile="$(find tl_detector)/site_traffic_light_config.yaml" />
 </launch>
