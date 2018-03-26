@@ -53,6 +53,10 @@ The full data set of annotated simulator images (train/test split) can be downlo
 
 The current directory contains:
 
+- tld_ssd_inception_v2:
+  - `frozen_inference_graph.pb`
+  - `pipeline.config`
+
 - tld_frcnn_inception_10:
   - `frozen_inference_graph.pb`
   - `pipeline.config`:
