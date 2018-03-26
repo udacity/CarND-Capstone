@@ -535,11 +535,11 @@ class WaypointUpdater(object):
             rospy.logwarn("recalc is set to {} we should recalculate"
                           .format(recalc))
 
-        rospy.loginfo("ptr_id, JMT_ptr, time, S, V, A, J")
+        rospy.logdebug("ptr_id, JMT_ptr, time, S, V, A, J")
         for wpt in self.waypoints[self.final_waypoints_start_ptr:
                                   self.final_waypoints_start_ptr +
                                   self.lookahead_wps]:
-            rospy.loginfo("{}, {}, {}".format(wpt.ptr_id, wpt.JMT_ptr, wpt.JMTD))
+            rospy.logdebug("{}, {}, {}".format(wpt.ptr_id, wpt.JMT_ptr, wpt.JMTD))
 
     def setup_jmt(self, curpt, target_velocity, accel_ratio=1.0,
                   time_factor=1.0):
