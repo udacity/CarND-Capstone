@@ -5,7 +5,7 @@
 
 ## System Integration Project
 
-## The Team
+### The Team
 
 **Team name: RookieROS**
 
