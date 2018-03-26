@@ -17,7 +17,7 @@ IMAGE_CAPTURE          = False #write images to file in debug mode.  Aside from 
 IMAGE_CAPTURE_PATH     = dir_path + '/captured_images'
 DEBUG_MODE             = False #DEBUG_MODE does not send messages to terminal unless it is set in tl_detector.py
 
-PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/frozen_inference_graph.pb'
+PATH_TO_CKPT           = dir_path + '/models/tld_parking_lot_model/tld_frcnn_inception_10/frozen_inference_graph.pb'
 if (SIMULATOR_TRACK):
     PATH_TO_CKPT       = dir_path + '/models/tld_simulator_model/frozen_inference_graph.pb'
 
