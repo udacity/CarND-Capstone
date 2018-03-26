@@ -26,7 +26,7 @@ as well as to verify your TL classifier.
 '''
 
 LOOKAHEAD_WPS   = 200   # Number of waypoints we will publish. For Test Lot, please put a value smaller than 60
-CIRCULAR_WPS    = True  # If True, assumes that the path to follow is a loop
+CIRCULAR_WPS    = False # If True, assumes that the path to follow is a loop
 REFRESH_RATE_HZ = 2     # Number of times we update the final waypoints per second
 UPDATE_MAX_ITER = 50    # Max number of iterations before considering relooking for the next waypoint in full path
 WAYPOINT_INCREMENT_RATE = 5 # The number of the waypoints that is added when searching for the next one ahead
