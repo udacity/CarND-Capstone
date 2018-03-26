@@ -30,7 +30,7 @@ CIRCULAR_WPS    = True  # If True, assumes that the path to follow is a loop
 REFRESH_RATE_HZ = 2     # Number of times we update the final waypoints per second
 UPDATE_MAX_ITER = 50    # Max number of iterations before considering relooking for the next waypoint in full path
 WAYPOINT_INCREMENT_RATE = 5 # The number of the waypoints that is added when searching for the next one ahead
-DEBUG_MODE      = True  # Switch for whether debug messages are printed.
+DEBUG_MODE      = False # Switch for whether debug messages are printed.
 TL_DETECTOR_ON  = False # If False, switches to direct traffic light subscription
 DECELLERATION   = 3     # Decelleration in m/s^2
 
