@@ -15,6 +15,7 @@ import time
 
 STATE_COUNT_THRESHOLD = 3
 UPDATE_RATE = 10
+DISABLE_CLASSIFIER = False
 
 class TLDetector(object):
     def __init__(self):
@@ -32,21 +33,26 @@ class TLDetector(object):
 
         self.stop_line_positions = self.config['stop_line_positions']
         self.stop_line_waypoints = []
-        
-        
+
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+
+        if DISABLE_CLASSIFIER:
+            self.light_classifier = None
+            self.has_image = True
+        else:
+            self.light_classifier = TLClassifier()
+            self.has_image = False
+
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
-        self.previous_light_state =  TrafficLight.UNKNOWN
+        self.previous_light_state = TrafficLight.UNKNOWN
         self.busy = False
-        
+
         self.last_wp = -1
         self.state_count = 0
         self.L_update = False
-        self.has_image = False
 
         rospy.logdebug('Red: %s', TrafficLight.RED)
         rospy.logdebug('Yellow: %s', TrafficLight.YELLOW)
