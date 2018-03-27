@@ -3,6 +3,12 @@
 
 this is our team repo, not the official one.
 
+# Workflow and naming conventions
+
+Instead of forks and pull requests we are working from a central repo. Every teammember is supposed to clone the repo and work on his own branch. 
+The branches will then be pushed to github and there they will be merged into master. Do not merge locally and then push master.
+Naming convention for branches: **[name]_[task]**
+
 
 ## Original Readme
 
