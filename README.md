@@ -1,3 +1,17 @@
+
+# Team Repo destiny_awaits
+
+this is our team repo, not the official one.
+
+# Workflow and naming conventions
+
+Instead of forks and pull requests we are working from a central repo. Every teammember is supposed to clone the repo and work on his own branch. 
+The branches will then be pushed to github and there they will be merged into master. Do not merge locally and then push master.
+Naming convention for branches: **[name]_[task]**
+
+
+## Original Readme
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 Please use **one** of the two installation options, either native **or** docker installation.
