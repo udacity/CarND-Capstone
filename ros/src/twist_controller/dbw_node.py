@@ -55,8 +55,9 @@ class DBWNode(object):
             '/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
         self.dbw_enabled = True
-        self.current_velocity = None
-        self.supposed_curr_velocity = None
+        self.current_linear_velocity = 0
+        self.target_linear_velocity = 0
+        self.target_angular_veloctiy = 0
 
         self.controller = Controller(
             wheel_base,
@@ -69,46 +70,16 @@ class DBWNode(object):
             '/current_velocity', TwistStamped, self.current_velocity_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
-        
+
         self.loop()
-
-    def to_1d(self, x, y, z):
-        return math.sqrt(sum([x ** 2, y ** 2, z ** 2]))
-
-    def compute_supposed_1d_velocity(self):
-        if not self.supposed_curr_velocity:
-            return 0, 0
-
-        linear_x = self.supposed_curr_velocity.twist.linear.x
-        linear_y = self.supposed_curr_velocity.twist.linear.y
-        linear_z = self.supposed_curr_velocity.twist.linear.z
-        linear_v = self.to_1d(linear_x, linear_y, linear_z)
-
-        angular_x = self.supposed_curr_velocity.twist.angular.x
-        angular_y = self.supposed_curr_velocity.twist.angular.y
-        angular_z = self.supposed_curr_velocity.twist.angular.z
-        angular_v = self.to_1d(angular_x, angular_y, angular_z)
-        return linear_v, angular_v
-
-    def compute_curr_1d_velocity(self):
-        if not self.current_velocity:
-            return 0
-        linear_x = self.current_velocity.twist.linear.x
-        linear_y = self.current_velocity.twist.linear.y
-        linear_z = self.current_velocity.twist.linear.z
-        return self.to_1d(linear_x, linear_y, linear_z)
 
     def loop(self):
         rate = rospy.Rate(50)  # 50Hz
         while not rospy.is_shutdown():
-            linear_v, angular_v = self.compute_supposed_1d_velocity()
-            curr_v = self.compute_curr_1d_velocity()
-            rospy.loginfo(
-                "V Linear:{}, Angular:{}, Current:{}".format(linear_v, angular_v, curr_v))
             throttle, brake, steering = self.controller.control(
-                linear_v,
-                angular_v,
-                curr_v
+                self.target_linear_velocity,
+                self.target_angular_veloctiy,
+                self.current_linear_velocity
             )
 
             if self.dbw_enabled:
@@ -116,10 +87,12 @@ class DBWNode(object):
             rate.sleep()
 
     def current_velocity_cb(self, curr_velocity):
-        self.current_velocity = curr_velocity
+        self.current_linear_velocity = curr_velocity.twist.linear.x
 
     def twist_cmd_cb(self, twist_cmd):
-        self.supposed_curr_velocity = twist_cmd
+        self.target_linear_velocity = twist_cmd.twist.linear.x
+        self.target_angular_veloctiy = twist_cmd.twist.angular.z
+
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
