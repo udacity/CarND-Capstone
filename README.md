@@ -7,7 +7,7 @@
 | Name | Email | Scope of work |
 | ---- | ----- | ------------- |
 | Aaqib Ansari | [maaquib@gmail.com](mailto:maaquib@gmail.com) | Twist Controller |
-| Umar Qattan | [u.qattan@gmail.com](mailto:u.qattan@gmail.com) | tbd |
+| Umar Qattan | [u.qattan@gmail.com](mailto:u.qattan@gmail.com) | Waypoint Updater |
 | Kevin Lu | [kevinyihchyunlu@gmail.com](mailto:kevinyihchyunlu@gmail.com) | Traffic light classification |
 | Yangzi Liu | [yangzi@google.com](mailto:yangzi@google.com) | Traffic light detection/classification |
 | Michael Zoellner | [michael.zoellner@rwth-aachen@de](mailto:michael.zoellner@rwth-aachen@de) | Team lead, DBW node |
