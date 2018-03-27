@@ -22,12 +22,7 @@ DIST_FROM_A_LIGHT_STOP_LINE is used to decide if there is a light stop line ahea
 Max sim highway speed is 40km/h, which is about 11m/s
 /current_pose topic refreshes at 50Hz. 
 /image_color topic refreshes at 10Hz. So we can update light detection result every 0.1s.
-It will take STATE_COUNT_THRESHOLD * 0.1s = 0.3 before the car determines there is red light ahead. During that 0.3s, the can drove about 33 meters. The max dec given in dbw lauch file is -5m/s^2, then it will take 2.2s to drop velocity to zero, which implies another 22 meters out. In conclusion when the distance from the light stop line ahead is smaller than 22 + 33 + 3 (since pose might be at center of car, needs to consider length of car. Lincoln seems huge. Thus assume car length to be 3 meters to be safe) = 58 meters, we should definitely do light detection. Given it some more buffer, setting DIST_FROM_A_LIGHT_STOP_LINE to 65 meters. This might be passed in as a parameter given different configs such as speed limit or max deceleration, etc.
-
-COMMENT FROM MICHAEL:
-0.3s * 11m/s is 3.3m.
-And I calculate stopping distance of 12 meters for a braking from 11 m/s to 0 with 5 m/s^2.
-
+It will take STATE_COUNT_THRESHOLD * 0.1s = 0.3 before the car determines there is red light ahead. During that 0.3s, the can drove about 3.3 meters. The max dec given in dbw lauch file is -5m/s^2, then it will take 2.2s to drop velocity to zero, which implies another 0.5*2.2*5^2 = 27.5 meters out. In conclusion when the distance from the light stop line ahead is smaller than 27.5 + 3.3 + 3 (since pose might be at center of car, needs to consider length of car. Lincoln seems huge. Thus assume car length to be 3 meters to be safe) = 34 meters, we should definitely do light detection. Given it some more buffer, setting DIST_FROM_A_LIGHT_STOP_LINE to 65 meters. This might be passed in as a parameter given different configs such as speed limit or max deceleration, etc.
 """
 DIST_FROM_A_LIGHT_STOP_LINE = 65.0
 
@@ -183,13 +178,18 @@ class TLDetector(object):
             return False
 	
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-	#self.save_training_data(cv_image, light.state)
+        #self.save_training_data(cv_image, light.state)
 	    
         #Get classification
         state = self.light_classifier.get_classification(cv_image)
     	#rospy.loginfo_throttle(3, 'get_light_state\nResult from Classifiter: {}\nGround Truth:{}\nMatch: {}'.format(state, light.state, state == light.state))
-	if(state != light.state and light.state == TrafficLight.RED):
-            rospy.logwarn("RED NOT CATCHED!")
+    	if(state != light.state and light.state == TrafficLight.RED):
+    	    rospy.logwarn("RED NOT CAUGHT!")
+    	    debug_data_dir = "debug_data/"
+    	    if not os.path.exists(debug_data_dir):
+                os.makedirs(debug_data_dir)
+            save_path =  os.path.join(debug_data_dir, "{}_red.jpg".format(time.time())) if state == TrafficLight.RED else os.path.join(debug_data_dir, "{}_not_red.jpg".format(time.time()))
+    	    cv2.imwrite(save_path, cv_image)
     	return state
 
     def save_training_data(self, img, state):
@@ -224,24 +224,24 @@ class TLDetector(object):
 	    idx_of_closest_light_stop_line = self.get_closest_light_stop_line_idx(self.pose.pose, DIST_FROM_A_LIGHT_STOP_LINE)
 	    if(idx_of_closest_light_stop_line > -1):
 	    	# pos of the light stop line closest to current location of car. Note it's not necessarily ahead of car
-		light_stop_pos = Pose()
-		light_stop_pos.position.x = self.stop_line_positions[idx_of_closest_light_stop_line][0]
-		light_stop_pos.position.y = self.stop_line_positions[idx_of_closest_light_stop_line][1]
+	    	light_stop_pos = Pose()
+	    	light_stop_pos.position.x = self.stop_line_positions[idx_of_closest_light_stop_line][0]
+	    	light_stop_pos.position.y = self.stop_line_positions[idx_of_closest_light_stop_line][1]
 
 	        # waypoint index closest to light stop line
-                idx_closest_waypoint_to_light_stop_line = self.get_closest_waypoint(light_stop_pos)
+	        idx_closest_waypoint_to_light_stop_line = self.get_closest_waypoint(light_stop_pos)
 	        # waypoint index closest to car pos
-                idx_closest_waypoint_to_car = self.get_closest_waypoint(self.pose.pose)
+	        idx_closest_waypoint_to_car = self.get_closest_waypoint(self.pose.pose)
 
 	        if (idx_closest_waypoint_to_car > -1
 		    and idx_closest_waypoint_to_light_stop_line > -1
 		    and self.waypoint_is_ahead_of(idx_closest_waypoint_to_light_stop_line, idx_closest_waypoint_to_car)):
-		    # Use the camera info now to detect if it's red light. If so, publish the stop line waypoint
-		    light_wp = idx_closest_waypoint_to_light_stop_line
-		    light = self.lights[idx_of_closest_light_stop_line] # Used as ground truth, not for classification 
-        if light:
-            state = self.get_light_state(light)
-    	#rospy.loginfo_throttle(3, 'process_traffic_lights\nlight: {}\nlight_wp:{}\nstate: {}'.format(light, light_wp, state))
+		        # Use the camera info now to detect if it's red light. If so, publish the stop line waypoint
+		        light_wp = idx_closest_waypoint_to_light_stop_line
+		        light = self.lights[idx_of_closest_light_stop_line] # Used as ground truth, not for classification
+		        if light:
+		            state = self.get_light_state(light)
+        #rospy.loginfo_throttle(3, 'process_traffic_lights\nlight: {}\nlight_wp:{}\nstate: {}'.format(light, light_wp, state))
         return light_wp, state
 	
 	
