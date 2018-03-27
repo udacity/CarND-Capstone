@@ -9,7 +9,7 @@
 | Aaqib Ansari | [maaquib@gmail.com](mailto:maaquib@gmail.com) | Twist Controller |
 | Umar Qattan | [u.qattan@gmail.com](mailto:u.qattan@gmail.com) | tbd |
 | Kevin Lu | [kevinyihchyunlu@gmail.com](mailto:kevinyihchyunlu@gmail.com) | Traffic light classification |
-| Yangzi Liu | [yliu163@asu.edu](mailto:yliu163@asu.edu) | tbd |
+| Yangzi Liu | [yangzi@google.com](mailto:yangzi@google.com) | Traffic light detection/classification |
 | Michael Zoellner | [michael.zoellner@rwth-aachen@de](mailto:michael.zoellner@rwth-aachen@de) | Team lead, DBW node |
 
 ### Submission checklist
