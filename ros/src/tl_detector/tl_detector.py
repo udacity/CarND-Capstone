@@ -116,8 +116,6 @@ class TLDetector(object):
             if distance < min_distance:
                 min_distance = distance
                 closed_indx = indx
-            min_distance = min(min_distance, distance)
-
         # rospy.loginfo('The close waypoint is: [' + str(self.waypoints[closed_indx].pose.pose.position.x) + ', '
         #               + str(self.waypoints[closed_indx].pose.pose.position.y) + ']')
         # rospy.loginfo('Car position is: [' + str(pos_x) + ', ' + str(pos_y))
