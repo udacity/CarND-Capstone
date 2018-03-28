@@ -13,7 +13,7 @@ class Controller(object):
          # kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM
         self.throttle_pid = PID(0.5, 0.00001, 0.0)
         self.brake_pid    = PID(0.6, 0.00001, 0.0)
-        self.steer_pid    = PID(0.8, 0.00001, 0.0)
+        # self.steer_pid    = PID(0.8, 0.00001, 0.0)
         # wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle
         self.yaw_control = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
                                          kwargs['min_speed'], kwargs['max_lat_accel'],
@@ -22,10 +22,10 @@ class Controller(object):
         self.last_t = None
         self.accel_limit = kwargs['accel_limit']
         self.decel_limit = kwargs['decel_limit']
-        self.max_steer_angle = kwargs['max_steer_angle']
+        # self.max_steer_angle = kwargs['max_steer_angle']
         self.filter = LowPassFilter(0.2,0.1)
 
-    def control(self, target_v, target_w, current_v, dbw_enabled, cte):
+    def control(self, target_v, target_w, current_v, dbw_enabled):
         # TODO: Change the arg, kwarg list to suit your needs
         if self.last_t is None or not dbw_enabled:
             self.last_t = rospy.get_time()
@@ -44,17 +44,15 @@ class Controller(object):
         else:
             brake = 0.0
 
-        steer1 = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
-        steer2 = self.steer_pid.step(cte, dt)
-        print "steer yaw", steer1
-        print "steer PID", steer2
-        print "CTE", cte
-        steer = steer1 + steer2
+        steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
+        # steer2 = self.steer_pid.step(cte, dt)
+        # print "steer yaw", steer1
+        # print "steer PID", steer2
+        # print "CTE", cte
+        # steer = steer1 + steer2
         steer = max(-abs(self.max_steer_angle), min(abs(self.max_steer_angle), steer))
 
-        print "steer b4 filt", steer
         steer = self.filter.filt(steer)
-        print "steer after filt", steer
         self.last_t = time.time()
 
         return throttle, brake, steer

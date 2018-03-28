@@ -71,10 +71,10 @@ class DBWNode(object):
         self.dbw_enabled = True
         self.current_velocity = None
         self.twist_cmd = None
-        self.cte_cnt = 0
-        self.tot_cte = 0
-        self.waypoints = None
-        self.tf_listener = tf.TransformListener()
+        # self.cte_cnt = 0
+        # self.tot_cte = 0
+        # self.waypoints = None
+        # self.tf_listener = tf.TransformListener()
         self.loop()
     def waypoints_cb(self, msg):
         self.waypoints = msg
@@ -91,38 +91,38 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
-            if self.twist_cmd != None and self.current_velocity != None and self.waypoints !=None: 
+            if self.twist_cmd != None and self.current_velocity != None: # and self.waypoints !=None: 
+                continue
 
-                x = []
-                y = []
-                i = 0
-                temp_waypoints = copy.deepcopy(self.waypoints)
-                while len(x) < 20 and i < len(temp_waypoints.waypoints):
-                    # Transform waypoint to car coordinates
-                    temp_waypoints.waypoints[i].pose.header.frame_id = temp_waypoints.header.frame_id
-                    self.tf_listener.waitForTransform("/base_link", "/world", rospy.Time(0), rospy.Duration(10))
-                    transformed_waypoint = self.tf_listener.transformPose("/base_link", temp_waypoints.waypoints[i].pose)
-                    # Just add the x coordinate if the car did not pass the waypoint yet
-                    if transformed_waypoint.pose.position.x >= 0.0:
-                        x.append(transformed_waypoint.pose.position.x)
-                        y.append(transformed_waypoint.pose.position.y)
-                    i += 1
-                coefficients = np.polyfit(x, y, 3)
-                # We have to calculate the cte for a position ahead, due to delay
-                cte = np.polyval(coefficients, 0.7 * self.current_velocity.twist.linear.x)
-                cte *= abs(cte)
-                rospy.loginfo('cte: %s', cte)
-                self.tot_cte += abs(cte)
-                self.cte_cnt += 1
-                rospy.loginfo('avg_cte: %s', self.tot_cte / self.cte_cnt)
+                # x = []
+                # y = []
+                # i = 0
+                # temp_waypoints = copy.deepcopy(self.waypoints)
+                # while len(x) < 20 and i < len(temp_waypoints.waypoints):
+                #     # Transform waypoint to car coordinates
+                #     temp_waypoints.waypoints[i].pose.header.frame_id = temp_waypoints.header.frame_id
+                #     self.tf_listener.waitForTransform("/base_link", "/world", rospy.Time(0), rospy.Duration(10))
+                #     transformed_waypoint = self.tf_listener.transformPose("/base_link", temp_waypoints.waypoints[i].pose)
+                #     # Just add the x coordinate if the car did not pass the waypoint yet
+                #     if transformed_waypoint.pose.position.x >= 0.0:
+                #         x.append(transformed_waypoint.pose.position.x)
+                #         y.append(transformed_waypoint.pose.position.y)
+                #     i += 1
+                # coefficients = np.polyfit(x, y, 3)
+                # # We have to calculate the cte for a position ahead, due to delay
+                # cte = np.polyval(coefficients, 0.7 * self.current_velocity.twist.linear.x)
+                # cte *= abs(cte)
+                # rospy.loginfo('cte: %s', cte)
+                # self.tot_cte += abs(cte)
+                # self.cte_cnt += 1
+                # rospy.loginfo('avg_cte: %s', self.tot_cte / self.cte_cnt)
                 
-                throttle, brake, steering = self.controller.control(self.twist_cmd.twist.linear,
-                    self.twist_cmd.twist.angular,
-                    self.current_velocity.twist.linear,
-                    self.dbw_enabled,
-                    cte)
-                if self.dbw_enabled:
-                    self.publish(throttle, brake, steering)
+            throttle, brake, steering = self.controller.control(self.twist_cmd.twist.linear,
+                self.twist_cmd.twist.angular,
+                self.current_velocity.twist.linear,
+                self.dbw_enabled)
+            if self.dbw_enabled:
+                self.publish(throttle, brake, steering)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
