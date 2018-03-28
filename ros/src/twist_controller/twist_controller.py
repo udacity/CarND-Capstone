@@ -1,7 +1,11 @@
+from yaw_controller import YawController
+from lowpass import LowPassFilter
+from pid import PID
+import time
+import rospy
 
-GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
-
+MAX_SPEED = 50.0
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
@@ -18,7 +22,7 @@ class Controller(object):
         self.accel_limit = kwargs['accel_limit']
         self.decel_limit = kwargs['decel_limit']
         self.filter = LowPassFilter(0.2,0.1)
-        
+
     def control(self, *args, **kwargs):
         # TODO: Change the arg, kwarg list to suit your needs
         if self.last_t is None or not dbw_enabled:
