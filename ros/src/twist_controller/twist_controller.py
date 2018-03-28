@@ -12,7 +12,7 @@ MAX_SPEED = 40.0
 class Controller(object):
     def __init__(self, *args, **kwargs):
         # TODO: Implement
-        self.throttle_pid = PID(kwargs['throttle_gains'])
+        self.throttle_pid = PID(0.5,0.00001, 0.0)
         self.yaw_control = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
                                          kwargs['min_speed'], kwargs['max_lat_accel'],
                                          kwargs['max_steer_angle'],

@@ -49,12 +49,12 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
-        throttle_gains = Gains(rospy.get_param('~throttle_Kp', 0.0),
-                               rospy.get_param('~throttle_Ki', 0.0),
-                               rospy.get_param('~throttle_Kd', 0.0))
-        steering_gains = Gains(rospy.get_param('~steering_Kp', 0.0),
-                               rospy.get_param('~steering_Ki', 0.0),
-                               rospy.get_param('~steering_Kd', 0.0))
+        # throttle_gains = Gains(rospy.get_param('~throttle_Kp', 0.0),
+        #                        rospy.get_param('~throttle_Ki', 0.0),
+        #                        rospy.get_param('~throttle_Kd', 0.0))
+        # steering_gains = Gains(rospy.get_param('~steering_Kp', 0.0),
+        #                        rospy.get_param('~steering_Ki', 0.0),
+        #                        rospy.get_param('~steering_Kd', 0.0))
 
         # Parameterize loop rate with 50 Hz as default if not found
         self.rate_param = rospy.get_param('~rate_param', 50)
