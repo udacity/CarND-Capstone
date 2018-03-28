@@ -46,7 +46,7 @@ class Controller(object):
 
         steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
         # steer2 = self.steer_pid.step(cte, dt)
-        # print "steer yaw", steer1
+        print "steer", steer
         # print "steer PID", steer2
         # print "CTE", cte
         # steer = steer1 + steer2
