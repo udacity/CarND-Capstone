@@ -92,7 +92,7 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
-            if self.twist_cmd is None or self.current_velocity is None: # and self.waypoints !=None: 
+            if self.twist_cmd is None or self.current_velocity is None or self.waypoints is None: 
                 continue
 
             x = []
