@@ -22,6 +22,7 @@ class Controller(object):
         self.last_t = None
         self.accel_limit = kwargs['accel_limit']
         self.decel_limit = kwargs['decel_limit']
+        self.max_steer_angle = kwargs['max_steer_angle']
         self.filter = LowPassFilter(0.2,0.1)
 
     def control(self, target_v, target_w, current_v, dbw_enabled, cte):
@@ -48,7 +49,7 @@ class Controller(object):
             brake = 0.0
 
         steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x) + self.steer_pid.step(cte, dt)
-        steer = max(-abs(kwargs['max_steer_angle'], min(abs(kwargs['max_steer_angle']), steer)))
+        steer = max(-abs(self.max_steer_angle), min(abs(self.max_steer_angle), steer))
 
         steer = self.filter.filt(steer)
         self.last_t = time.time()
