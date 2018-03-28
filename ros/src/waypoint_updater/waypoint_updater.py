@@ -52,6 +52,9 @@ class WaypointUpdater(object):
             self.waypoints = lane.waypoints
             self.send_next_waypoints()
 
+    def current_velocity_cb(self, msg):
+        self.current_velocity = msg
+
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
