@@ -70,7 +70,6 @@ class DBWNode(object):
         # TODO: Pass params to `Controller` constructor
         self.controller = Controller(wheel_base=wheel_base, steer_ratio=steer_ratio, min_speed=1.0*0.447,
                                      max_lat_accel=max_lat_accel, max_steer_angle=max_steer_angle,
-                                     throttle_gains=throttle_gains, steering_gains=steering_gains,
                                      accel_limit=accel_limit, decel_limit=decel_limit)
 
         # Subscriptions
