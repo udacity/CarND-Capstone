@@ -3,9 +3,10 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from geometry_msgs.msg import TwistStamped
 
-import math
-
+import math, sys
+from itertools import islice, cycle
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
 
