@@ -35,7 +35,7 @@ class Controller(object):
 
         error_v = min(target_v.x, MAX_SPEED*ONE_MPH) - current_v.x
         print "first vel error", error_v
-        error_v = max(self.decel_limit*dt, min(self.accel_limit*dt, error_v))
+        # error_v = max(self.decel_limit*dt, min(self.accel_limit*dt, error_v))
         throttle = self.throttle_pid.step(error_v, dt)
         print "second vel error", error_v
         throttle = max(0.0, min(1.0, throttle))
