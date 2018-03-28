@@ -5,7 +5,7 @@ import time
 import rospy
 
 ONE_MPH = 0.44704
-MAX_SPEED = 50.0
+MAX_SPEED = 20.0
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
@@ -52,7 +52,7 @@ class Controller(object):
         # steer = steer1 + steer2
         # steer = max(-abs(self.max_steer_angle), min(abs(self.max_steer_angle), steer))
 
-        # steer = self.filter.filt(steer)
+        steer = self.filter.filt(steer)
         print "filt steer", steer
         self.last_t = time.time()
 
