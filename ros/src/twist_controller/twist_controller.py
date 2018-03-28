@@ -27,8 +27,6 @@ class Controller(object):
 
     def control(self, target_v, target_w, current_v, dbw_enabled, cte):
         # TODO: Change the arg, kwarg list to suit your needs
-        print 'target_v', target_v
-        print "current_v", current_v
         if self.last_t is None or not dbw_enabled:
             self.last_t = rospy.get_time()
             return 0.0, 0.0, 0.0
@@ -36,10 +34,8 @@ class Controller(object):
         dt = rospy.get_time() - self.last_t
 
         error_v = min(target_v.x, MAX_SPEED*ONE_MPH) - current_v.x
-        print "first vel error", error_v
         # error_v = max(self.decel_limit*dt, min(self.accel_limit*dt, error_v))
         throttle = self.throttle_pid.step(error_v, dt)
-        print "second vel error", error_v
         throttle = max(0.0, min(1.0, throttle))
         if error_v < 0:
             brake = self.brake_pid.step(error_v, dt)
@@ -48,10 +44,18 @@ class Controller(object):
         else:
             brake = 0.0
 
-        steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x) + self.steer_pid.step(cte, dt)
+        steer1 = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
+        steer2 = self.steer_pid.step(cte, dt)
+        print "steer yaw", steer1
+        print "steer PID", steer2
+        print "CTE", cte
+
+		steer = steer1 + steer2
         steer = max(-abs(self.max_steer_angle), min(abs(self.max_steer_angle), steer))
 
+        print "steer b4 filt", steer
         steer = self.filter.filt(steer)
+        print "steer after filt", steer
         self.last_t = time.time()
 
         return throttle, brake, steer
