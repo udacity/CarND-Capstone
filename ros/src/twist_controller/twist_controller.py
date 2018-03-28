@@ -35,11 +35,14 @@ class Controller(object):
             return 0.0, 0.0, 0.0
 
         dt = rospy.get_time() - self.last_t
-
+        print "target v", target_v
+        print "current v", current_v
         error_v = min(target_v.x, MAX_SPEED*ONE_MPH) - current_v.x
+        print "error v", error_v
         # error_v = max(self.decel_limit*dt, min(self.accel_limit*dt, error_v))
         throttle = self.throttle_pid.step(error_v, dt)
         throttle = max(0.0, min(1.0, throttle))
+        print "throttle", throttle
         if error_v < 0:
             brake = -15.0*error_v   # Proportional braking
             brake = max(brake, 1.0)
