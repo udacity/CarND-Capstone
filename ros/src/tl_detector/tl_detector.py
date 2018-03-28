@@ -211,7 +211,7 @@ class TLDetector(object):
         # collect the yellow light
         # if self.lights[ind].state != 1:
         #     return
-        save_path = os.path.join(os.getcwd(), str(self.lights[ind].state))
+        save_path = os.path.join(os.getcwd(), 'carla' + str(self.lights[ind].state))
         if not os.path.exists(save_path):
             os.mkdir(save_path)
 
