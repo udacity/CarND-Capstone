@@ -23,7 +23,7 @@ class Controller(object):
         self.decel_limit = kwargs['decel_limit']
         self.filter = LowPassFilter(0.2,0.1)
 
-    def controlself, target_v, target_w, dbw_enabled):
+    def control(self, target_v, target_w, dbw_enabled):
         # TODO: Change the arg, kwarg list to suit your needs
         if self.last_t is None or not dbw_enabled:
             self.last_t = rospy.get_time()
