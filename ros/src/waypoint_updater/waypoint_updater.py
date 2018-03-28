@@ -47,7 +47,7 @@ class WaypointUpdater(object):
         self.current_pose = msg.pose
         self.send_next_waypoints()
 
-    def waypoints_cb(self, waypoints):
+    def waypoints_cb(self, lane):
         if self.waypoints is None:
             self.waypoints = lane.waypoints
             self.send_next_waypoints()
