@@ -66,7 +66,7 @@ class DBWNode(object):
         rospy.Subscriber('/dbw_enabled', Bool, self.dbw_enabled_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=1)
-        rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb)
+        # rospy.Subscriber('/final_waypoints', Lane, self.waypoints_cb)
         # Member vars
         self.dbw_enabled = True
         self.current_velocity = None
@@ -91,7 +91,7 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
-            if self.twist_cmd != None and self.current_velocity != None: # and self.waypoints !=None: 
+            if self.twist_cmd is None or self.current_velocity is None: # and self.waypoints !=None: 
                 continue
 
                 # x = []
