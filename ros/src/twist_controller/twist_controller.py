@@ -48,7 +48,7 @@ class Controller(object):
             brake = 0.0
 
         steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x) + self.steer_pid.step(cte, dt)
-        steer = max(-abs(kwargs['max_steer_angle'], min(abs(kwargs['max_steer_angle']), steer))
+        steer = max(-abs(kwargs['max_steer_angle'], min(abs(kwargs['max_steer_angle']), steer)))
 
         steer = self.filter.filt(steer)
         self.last_t = time.time()
