@@ -4,11 +4,11 @@ import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
-from styx_msgs.msg import Lane
+# from styx_msgs.msg import Lane
 import math
-import copy
-import tf
-import numpy as np
+# import copy
+# import tf
+# import numpy as np
 
 from twist_controller import Controller
 
@@ -76,8 +76,9 @@ class DBWNode(object):
         # self.waypoints = None
         # self.tf_listener = tf.TransformListener()
         self.loop()
-    def waypoints_cb(self, msg):
-        self.waypoints = msg
+
+    # def waypoints_cb(self, msg):
+        # self.waypoints = msg
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
@@ -121,6 +122,7 @@ class DBWNode(object):
                 self.twist_cmd.twist.angular,
                 self.current_velocity.twist.linear,
                 self.dbw_enabled)
+            
             if self.dbw_enabled:
                 self.publish(throttle, brake, steering)
             rate.sleep()
