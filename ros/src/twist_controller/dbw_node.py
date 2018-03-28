@@ -99,7 +99,7 @@ class DBWNode(object):
                 while len(x) < 20 and i < len(temp_waypoints.waypoints):
                     # Transform waypoint to car coordinates
                     temp_waypoints.waypoints[i].pose.header.frame_id = temp_waypoints.header.frame_id
-                    self.tf_listener.waitForTransform("/base_link", "/world", rospy.Time(0), rospy.Duration(TIMEOUT_VALUE))
+                    self.tf_listener.waitForTransform("/base_link", "/world", rospy.Time(0), rospy.Duration(10))
                     transformed_waypoint = self.tf_listener.transformPose("/base_link", temp_waypoints.waypoints[i].pose)
                     # Just add the x coordinate if the car did not pass the waypoint yet
                     if transformed_waypoint.pose.position.x >= 0.0:
