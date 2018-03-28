@@ -102,7 +102,7 @@ class DBWNode(object):
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
-        rospy.loginfo("publishing throttle %f, brake %f, steer %f", throttle, brake, steer)
+        # rospy.loginfo("publishing throttle %f, brake %f, steer %f", throttle, brake, steer)
         # We'll either publish the throttle or brake, not both
 
         if throttle != 0:
@@ -132,7 +132,7 @@ class DBWNode(object):
         self.current_velocity = msg
 
     def twist_cmd_cb(self, msg):
-        rospy.loginfo("Received twist command %s", msg)
+        # rospy.loginfo("Received twist command %s", msg)
         self.twist_cmd = msg
 
 
