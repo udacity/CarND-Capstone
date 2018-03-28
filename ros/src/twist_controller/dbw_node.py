@@ -113,8 +113,8 @@ class DBWNode(object):
                 cte *= abs(cte)
                 rospy.loginfo('cte: %s', cte)
                 self.tot_cte += abs(cte)
-                self.cte_counter += 1
-                rospy.loginfo('avg_cte: %s', self.tot_cte / self.cte_counter)
+                self.cte_cnt += 1
+                rospy.loginfo('avg_cte: %s', self.tot_cte / self.cte_cnt)
                 
                 throttle, brake, steering = self.controller.control(self.twist_cmd.twist.linear,
                     self.twist_cmd.twist.angular,
