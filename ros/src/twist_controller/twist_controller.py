@@ -50,7 +50,7 @@ class Controller(object):
         print "steer PID", steer
         # print "CTE", cte
         # steer = steer1 + steer2
-        steer = max(-abs(self.max_steer_angle), min(abs(self.max_steer_angle), steer))
+        # steer = max(-abs(self.max_steer_angle), min(abs(self.max_steer_angle), steer))
 
         steer = self.filter.filt(steer)
         print "filt steer", steer
