@@ -13,6 +13,7 @@ class Controller(object):
          # kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM
         self.throttle_pid = PID(0.5, 0.00001, 0.0)
         self.brake_pid    = PID(0.6, 0.00001, 0.0)
+        self.steer_pid    = PID(0.8, 0.1, 0.3)
         # wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle
         self.yaw_control = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
                                          kwargs['min_speed'], kwargs['max_lat_accel'],
@@ -23,7 +24,7 @@ class Controller(object):
         self.decel_limit = kwargs['decel_limit']
         self.filter = LowPassFilter(0.2,0.1)
 
-    def control(self, target_v, target_w, current_v, dbw_enabled):
+    def control(self, target_v, target_w, current_v, dbw_enabled, cte):
         # TODO: Change the arg, kwarg list to suit your needs
         print 'target_v', target_v
         print "current_v", current_v
@@ -47,6 +48,8 @@ class Controller(object):
             brake = 0.0
 
         steer = self.yaw_control.get_steering(target_v.x, target_w.z, current_v.x)
+        		+ self.steer_pid.step(cte, dt)
+        
         steer = self.filter.filt(steer)
         self.last_t = time.time()
 
