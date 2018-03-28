@@ -11,6 +11,7 @@ import tf
 import cv2
 import yaml
 import math
+import os
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -50,6 +51,11 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+
+        # if collect data from the sim, turn the collect_data to True
+        self.collect_data = False
+        self.stop_line_waypoints = None
+        self.light_line_pair = None
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -157,15 +163,30 @@ class TLDetector(object):
 
         if(self.pose):
             car_waypoint = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
-            stop_line_waypoints = self.get_stopline_waypoints()
+            if self.stop_line_waypoints is None:
+                # get the stop line waypoint list, this calculate just perform once
+                self.stop_line_waypoints = self.get_stopline_waypoints()
+
+            if (self.light_line_pair is None) and (len(self.lights) != 0):
+                # get the traffic light and stop line waypoint pair list, this calculate just perform once
+                self.light_line_pair = self.get_light_line_pair()
+                rospy.loginfo(self.light_line_pair)
 
             # find index of waypoint for the stop line ahead
-            for stop_line_wp in stop_line_waypoints:
-                if car_waypoint < stop_line_wp:
-                    ahead_stop_line_wp = stop_line_wp
+            for ind, pair in enumerate(self.light_line_pair):
+                if car_waypoint < pair[1]:
+                    ahead_stop_line_wp = pair[1]
+                    ahead_light_wp = pair[0]
+
+                    if self.collect_data:
+                        if abs(car_waypoint - ahead_stop_line_wp) < 100:
+                            # the car is near the stop line, save the front camera img
+                            self.save_img(ind)
                     break
             # rospy.loginfo(str(ahead_stop_line_wp) +' '+ str(self.waypoints[ahead_stop_line_wp].pose.pose.position.x)
             #               + ' ,' + str(self.waypoints[ahead_stop_line_wp].pose.pose.position.y))
+
+
         # TODO: light state detection need to be complete
         if light:
             state = self.get_light_state(light)
@@ -181,6 +202,43 @@ class TLDetector(object):
             indx = self.get_closest_waypoint(x, y)
             stop_line_wp.append(indx)
         return stop_line_wp
+
+    def save_img(self, ind):
+        """
+        :param ind: the index of ahead traffic light in light_line_pair
+        :return:
+        """
+        # collect the yellow light
+        # if self.lights[ind].state != 1:
+        #     return
+        save_path = os.path.join(os.getcwd(), str(self.lights[ind].state))
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
+
+        import time
+        file_name = str(time.time())+'_'+str(self.lights[ind].state)+'.png'
+        file_name = os.path.join(save_path, file_name)
+        rospy.loginfo(file_name)
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv2.imwrite(file_name, cv_image)
+
+
+    def get_light_line_pair(self):
+        """
+           get the traffic light and stop line waypoint pair
+           @return pair_list: a list like: [[light_waypoint, stop_waypoint], [... , ...], ...]
+        """
+        # the number of stop line and traffic light should be the same
+        assert len(self.lights) == len(self.stop_line_waypoints)
+        pair_list = []
+        for i in range(len(self.lights)):
+            light_pos = self.lights[i].pose.pose.position
+            light_wp = self.get_closest_waypoint(light_pos.x, light_pos.y)
+            pair_list.append([light_wp, self.stop_line_waypoints[i]])
+        return pair_list
+
+
+
 
 if __name__ == '__main__':
     try:
