@@ -77,8 +77,8 @@ class DBWNode(object):
         self.tf_listener = tf.TransformListener()
         self.loop()
 
-    # def waypoints_cb(self, msg):
-        # self.waypoints = msg
+    def waypoints_cb(self, msg):
+        self.waypoints = msg
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
