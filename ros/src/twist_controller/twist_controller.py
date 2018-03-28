@@ -53,7 +53,7 @@ class Controller(object):
         # steer = max(-abs(self.max_steer_angle), min(abs(self.max_steer_angle), steer))
 
         # steer = self.filter.filt(steer)
-        # print "filt steer", steer
+        print "filt steer", steer
         self.last_t = time.time()
 
         return throttle, brake, steer
