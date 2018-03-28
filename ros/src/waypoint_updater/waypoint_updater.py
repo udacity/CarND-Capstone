@@ -28,8 +28,10 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber(
+            '/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber(
+            '/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         # rospy.Subscriber('/traffic_waypoint', Lane, self.traffic_cb)
         # rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
@@ -41,18 +43,30 @@ class WaypointUpdater(object):
 
         rospy.spin()
 
-    def pose_cb(self, pose_stamped):
-        current_pose_idx = 0
+    def straight_dist(self, pos0, pos1):
+        return math.sqrt((pos0.x - pos1.x) ** 2 + (pos0.y - pos1.y) ** 2)
+
+    def closest_waypoint(self, curr_pose):
+        closest_distance = float('inf')
+        closest_idx = -1
         for idx, waypoint in enumerate(self.base_waypoints):
-            if self.pose_equal(waypoint.pose.pose, pose_stamped.pose):
-                current_pose_idx = idx
+            distance = self.straight_dist(
+                waypoint.pose.pose.position,
+                curr_pose.pose.position)
+            if distance < closest_distance:
+                closest_idx = idx
+                closest_distance = distance
+
+        return closest_idx + 1
+
+    def pose_cb(self, pose_stamped):
+        current_pose_idx = self.closest_waypoint(pose_stamped)
         final_waypoints_msg = Lane()
         final_waypoints_msg.waypoints = self.base_waypoints[
             current_pose_idx+1:current_pose_idx+LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(final_waypoints_msg)
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
         self.base_waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
@@ -79,8 +93,8 @@ class WaypointUpdater(object):
     def distance(self, waypoints, wp1, wp2):
         dist = 0
 
-        def dl(a, b): return math.sqrt(
-            (a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
+        def dl(a, b):
+            return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2 + (a.z-b.z)**2)
         for i in range(wp1, wp2+1):
             dist += dl(waypoints[wp1].pose.pose.position,
                        waypoints[i].pose.pose.position)
