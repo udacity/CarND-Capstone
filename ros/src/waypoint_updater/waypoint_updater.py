@@ -30,23 +30,26 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1))
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-
+        self.waypoints = None
+        self.current_pose = None
+        self.current_velocity = None
+        self.last_wp_id = None
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.current_pose = msg.pose
+        self.send_next_waypoints()
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        if self.waypoints is None:
+            self.waypoints = lane.waypoints
+            self.send_next_waypoints()
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -70,6 +73,48 @@ class WaypointUpdater(object):
             wp1 = i
         return dist
 
+    def send_next_waypoints(self):
+        if self.waypoints is None or self.current_velocity is None or self.current_pose is None:
+            return
+        speed = self.current_velocity.twist.linear.x
+        car_x = self.current_pose.position.x
+        car_y = self.current_pose.position.y
+
+        min_dist = sys.maxsize #64 bit is 2**63 - 1
+        min_loc = None
+
+        start_index = 0
+        end_index = len(self.waypoints)
+
+        for i in range(start_index, end_index):
+            waypoint = self.waypoints[i]
+            wp_x = waypoint.pose.pose.position.x
+            wp_y = waypoint.pose.pose.position.y
+            # distance calulated with distance function
+            dist = math.sqrt((car_x - wp_x)**2 + (car_y - wp_y)**2)
+
+            # need to make sure the waypoint is in front of the car
+            print "car_x", car_x
+            print "car_y" car_y
+            print "wp_x" wp_x
+            print "wp_y" wp_y
+            if dist < min_dist:
+                min_dist = dist
+                min_loc = i
+
+        closest_wp = self.waypoints[min_loc]
+        closest_wp_pos = closest_wp.pose.pose.position
+        self.last_wp_id = min_loc
+
+        # Now that we have the shortest distance, get the next LOOKAHEAD_WPS waypoints.
+        # This next line ensures that we loop around to the start of the list if we've hit the end.
+        next_wps = list(islice(cycle(self.waypoints), min_loc, min_loc + LOOKAHEAD_WPS - 1))
+
+        lane = Lane()
+        lane.waypoints = next_wps
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        self.final_waypoints_pub.publish(lane)
 
 if __name__ == '__main__':
     try:
