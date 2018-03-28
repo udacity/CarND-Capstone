@@ -63,6 +63,10 @@ class DBWNode(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=1)
 
+        # Member vars
+        self.dbw_enabled = True
+        self.current_velocity = None
+        self.twist_cmd = None
         self.loop()
 
     def loop(self):
@@ -106,7 +110,7 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
-        
+
     def dbw_enabled_cb(self, msg):
         rospy.loginfo("DBW status changed to: %s", msg)
         self.dbw_enabled = msg
