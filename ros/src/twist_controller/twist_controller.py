@@ -49,8 +49,7 @@ class Controller(object):
         print "steer yaw", steer1
         print "steer PID", steer2
         print "CTE", cte
-
-		steer = steer1 + steer2
+        steer = steer1 + steer2
         steer = max(-abs(self.max_steer_angle), min(abs(self.max_steer_angle), steer))
 
         print "steer b4 filt", steer
