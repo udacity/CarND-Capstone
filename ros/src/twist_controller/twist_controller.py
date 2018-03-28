@@ -37,7 +37,7 @@ class Controller(object):
         dt = rospy.get_time() - self.last_t
 
         error_v = min(target_v.x, MAX_SPEED*ONE_MPH) - current_v.x
-        error_v = max(self.decel_limit*dt, min(self.accel_limit*dt, error_v))
+        # error_v = max(self.decel_limit*dt, min(self.accel_limit*dt, error_v))
         throttle = self.throttle_pid.step(error_v, dt)
         throttle = max(0.0, min(1.0, throttle))
         if error_v < 0:
