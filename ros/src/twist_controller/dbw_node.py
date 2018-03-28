@@ -113,10 +113,11 @@ class DBWNode(object):
             # We have to calculate the cte for a position ahead, due to delay
             cte = np.polyval(coefficients, 0.7 * self.current_velocity.twist.linear.x)
             cte *= abs(cte)
-            rospy.loginfo('cte: %s', cte)
+            # rospy.loginfo('cte: %s', cte)
+            print "cte", cte
             self.tot_cte += abs(cte)
             self.cte_cnt += 1
-            rospy.loginfo('avg_cte: %s', self.tot_cte / self.cte_cnt)
+            # rospy.loginfo('avg_cte: %s', self.tot_cte / self.cte_cnt)
                 
             throttle, brake, steering = self.controller.control(self.twist_cmd.twist.linear,
                 self.twist_cmd.twist.angular,
