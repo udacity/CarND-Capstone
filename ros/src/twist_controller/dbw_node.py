@@ -8,6 +8,7 @@ from styx_msgs.msg import Lane
 import math
 import copy
 import tf
+import numpy as np
 
 from twist_controller import Controller
 
