@@ -25,6 +25,8 @@ class Controller(object):
 
     def control(self, target_v, target_w, current_v, dbw_enabled):
         # TODO: Change the arg, kwarg list to suit your needs
+        print 'target_v', target_v
+        print "current_v", current_v
         if self.last_t is None or not dbw_enabled:
             self.last_t = rospy.get_time()
             return 0.0, 0.0, 0.0
