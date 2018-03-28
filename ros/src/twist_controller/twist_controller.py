@@ -15,9 +15,7 @@ class Controller(object):
         self.throttle_pid = PID(0.5,0.00001, 0.0)
         self.yaw_control = YawController(kwargs['wheel_base'], kwargs['steer_ratio'],
                                          kwargs['min_speed'], kwargs['max_lat_accel'],
-                                         kwargs['max_steer_angle'],
-                                         kwargs['steering_gains']
-                                         )
+                                         kwargs['max_steer_angle'])
         self.last_t = None
         self.accel_limit = kwargs['accel_limit']
         self.decel_limit = kwargs['decel_limit']
