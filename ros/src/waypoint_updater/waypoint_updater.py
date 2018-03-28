@@ -94,10 +94,10 @@ class WaypointUpdater(object):
             dist = math.sqrt((car_x - wp_x)**2 + (car_y - wp_y)**2)
 
             # need to make sure the waypoint is in front of the car
-            print "car_x", car_x
-            print "car_y", car_y
-            print "wp_x", wp_x
-            print "wp_y", wp_y
+            # print "car_x", car_x
+            # print "car_y", car_y
+            # print "wp_x", wp_x
+            # print "wp_y", wp_y
             if dist < min_dist:
                 min_dist = dist
                 min_loc = i
