@@ -28,7 +28,7 @@ class TLDetector(object):
         self.config = yaml.load(config_string)
         model_path = self.config['tl']['model']
 
-        self.light_classifier = TLClassifier(threshold=0.3, modelpath= model_path)
+        self.light_classifier = TLClassifier(threshold=0.1, modelpath= model_path)
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
