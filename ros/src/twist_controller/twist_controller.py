@@ -9,11 +9,11 @@ FULL_BRAKE_SPEED = 0.1  # If target velocity is smaller, apply full brake
 class Controller(object):
     def __init__(self, vehicle_mass, decel_limit, accel_limit, wheel_radius,
                  wheel_base, steer_ratio, max_lat_accel, max_steer_angle,
-                 brake_deadband, fuel_capacity, max_throttle_percent):
+                 brake_deadband, fuel_capacity):
 
-        self.velocity_filter = LowPassFilter(3., 1.)
+        self.velocity_filter = LowPassFilter(3.5, 1.)
         self.velocity_pid = PID(1., 0.001, 0.,
-                                mn=decel_limit, mx=max_throttle_percent)
+                                mn=decel_limit, mx=0.25)
         self.yaw_controller = YawController(wheel_base, steer_ratio, 1,
                                             max_lat_accel, max_steer_angle)
         self.wheel_radius = wheel_radius
@@ -29,7 +29,7 @@ class Controller(object):
     	self.cmd_vel = twist.twist.linear.x
         self.veh_vel = velocity.twist.linear.x
         self.cmd_ang_vel = twist.twist.angular.z
-        
+
         velocity_cte = self.cmd_vel - self.veh_vel
         cmd_acc = self.velocity_pid.step(velocity_cte, time_diff)
         steer = self.yaw_controller.get_steering(self.cmd_vel,

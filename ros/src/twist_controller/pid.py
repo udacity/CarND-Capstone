@@ -11,14 +11,13 @@ class PID(object):
         self.min = mn
         self.max = mx
 
-        self.int_val = 0.0
-        self.last_error = 0.0
+        self.int_val = self.last_error = 0.0
 
     def reset(self):
-        self.int_val = 0.0
-        self.last_error = 0.0
+        self.int_val = self.last_error = 0.0
 
     def step(self, error, sample_time):
+
         integral = self.int_val + error * sample_time
 
         if sample_time > 1.0e-3:
@@ -36,7 +35,6 @@ class PID(object):
         else:
             # Clamping/Anti-wind up, only integrate error if we actuator limits haven't been reached
             self.int_val = integral
-
         self.last_error = error
 
         return val

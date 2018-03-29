@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from __future__ import division
-
 import copy
 import math
 
@@ -9,7 +7,6 @@ import tf
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane
-from visualization_msgs.msg import Marker
 
 '''
 This node will publish waypoints from the car's current position
@@ -30,24 +27,10 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 100  # Number of waypoints we publish
-MIN_VEL = 1.
-
 
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-
-        self.max_dec = 0.8 * abs(rospy.get_param('/dbw_node/decel_limit'))
-
-        self.waypoints = None
-        self.n_waypoints = 0
-        self.ego = None
-        self.next_idx = -1
-        self.tl_idx = -1
-
-        # ROS publishers
-        self.pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
-
 
         # ROS subscribers
         rospy.Subscriber('/current_pose', PoseStamped,
@@ -55,32 +38,20 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane,
                          self.waypoints_cb, queue_size=1)
 
+        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+
+        # ROS publishers
+        self.pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
+
+        self.waypoints = None
+        self.n_waypoints = 0
+        self.ego = None
+        self.next_idx = -1
+
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
             self.publish()
             rate.sleep()
-
-    def publish(self):
-        self.next_idx = self.find_next_waypoint()
-        if -1 < self.next_idx and not rospy.is_shutdown():
-
-            rospy.loginfo("Current position ({}, {}), next waypoint: {}"
-                          .format(self.ego.pose.position.x,
-                                  self.ego.pose.position.y,
-                                  self.next_idx))
-
-            waypoints = list(self.get_lookahead(self.next_idx))
-
-            lane = Lane()
-            lane.header.frame_id = '/world'
-            lane.header.stamp = rospy.Time.now()
-            lane.waypoints = waypoints
-            self.pub.publish(lane)
-
-    def get_lookahead(self, start_idx):
-        for i in range(LOOKAHEAD_WPS):
-            idx = (start_idx + i + self.n_waypoints) % self.n_waypoints
-            yield copy.deepcopy(self.waypoints[idx])
 
     def pose_cb(self, pose):
         if self.ego is None or self.ego.header.seq < pose.header.seq:
@@ -99,42 +70,6 @@ class WaypointUpdater(object):
         # TODO: Callback for /obstacle_waypoint message.
         # We will implement it later
         pass
-
-    @classmethod
-    def vector_from_quaternion(cls, q):
-        quaternion = [q.x, q.y, q.z, q.w]
-        roll, pitch, yaw = tf.transformations.euler_from_quaternion(quaternion)
-        x = math.cos(yaw) * math.cos(pitch)
-        y = math.sin(yaw) * math.cos(pitch)
-        z = math.sin(pitch)
-        return x, y, z
-
-    def find_next_waypoint(self):
-        min_dist = 1e10
-        min_idx = -1
-        if self.ego and self.waypoints:
-            ego_pose = self.ego.pose
-            # Find the closest waypoint
-            for i in range(self.next_idx, self.next_idx + self.n_waypoints):
-                idx = (i + self.n_waypoints) % self.n_waypoints
-                wp_pos = self.waypoints[idx].pose.pose.position
-                dl = self.euclidean_dist(ego_pose.position, wp_pos)
-                if dl < min_dist:
-                    min_dist = dl
-                    min_idx = idx
-                if min_dist < 10 and dl > min_dist:
-                    break
-
-            # Check if we are behind or past the closest waypoint
-            wp_pos = self.waypoints[min_idx].pose.pose.position
-            pos = copy.deepcopy(ego_pose.position)
-            x, y, z = self.vector_from_quaternion(ego_pose.orientation)
-            pos.x += x * .1
-            pos.y += y * .1
-            pos.z += z * .1
-            if self.euclidean_dist(wp_pos, pos) > min_dist:
-                min_idx = (min_idx + 1) % self.n_waypoints
-        return min_idx
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
@@ -158,6 +93,63 @@ class WaypointUpdater(object):
         return math.sqrt((pt1.x - pt2.x) ** 2 + (pt1.y - pt2.y) ** 2 +
                          (pt1.z - pt2.z) ** 2)
 
+    def publish(self):
+        self.next_idx = self.find_next_waypoint()
+        if -1 < self.next_idx and not rospy.is_shutdown():
+
+            rospy.loginfo("Current position ({}, {}), next waypoint: {}"
+                          .format(self.ego.pose.position.x,
+                                  self.ego.pose.position.y,
+                                  self.next_idx))
+
+            waypoints = list(self.get_lookahead(self.next_idx))
+
+            lane = Lane()
+            lane.header.frame_id = '/world'
+            lane.header.stamp = rospy.Time.now()
+            lane.waypoints = waypoints
+            self.pub.publish(lane)
+
+    def get_lookahead(self, start_idx):
+        for i in range(LOOKAHEAD_WPS):
+            idx = (start_idx + i + self.n_waypoints) % self.n_waypoints
+            yield copy.deepcopy(self.waypoints[idx])
+
+
+    def vector_from_quaternion(self, q):
+        quaternion = [q.x, q.y, q.z, q.w]
+        roll, pitch, yaw = tf.transformations.euler_from_quaternion(quaternion)
+        x = math.cos(yaw) * math.cos(pitch)
+        y = math.sin(yaw) * math.cos(pitch)
+        z = math.sin(pitch)
+        return x, y, z
+
+    def find_next_waypoint(self):
+        min_dist = 1e10
+        min_idx = -1
+        if self.ego and self.waypoints:
+            ego_pose = self.ego.pose
+            # Find the closest waypoint
+            for i in range(self.next_idx, self.next_idx + self.n_waypoints):
+                idx = (i + self.n_waypoints) % self.n_waypoints
+                wp_pos = self.waypoints[idx].pose.pose.position
+                dl = self.euclidean_dist(ego_pose.position, wp_pos)
+                if dl < min_dist:
+                    min_dist = dl
+                    min_idx = idx
+                if min_dist < 10 and dl > min_dist:
+                    break
+
+            # Only get waypoints in front of us, so check relitive pos to closest waypoint
+            wp_pos = self.waypoints[min_idx].pose.pose.position
+            pos = copy.deepcopy(ego_pose.position)
+            x, y, z = self.vector_from_quaternion(ego_pose.orientation)
+            pos.x += x * .1
+            pos.y += y * .1
+            pos.z += z * .1
+            if self.euclidean_dist(wp_pos, pos) > min_dist:
+                min_idx = (min_idx + 1) % self.n_waypoints
+        return min_idx
 
 
 if __name__ == '__main__':
