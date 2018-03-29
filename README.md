@@ -17,6 +17,7 @@ Please use **one** of the two installation options, either native **or** docker 
   * [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) if you have Ubuntu 14.04.
 * [Dataspeed DBW](https://bitbucket.org/DataspeedInc/dbw_mkz_ros)
   * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
+* If you want to install ROS and Dataspeed DBW on an Ubuntu-based distribution, other than Ubuntu itself, like Linux Mint,[here](https://gist.github.com/wAuner/6fdb6d3780191bfd8c062df523371660) is a gist about what you have to change during the installation process.
 * Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases).
 
 ### Docker Installation
