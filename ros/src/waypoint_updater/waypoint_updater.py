@@ -118,7 +118,7 @@ class WaypointUpdater(object):
             for i in range(self.next_idx, self.next_idx + self.n_waypoints):
                 idx = (i + self.n_waypoints) % self.n_waypoints
                 wp_pos = self.waypoints[idx].pose.pose.position
-                dl = self.distance(ego_pose.position, wp_pos)
+                dl = self.euclidean_dist(ego_pose.position, wp_pos)
                 if dl < min_dist:
                     min_dist = dl
                     min_idx = idx
@@ -132,7 +132,7 @@ class WaypointUpdater(object):
             pos.x += x * .1
             pos.y += y * .1
             pos.z += z * .1
-            if self.distance(wp_pos, pos) > min_dist:
+            if self.euclidean_dist(wp_pos, pos) > min_dist:
                 min_idx = (min_idx + 1) % self.n_waypoints
         return min_idx
 
@@ -144,11 +144,20 @@ class WaypointUpdater(object):
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 +(a.y-b.y)**2 +(a.z-b.z)**2)
         for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[(i)].pose.pose.position)
+            dist += euclidean_dist(waypoints[wp1].pose.pose.position, waypoints[(i)].pose.pose.position)
             wp1 = i
         return dist
+
+    def euclidean_dist(self, pt1, pt2):
+        """
+        Return the Euclidean distance between two points
+        :pt1: geometry_msgs/Point
+        :pt2: geometry_msgs/Point
+        """
+        return math.sqrt((pt1.x - pt2.x) ** 2 + (pt1.y - pt2.y) ** 2 +
+                         (pt1.z - pt2.z) ** 2)
+
 
 
 if __name__ == '__main__':
