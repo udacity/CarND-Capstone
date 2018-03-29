@@ -34,7 +34,7 @@ class PID(object):
         elif val < self.min:
             val = self.min
         else:
-            # Accumulate integral error only if we didn't reach actuator limits
+            # Clamping/Anti-wind up, only integrate error if we actuator limits haven't been reached
             self.int_val = integral
 
         self.last_error = error

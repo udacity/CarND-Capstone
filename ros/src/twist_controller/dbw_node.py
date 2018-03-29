@@ -96,11 +96,6 @@ class DBWNode(object):
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
 
-    def has_valid_data(self):
-        return self.twist is not None and \
-               self.velocity is not None and \
-               self.last_time is not None
-
     def loop(self):
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
@@ -108,9 +103,9 @@ class DBWNode(object):
             now = rospy.get_rostime()
 
             # Publish only if DBW is enabled
-            if self.has_valid_data() and self.dbw_enabled:
+            if self.twist != None and self.velocity != None and self.last_time != None and self.dbw_enabled:
                 # Reset the controller if necessary
-                self.maybe_reset_controller()
+                self.reset_controller_on_DBW()
 
                 # Compute control commands
                 diff = now - self.last_time
@@ -126,7 +121,7 @@ class DBWNode(object):
 
             rate.sleep()
 
-    def maybe_reset_controller(self):
+    def reset_controller_on_DBW(self):
         """
         Resets the controller if the DBW signal is re-activated
         """
