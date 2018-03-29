@@ -1,4 +1,6 @@
 ###############################################################################
-# Enforce Unix style endings everywhere.
+# Enforce Unix style endings where necessary.
 ###############################################################################
-* text eol=crlf
+*.sh,*.py text eol=crlf 
+*.pb binary
+*.jpg binary
