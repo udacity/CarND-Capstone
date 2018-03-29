@@ -20,17 +20,20 @@ class Controller(object):
         self.brake_deadband = brake_deadband
         self.total_mass = vehicle_mass + fuel_capacity * GAS_DENSITY
         self.decel_limit = decel_limit
-        self.cmd_vel = twist.twist.linear.x
-        self.veh_vel = velocity.twist.linear.x
+        
 
     def reset(self):
         self.velocity_pid.reset()
 
     def control(self, twist, velocity, time_diff):
+    	self.cmd_vel = twist.twist.linear.x
+        self.veh_vel = velocity.twist.linear.x
+        self.cmd_ang_vel = twist.twist.angular.z
+        
         velocity_cte = self.cmd_vel - self.veh_vel
         cmd_acc = self.velocity_pid.step(velocity_cte, time_diff)
         steer = self.yaw_controller.get_steering(self.cmd_vel,
-                                                 twist.twist.angular.z,
+                                                 self.cmd_ang_vel,
                                                  self.veh_vel)
 
         # Apply low-pass filter to the linear acceleration
