@@ -28,7 +28,8 @@ class Controller(object):
         self.braking_to_throttle_threshold_ratio = 4. / 3.
         self.manual_braking_upper_velocity_limit = 1.5
         self.braking_torque_to_stop = 50
-        self.lpf_tau = 0.1
+        self.lpf_tau_throttle = 0.1
+        self.lpf_tau_brake = 1.0
 
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
@@ -36,9 +37,11 @@ class Controller(object):
         self.dynamic_reconf_server = Server(
             DynReconfConfig, self.handle_dynamic_variable_update)
 
-        self.throttle_lpf = LowPassFilter(
-            self.lpf_tau, default_update_interval)
-        self.brake_lpf = LowPassFilter(self.lpf_tau, default_update_interval)
+        self.throttle_lpf = LowPassFilter(self.lpf_tau_throttle,
+                                          default_update_interval)
+
+        self.brake_lpf = LowPassFilter(self.lpf_tau_brake,
+                                       default_update_interval)
 
     def handle_dynamic_variable_update(self, config, level):
         # reset PID controller to use new parameters
