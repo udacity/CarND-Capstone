@@ -231,6 +231,7 @@ bool PurePursuit::interpolateNextTarget(int next_waypoint, geometry_msgs::Point 
 
 bool PurePursuit::verifyFollowing() const
 {
+  return false; // added to continually update twist_cmd
   double a = 0;
   double b = 0;
   double c = 0;
