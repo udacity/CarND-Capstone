@@ -4,3 +4,12 @@ build
 devel
 
 profile.tmp
+.vscode
+/.vs/CarND-Capstone/v15
+/.vs/slnx.sqlite*
+/.vs/ProjectSettings.json
+/.vs/config/applicationhost.config
+/.vs/VSWorkspaceState.json
+/.ros/log
+/.ros
+/sys_int.exe - Shortcut.lnk
