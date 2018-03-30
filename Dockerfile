@@ -31,4 +31,4 @@ RUN apt-get install -y netbase
 RUN mkdir /capstone
 VOLUME ["/capstone"]
 VOLUME ["/root/.ros/log/"]
-WORKDIR /capstone
+WORKDIR /capstone/ros
