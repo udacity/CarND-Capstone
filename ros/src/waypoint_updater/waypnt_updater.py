@@ -69,7 +69,7 @@ class WaypointUpdater(object):
         self.prev_step_a = 0.0
         self.lights = None
         self.final_waypoints = []
-        self.final_waypoints_start_ptr = 250  # 0
+        self.final_waypoints_start_ptr = 0
         self.back_search = False
         self.last_search_distance = None
         self.last_search_time = None
