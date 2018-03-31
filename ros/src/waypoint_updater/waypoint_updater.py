@@ -54,10 +54,12 @@ class WaypointUpdater(object):
             rate.sleep()
 
     def pose_cb(self, pose):
+        #Get current pose
         if self.ego is None or self.ego.header.seq < pose.header.seq:
             self.ego = pose
 
     def waypoints_cb(self, lane):
+        #Get list of waypoints from lane
         if self.waypoints is None and lane.waypoints is not None:
             self.waypoints = lane.waypoints
             self.n_waypoints = len(lane.waypoints)
@@ -72,12 +74,15 @@ class WaypointUpdater(object):
         pass
 
     def get_waypoint_velocity(self, waypoint):
+        #Get desired waypoint velocity
         return waypoint.twist.twist.linear.x
 
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
+        #Set a waypoints desired velocity
         waypoints[waypoint].twist.twist.linear.x = velocity
 
     def distance(self, waypoints, wp1, wp2):
+        #Calculate distance between waypoints from the list of waypoints
         dist = 0
         for i in range(wp1, wp2+1):
             dist += euclidean_dist(waypoints[wp1].pose.pose.position, waypoints[(i)].pose.pose.position)
@@ -94,6 +99,7 @@ class WaypointUpdater(object):
                          (pt1.z - pt2.z) ** 2)
 
     def publish(self):
+        #Publish list of next waypoints to lane
         self.next_idx = self.find_next_waypoint()
         if -1 < self.next_idx and not rospy.is_shutdown():
 
@@ -111,12 +117,14 @@ class WaypointUpdater(object):
             self.pub.publish(lane)
 
     def get_lookahead(self, start_idx):
+        #Get LOOKAHEAD_WPS number of waypoints from waypoints list
         for i in range(LOOKAHEAD_WPS):
             idx = (start_idx + i + self.n_waypoints) % self.n_waypoints
             yield copy.deepcopy(self.waypoints[idx])
 
 
     def vector_from_quaternion(self, q):
+        #Used to convert to vector coord from quaternion for ego vehicle coord
         quaternion = [q.x, q.y, q.z, q.w]
         roll, pitch, yaw = tf.transformations.euler_from_quaternion(quaternion)
         x = math.cos(yaw) * math.cos(pitch)
@@ -125,6 +133,7 @@ class WaypointUpdater(object):
         return x, y, z
 
     def find_next_waypoint(self):
+        #Finds the next closest waypoint in front of the vehicle
         min_dist = 1e10
         min_idx = -1
         if self.ego and self.waypoints:

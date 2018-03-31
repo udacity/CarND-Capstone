@@ -4,6 +4,7 @@ MAX_NUM = float('inf')
 
 
 class PID(object):
+    #Simple PID controller
     def __init__(self, kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM):
         self.kp = kp
         self.ki = ki
@@ -14,10 +15,11 @@ class PID(object):
         self.int_val = self.last_error = 0.0
 
     def reset(self):
+        #Reset error
         self.int_val = self.last_error = 0.0
 
     def step(self, error, sample_time):
-
+        #Control based on when step thru errow w/ gains
         integral = self.int_val + error * sample_time
 
         if sample_time > 1.0e-3:

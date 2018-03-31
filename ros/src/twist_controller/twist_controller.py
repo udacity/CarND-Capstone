@@ -7,6 +7,7 @@ FULL_BRAKE_SPEED = 0.1  # If target velocity is smaller, apply full brake
 
 
 class Controller(object):
+    #Controller for vehicle brakes/ throttle / steering
     def __init__(self, vehicle_mass, decel_limit, accel_limit, wheel_radius,
                  wheel_base, steer_ratio, max_lat_accel, max_steer_angle,
                  brake_deadband, fuel_capacity):
@@ -23,9 +24,11 @@ class Controller(object):
         
 
     def reset(self):
+        #Reset controller
         self.velocity_pid.reset()
 
     def control(self, twist, velocity, time_diff):
+        #Calc what contol needs to be applied based on desired vel and ang
     	self.cmd_vel = twist.twist.linear.x
         self.veh_vel = velocity.twist.linear.x
         self.cmd_ang_vel = twist.twist.angular.z

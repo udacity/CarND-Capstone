@@ -39,6 +39,7 @@ on the various publishers that we have created in the `__init__` function.
 
 
 class DBWNode(object):
+    #Establishes a drive by wire node for controlling the vechile
     def __init__(self):
         rospy.init_node('dbw_node')
 
@@ -89,15 +90,19 @@ class DBWNode(object):
         self.loop()
 
     def velocity_cb(self, velocity):
+        #Get current vel
         self.velocity = velocity
 
     def twist_cb(self, twist):
+        #Get current pose
         self.twist = twist
 
     def dbw_enabled_cb(self, msg):
+        #Enable DBW
         self.dbw_enabled = msg.data
 
     def loop(self):
+        #Actuate vehicle if enabled
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
             # Get current time
