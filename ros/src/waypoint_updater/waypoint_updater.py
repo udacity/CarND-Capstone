@@ -57,13 +57,14 @@ class WaypointUpdater(object):
                 closest_idx = idx
                 closest_distance = distance
 
-        return closest_idx + 1
+        return closest_idx
 
     def pose_cb(self, pose_stamped):
         current_pose_idx = self.closest_waypoint(pose_stamped)
         final_waypoints_msg = Lane()
         final_waypoints_msg.waypoints = self.base_waypoints[
-            current_pose_idx+1:current_pose_idx+LOOKAHEAD_WPS]
+            current_pose_idx:current_pose_idx+LOOKAHEAD_WPS
+        ]
         self.final_waypoints_pub.publish(final_waypoints_msg)
 
     def waypoints_cb(self, waypoints):
@@ -76,13 +77,6 @@ class WaypointUpdater(object):
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
-
-    def pose_equal(self, pos1, pos2):
-        return (
-            abs(pos1.position.x - pos2.position.x) < 0.1 and
-            abs(pos1.position.y - pos2.position.y) < 0.1 and
-            abs(pos1.position.z - pos2.position.z) < 0.1
-        )
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
