@@ -63,7 +63,7 @@ class Controller(object):
         self.braking_pid_controller = PID(
             braking_p, braking_i, 0.0, 0.0, 10000)
 
-    def control(self, target_linear_velocity, target_angular_velocity, current_linear_velocity):
+    def control(self, target_linear_velocity, target_angular_velocity, current_linear_velocity, is_decelerating):
         # compute timestep
         timestep = self.compute_timestep()
         velocity_error = target_linear_velocity - current_linear_velocity
@@ -83,15 +83,15 @@ class Controller(object):
             throttle_command = self.velocity_pid_controller.step(
                 velocity_error, timestep)
             self.braking_pid_controller.reset()
-        elif target_linear_velocity < self.manual_braking_upper_velocity_limit and current_linear_velocity < self.manual_braking_upper_velocity_limit:
-            # vehicle seems to be coming to a stop; apply fixed braking torque
-            # continuously, even if the vehicle is stopped
-            brake_command = self.braking_torque_to_stop
-            self.velocity_pid_controller.reset()
-        else:
+        elif target_linear_velocity >= self.manual_braking_upper_velocity_limit or current_linear_velocity >= self.manual_braking_upper_velocity_limit:
             # use brake if we want to slow down somewhat significantly
             brake_command = self.braking_pid_controller.step(-velocity_error, timestep) if velocity_error < (-1 * limit_constant *
                                                                                                              self.braking_to_throttle_threshold_ratio * current_linear_velocity) or (velocity_error < 0 and current_linear_velocity < 2.5) else 0
+            self.velocity_pid_controller.reset()
+        elif is_decelerating or target_linear_velocity == 0:
+            # vehicle is coming to a stop or is at a stop; apply fixed braking torque
+            # continuously, even if the vehicle is stopped
+            brake_command = self.braking_torque_to_stop
             self.velocity_pid_controller.reset()
 
         # apply low pass filter on throttle and brake commands to reduce
@@ -105,8 +105,8 @@ class Controller(object):
         else:
             filtered_brake = 0
 
-        rospy.logdebug('Current linear velocity %.2f, target linear velocity %.2f, throttle_command %.2f, brake_command %.2f',
-                       current_linear_velocity, target_linear_velocity, filtered_throttle, filtered_brake)
+        rospy.logdebug('Current linear velocity %.2f, target linear velocity %.2f, is_decelerating %s, throttle_command %.2f, brake_command %.2f',
+                       current_linear_velocity, target_linear_velocity, is_decelerating, filtered_throttle, filtered_brake)
 
         # Return throttle, brake, steer
         return (filtered_throttle,

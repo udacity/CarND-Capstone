@@ -45,6 +45,7 @@ class DBWNode(object):
         self.target_linear_velocity = None
         self.target_angular_velocity = None
         self.current_linear_velocity = None
+        self.is_decelerating = False
         self.actual_linear_velocity = 0.0
         self.update_rate_hz = 50.0
 
@@ -69,6 +70,10 @@ class DBWNode(object):
         # Subscribe to steering report from vehicle
         rospy.Subscriber(
             '/current_velocity', TwistStamped, self.handle_steering_report)
+        
+        # Subscribe to is_decelerating message from waypoint updater
+        rospy.Subscriber(
+            '/is_decelerating', Bool, self.handle_is_decelerating)
 
         self.loop()
 
@@ -79,7 +84,8 @@ class DBWNode(object):
             if (self.can_predict_controls()):
                 throttle, brake, steering = self.controller.control(self.target_linear_velocity,
                                                                     self.target_angular_velocity,
-                                                                    self.actual_linear_velocity)
+                                                                    self.actual_linear_velocity,
+                                                                    self.is_decelerating)
                 self.publish(throttle, brake, steering)
             rate.sleep()
 
@@ -107,6 +113,9 @@ class DBWNode(object):
             'Drive by Wire %s', "enabled" if self.dbw_enabled else "disabled")
         if (not self.dbw_enabled):
             self.controller.reset()
+
+    def handle_is_decelerating(self, is_decelerating_message):
+        self.is_decelerating = is_decelerating_message.data
 
     def handle_target_velocity_message(self, twist_velocity_command_message):
         twist = twist_velocity_command_message.twist

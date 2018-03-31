@@ -10,7 +10,7 @@ from jmt import JMT, JMTDetails, JMTD_waypoint
 
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint, TrafficLightArray, TrafficLight
-from std_msgs.msg import String, Int32
+from std_msgs.msg import Bool, String, Int32
 from dynamic_reconfigure.server import Server
 from waypoint_updater.cfg import DynReconfConfig
 
@@ -117,6 +117,10 @@ class WaypointUpdater(object):
 
         self.pubs['/final_waypoints'] = rospy.Publisher('/final_waypoints',
                                                         Lane, queue_size=1)
+        
+        # publish a boolean for acceleration vs deceleration intention
+        self.pubs['/is_decelerating'] = rospy.Publisher('/is_decelerating',
+                                                        Bool, queue_size=1)
 
         # self.dyn_reconf_srv = Server(DynReconfConfig, self.dyn_vars_cb)
         # move to waypoints_cb so no collision - seems like a bad idea but
