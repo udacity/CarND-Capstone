@@ -89,6 +89,7 @@ class WaypointUpdater(object):
         # target max acceleration/braking force - dynamically adjustable
         self.default_accel = 1.5
         self.state = 'stopped'  # for now only use to see if stopped or moving
+        self.is_decelerating = True
         self.min_stop_distance = 0.0
         self.stopping_distance = 0.0
 
@@ -449,6 +450,7 @@ class WaypointUpdater(object):
         # set V = 0 for waypoints in range
         if self.state != 'stopped':
             rospy.loginfo("Set stopped")
+            self.state = 'stopped'
         for ptr in range(start_ptr, start_ptr + num_wps):
             mod_ptr = ptr % len(self.waypoints)
             self.waypoints[mod_ptr].JMTD.set_VAJt(0.0, 0.0, 0.0, 0.0)
@@ -794,6 +796,15 @@ class WaypointUpdater(object):
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time.now()
         self.pubs['/final_waypoints'].publish(lane)
+
+        # Publish is_decelerating intention boolean for DBW node to use for
+        # braking control
+        if self.state is 'slowdown' or self.state is 'stopped':
+            self.is_decelerating = True
+        else:
+            self.is_decelerating = False
+
+        self.pubs['/is_decelerating'].publish(self.is_decelerating)
 
     def closest_waypoint(self):
 
