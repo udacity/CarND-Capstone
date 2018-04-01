@@ -99,14 +99,14 @@ public:
     , const_lookahead_distance_(4.0)
     , initial_velocity_(5.0)
     , lookahead_distance_calc_ratio_(2.0)
-    , minimum_lookahead_distance_(6.0)
+    , minimum_lookahead_distance_(4.0) // shorten for tight turn in test lot
     , displacement_threshold_(0.05)
     , relative_angle_threshold_(0.5)
     , waypoint_set_(false)
     , pose_set_(false)
     , velocity_set_(false)
     , num_of_next_waypoint_(-1)
-    , closest_waypoint_idx_(-1)
+    , closest_waypoint_idx_(0) // default to first waypoint for index lookup
     , lookahead_distance_(0)
   {
   }

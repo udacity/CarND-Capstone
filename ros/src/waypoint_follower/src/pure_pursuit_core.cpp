@@ -293,7 +293,7 @@ void PurePursuit::getClosestWaypoint() {
   }
 
   // Initialize distance to first waypoint
-  int closest_wp = path_size - 1;
+  int closest_wp = 0;
   double dist = getPlaneDistance(current_waypoints_.getWaypointPosition(0),
                                  current_pose_.pose.position);
 
@@ -302,18 +302,15 @@ void PurePursuit::getClosestWaypoint() {
     double t_dist = getPlaneDistance(current_waypoints_.getWaypointPosition(i),
                                      current_pose_.pose.position);
     if (t_dist < dist) {
-      // Found a closer waypoint, store dist and keep searching
+      // Found a closer waypoint, store it and keep searching
       dist = t_dist;
-    } else {
-      // Distance is not decreasing, prev waypt was closest so stop searching
-      closest_wp = i - 1;
-      break;
+      closest_wp = i;
     }
   }
 
   // Store closest waypoint as output
   closest_waypoint_idx_ = closest_wp;
-  //ROS_ERROR_STREAM("wp = " << closest_waypoint_idx_ << " dist = " << dist);
+  //ROS_ERROR_STREAM("closest wp = " << closest_waypoint_idx_ << " dist = " << dist);
   return;
 }
 
@@ -328,8 +325,9 @@ void PurePursuit::getNextWaypoint()
     return;
   }
 
-  // look for the next waypoint.
-  for (int i = 0; i < path_size; i++)
+  // look for the next waypoint, starting from closest waypoint to prevent
+  // searching behind the car
+  for (int i = closest_waypoint_idx_; i < path_size; i++)
   {
     // if search waypoint is the last
     if (i == (path_size - 1))
