@@ -3,20 +3,24 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+import tf
 
 import math
 
 '''
-This node will publish waypoints from the car's current position to some `x` distance ahead.
+This node will publish waypoints from the car's current position to some `x`
+distance ahead.
 
-As mentioned in the doc, you should ideally first implement a version which does not care
-about traffic lights or obstacles.
+As mentioned in the doc, you should ideally first implement a version which
+does not care about traffic lights or obstacles.
 
-Once you have created dbw_node, you will update this node to use the status of traffic lights too.
+Once you have created dbw_node, you will update this node to use the status of
+traffic lights too.
 
-Please note that our simulator also provides the exact location of traffic lights and their
-current status in `/vehicle/traffic_lights` message. You can use this message to build this node
-as well as to verify your TL classifier.
+Please note that our simulator also provides the exact location of traffic
+lights and their current status in `/vehicle/traffic_lights` message.
+You can use this message to build this node as well as to verify your TL
+classifier.
 
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
@@ -56,14 +60,36 @@ class WaypointUpdater(object):
             if distance < closest_distance:
                 closest_idx = idx
                 closest_distance = distance
+        curr_yaw = self.compute_yaw(curr_pose.pose.orientation)
 
-        return closest_idx
+        map_x = self.base_waypoints[closest_idx].pose.pose.position.x
+        map_y = self.base_waypoints[closest_idx].pose.pose.position.y
+        heading = math.atan2(
+            (map_y - curr_pose.pose.position.y),
+            (map_x - curr_pose.pose.position.x)
+        )
+
+        if abs(curr_yaw - heading) > math.pi / 4:
+            return closest_idx + 1
+        else:
+            return closest_idx
+
+    def compute_yaw(self, orientation):
+        _, _, yaw = tf.transformations.euler_from_quaternion(
+            [
+                orientation.x,
+                orientation.y,
+                orientation.z,
+                orientation.w,
+            ]
+        )
+        return yaw
 
     def pose_cb(self, pose_stamped):
-        current_pose_idx = self.closest_waypoint(pose_stamped)
+        next_wp_idx = self.closest_waypoint(pose_stamped)
         final_waypoints_msg = Lane()
         final_waypoints_msg.waypoints = self.base_waypoints[
-            current_pose_idx:current_pose_idx+LOOKAHEAD_WPS
+            next_wp_idx:next_wp_idx+LOOKAHEAD_WPS
         ]
         self.final_waypoints_pub.publish(final_waypoints_msg)
 
@@ -75,7 +101,7 @@ class WaypointUpdater(object):
         pass
 
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
+        # TODO: Callback for /obstacle_waypoint message.
         pass
 
     def get_waypoint_velocity(self, waypoint):
