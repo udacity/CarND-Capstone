@@ -15,7 +15,7 @@ import time
 
 STATE_COUNT_THRESHOLD = 3
 UPDATE_RATE = 10
-DISABLE_CLASSIFIER = False
+CLASSIFY_BY_GROUND_TRUTH = False
 
 class TLDetector(object):
     def __init__(self):
@@ -36,7 +36,7 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
 
-        if DISABLE_CLASSIFIER:
+        if CLASSIFY_BY_GROUND_TRUTH:
             self.light_classifier = None
             self.has_image = True
         else:
@@ -231,7 +231,7 @@ class TLDetector(object):
                 ntl_state = self.previous_light_state
 
 
-        if(self.pose):
+        if self.pose and self.waypoints:
             car_position = self.get_closest_waypoint(self.pose.pose.position.x,self.pose.pose.position.y, self.waypoints)
 
         # State = 0 : Red
