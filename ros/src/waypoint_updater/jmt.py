@@ -131,15 +131,19 @@ class JMTD_waypoint(object):
     def __init__(self, waypoint, ptr_id, s):
         # self.position = pose(xval, yval, zval)
         self.waypoint = waypoint
+        self.ptr_id = ptr_id
         self.max_v = self.get_v()  # max_v is read only
         self.set_v(0.0)
         self.JMTD = JMTDetails(s, 0.0, 0.0, 0.0, 0.0)
-        self.ptr_id = ptr_id
         self.state = None
         self.JMT_ptr = -1  # points to JMT object
 
     def set_v(self, v):
         # put a check for max_v here
+        if v > self.max_v:
+            rospy.logwarn("trying to set velocity to {:2.2f}, "
+                          "but limited to {:2.2f} at ptr = {}"\
+                          .format(v, self.max_v, self.ptr_id))
         self.waypoint.twist.twist.linear.x = min(v, self.max_v)
         # self.JMTD.V = v
 
