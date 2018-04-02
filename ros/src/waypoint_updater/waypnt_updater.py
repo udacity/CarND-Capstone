@@ -899,13 +899,14 @@ class WaypointUpdater(object):
         # self.prev_step_v = self.waypoints[self.final_waypoints_start_ptr].get_v()
         # self.prev_step_a = self.waypoints[self.final_waypoints_start_ptr].get_a()
 
-        rospy.loginfo("ptr_id, JMT_ptr, time, S, V, A, J")
+        # Log JMT profile values
+        jmt_log = "\nptr_id, JMT_ptr, time, S, V, A, J\n"
         for wpt in self.waypoints[self.final_waypoints_start_ptr:
                                   self.final_waypoints_start_ptr +
                                   self.lookahead_wps]:
+            jmt_log += "{}, {}, {}\n".format(wpt.ptr_id, wpt.JMT_ptr, wpt.JMTD)
+        rospy.loginfo(jmt_log)
 
-            rospy.loginfo("{}, {}, {}".format(wpt.ptr_id, wpt.JMT_ptr,
-                                              wpt.JMTD))
 
     def setup_jmt(self, curpt, target_velocity, accel_ratio=1.0,
                   time_factor=1.0):
