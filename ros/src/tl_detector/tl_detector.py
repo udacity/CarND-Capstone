@@ -23,13 +23,19 @@ class TLDetector(object):
         self.pose = None
         self.waypoints = []
         self.camera_image = None
-        self.lights = []
+        self.lights = None
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
         self.stop_line_positions = self.config['stop_line_positions']
 
         self.model_path = rospy.get_param('~model_path')
+
+        is_site_test = rospy.get_param('~site_test')
+        if is_site_test == 'Yes':
+            self.site_test = True
+        else:
+            self.site_test = False
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -47,7 +53,7 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier(self.model_path)
+        self.light_classifier = TLClassifier(self.model_path, self.site_test)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -63,12 +69,21 @@ class TLDetector(object):
 
     def pose_cb(self, msg):
         self.pose = msg
+        if self.stop_line_waypoints is None:
+            # get the stop line waypoint list, this calculate just perform once
+            self.stop_line_waypoints = self.get_stopline_waypoints()
+        if self.light_line_pair is None and self.lights is not None:
+            # get the traffic light and stop line waypoint pair list, this calculate just perform once
+            self.light_line_pair = self.get_light_line_pair()
+            rospy.loginfo(self.light_line_pair)
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints.waypoints
 
+
     def traffic_cb(self, msg):
         self.lights = msg.lights
+
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -92,20 +107,67 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+        if self.site_test is True:
+            self.site_post_process(state, light_wp)
+        else:
+            self.sim_post_process(state, light_wp)
+
+        end_time = time.time()
+        rospy.loginfo('Total process tims is:' + str(end_time - begin_time))
+
+
+    def sim_post_process(self, state, light_wp):
+        """
+        this function
+        :param state:
+        :param light_wp:
+        :return:
+        """
         if self.state != state:
             self.state_count = 0
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
+            if state == TrafficLight.RED:
+                rospy.loginfo("It is RED")
+            elif state == TrafficLight.GREEN:
+                rospy.loginfo("It is GREEN")
+            elif state == TrafficLight.YELLOW:
+                rospy.loginfo("It is YELLOW")
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-        end_time = time.time()
-        rospy.loginfo('Total process tims is:' + str(end_time - begin_time))
+    def site_post_process(self, state, light_wp):
+        """
+        Because the detector may have some False Negative, like light is red but recognize is unknown, we add this post
+        process logic to make the car can stop at red and move on at green
+        :param state:
+        :param light_wp:
+        :return:
+        """
+        if self.last_state == TrafficLight.RED:
+            if state == TrafficLight.UNKNOWN:
+                # we ignore the unknown because we believe it's caused by the false negative
+                self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                rospy.loginfo("It is RED")
+                return
+        if self.state != state:
+            self.state_count = 0
+            self.state = state
+        elif self.state_count >= STATE_COUNT_THRESHOLD:
+            self.last_state = self.state
+            light_wp = light_wp if state == TrafficLight.RED else -1
+            if state == TrafficLight.RED:
+                rospy.loginfo("It is RED")
+            self.last_wp = light_wp
+            self.upcoming_red_light_pub.publish(Int32(light_wp))
+        else:
+            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+        self.state_count += 1
 
     def get_closest_waypoint(self, pos_x, pos_y):
         """Identifies the closest path waypoint to the given position
@@ -117,9 +179,6 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        # Done
-        if self.waypoints is None:
-            return None
         min_distance = 9999999.
         closed_indx = 0
 
@@ -172,16 +231,9 @@ class TLDetector(object):
         ahead_stop_line_wp = -1
         # List of positions that correspond to the line to stop in front of for a given intersection
         state = TrafficLight.UNKNOWN
-        if(self.pose):
+        # state = self.get_light_state()
+        if(self.pose) and self.waypoints is not None:
             car_waypoint = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
-            if self.stop_line_waypoints is None:
-                # get the stop line waypoint list, this calculate just perform once
-                self.stop_line_waypoints = self.get_stopline_waypoints()
-
-            if (self.light_line_pair is None) and (len(self.lights) != 0):
-                # get the traffic light and stop line waypoint pair list, this calculate just perform once
-                self.light_line_pair = self.get_light_line_pair()
-                rospy.loginfo(self.light_line_pair)
 
             # find index of waypoint for the stop line ahead
             for ind, pair in enumerate(self.light_line_pair):
@@ -246,9 +298,6 @@ class TLDetector(object):
             light_wp = self.get_closest_waypoint(light_pos.x, light_pos.y)
             pair_list.append([light_wp, self.stop_line_waypoints[i]])
         return pair_list
-
-
-
 
 
 if __name__ == '__main__':

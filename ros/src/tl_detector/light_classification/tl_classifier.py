@@ -7,10 +7,12 @@ import rospy
 
 class TLClassifier(object):
 
-    def __init__(self, model_path):
+    def __init__(self, model_path, is_site):
         self.model_path = model_path
         self.load_detection_model()
         self.score_thresh = .3
+        # the postprocess of the site and simulator is different
+        self.is_site = is_site
 
 
     def load_detection_model(self):
@@ -55,7 +57,6 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        begin_time = time.time()
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         image_expanded = np.expand_dims(image, axis=0)
 
@@ -65,18 +66,34 @@ class TLClassifier(object):
                     [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
                     feed_dict={self.image_tensor: image_expanded})
 
-        result = self.threshold_and_vote(classes[0], scores[0])
-
+        if self.is_site:
+            result = self.only_threshold(classes[0], scores[0])
+        else:
+            result = self.threshold_and_vote(classes[0], scores[0])
         traffic_id = self.__result_to_traffic_id(result)
 
-        end_time = time.time()
-
-        rospy.loginfo('Time in seconds: ' + str(end_time-begin_time)+' the detection result is: '+self.__traffic_id_to_name(traffic_id))
-        # print('Time in seconds: ' + str(end_time-begin_time)+' the detection result is: '+self.__traffic_id_to_name(traffic_id))
         return traffic_id
 
+    def only_threshold(self, classes, scores):
+        c = classes[0]
+        s = scores[0]
+        if c == 2:
+            # the class is RED
+            if s > 0.2:
+                return c
+            else:
+                return TrafficLight.UNKNOWN
+        elif c == 1 or c == 3:
+            # the class is GREEN or YELLOW
+            if s > 0.3:
+                return c
+            else:
+                return TrafficLight.UNKNOWN
+        else:
+            return TrafficLight.UNKNOWN
+
     def threshold_and_vote(self, classes, scores):
-        # only look for the top 3 score
+        # only look for the top 4 score
         vote = []
         for i in range(3):
             if scores[i] > self.score_thresh:
@@ -94,7 +111,7 @@ class TLClassifier(object):
 
     def __result_to_traffic_id(self, result):
         result = int(result - 1)
-        traffic_light_id = [TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.GREEN, TrafficLight.UNKNOWN]
+        traffic_light_id = [TrafficLight.GREEN, TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.UNKNOWN]
         # traffic_light_id = [0, 1, 2, 4]
         return traffic_light_id[result]
 
