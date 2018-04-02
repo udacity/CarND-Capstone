@@ -327,7 +327,7 @@ class WaypointUpdater(object):
         if traffic_msg.data != self.next_tl_wp:
             if self.dyn_test_stoplight is False:
                 self.next_tl_wp = traffic_msg.data
-                rospy.logwarn("new /traffic_waypoint message received is wp: %d."
+                rospy.logwarn("new /traffic_waypoint message received is wp: %d, "
                           "while car is at wp %d", self.next_tl_wp,
                           self.final_waypoints_start_ptr)
             else:
@@ -559,7 +559,7 @@ class WaypointUpdater(object):
     def set_stopped(self, start_ptr, num_wps):
         # set V = 0 for waypoints in range
         if self.state != 'stopped':
-            rospy.loginfo("Set stopped")
+            rospy.logwarn("Set car state to stopped at ptr = {}".format(start_ptr))
             self.state = 'stopped'
         for ptr in range(start_ptr, start_ptr + num_wps):
             mod_ptr = ptr % len(self.waypoints)
@@ -623,6 +623,7 @@ class WaypointUpdater(object):
         if curpt.JMT_ptr == -1 or self.state != 'slowdown':
             jmt_ptr = self.setup_stop_jmt(start_ptr, distance)
             curpt.JMT_ptr = jmt_ptr
+            rospy.logwarn("Set car state to slowdown at ptr = {}".format(curpt.ptr_id))
             self.state = 'slowdown'
         else:
             jmt_ptr = curpt.JMT_ptr
@@ -717,7 +718,7 @@ class WaypointUpdater(object):
         curpt = self.waypoints[start_ptr]
 
         if curpt.JMT_ptr == -1 or self.state != 'speedup':
-            rospy.logwarn("Put car state as speedup")
+            rospy.logwarn("Set car state to speedup")
             self.state = 'speedup'
             curpt.JMT_ptr = self.setup_jmt(curpt, self.default_velocity)
             # accel_ratio = 1.0, time_factor = 1.0)
@@ -772,7 +773,7 @@ class WaypointUpdater(object):
     def set_creep(self, start_ptr, num_wps):
         # set V = 1.0 for waypoints in range
         if self.state != 'creeping':
-            rospy.loginfo("Set car creeping")
+            rospy.logwarn("Set car state to creeping at ptr = {}".format(start_ptr))
             self.state = 'creeping'
         for ptr in range(start_ptr, start_ptr + num_wps):
             mod_ptr = ptr % len(self.waypoints)
@@ -803,7 +804,7 @@ class WaypointUpdater(object):
             # we are stopped
             offset = 0
             if self.state != 'stopped':
-                rospy.logwarn("We have stopped.")
+                rospy.logwarn("Set car state to stopped at ptr = {}".format(self.final_waypoints_start_ptr))
                 self.state = 'stopped'
                 self.stopping_distance = 0.0
                 self.min_stop_distance = 0.0
@@ -865,21 +866,24 @@ class WaypointUpdater(object):
                                                self.lookahead_wps,
                                                dist_to_tl - (self.dyn_tl_buffer - 1.0))
             else:
+                # not sure when this might trigger but not match next if statement - then 
                 # reduce car velocity to 0.0 stoping before lights
-                if self.state != 'slowdown' and self.state != 'stopped':
-                    rospy.logwarn("now start to slowdown")
-                    # self.state = 'slowdown' # bad idea to put this here  
+                # if self.state != 'slowdown' and self.state != 'stopped':
+                #    rospy.logwarn("set car state to slowdown at ptr = {}".format(self.final_waypoints_start_ptr))
+
                 if dist_to_tl - self.dyn_tl_buffer > self.min_stop_distance:
                     recalc = self.produce_slowdown(self.final_waypoints_start_ptr,
                                                self.lookahead_wps,
                                                dist_to_tl - (self.dyn_tl_buffer - 1.0))
+                else:
+                    rospy.logwarn("how did I get here? at ptr = {}".format(self.final_waypoints_start_ptr))
             # end if else
         elif self.waypoints[self.final_waypoints_start_ptr].get_v() >= \
                 self.default_velocity:
                 # handle case where car is at target speed and no
                 # traffic lights within stopping distance
             if self.state != 'maintainspeed':
-                rospy.logwarn("Maintain speed from this point")
+                rospy.logwarn("Set car state to maintainspeed at ptr = {}".format(self.final_waypoints_start_ptr))
                 self.state = 'maintainspeed'
             self.maintain_speed(self.final_waypoints_start_ptr, self.
                                 lookahead_wps)
@@ -888,7 +892,7 @@ class WaypointUpdater(object):
                     self.handoff_velocity:
                 # Get the car going before handing off to JMT
                 if self.state != 'speedup':
-                    rospy.loginfo("Get Car moving from very slow speed.")
+                    rospy.logwarn("Get Car moving from very slow speed.")
                 offset =\
                     self.init_acceleration(self.final_waypoints_start_ptr,
                                            self.lookahead_wps)
