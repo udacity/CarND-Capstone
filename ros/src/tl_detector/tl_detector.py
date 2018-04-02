@@ -13,13 +13,13 @@ import yaml
 import numpy as np
 import os
 import time
-import csv
+import datetime
 
 STATE_COUNT_THRESHOLD = 3
 LIGHT_STATES = {0: 'RED', 1: 'YELLOW', 2: 'GREEN', 4: 'UNKNOWN'}
 
 # Distance in meters beyond which we consider the next traffic light is not visible.
-TRAFFIC_LIGHT_MAX_DISTANCE = 200
+TRAFFIC_LIGHT_MAX_DISTANCE = 120
 
 # Time in seconds to wait between consecutive camera captures.
 RECORD_SLEEP = 0.05
@@ -76,23 +76,14 @@ class TLDetector(object):
         # Default is 'detect', change it in styx.launch.
         self.get_light = rospy.get_param("/get_light").lower()
         self.record_path = rospy.get_param("/record_path")
-        if not os.path.exists(self.record_path):
-            os.makedirs(self.record_path)
 
-        # Counter for the next image to record. In case there are already images in the directory, we set the counter to
-        # last counter value + 1.
-        self.record_counter = -1
-        for fname in os.listdir(self.record_path):
-            if len(fname) == 16:
-                try:
-                    n = int(fname[6:12])
-                    self.record_counter = max(n, self.record_counter)
-                except ValueError:
-                    pass
-        self.record_counter += 1
+        # We will save camera captures in folders structured as expected by the fine tuning script retrain.py.
+        for subfolder in ['0_red', '1_yellow', '2_green', '4_unknown']:
+            path = os.path.join(self.record_path, subfolder)
+            if not os.path.exists(path):
+                os.makedirs(path)
 
         self.record_time = time.time()
-        self.classes_path = os.path.join(self.record_path, 'classes.csv')
 
         rospy.spin()
 
@@ -179,14 +170,15 @@ class TLDetector(object):
         if self.get_light == 'oracle':
             if self.record_path != '' and time.time() - self.record_time > RECORD_SLEEP:
                 cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-                fname = 'image_{:06}.png'.format(self.record_counter)
-                path = os.path.join(self.record_path, fname)
+                # Make a unique identifier from a time stamp (good enough for a unique identifier and more readable than
+                # uuid).
+                now = datetime.datetime.utcnow()
+                format_arg = now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond
+                fname = 'TL_{}_{:02}_{:02}_{:02}_{:02}_{:02}_{:06}.jpg'.format(*format_arg)
+                subfolder = str(light.state) + '_' + LIGHT_STATES[light.state].lower()
+                path = os.path.join(self.record_path, subfolder, fname)
                 cv2.imwrite(path, cv_image)
                 self.record_time = time.time()
-                with open(self.classes_path, 'a') as fp:
-                    writer = csv.writer(fp)
-                    writer.writerow([self.record_counter, light.state])
-                self.record_counter += 1
             return light.state
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
