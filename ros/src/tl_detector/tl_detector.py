@@ -11,12 +11,18 @@ import tf
 import cv2
 import yaml
 import numpy as np
+import os
+import time
+import csv
 
 STATE_COUNT_THRESHOLD = 3
 LIGHT_STATES = {0: 'RED', 1: 'YELLOW', 2: 'GREEN', 4: 'UNKNOWN'}
 
 # Distance in meters beyond which we consider the next traffic light is not visible.
-TRAFFIC_LIGHT_MAX_DISTANCE = 100
+TRAFFIC_LIGHT_MAX_DISTANCE = 200
+
+# Time in seconds to wait between consecutive camera captures.
+RECORD_SLEEP = 0.05
 
 
 class TLDetector(object):
@@ -69,6 +75,24 @@ class TLDetector(object):
         # 'oracle': we just use the state provided in topic '/vehicle/traffic_lights' (useful for testing purpose).
         # Default is 'detect', change it in styx.launch.
         self.get_light = rospy.get_param("/get_light").lower()
+        self.record_path = rospy.get_param("/record_path")
+        if not os.path.exists(self.record_path):
+            os.makedirs(self.record_path)
+
+        # Counter for the next image to record. In case there are already images in the directory, we set the counter to
+        # last counter value + 1.
+        self.record_counter = -1
+        for fname in os.listdir(self.record_path):
+            if len(fname) == 16:
+                try:
+                    n = int(fname[6:12])
+                    self.record_counter = max(n, self.record_counter)
+                except ValueError:
+                    pass
+        self.record_counter += 1
+
+        self.record_time = time.time()
+        self.classes_path = os.path.join(self.record_path, 'classes.csv')
 
         rospy.spin()
 
@@ -153,6 +177,16 @@ class TLDetector(object):
             return False
 
         if self.get_light == 'oracle':
+            if self.record_path != '' and time.time() - self.record_time > RECORD_SLEEP:
+                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+                fname = 'image_{:06}.png'.format(self.record_counter)
+                path = os.path.join(self.record_path, fname)
+                cv2.imwrite(path, cv_image)
+                self.record_time = time.time()
+                with open(self.classes_path, 'a') as fp:
+                    writer = csv.writer(fp)
+                    writer.writerow([self.record_counter, light.state])
+                self.record_counter += 1
             return light.state
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
