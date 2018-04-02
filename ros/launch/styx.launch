@@ -26,4 +26,7 @@
 
     <arg name="get_light" default="detect" doc="Method to get traffic light state. Valid values: {detect, oracle}"/>
     <param name="get_light" value="$(arg get_light)" />
+
+    <arg name="record_path" default="" doc="Directory path to save training data."/>
+    <param name="record_path" value="$(arg record_path)" />
 </launch>
