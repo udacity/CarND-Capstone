@@ -99,6 +99,7 @@ class WaypointUpdater(object):
         self.min_stop_distance = 0.0
         self.stopping_distance = 0.0
         self.decel_at_min_moving_velocity = 0.0  # had biased to -0.5 but not needed
+        self.got_to_end = False  # have we reached the end of the track?
 
         rospy.init_node('waypoint_updater', log_level=rospy.INFO)  # DEBUG)
 
@@ -798,7 +799,17 @@ class WaypointUpdater(object):
         accel_ratio = 2.0  # increase slowing down distance
         recalc = False       # indication that JMT calcs exceed bounds
 
-        dist_to_tl = self.get_dist_to_tl()
+        if self.final_waypoints_start_ptr == len(self.waypoints) - 1:
+            if self.got_to_end is False:
+                rospy.logwarn("reached end of track at ptr = {}".format(self.final_waypoints_start_ptr))
+                self.got_to_end = True
+            dist_to_tl = 0.0
+        else:
+            dist_to_tl = self.get_dist_to_tl()
+
+        # don't go beyond end of track
+        if self.final_waypoints_start_ptr + self.lookahead_wps > len(self.waypoints)-1:
+            self.lookahead_wps = (len(self.waypoints)) - self.final_waypoints_start_ptr
 
         if self.waypoints[self.final_waypoints_start_ptr].get_v() == 0.0:
             # we are stopped
@@ -879,7 +890,7 @@ class WaypointUpdater(object):
                     rospy.logwarn("how did I get here? at ptr = {}".format(self.final_waypoints_start_ptr))
             # end if else
         elif self.waypoints[self.final_waypoints_start_ptr].get_v() >= \
-                self.default_velocity:
+                min(self.default_velocity, self.waypoints[self.final_waypoints_start_ptr].get_maxV()):
                 # handle case where car is at target speed and no
                 # traffic lights within stopping distance
             if self.state != 'maintainspeed':
@@ -889,18 +900,19 @@ class WaypointUpdater(object):
                                 lookahead_wps)
         else:
             if self.waypoints[self.final_waypoints_start_ptr].get_v() <\
-                    self.handoff_velocity:
+                    min(self.handoff_velocity, self.waypoints[self.final_waypoints_start_ptr].get_maxV()):
                 # Get the car going before handing off to JMT
                 if self.state != 'speedup':
                     rospy.logwarn("Get Car moving from very slow speed.")
                 offset =\
                     self.init_acceleration(self.final_waypoints_start_ptr,
                                            self.lookahead_wps)
-
-            recalc = self.generate_speedup(self.final_waypoints_start_ptr +
-                                           offset,
-                                           self.final_waypoints_start_ptr +
-                                           self.lookahead_wps)
+            if self.waypoints[self.final_waypoints_start_ptr].get_v() <\
+                    self.waypoints[self.final_waypoints_start_ptr].get_maxV():
+                recalc = self.generate_speedup(self.final_waypoints_start_ptr +
+                                               offset,
+                                               self.final_waypoints_start_ptr +
+                                               self.lookahead_wps)
         if recalc is True:
             rospy.logwarn("recalc is set to {} we should recalculate"
                           .format(recalc))
@@ -980,9 +992,11 @@ class WaypointUpdater(object):
         # generates the list of LOOKAHEAD_WPS waypoints based on car location
         # for now assume waypoints form a loop - may not be the case
 
-        self.final_waypoints_start_ptr = self.closest_waypoint()
- 
+        if self.got_to_end is False:
+            self.final_waypoints_start_ptr = self.closest_waypoint()
+        
         self.set_waypoints_velocity()
+
         lane = Lane()
         waypoints = []
         for wpt in self.waypoints[self.final_waypoints_start_ptr:
@@ -1016,30 +1030,40 @@ class WaypointUpdater(object):
 
         if self.waypoints and self.last_search_distance:
             dist = distance_lambda(
-                self.waypoints[self.final_waypoints_start_ptr-1].
+                self.waypoints[max(0,self.final_waypoints_start_ptr-1)].
                 get_position(), self.pose.position)
             
-            for i in range(self.final_waypoints_start_ptr, self.
-                           final_waypoints_start_ptr + self.lookahead_wps):
+            for i in range(self.final_waypoints_start_ptr, min(self.
+                           final_waypoints_start_ptr + self.lookahead_wps, len(self.waypoints))):
                 tmpdist = distance_lambda(self.waypoints[i].
                                           get_position(),
                                           self.pose.position)
+                # rospy.logwarn("i={}, tmpdist={:3.2f}, dist={:3.2f},last_search={:3.2f}".format(i, tmpdist, dist, self.last_search_distance))
                 if tmpdist < dist:
                     dist = tmpdist
+                    if i == len(self.waypoints)-1:
+                        # since shortest distance is at end of list, this is a match
+                        if abs(dist - self.last_search_distance) < 5.0:
+                            found = True
+                            self.last_search_distance = dist
+                            closest = i
+                            break
                 else:
                     # distance is starting to get larger so look at
                     # last position
-                    if (i <= self.final_waypoints_start_ptr + 1):
+                    if (i < self.final_waypoints_start_ptr + 1):
                         # we're closest to original waypoint, but what if
                         # we're going backwards - loop backwards to make sure
                         # a point further back  isn't closest
-                        for j in range(i - 2,
-                                       i - self.lookahead_wps - 1,
+                        for j in range(max(i - 2,0),
+                                       max(i - self.lookahead_wps - 1,0),
                                        -1):
                             tmpdist = distance_lambda(
                                 self.waypoints[j % len(self.waypoints)].
                                 get_position(),
                                 self.pose.position)
+                            # rospy.logwarn("j={}, tmpdist={:3.2f}, dist={:3.2f},last_search={:3.2f}".format(j, tmpdist, dist, self.last_search_distance))
+                            
                             if tmpdist <= dist:
                                 dist = tmpdist
                                 self.back_search = True
@@ -1073,40 +1097,35 @@ class WaypointUpdater(object):
                     # end if
                 # end if else
             # end for - fall out no closest match that looks acceptable
-            rospy.logwarn("waypoint_updater:closest_waypoint local search not"
-                          "satisfied - run full search")
+            if found is False:
+                rospy.logwarn("waypoint_updater:closest_waypoint local search not "
+                              "satisfied - run full search")
         # end if
 
         x = self.pose.position.x
         y = self.pose.position.y
 
         if found is False:
+            rospy.logdebug("waypoint_updater run KDTree full search")
             # run full search with KDTree
             closest = self.waypoint_tree.query([x,y],1)[1]
 
-        # check to see if closest point is in front or behind car
-        cl_vect = np.array(self.waypoints_2d[closest])
-        prev_vect = np.array(self.waypoints_2d[closest-1])
-        pos_vect = np.array([x,y])
+            # check to see if closest point is in front or behind car
+            cl_vect = np.array(self.waypoints_2d[closest])
+            prev_vect = np.array(self.waypoints_2d[closest-1])
+            pos_vect = np.array([x,y])
 
-        val = np.dot(cl_vect - prev_vect, pos_vect-cl_vect)
+            val = np.dot(cl_vect - prev_vect, pos_vect-cl_vect)
 
-        if val > 0:
-            closest = (closest + 1 ) % len(self.waypoints)
+            if val > 0:
+                closest = (closest + 1 ) % len(self.waypoints)
+        
+            self.last_search_distance = distance_lambda(
+                                self.waypoints[closest].
+                                get_position(),
+                                self.pose.position)
+            rospy.logdebug("KDTree: closest={}, dist={:3.2f}".format(closest, self.last_search_distance))
         return closest
-
-    # Todo need to adjust for looping
-    def distance(self, wp1, wp2):
-        dist = 0
-
-        def distance_lambda(a, b): return math.sqrt((a.x-b.x)**2 +
-                                                    (a.y-b.y)**2 +
-                                                    (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
-            dist += distance_lambda(self.waypoints[wp1].get_position(),
-                                    self.waypoints[i].get_position())
-            wp1 = i
-        return dist
 
 
 if __name__ == '__main__':
