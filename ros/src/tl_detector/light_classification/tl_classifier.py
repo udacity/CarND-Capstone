@@ -31,7 +31,7 @@ class TLClassifier(object):
 
             # limit the memory for model to use
             config = tf.ConfigProto()
-            config.gpu_options.allow_growth = True
+            # config.gpu_options.allow_growth = True
             config.gpu_options.per_process_gpu_memory_fraction = 0.6
 
             self.sess = tf.Session(graph=self.detection_graph, config=config)
@@ -70,7 +70,7 @@ class TLClassifier(object):
             result = self.only_threshold(classes[0], scores[0])
         else:
             result = self.threshold_and_vote(classes[0], scores[0])
-        traffic_id = self.__result_to_traffic_id(result)
+        traffic_id = self.result_to_traffic_id(result)
 
         return traffic_id
 
@@ -105,14 +105,16 @@ class TLClassifier(object):
             # return 4
             return TrafficLight.UNKNOWN
 
-    def __traffic_id_to_name(self, traffic_id):
+    def traffic_id_to_name(self, traffic_id):
         traffic_light_names = ['RED', 'YELLOW', 'GREEN', 'ERROR', 'UNKNOWN']
         return traffic_light_names[traffic_id]
 
-    def __result_to_traffic_id(self, result):
+    def result_to_traffic_id(self, result):
         result = int(result - 1)
-        traffic_light_id = [TrafficLight.GREEN, TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.UNKNOWN]
-        # traffic_light_id = [0, 1, 2, 4]
+        if self.is_site:
+            traffic_light_id = [2, 0, 1, 4]
+        else:
+            traffic_light_id = [0, 1, 2, 4]
         return traffic_light_id[result]
 
 

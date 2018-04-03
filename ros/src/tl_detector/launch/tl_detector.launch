@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <node pkg="tl_detector" type="tl_detector.py" name="tl_detector" output="screen" cwd="node">
-        <param name="model_path" value="$(find tl_detector)/model/frozen_inference_graph_sim_v2.pb" />
+        <param name="model_path" value="$(find tl_detector)/model/frozen_inference_graph_sim_v3.pb" />
         <param name="site_test" value="No" />
     </node>
 </launch>
