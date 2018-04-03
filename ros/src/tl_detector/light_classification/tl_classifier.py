@@ -10,8 +10,12 @@ class TLClassifier(object):
 
     def __init__(self):
         current_dir = os.path.dirname(__file__)
+        
         # We use a SSD detector with a Mobilenet classifier, pretrained on COCO detection task.
-        # The frozen graph is compatible with TensorFlow 1.3.
+        # The frozen graph is compatible with TensorFlow 1.3. It is avilable at the following url:
+        # http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v1_coco_11_06_2017.tar.gz
+        # It has been released by the Tensorflow Object Detection API team:
+        # https://github.com/tensorflow/models/tree/master/research/object_detection
         PATH_TO_CKPT = os.path.join(current_dir, 'ssd_mobilenet_v1_coco_11_06_2017', 'frozen_inference_graph.pb')
 
         self.detection_graph = tf.Graph()
