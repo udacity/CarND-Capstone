@@ -19,7 +19,7 @@ STATE_COUNT_THRESHOLD = 3
 LIGHT_STATES = {0: 'RED', 1: 'YELLOW', 2: 'GREEN', 4: 'UNKNOWN'}
 
 # Distance in meters beyond which we consider the next traffic light is not visible.
-TRAFFIC_LIGHT_MAX_DISTANCE = 150
+TRAFFIC_LIGHT_MAX_DISTANCE = 120
 
 # Time in seconds to wait between consecutive camera captures.
 RECORD_SLEEP = 0.05
@@ -76,6 +76,8 @@ class TLDetector(object):
         # Default is 'detect', change it in styx.launch.
         self.get_light = rospy.get_param("/get_light").lower()
         self.record_path = rospy.get_param("/record_path")
+
+        # We will save camera captures in folders structured as expected by the fine tuning script retrain.py.
         for subfolder in ['0_red', '1_yellow', '2_green', '4_unknown']:
             path = os.path.join(self.record_path, subfolder)
             if not os.path.exists(path):
