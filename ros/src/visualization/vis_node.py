@@ -7,8 +7,6 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from std_msgs.msg import ColorRGBA, Int32, Header
 from copy import deepcopy
-from dynamic_reconfigure.server import Server
-from visualization.cfg import DynReconfConfig
 
 '''
 This node publishes a visualization_marker_array topic for RViz to do 3D
@@ -22,8 +20,10 @@ class VisNode(object):
     def __init__(self):
         rospy.init_node('vis_node')
 
-        self.vis_enabled = False  # default until dyn_reconf takes over
-        self.vis_rate = 5  # default until dyn_reconf takes over
+        self.vis_enabled = rospy.get_param('~vis_enabled')
+        self.vis_rate = rospy.get_param('~vis_rate')
+        self.final_wpt_scale = rospy.get_param('~final_wpt_scale')
+        self.tl_marker_scale = rospy.get_param('~tl_marker_scale')
 
         self.subs = {}
         self.pubs = {}
@@ -58,8 +58,6 @@ class VisNode(object):
                     '/traffic_waypoint', Int32,
                     self.handle_traffic_waypoint_msg)
 
-        self.dyn_reconf_srv = Server(DynReconfConfig, self.dyn_vars_cb)
-
         self.loop()
 
     # Callback to handle ground truth traffic lights message
@@ -72,8 +70,7 @@ class VisNode(object):
         self.basewp_poses = []  # clear again just in case
         for wp_idx in range(len(base_wp_msg.waypoints)):
             self.base_waypoints.append(base_wp_msg.waypoints[wp_idx])
-            if wp_idx % 10 == 0:  # thin out points for path msg
-                self.basewp_poses.append(base_wp_msg.waypoints[wp_idx].pose)
+            self.basewp_poses.append(base_wp_msg.waypoints[wp_idx].pose)
         self.subs['/base_waypoints'].unregister()
 
         # Publish base waypoint path for RViz
@@ -100,17 +97,6 @@ class VisNode(object):
     # Callback to handle detected traffic light waypoint message
     def handle_traffic_waypoint_msg(self, traffic_waypoint_msg):
         self.traffic_waypoint = traffic_waypoint_msg.data
-
-    # Callback to adjust dynamic variables
-    def dyn_vars_cb(self, config, level):
-
-        if self.vis_rate != config['dyn_vis_rate']:
-            self.vis_rate = config['dyn_vis_rate']  # store new rate
-            self.rate = rospy.Rate(self.vis_rate)  # apply new rate
-
-        self.vis_enabled = config['dyn_vis_enabled']  # store new flag
-
-        return config
 
     # Helper function to set traffic light RGBA color from status #
     def set_traffic_light_color(self, tl_status, alpha):
@@ -145,24 +131,6 @@ class VisNode(object):
             if self.vis_enabled:
                 marker_array = MarkerArray()
 
-                # Car Pose Arrow
-                if self.current_pose is not None:
-                    car_marker = Marker()
-                    car_marker.id = 0
-                    car_marker.header.frame_id = "/world"
-                    car_marker.header.stamp = rospy.Time()
-                    car_marker.type = Marker.ARROW
-                    car_marker.action = Marker.ADD
-                    car_marker.scale.x = 40.0
-                    car_marker.scale.y = 8.0
-                    car_marker.scale.z = 8.0
-                    car_marker.color.a = 1.0
-                    car_marker.color.r = 1.0
-                    car_marker.color.g = 0.0
-                    car_marker.color.b = 1.0
-                    car_marker.pose = self.current_pose
-                    marker_array.markers.append(car_marker)
-
                 # Final Waypoint Line
                 final_wp_line = Marker()
                 final_wp_line.id = 1
@@ -170,9 +138,9 @@ class VisNode(object):
                 final_wp_line.header.stamp = rospy.Time()
                 final_wp_line.type = Marker.LINE_STRIP
                 final_wp_line.action = Marker.ADD
-                final_wp_line.scale.x = 4.0
-                final_wp_line.scale.y = 4.0
-                final_wp_line.scale.z = 4.0
+                final_wp_line.scale.x = self.final_wpt_scale
+                final_wp_line.scale.y = self.final_wpt_scale
+                final_wp_line.scale.z = self.final_wpt_scale
                 final_wp_line.color.a = 1.0
                 final_wp_line.color.r = 0.0
                 final_wp_line.color.g = 1.0
@@ -180,8 +148,7 @@ class VisNode(object):
                 # Make local copy for looping to prevent interrupt by callback
                 final_waypoints = deepcopy(self.final_waypoints)
                 for wp_idx in range(len(final_waypoints)):
-                    if wp_idx % 10 == 0:  # thin out points
-                        final_wp_line.points.append(
+                    final_wp_line.points.append(
                                     final_waypoints[wp_idx].pose.pose.position)
                 marker_array.markers.append(final_wp_line)
 
@@ -192,9 +159,9 @@ class VisNode(object):
                 tl_marker.header.stamp = rospy.Time()
                 tl_marker.type = Marker.SPHERE_LIST
                 tl_marker.action = Marker.ADD
-                tl_marker.scale.x = 30.0
-                tl_marker.scale.y = 30.0
-                tl_marker.scale.z = 30.0
+                tl_marker.scale.x = self.tl_marker_scale
+                tl_marker.scale.y = self.tl_marker_scale
+                tl_marker.scale.z = self.tl_marker_scale
                 # Make local copy for looping to prevent interrupt by callback
                 traffic_lights = deepcopy(self.traffic_lights)
                 for tl_idx in range(len(traffic_lights)):
@@ -206,18 +173,18 @@ class VisNode(object):
                 marker_array.markers.append(tl_marker)
 
                 # Detected Traffic Waypoint Red Cube
+                det_tl_marker = Marker()
+                det_tl_marker.id = 3
+                det_tl_marker.header.frame_id = "/world"
+                det_tl_marker.header.stamp = rospy.Time()
                 if (len(self.base_waypoints) > 0
                         and self.traffic_waypoint >= 0
                         and self.traffic_waypoint < len(self.base_waypoints)):
-                    det_tl_marker = Marker()
-                    det_tl_marker.id = 3
-                    det_tl_marker.header.frame_id = "/world"
-                    det_tl_marker.header.stamp = rospy.Time()
                     det_tl_marker.type = Marker.CUBE
                     det_tl_marker.action = Marker.ADD
-                    det_tl_marker.scale.x = 30.0
-                    det_tl_marker.scale.y = 30.0
-                    det_tl_marker.scale.z = 30.0
+                    det_tl_marker.scale.x = self.tl_marker_scale
+                    det_tl_marker.scale.y = self.tl_marker_scale
+                    det_tl_marker.scale.z = self.tl_marker_scale
                     det_tl_marker.color.a = 1.0
                     det_tl_marker.color.r = 1.0
                     det_tl_marker.color.g = 0.0
@@ -225,9 +192,11 @@ class VisNode(object):
                     tl_idx = self.traffic_waypoint
                     # Make local copy to modify z position
                     tl_pose = deepcopy(self.base_waypoints[tl_idx].pose.pose)
-                    tl_pose.position.z += 50  # offset the marker above waypnts
+                    tl_pose.position.z += 20  # offset the marker above waypnts
                     det_tl_marker.pose = tl_pose
-                    marker_array.markers.append(det_tl_marker)
+                else:
+                    det_tl_marker.action = Marker.DELETE
+                marker_array.markers.append(det_tl_marker)
 
                 # Publish final array of markers for RViz
                 self.pubs['/visualization_marker_array'].publish(marker_array)

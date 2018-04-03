@@ -5,9 +5,10 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Grid1
         - /Grid1/Offset1
       Splitter Ratio: 0.5
-    Tree Height: 720
+    Tree Height: 355
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -21,7 +22,7 @@ Panels:
     Expanded:
       - /Current View1
     Name: Views
-    Splitter Ratio: 0.566929162
+    Splitter Ratio: 0.645756483
   - Class: rviz/Time
     Experimental: false
     Name: Time
@@ -31,7 +32,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.200000003
-      Cell Size: 100
+      Cell Size: 1
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -41,11 +42,11 @@ Visualization Manager:
       Name: Grid
       Normal Cell Count: 0
       Offset:
-        X: 1250
-        Y: 2100
+        X: 13
+        Y: 8
         Z: 0
       Plane: XY
-      Plane Cell Count: 25
+      Plane Cell Count: 40
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/MarkerArray
@@ -70,7 +71,7 @@ Visualization Manager:
       Offset:
         X: 0
         Y: 0
-        Z: -2
+        Z: 0
       Pose Color: 255; 85; 255
       Pose Style: None
       Radius: 0.0299999993
@@ -79,9 +80,25 @@ Visualization Manager:
       Topic: /visualization_basewp_path
       Unreliable: false
       Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.100000001
+      Class: rviz/Pose
+      Color: 255; 255; 0
+      Enabled: true
+      Head Length: 1
+      Head Radius: 1.29999995
+      Name: CarPose
+      Shaft Length: 1.20000005
+      Shaft Radius: 0.699999988
+      Shape: Arrow
+      Topic: /current_pose
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
+    Default Light: true
     Fixed Frame: world
     Frame Rate: 10
   Name: root
@@ -102,45 +119,22 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 1650
+      Angle: 0
+      Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: 2017.2439
-        Y: 2201.68384
-        Z: -515.223145
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.0500000007
+      Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.394797146
+      Scale: 30
       Target Frame: <Fixed Frame>
-      Value: Orbit (rviz)
-      Yaw: 4.04316902
+      Value: TopDownOrtho (rviz)
+      X: 13
+      Y: 8
     Saved:
-      - Class: rviz/Orbit
-        Distance: 1650
-        Enable Stereo Rendering:
-          Stereo Eye Separation: 0.0599999987
-          Stereo Focal Distance: 1
-          Swap Stereo Eyes: false
-          Value: false
-        Focal Point:
-          X: 2017.2439
-          Y: 2201.68384
-          Z: -515.223145
-        Focal Shape Fixed Size: true
-        Focal Shape Size: 0.0500000007
-        Name: SavedOrbit
-        Near Clip Distance: 0.00999999978
-        Pitch: 0.394797146
-        Target Frame: <Fixed Frame>
-        Value: Orbit (rviz)
-        Yaw: 4.04316902
       - Angle: 0
         Class: rviz/TopDownOrtho
         Enable Stereo Rendering:
@@ -148,15 +142,36 @@ Visualization Manager:
           Stereo Focal Distance: 1
           Swap Stereo Eyes: false
           Value: false
+        Invert Z Axis: false
         Name: SavedTopDown
         Near Clip Distance: 0.00999999978
-        Scale: 0.400000006
+        Scale: 30
         Target Frame: <Fixed Frame>
         Value: TopDownOrtho (rviz)
-        X: 1200
-        Y: 2050
+        X: 13
+        Y: 8
+      - Class: rviz/Orbit
+        Distance: 30
+        Enable Stereo Rendering:
+          Stereo Eye Separation: 0.0599999987
+          Stereo Focal Distance: 1
+          Swap Stereo Eyes: false
+          Value: false
+        Focal Point:
+          X: 13
+          Y: 3
+          Z: 0
+        Focal Shape Fixed Size: true
+        Focal Shape Size: 0.0500000007
+        Invert Z Axis: false
+        Name: SavedOrbit
+        Near Clip Distance: 0.00999999978
+        Pitch: 0.804797173
+        Target Frame: <Fixed Frame>
+        Value: Orbit (rviz)
+        Yaw: 4.66817141
       - Class: rviz/ThirdPersonFollower
-        Distance: 300
+        Distance: 20
         Enable Stereo Rendering:
           Stereo Eye Separation: 0.0599999987
           Stereo Focal Distance: 1
@@ -168,19 +183,20 @@ Visualization Manager:
           Z: 0
         Focal Shape Fixed Size: false
         Focal Shape Size: 0.0500000007
+        Invert Z Axis: false
         Name: SavedFollow
         Near Clip Distance: 0.00999999978
-        Pitch: 0.325398445
+        Pitch: 0.200000003
         Target Frame: base_link
         Value: ThirdPersonFollower (rviz)
-        Yaw: 3.1385839
+        Yaw: 4
 Window Geometry:
   Displays:
     collapsed: true
   Height: 940
   Hide Left Dock: true
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000015600000358fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000003a00000358000000c600fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010000000358fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003a000003580000009e00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004860000003efc0100000002fb0000000800540069006d00650000000000000004860000024400fffffffb0000000800540069006d00650100000000000004500000000000000000000005600000035800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001790000035dfc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006300fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000002e0000035d000000dd00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c0000026100000001000001110000035dfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000002e0000035d000000b700fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004860000003efc0100000002fb0000000800540069006d00650000000000000004860000038300fffffffb0000000800540069006d006501000000000000045000000000000000000000054e0000035d00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -190,5 +206,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1638
-  X: 0
-  Y: 0
+  X: 1122
+  Y: 525

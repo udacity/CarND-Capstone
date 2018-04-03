@@ -25,5 +25,5 @@
     <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
 
     <!--Visualization Node -->
-    <include file="$(find visualization)/launch/vis_node.launch"/>
+    <include file="$(find visualization)/launch/vis_node_site.launch"/>
 </launch>

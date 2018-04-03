@@ -3,7 +3,7 @@
     <table>
         <background_color>#ffffff</background_color>
         <foreground_color>#000000</foreground_color>
-        <link_cursor>false</link_cursor>
+        <link_cursor>true</link_cursor>
         <link_scale>false</link_scale>
         <plots>
             <row_0>
@@ -26,30 +26,30 @@
                         <curve_0>
                             <axes>
                                 <x_axis>
-                                    <field>pose/position/x</field>
-                                    <field_type>0</field_type>
+                                    <field></field>
+                                    <field_type>1</field_type>
                                     <scale>
-                                        <absolute_maximum>2500</absolute_maximum>
+                                        <absolute_maximum>1000</absolute_maximum>
                                         <absolute_minimum>0</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
-                                        <type>1</type>
+                                        <type>0</type>
                                     </scale>
-                                    <topic>/current_pose</topic>
-                                    <type>geometry_msgs/PoseStamped</type>
+                                    <topic>/vehicle/steering_cmd</topic>
+                                    <type>dbw_mkz_msgs/SteeringCmd</type>
                                 </x_axis>
                                 <y_axis>
-                                    <field>pose/position/y</field>
+                                    <field>steering_wheel_angle_cmd</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>3200</absolute_maximum>
-                                        <absolute_minimum>1000</absolute_minimum>
+                                        <absolute_maximum>8</absolute_maximum>
+                                        <absolute_minimum>-8</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
                                         <type>1</type>
                                     </scale>
-                                    <topic>/current_pose</topic>
-                                    <type>geometry_msgs/PoseStamped</type>
+                                    <topic>/vehicle/steering_cmd</topic>
+                                    <type>dbw_mkz_msgs/SteeringCmd</type>
                                 </y_axis>
                             </axes>
                             <color>
@@ -58,7 +58,58 @@
                             </color>
                             <data>
                                 <circular_buffer_capacity>1000</circular_buffer_capacity>
-                                <time_frame_length>10</time_frame_length>
+                                <time_frame_length>30</time_frame_length>
+                                <type>0</type>
+                            </data>
+                            <style>
+                                <lines_interpolate>false</lines_interpolate>
+                                <pen_style>1</pen_style>
+                                <pen_width>1</pen_width>
+                                <render_antialias>false</render_antialias>
+                                <steps_invert>false</steps_invert>
+                                <sticks_baseline>0</sticks_baseline>
+                                <sticks_orientation>2</sticks_orientation>
+                                <type>0</type>
+                            </style>
+                            <subscriber_queue_size>100</subscriber_queue_size>
+                            <title>/vehicle/steering_cmd/steering_wheel_angle_cmd</title>
+                        </curve_0>
+                        <curve_1>
+                            <axes>
+                                <x_axis>
+                                    <field></field>
+                                    <field_type>1</field_type>
+                                    <scale>
+                                        <absolute_maximum>1000</absolute_maximum>
+                                        <absolute_minimum>0</absolute_minimum>
+                                        <relative_maximum>0</relative_maximum>
+                                        <relative_minimum>-1000</relative_minimum>
+                                        <type>0</type>
+                                    </scale>
+                                    <topic>/twist_cmd</topic>
+                                    <type>geometry_msgs/TwistStamped</type>
+                                </x_axis>
+                                <y_axis>
+                                    <field>twist/angular/z</field>
+                                    <field_type>0</field_type>
+                                    <scale>
+                                        <absolute_maximum>0.80000000000000004</absolute_maximum>
+                                        <absolute_minimum>-0.80000000000000004</absolute_minimum>
+                                        <relative_maximum>0</relative_maximum>
+                                        <relative_minimum>-1000</relative_minimum>
+                                        <type>1</type>
+                                    </scale>
+                                    <topic>/twist_cmd</topic>
+                                    <type>geometry_msgs/TwistStamped</type>
+                                </y_axis>
+                            </axes>
+                            <color>
+                                <custom_color>#00aa00</custom_color>
+                                <type>1</type>
+                            </color>
+                            <data>
+                                <circular_buffer_capacity>1000</circular_buffer_capacity>
+                                <time_frame_length>30</time_frame_length>
                                 <type>0</type>
                             </data>
                             <style>
@@ -72,14 +123,14 @@
                                 <type>0</type>
                             </style>
                             <subscriber_queue_size>100</subscriber_queue_size>
-                            <title>position</title>
-                        </curve_0>
+                            <title>/twist_cmd/twist/angular/z</title>
+                        </curve_1>
                     </curves>
                     <legend>
-                        <visible>false</visible>
+                        <visible>true</visible>
                     </legend>
                     <plot_rate>30</plot_rate>
-                    <title>XY Position</title>
+                    <title>Steering</title>
                 </column_0>
                 <column_1>
                     <axes>
@@ -116,7 +167,7 @@
                                     <field>data</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>1</absolute_maximum>
+                                        <absolute_maximum>0.5</absolute_maximum>
                                         <absolute_minimum>0</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
@@ -132,8 +183,8 @@
                             </color>
                             <data>
                                 <circular_buffer_capacity>1000</circular_buffer_capacity>
-                                <time_frame_length>10</time_frame_length>
-                                <type>3</type>
+                                <time_frame_length>30</time_frame_length>
+                                <type>0</type>
                             </data>
                             <style>
                                 <lines_interpolate>false</lines_interpolate>
@@ -146,7 +197,7 @@
                                 <type>0</type>
                             </style>
                             <subscriber_queue_size>100</subscriber_queue_size>
-                            <title>throttle_act</title>
+                            <title>/vehicle/throttle_report/data</title>
                         </curve_0>
                         <curve_1>
                             <axes>
@@ -167,7 +218,7 @@
                                     <field>pedal_cmd</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>1</absolute_maximum>
+                                        <absolute_maximum>0.5</absolute_maximum>
                                         <absolute_minimum>0</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
@@ -178,13 +229,13 @@
                                 </y_axis>
                             </axes>
                             <color>
-                                <custom_color>#000000</custom_color>
-                                <type>0</type>
+                                <custom_color>#00aa00</custom_color>
+                                <type>1</type>
                             </color>
                             <data>
                                 <circular_buffer_capacity>1000</circular_buffer_capacity>
-                                <time_frame_length>10</time_frame_length>
-                                <type>3</type>
+                                <time_frame_length>30</time_frame_length>
+                                <type>0</type>
                             </data>
                             <style>
                                 <lines_interpolate>false</lines_interpolate>
@@ -197,7 +248,7 @@
                                 <type>0</type>
                             </style>
                             <subscriber_queue_size>100</subscriber_queue_size>
-                            <title>throttle_cmd</title>
+                            <title>/vehicle/throttle_cmd/pedal_cmd</title>
                         </curve_1>
                     </curves>
                     <legend>
@@ -243,7 +294,7 @@
                                     <field>twist/linear/x</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>20</absolute_maximum>
+                                        <absolute_maximum>11</absolute_maximum>
                                         <absolute_minimum>0</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
@@ -259,8 +310,8 @@
                             </color>
                             <data>
                                 <circular_buffer_capacity>1000</circular_buffer_capacity>
-                                <time_frame_length>10</time_frame_length>
-                                <type>3</type>
+                                <time_frame_length>30</time_frame_length>
+                                <type>0</type>
                             </data>
                             <style>
                                 <lines_interpolate>false</lines_interpolate>
@@ -273,7 +324,7 @@
                                 <type>0</type>
                             </style>
                             <subscriber_queue_size>100</subscriber_queue_size>
-                            <title>speed_act</title>
+                            <title>/current_velocity/twist/linear/x</title>
                         </curve_0>
                         <curve_1>
                             <axes>
@@ -294,7 +345,7 @@
                                     <field>twist/linear/x</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>20</absolute_maximum>
+                                        <absolute_maximum>11</absolute_maximum>
                                         <absolute_minimum>0</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
@@ -305,13 +356,13 @@
                                 </y_axis>
                             </axes>
                             <color>
-                                <custom_color>#000000</custom_color>
-                                <type>0</type>
+                                <custom_color>#00aa00</custom_color>
+                                <type>1</type>
                             </color>
                             <data>
                                 <circular_buffer_capacity>1000</circular_buffer_capacity>
-                                <time_frame_length>10</time_frame_length>
-                                <type>3</type>
+                                <time_frame_length>30</time_frame_length>
+                                <type>0</type>
                             </data>
                             <style>
                                 <lines_interpolate>false</lines_interpolate>
@@ -324,7 +375,7 @@
                                 <type>0</type>
                             </style>
                             <subscriber_queue_size>100</subscriber_queue_size>
-                            <title>speed_tgt</title>
+                            <title>/twist_cmd/twist/linear/x</title>
                         </curve_1>
                     </curves>
                     <legend>
@@ -368,7 +419,7 @@
                                     <field>data</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>20000</absolute_maximum>
+                                        <absolute_maximum>500</absolute_maximum>
                                         <absolute_minimum>0</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
@@ -384,8 +435,8 @@
                             </color>
                             <data>
                                 <circular_buffer_capacity>1000</circular_buffer_capacity>
-                                <time_frame_length>10</time_frame_length>
-                                <type>3</type>
+                                <time_frame_length>30</time_frame_length>
+                                <type>0</type>
                             </data>
                             <style>
                                 <lines_interpolate>false</lines_interpolate>
@@ -398,7 +449,7 @@
                                 <type>0</type>
                             </style>
                             <subscriber_queue_size>100</subscriber_queue_size>
-                            <title>brake_act</title>
+                            <title>/vehicle/brake_report/data</title>
                         </curve_0>
                         <curve_1>
                             <axes>
@@ -419,7 +470,7 @@
                                     <field>pedal_cmd</field>
                                     <field_type>0</field_type>
                                     <scale>
-                                        <absolute_maximum>20000</absolute_maximum>
+                                        <absolute_maximum>500</absolute_maximum>
                                         <absolute_minimum>0</absolute_minimum>
                                         <relative_maximum>0</relative_maximum>
                                         <relative_minimum>-1000</relative_minimum>
@@ -430,13 +481,13 @@
                                 </y_axis>
                             </axes>
                             <color>
-                                <custom_color>#000000</custom_color>
-                                <type>0</type>
+                                <custom_color>#00aa00</custom_color>
+                                <type>1</type>
                             </color>
                             <data>
                                 <circular_buffer_capacity>1000</circular_buffer_capacity>
-                                <time_frame_length>10</time_frame_length>
-                                <type>3</type>
+                                <time_frame_length>30</time_frame_length>
+                                <type>0</type>
                             </data>
                             <style>
                                 <lines_interpolate>false</lines_interpolate>
@@ -449,7 +500,7 @@
                                 <type>0</type>
                             </style>
                             <subscriber_queue_size>100</subscriber_queue_size>
-                            <title>brake_cmd</title>
+                            <title>/vehicle/brake_cmd/pedal_cmd</title>
                         </curve_1>
                     </curves>
                     <legend>

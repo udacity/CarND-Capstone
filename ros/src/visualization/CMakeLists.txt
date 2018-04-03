@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
   std_msgs
-  dynamic_reconfigure
+  #dynamic_reconfigure
   )
 
 ## System dependencies are found with CMake's conventions
@@ -93,7 +93,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
 generate_dynamic_reconfigure_options(
-  cfg/DynReconf.cfg
+#   cfg/DynReconf.cfg
 #   cfg/DynReconf2.cfg
 )
 

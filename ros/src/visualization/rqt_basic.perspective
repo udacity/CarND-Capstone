@@ -1,412 +1,520 @@
 {
-  "keys": {}, 
+  "keys": {},
   "groups": {
     "pluginmanager": {
       "keys": {
         "running-plugins": {
-          "type": "repr", 
-          "repr": "{u'rqt_console/Console': [1], u'rqt_image_view/ImageView': [1], u'rqt_topic/TopicPlugin': [1], u'MultiplotPlugin': [2, 1], u'rqt_reconfigure/Param': [1], u'rqt_bag/Bag': [1]}"
+          "type": "repr",
+          "repr": "{u'rqt_console/Console': [1], u'rqt_image_view/ImageView': [1], u'rqt_topic/TopicPlugin': [1], u'MultiplotPlugin': [1], u'rqt_reconfigure/Param': [1], u'rqt_bag/Bag': [1]}"
         }
-      }, 
+      },
       "groups": {
         "plugin__rqt_rviz__RViz__1": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "dock_widget__": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'true'"
-                }, 
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'RViz[*]'"
                 }
-              }, 
+              },
               "groups": {}
             }
           }
-        }, 
+        },
         "plugin__MultiplotPlugin__2": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "dock_widget__MultiplotWidget": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
-                  "repr": "True"
-                }, 
+                  "type": "repr",
+                  "repr": "u'true'"
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'Multiplot - [untitled]'"
                 }
-              }, 
+              },
               "groups": {}
-            }, 
+            },
             "plugin": {
-              "keys": {}, 
+              "keys": {},
               "groups": {
                 "history": {
                   "keys": {
                     "max_length": {
-                      "type": "repr", 
-                      "repr": "10"
-                    }, 
+                      "type": "repr",
+                      "repr": "u'10'"
+                    },
                     "config_0": {
-                      "type": "repr", 
+                      "type": "repr",
                       "repr": "u'file:///mnt/hgfs/share/fusionx/CarND-Capstone/ros/src/visualization/rqt_multiplot_basic.xml'"
                     }
-                  }, 
+                  },
                   "groups": {}
                 }
               }
             }
           }
-        }, 
+        },
         "plugin__rqt_reconfigure__Param__1": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "dock_widget___plugincontainer_top_widget": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "True"
-                }, 
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'Dynamic Reconfigure'"
                 }
-              }, 
+              },
               "groups": {}
-            }, 
+            },
             "plugin": {
               "keys": {
                 "splitter": {
-                  "type": "repr(QByteArray.hex)", 
-                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff0000000100000002000000ae0000006401ffffffff010000000100')", 
+                  "type": "repr(QByteArray.hex)",
+                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff0000000100000002000000c80000006401ffffffff010000000100')",
                   "pretty-print": "         d     "
-                }, 
+                },
                 "_splitter": {
-                  "type": "repr(QByteArray.hex)", 
-                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000001000000020000012c000000640100000009010000000200')", 
+                  "type": "repr(QByteArray.hex)",
+                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000001000000020000012c000000640100000009010000000200')",
                   "pretty-print": "       , d     "
                 }
-              }, 
+              },
               "groups": {}
             }
           }
-        }, 
+        },
         "plugin__rqt_image_view__ImageView__1": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "dock_widget__ImageViewWidget": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "True"
-                }, 
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'Image View'"
                 }
-              }, 
+              },
               "groups": {}
-            }, 
+            },
             "plugin": {
               "keys": {
                 "max_range": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "10.0"
-                }, 
+                },
                 "mouse_pub_topic": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'/image_color_mouse_left'"
-                }, 
+                },
+                "num_gridlines": {
+                  "type": "repr",
+                  "repr": "0"
+                },
                 "toolbar_hidden": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "False"
-                }, 
+                },
                 "zoom1": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "False"
-                }, 
+                },
                 "dynamic_range": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "False"
-                }, 
+                },
                 "topic": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'/image_color'"
-                }, 
+                },
                 "publish_click_location": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "False"
                 }
-              }, 
+              },
               "groups": {}
             }
           }
-        }, 
+        },
         "plugin__rqt_plot__Plot__1": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "dock_widget__DataPlotWidget": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'true'"
-                }, 
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'MatPlot'"
                 }
-              }, 
+              },
               "groups": {}
-            }, 
+            },
             "plugin": {
               "keys": {
                 "autoscroll": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'true'"
-                }, 
+                },
                 "plot_type": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'1'"
-                }, 
+                },
                 "topics": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u''"
-                }, 
+                },
                 "y_limits": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "[u'0', u'1']"
-                }, 
+                },
                 "x_limits": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "[u'0', u'1']"
                 }
-              }, 
+              },
               "groups": {}
             }
           }
-        }, 
+        },
         "plugin__MultiplotPlugin__1": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "dock_widget__MultiplotWidget": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "True"
-                }, 
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
-                  "repr": "u'Multiplot - [file:///mnt/hgfs/share/fusionx/CarND-Capstone/ros/src/visualization/rqt_multiplot_basic.xml]'"
+                  "type": "repr",
+                  "repr": "u'Multiplot - [file:///home/student/fusionx/CarND-Capstone/ros/src/visualization/rqt_multiplot_basic.xml]'"
                 }
-              }, 
+              },
               "groups": {}
-            }, 
+            },
             "plugin": {
-              "keys": {}, 
+              "keys": {},
               "groups": {
                 "history": {
                   "keys": {
-                    "max_length": {
-                      "type": "repr", 
-                      "repr": "10"
-                    }, 
-                    "config_1": {
-                      "type": "repr", 
+                    "config_8": {
+                      "type": "repr",
                       "repr": "u'file:///mnt/hgfs/share/fusionx/CarND-Capstone/ros/src/visualization/rqt_multiplot.xml'"
-                    }, 
+                    },
+                    "config_3": {
+                      "type": "repr",
+                      "repr": "u'file:///home/student/rqt_multiplot_basic_4.xml'"
+                    },
+                    "config_2": {
+                      "type": "repr",
+                      "repr": "u'file:///home/student/rqt_multiplot_basic_5_lowspeed.xml'"
+                    },
+                    "config_1": {
+                      "type": "repr",
+                      "repr": "u'file:///home/student/rqt_multiplot_basic_6_lowspeed.xml'"
+                    },
                     "config_0": {
-                      "type": "repr", 
+                      "type": "repr",
+                      "repr": "u'file:///home/student/fusionx/CarND-Capstone/ros/src/visualization/rqt_multiplot_basic.xml'"
+                    },
+                    "config_7": {
+                      "type": "repr",
                       "repr": "u'file:///mnt/hgfs/share/fusionx/CarND-Capstone/ros/src/visualization/rqt_multiplot_basic.xml'"
+                    },
+                    "config_6": {
+                      "type": "repr",
+                      "repr": "u'file:///home/student/fusionx/CarND-Capstone/ros/src/visualization/rqt_multiplot_basic_2.xml'"
+                    },
+                    "config_5": {
+                      "type": "repr",
+                      "repr": "u'file:///home/student/fusionx/CarND-Capstone/ros/src/visualization/rqt_multiplot_basic_4.xml'"
+                    },
+                    "config_4": {
+                      "type": "repr",
+                      "repr": "u'file:///home/student/rqt_multiplot_dbw_test_bag.xml'"
+                    },
+                    "max_length": {
+                      "type": "repr",
+                      "repr": "10"
                     }
-                  }, 
+                  },
                   "groups": {}
                 }
               }
             }
           }
-        }, 
+        },
         "plugin__rqt_bag__Bag__1": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "dock_widget__BagWidget": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "True"
-                }, 
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'Bag'"
                 }
-              }, 
+              },
               "groups": {}
             }
           }
-        }, 
+        },
+        "plugin__rqt_publisher__Publisher__2": {
+          "keys": {},
+          "groups": {
+            "dock_widget__PublisherWidget": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "u'true'"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                },
+                "dock_widget_title": {
+                  "type": "repr",
+                  "repr": "u'Message Publisher (2)'"
+                }
+              },
+              "groups": {}
+            },
+            "plugin": {
+              "keys": {
+                "publishers": {
+                  "type": "repr",
+                  "repr": "u\"[{'type_name': 'sensor_msgs/Image', 'topic_name': '/image_color', 'enabled': False, 'rate': 10.0, 'expressions': {}, 'publisher_id': 0, 'counter': 0}]\""
+                }
+              },
+              "groups": {}
+            }
+          }
+        },
+        "plugin__rqt_publisher__Publisher__3": {
+          "keys": {},
+          "groups": {
+            "plugin": {
+              "keys": {
+                "publishers": {
+                  "type": "repr",
+                  "repr": "u'[]'"
+                }
+              },
+              "groups": {}
+            }
+          }
+        },
+        "plugin__rqt_publisher__Publisher__1": {
+          "keys": {},
+          "groups": {
+            "dock_widget__PublisherWidget": {
+              "keys": {
+                "dockable": {
+                  "type": "repr",
+                  "repr": "u'true'"
+                },
+                "parent": {
+                  "type": "repr",
+                  "repr": "None"
+                },
+                "dock_widget_title": {
+                  "type": "repr",
+                  "repr": "u'Message Publisher'"
+                }
+              },
+              "groups": {}
+            },
+            "plugin": {
+              "keys": {
+                "publishers": {
+                  "type": "repr",
+                  "repr": "u\"[{'topic_name': '/image_color', 'type_name': 'sensor_msgs/Image', 'enabled': False, 'rate': 10.0, 'expressions': {}, 'publisher_id': 0, 'counter': 0}]\""
+                }
+              },
+              "groups": {}
+            }
+          }
+        },
         "plugin__rqt_topic__TopicPlugin__1": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "plugin": {
               "keys": {
                 "tree_widget_header_state": {
-                  "type": "repr(QByteArray.hex)", 
-                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff000000000000000100000000000000000100000005000000000000000400000003000000020000000100000005000000000000000400000003000000020000000100000000000000000000021f000000050101000100000000000000000500000064ffffffff000000810000000300000005000000d400000001000000030000005c00000001000000030000002a0000000100000003000000610000000100000003000000640000000100000003000003e800')", 
-                  "pretty-print": "                                                  d               \\     *     a     d      "
+                  "type": "repr(QByteArray.hex)",
+                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff000000000000000100000000000000000100000005000000000000000400000003000000020000000100000005000000000000000400000003000000020000000100000000000000000000039000000005010100010000000000000000050000007dffffffff0000008100000003000000050000019e00000001000000030000007d00000001000000030000004900000001000000030000008a0000000100000003000000a20000000100000003000003e800')",
+                  "pretty-print": "                                                  }               }     I                  "
                 }
-              }, 
+              },
               "groups": {}
-            }, 
+            },
             "dock_widget__TopicWidget": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "True"
-                }, 
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'Topic Monitor'"
                 }
-              }, 
+              },
               "groups": {}
             }
           }
-        }, 
+        },
         "plugin__rqt_console__Console__1": {
-          "keys": {}, 
+          "keys": {},
           "groups": {
             "dock_widget__ConsoleWidget": {
               "keys": {
                 "dockable": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "True"
-                }, 
+                },
                 "parent": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "None"
-                }, 
+                },
                 "dock_widget_title": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'Console'"
                 }
-              }, 
+              },
               "groups": {}
-            }, 
+            },
             "plugin": {
               "keys": {
                 "show_highlighted_only": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "False"
-                }, 
+                },
                 "message_limit": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "20000"
-                }, 
+                },
                 "exclude_filters": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "[u'severity', u'node']"
-                }, 
+                },
                 "table_splitter": {
-                  "type": "repr(QByteArray.hex)", 
-                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff000000010000000200000058000000e70100000009010000000200')", 
-                  "pretty-print": "       X       "
-                }, 
+                  "type": "repr(QByteArray.hex)",
+                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff000000010000000200000061000000ef0100000009010000000200')",
+                  "pretty-print": "       a       "
+                },
                 "highlight_filters": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "u'message'"
-                }, 
+                },
                 "paused": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "True"
-                }, 
+                },
                 "settings_exist": {
-                  "type": "repr", 
+                  "type": "repr",
                   "repr": "True"
-                }, 
+                },
                 "filter_splitter": {
-                  "type": "repr(QByteArray.hex)", 
-                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000001000000020000006f0000006f0100000009010000000200')", 
-                  "pretty-print": "       o o     "
+                  "type": "repr(QByteArray.hex)",
+                  "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff000000010000000200000073000000730100000009010000000200')",
+                  "pretty-print": "       s s     "
                 }
-              }, 
+              },
               "groups": {
                 "exclude_filter_0": {
                   "keys": {
                     "enabled": {
-                      "type": "repr", 
+                      "type": "repr",
                       "repr": "True"
-                    }, 
+                    },
                     "itemlist": {
-                      "type": "repr", 
+                      "type": "repr",
                       "repr": "u''"
                     }
-                  }, 
+                  },
                   "groups": {}
-                }, 
+                },
                 "exclude_filter_1": {
                   "keys": {
                     "enabled": {
-                      "type": "repr", 
+                      "type": "repr",
                       "repr": "True"
-                    }, 
+                    },
                     "itemlist": {
-                      "type": "repr", 
+                      "type": "repr",
                       "repr": "u''"
                     }
-                  }, 
+                  },
                   "groups": {}
-                }, 
+                },
                 "highlight_filter_0": {
                   "keys": {
                     "regex": {
-                      "type": "repr", 
+                      "type": "repr",
                       "repr": "False"
-                    }, 
+                    },
                     "text": {
-                      "type": "repr", 
+                      "type": "repr",
                       "repr": "u''"
-                    }, 
+                    },
                     "enabled": {
-                      "type": "repr", 
+                      "type": "repr",
                       "repr": "True"
                     }
-                  }, 
+                  },
                   "groups": {}
                 }
               }
@@ -414,28 +522,28 @@
           }
         }
       }
-    }, 
+    },
     "mainwindow": {
       "keys": {
         "geometry": {
-          "type": "repr(QByteArray.hex)", 
-          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00020000000000000000000000000667000003c9000000010000001a00000666000003c500000000000000000666')", 
-          "pretty-print": "         g       f      f"
-        }, 
+          "type": "repr(QByteArray.hex)",
+          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00020000000003760000006f00000b24000005a1000003760000009200000b24000005a100000000000000000b40')",
+          "pretty-print": "     v o $   v   $      @"
+        },
         "state": {
-          "type": "repr(QByteArray.hex)", 
-          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd00000002000000020000066600000383fc0100000002fc00000000000001e80000019400fffffffc0200000002fb0000004c007200710074005f0074006f007000690063005f005f0054006f0070006900630050006c007500670069006e005f005f0031005f005f0054006f0070006900630057006900640067006500740100000013000001d60000006c00fffffffc000001ef000001a70000012801000019fa000000000100000003fb0000006c007200710074005f007200650063006f006e006600690067007500720065005f005f0050006100720061006d005f005f0031005f005f005f0070006c007500670069006e0063006f006e007400610069006e00650072005f0074006f0070005f0077006900640067006500740100000000ffffffff000000f900fffffffb00000034007200710074005f006200610067005f005f004200610067005f005f0031005f005f0042006100670057006900640067006500740100000000ffffffff0000019400fffffffb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d00610067006500560069006500770057006900640067006500740100000000000001e80000014800fffffffc000001ee00000478000003d600fffffffa000000020200000004fb00000026007200710074005f007200760069007a005f005f005200560069007a005f005f0031005f005f0100000000ffffffff0000000000000000fb0000004c007200710074005f0063006f006e0073006f006c0065005f005f0043006f006e0073006f006c0065005f005f0031005f005f0043006f006e0073006f006c00650057006900640067006500740100000000ffffffff0000018200fffffffb00000046004d0075006c007400690070006c006f00740050006c007500670069006e005f005f0031005f005f004d0075006c007400690070006c006f00740057006900640067006500740100000000ffffffff0000015a00fffffffb00000046004d0075006c007400690070006c006f00740050006c007500670069006e005f005f0032005f005f004d0075006c007400690070006c006f00740057006900640067006500740100000000ffffffff000000e600ffffff000000030000066600000106fc0100000001fb00000042007200710074005f0070006c006f0074005f005f0050006c006f0074005f005f0031005f005f00440061007400610050006c006f00740057006900640067006500740100000000000002580000000000000000000006660000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')", 
-          "pretty-print": "                                                                         l                 lrqt_reconfigure__Param__1___plugincontainer_top_widget          4rqt_bag__Bag__1__BagWidget          Zrqt_image_view__ImageView__1__ImageViewWidget            x                                                                                                                                   Z                                                   f                                            X     f                                                      "
+          "type": "repr(QByteArray.hex)",
+          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd0000000200000002000007af000004f7fc0100000002fc00000000000002460000022000fffffffc0200000002fb0000004c007200710074005f0074006f007000690063005f005f0054006f0070006900630050006c007500670069006e005f005f0031005f005f0054006f0070006900630057006900640067006500740100000000000003280000007900fffffffc0000032f000001c80000013301000020fa000000000100000003fb0000006c007200710074005f007200650063006f006e006600690067007500720065005f005f0050006100720061006d005f005f0031005f005f005f0070006c007500670069006e0063006f006e007400610069006e00650072005f0074006f0070005f0077006900640067006500740100000000ffffffff0000012600fffffffb00000034007200710074005f006200610067005f005f004200610067005f005f0031005f005f0042006100670057006900640067006500740100000000ffffffff0000022000fffffffb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d00610067006500560069006500770057006900640067006500740100000000000001e8000001bd00fffffffc0000024d000005620000044100fffffffc0200000002fc00000000000004f7000001be01000020fa000000000200000004fb00000046004d0075006c007400690070006c006f00740050006c007500670069006e005f005f0031005f005f004d0075006c007400690070006c006f00740057006900640067006500740100000000ffffffff0000019200fffffffb00000026007200710074005f007200760069007a005f005f005200560069007a005f005f0031005f005f0100000000ffffffff0000000000000000fb0000004c007200710074005f0063006f006e0073006f006c0065005f005f0043006f006e0073006f006c0065005f005f0031005f005f0043006f006e0073006f006c00650057006900640067006500740100000000ffffffff0000019d00fffffffb00000046004d0075006c007400690070006c006f00740050006c007500670069006e005f005f0032005f005f004d0075006c007400690070006c006f00740057006900640067006500740100000000ffffffff0000000000000000fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0031005f005f005000750062006c00690073006800650072005700690064006700650074010000040d000000ea000000000000000000000003000006780000009efc0100000003fb00000042007200710074005f0070006c006f0074005f005f0050006c006f0074005f005f0031005f005f00440061007400610050006c006f00740057006900640067006500740100000000000002580000000000000000fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0032005f005f005000750062006c006900730068006500720057006900640067006500740100000000000006780000000000000000fb00000058007200710074005f007000750062006c00690073006800650072005f005f005000750062006c00690073006800650072005f005f0033005f005f005000750062006c0069007300680065007200570069006400670065007401000003eb0000028d0000000000000000000007af0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
+          "pretty-print": "                   F                                                   ( y                 lrqt_reconfigure__Param__1___plugincontainer_top_widget          4rqt_bag__Bag__1__BagWidget          Zrqt_image_view__ImageView__1__ImageViewWidget          M b A                    FMultiplotPlugin__1__MultiplotWidget          &rqt_rviz__RViz__1__          Lrqt_console__Console__1__ConsoleWidget          FMultiplotPlugin__2__MultiplotWidget          Xrqt_publisher__Publisher__1__PublisherWidget                   Brqt_plot__Plot__1__DataPlotWidget          Xrqt_publisher__Publisher__2__PublisherWidget          Xrqt_publisher__Publisher__3__PublisherWidget                            6MinimizedDockWidgetsToolbar        "
         }
-      }, 
+      },
       "groups": {
         "toolbar_areas": {
           "keys": {
             "MinimizedDockWidgetsToolbar": {
-              "type": "repr", 
+              "type": "repr",
               "repr": "8"
             }
-          }, 
+          },
           "groups": {}
         }
       }

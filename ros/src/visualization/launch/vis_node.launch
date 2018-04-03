@@ -1,4 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <node pkg="visualization" type="vis_node.py" name="vis_node" />
-</launch>
