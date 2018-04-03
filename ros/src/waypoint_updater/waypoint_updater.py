@@ -201,9 +201,9 @@ class WaypointUpdater(object):
 
 
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
-
-        pass
+        # DONE?: Callback for /obstacle_waypoint message. We will implement it later
+        # Will there even be any obstacles on the track? I'm just going to fill this in for now.
+        self.obstacle_waypoint = msg.data
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
