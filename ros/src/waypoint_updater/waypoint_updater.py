@@ -3,7 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32, Bool
+from std_msgs.msg import Float32, Int32, Bool
 import tf
 import copy
 
@@ -27,6 +27,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 UPDATE_RATE = 5 # in Hz
 MAX_PLANNED_DECEL = 2 # in m/s^2
+STOP_AHEAD_WAYPOINT_IN_MTRS = 3.0
 
 
 def distance(a, b):
@@ -52,6 +53,7 @@ class WaypointUpdater(object):
 
         self.publish_final_waypoints = rospy.Publisher('final_waypoints', Lane, queue_size=1)
         self.publish_hold_veh = rospy.Publisher('vehicle/hold_veh', Bool, queue_size=1)
+        self.publish_dist_to_stop = rospy.Publisher('vehicle/dist_to_stop', Float32, queue_size=1)
 
         # DONE: Add other member variables you need below
 
@@ -59,6 +61,7 @@ class WaypointUpdater(object):
         self.base_waypoints = None
         self.stop_id = -1
         self.next_i = None
+        self.dist_to_stop = 1000000
         self.hold_veh = False
 
         self.loop()
@@ -71,6 +74,7 @@ class WaypointUpdater(object):
                 self.set_output_velocities()
                 self.publish_waypoints()
                 self.publish_hold_veh.publish(self.hold_veh)
+                self.publish_dist_to_stop.publish(self.dist_to_stop)
             rate.sleep()
         rospy.spin()
 
@@ -104,13 +108,14 @@ class WaypointUpdater(object):
 
         if self.stop_id > 0:
             stop_id_in_final_wps = self.stop_id - self.next_i
-            rospy.loginfo_throttle(1, 'Red light stop line at final wp index:{}'.format(stop_id_in_final_wps))
 
             if stop_id_in_final_wps < len(self.final_waypoints_pub):
 
-                if distance(get_pos_for_pose(self.base_waypoints[self.next_i].pose),
-                            get_pos_for_pose(self.final_waypoints_pub[stop_id_in_final_wps].pose)
-                            ) < 5:
+                self.dist_to_stop = distance(get_pos_for_pose(self.base_waypoints[self.next_i].pose),
+                                             get_pos_for_pose(self.final_waypoints_pub[stop_id_in_final_wps].pose)
+                                             )
+
+                if self.dist_to_stop < 10:
                     self.hold_veh = True
 
                 # For the waypoints backwards, set the velocity so that it decreases towards the stopping point
@@ -124,7 +129,7 @@ class WaypointUpdater(object):
 
                         # Calculate the maximum velocity for the waypoint
                         # in order to comfortably brake till the stopping point
-                        max_vel_for_comf_decel = math.sqrt(2.0 * MAX_PLANNED_DECEL * dist_to_stop_point)
+                        max_vel_for_comf_decel = math.sqrt(max(0.0, 2.0 * MAX_PLANNED_DECEL * (dist_to_stop_point-STOP_AHEAD_WAYPOINT_IN_MTRS)))
 
                         # Get the velocity originally set for that waypoint
                         orig_vel = self.get_waypoint_velocity(self.final_waypoints_pub[j])
@@ -138,8 +143,13 @@ class WaypointUpdater(object):
                         # Set the target velocity for the respective and all following waypoints to zero
                         self.set_waypoint_velocity(self.final_waypoints_pub, j, 0.)
 
+            else:
+
+                rospy.loginfo('The traffic light detector published a traffic waypoint that is outside the LOOKAHEAD_WPS')
+
         else:
 
+            self.dist_to_stop = 1000000
             self.hold_veh = False
 
     def publish_waypoints(self):
