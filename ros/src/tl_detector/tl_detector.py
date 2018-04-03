@@ -12,6 +12,7 @@ import cv2
 import yaml
 import math
 import time
+from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
 UPDATE_RATE = 10
@@ -33,6 +34,9 @@ class TLDetector(object):
 
         self.stop_line_positions = self.config['stop_line_positions']
         self.stop_line_waypoints = []
+
+        self.waypoints_2d = []  # store x,y pairs for use in KDTree
+        self.waypoint_tree = None  # store KDTree in here
 
         self.bridge = CvBridge()
 
@@ -132,9 +136,18 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         """Callback fuction for list of all waypoints."""
         self.waypoints = waypoints
+
+        # Build KD tree for closest waypoint search
+        self.waypoints_2d = []
+        for wp in self.waypoints.waypoints:
+            self.waypoints_2d.append([wp.pose.pose.position.x,
+                                      wp.pose.pose.position.y])
+        self.waypoint_tree = KDTree(self.waypoints_2d)
+
+        # Build list of closest waypoint to each stop line position
         self.stop_line_waypoints = []
         for pts in self.stop_line_positions:
-            sl_wp = self.get_closest_waypoint(pts[0], pts[1], self.waypoints)
+            sl_wp = self.get_closest_waypoint(pts[0], pts[1])
             self.stop_line_waypoints.append(sl_wp)
 
 
@@ -152,35 +165,17 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
 
-    def get_closest_waypoint(self, x, y, waypoints):
+    def get_closest_waypoint(self, x, y):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
-            pose (Pose): position to match a waypoint to
+            x, y (float64): x, y position to match a waypoint to
 
         Returns:
             int: index of the closest waypoint in self.waypoints
 
         """
-        wp_id = 0
-        wps = waypoints.waypoints
-
-        wpx = wps[0].pose.pose.position.x
-        wpy = wps[0].pose.pose.position.y
-
-        min_dist = math.sqrt((x - wpx)**2 + (y - wpy)**2)
-
-        # check all the waypoints to see which one is the closest to our current position
-        for i, waypoint in enumerate(wps):
-            wps_x = waypoint.pose.pose.position.x
-            wps_y = waypoint.pose.pose.position.y
-            dist = math.sqrt((x - wps_x)**2 + (y - wps_y)**2)
-            if (dist < min_dist): #we found a closer wp
-                wp_id = i         # we store the index of the closest waypoint
-                min_dist = dist    # we save the distance of the closest waypoint
-
-        #returns the index of the closest waypoint
-        return wp_id
+        return self.waypoint_tree.query([x, y], 1)[1]
 
     def get_light_state(self):
         """Determines the current color of the traffic light
@@ -232,13 +227,17 @@ class TLDetector(object):
 
 
         if self.pose and self.waypoints:
-            car_position = self.get_closest_waypoint(self.pose.pose.position.x,self.pose.pose.position.y, self.waypoints)
+            car_position = self.get_closest_waypoint(self.pose.pose.position.x,
+                                                     self.pose.pose.position.y)
 
         # State = 0 : Red
         if ((ntl_state != 4) or (self.light_classifier is None)):
             if car_position:
-                for tl in self.lights: 	
-                    nearest_waypoint = self.get_closest_waypoint(tl.pose.pose.position.x,tl.pose.pose.position.y, self.waypoints)
+                for tl in self.lights:
+                    nearest_waypoint = self.get_closest_waypoint(
+                                                    tl.pose.pose.position.x,
+                                                    tl.pose.pose.position.y)
+
                     if nearest_waypoint > car_position:
                         ntl_wp = nearest_waypoint
                         gt_ntl_state = tl.state
