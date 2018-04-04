@@ -42,6 +42,7 @@ class Controller(object):
         linear_acc = self.acc_filter.filt(linear_acc)
         brake, throttle = 0., 0.
 
+        # HOLD function WILL NOT STOP the vehicle but JUST PREVENT A TAKE-OFF due to some swinging brake/throttle controller or such
         if hold_veh and current_linear_vel < 0.1:
             brake = 10000
         else:
