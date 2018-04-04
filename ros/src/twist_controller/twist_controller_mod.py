@@ -28,8 +28,8 @@ class Controller(object):
         self.braking_to_throttle_threshold_ratio = 4. / 3.
         self.manual_braking_upper_velocity_limit = 1.5
         self.braking_torque_to_stop = 50
-        self.lpf_tau_throttle = 0.1
-        self.lpf_tau_brake = 1.0
+        self.lpf_tau_throttle = 0.3
+        self.lpf_tau_brake = 0.5
         self.lpf_tau_steering = 0.1
 
         self.yaw_controller = YawController(
@@ -77,40 +77,49 @@ class Controller(object):
             self.reset()
 
         limit_constant = self.velocity_increase_limit_constant if velocity_error > 0 else self.velocity_decrease_limit_constant
+        error_thresh = limit_constant * current_linear_velocity
 
         throttle_command = 0
         brake_command = 0
+        control_mode = "Coasting"
 
         if is_decelerating and (target_linear_velocity < self.manual_braking_upper_velocity_limit and current_linear_velocity < self.manual_braking_upper_velocity_limit):
             # vehicle is coming to a stop or is at a stop; apply fixed braking torque
             # continuously, even if the vehicle is stopped
             brake_command = self.braking_torque_to_stop
             self.velocity_pid_controller.reset()
+            control_mode = "Manual braking"
         elif velocity_error < -1 * limit_constant * current_linear_velocity:
             # use brake if we want to slow down somewhat significantly
             brake_command = self.braking_pid_controller.step(-velocity_error, timestep) if velocity_error < (-1 * limit_constant *
                                                                                                              self.braking_to_throttle_threshold_ratio * current_linear_velocity) or (velocity_error < 0 and current_linear_velocity < 2.5) else 0
             self.velocity_pid_controller.reset()
+            control_mode = "PID braking"
         elif not is_decelerating or (current_linear_velocity > 5 and velocity_error > -1 * limit_constant * current_linear_velocity) or (current_linear_velocity < 5 and velocity_error > limit_constant * current_linear_velocity):
             # use throttle if we want to speed up or if we want to slow down
             # just slightly
             throttle_command = self.velocity_pid_controller.step(
                 velocity_error, timestep)
             self.braking_pid_controller.reset()
+            control_mode = "PID throttle"
 
-        # apply low pass filter on throttle and brake commands to reduce
-        # excessive jerk
-        filtered_throttle = self.throttle_lpf.filt(throttle_command)
+        # apply low pass filter on brake command
         filtered_brake = self.brake_lpf.filt(brake_command)
 
-        # do not apply brakes if any throttle is applied
-        if filtered_throttle < 0.001:
-            filtered_throttle = 0
-        else:
+        # do not apply throttle if any brake is applied
+        if filtered_brake < 10:
+            # brake is released, ok to apply throttle
             filtered_brake = 0
+        else:
+            # brake is still applied, don't apply throttle
+            throttle_command = 0
+            self.velocity_pid_controller.reset()
 
-        rospy.logdebug('Current linear velocity %.2f, target linear velocity %.2f, is_decelerating %s, throttle_command %.2f, brake_command %.2f',
-                      current_linear_velocity, target_linear_velocity, is_decelerating, filtered_throttle, filtered_brake)
+        # apply low pass filter on throttle command
+        filtered_throttle = self.throttle_lpf.filt(throttle_command)
+
+        rospy.loginfo('%s: current linear velocity %.2f, target linear velocity %.2f, is_decelerating %s, throttle_command %.2f, brake_command %.2f, error %.2f, thresh %.2f',
+                      control_mode, current_linear_velocity, target_linear_velocity, is_decelerating, filtered_throttle, filtered_brake, velocity_error, error_thresh)
 
         # Return throttle, brake, steer
         return (filtered_throttle,
