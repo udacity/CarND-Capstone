@@ -5,5 +5,7 @@ devel
 
 profile.tmp
 
+.DS_Store
+
 # Idea
 .idea/
