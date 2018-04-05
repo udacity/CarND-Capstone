@@ -1,68 +1,76 @@
 # Team FusionX - CarND Capstone Project
 
-Udacity Self-Driving Car Nanodegree
+Udacity Self-Driving Car Nanodegree, 2018
 
 <img src="./imgs/construction.gif">
 
 ### Team Members
 
-### Overview
+* Effendi Dufford
+* Taylor Raack
+* Meenu Natarajan
+* Anthony Knight
+* Shripad Kondra
 
-### Visualization Tools
+### Project Overview
 
-This project includes some visualization tools for monitoring data while running the simulation using **RQT** and **RViz**.  The related layout files are stored in the **/ros/src/visualization/** folder.
+The **final capstone project** of the Udacity Self-Driving Car Nanodegree program provides the opportunity to run our code on a modified Lincoln MKZ hybrid vehicle (named "Carla") to **autonomously drive around a test lot course** with a set of mapped route waypoints and a traffic light.
 
-#### RQT (multipurpose dashboard)
-* **Setup:**
-    For plotting data in RQT, the [rqt_multiplot_plugin](https://github.com/ethz-asl/rqt_multiplot_plugin) is used instead of the base [rqt_plot](https://github.com/ros-visualization/rqt_plot) for better plotting features and performance.  To install the multiplot plugin, run:
+The vehicle has a [Dataspeed](http://dataspeedinc.com/) **drive-by-wire (DBW)** interface for throttle/brake/steering control, a **forward-facing camera** for traffic light detection, and **LIDAR** for localization (processed by Udacity to provide the car's current pose).  The code is run on a Linux PC with **Robot Operating System** ([ROS](http://www.ros.org/)) and a TitanX GPU for **TensorFlow** processing.
 
-    ```
-    sudo apt-get update
-    sudo apt-get install ros-kinetic-rqt-multiplot
-    rqt --force-discover
-    ```
+Since the team members are working from **multiple global locations (US, Canada, India)**, all development has been done online through **Slack and Github team collaboration** while using the [Udacity vehicle simulator](https://github.com/udacity/CarND-Capstone/releases) to integrate and prove out the algorithms.  After being able to drive the simulator courses, the code is then tested on the real vehicle by Udacity engineers in California.
 
-    If successful, the multiplot plugin should be available in the RQT menu *Plugins > Visualization > Multiplot*.
+### System Architecture
 
-    After installing the multiplot plugin, a basic RQT layout can be imported by going to the RQT menu *Perspectives > Import* and select the **rqt_basic.perspective** file.
+[<img src="./imgs/final-project-ros-graph-v2.png" width="900">](https://github.com/team-fusionx/CarND-Capstone/blob/master/imgs/final-project-ros-graph-v2.png)
 
-* **Operation:**
-    To use RQT to monitor data, after roslaunching the styx program and connecting to the simulator, start another shell in the /ros/ folder and run:
+*Image source: Udacity Project Overview lesson.  Note: Obstacle Detection was not part of this project.*
 
-    ```
-    source devel/setup.bash
-    rqt
-    ```
+The autonomous control system architecture starts by **loading mapped route base waypoints** in the Planning area's Waypoint Loader and setting an overall **max speed guard** for each waypoint.  This initial setup was provided by Udacity, to protect for safe operation in the test lot.
 
-    Switch to the Basic perspective if not already loaded by default, and confirm communication by enabling one of the topics in the Topic Monitor.
-    To start the plots, click the **play all** button at the top right of the multiplot pane.
+The system then starts **receiving the car's sensor data** (current pose from LIDAR localization, current speed, DBW enable switch, and camera image).
 
-    [<img src="./imgs/screen_rqt_basic.png" width="800">](./imgs/screen_rqt_basic.png)
+The Perception area's **Traffic Light Detection Node** processes the camera image to **detect traffic lights** to decide if and **where the car needs to stop** at an upcoming waypoint location.
 
-#### RViz (3D scene view)
+The Planning area's **Waypoint Updater Node** plans the driving path target speed profile by **setting upcoming waypoints with associated target speeds**, including smoothly accelerating up to the target max speed and slowing down to stop at detected red lights.
 
-* **Setup:**
-    To visualize the car's position relative to the waypoints and traffic lights in an RViz 3D scene, a **visualization node** is used to publish a **/visualization_marker_array** topic to populate the objects and a **/visualization_basewp_path** topic to populate a path line.
+The Control area's **Waypoint Follower** sets **target linear velocity** (from the planned waypoint target speeds) and **target angular velocity** (using Autoware's Pure Pursuit library algorithm to steer toward the waypoint path).
 
-    The visualization node publishes when the parameter *vis_enabled == True*, set by default in the **styx.launch** file.  When using **site.launch** in the actual vehicle, the visualization node is not launched to reduce bandwidth.
+The Control area's **DBW Node (Twist Controller)** sets the **throttle, brake, and steering commands** using PID feedback control for throttle and brake, and kinematic bicycle model yaw control for steering.  These commands are sent to the Dataspeed DBW system to actuate the car's pedals and steering wheel.
 
-    RViz is included in the ROS desktop install, so no additional setup is needed.
+| Area        | Task                     | Primary Member | Secondary Member | Description                                                                                                                                                                                             |
+|:-----------:|:------------------------:|:--------------:|:----------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| Perception  | Traffic Light Detection  | Shripad        | Meenu            | Train/implement neural network traffic light classifier, and determine the stopping locations for red lights                                                                                            |
+| Planning    | Waypoint Loader          | -              | -                | Use Udacity provided base code                                                                                                                                                                          |
+| Planning    | Waypoint Updater         | Anthony        | Effendi          | Design and implement a smooth speed profile planner using [Jerk Minimizing Trajectory (JMT)](http://courses.shadmehrlab.org/Shortcourse/minimumjerk.pdf) following dynamic red light stopping locations | 
+| Control     | Waypoint Follower        | Effendi        | Taylor           | Implement improvements to Autoware's base Pure Pursuit library to set target linear velocity and target angular velocity to follow upcoming waypoints                                                   |
+| Control     | DBW (Twist Controller)   | Taylor         | Effendi          | Implement & tune PID feedback control with low pass filtering for throttle/brake commands and kinematic yaw control for steering command                                                                |
+| Integration | Simulation Testing       | Meenu          | Anthony          | Test & debug fully integrated control system with the simulation on a highway track and test lot course                                                                                                 |
+| Integration | Real-world Image Testing | Meenu          | Shripad          | Test & debug traffic light classifier with real-world camera images from recorded ROS bag data                                                                                                          |
+| Integration | Visualization Tools      | Effendi        | Taylor           | Set up data visualization & analysis tools using ROS RQT with Multiplot plugin and RViz 3D scene viewer                                                                                                 |
 
-* **Operation:**
-    RViz can be run either as a stand-alone program or as a plug-in within RQT, but there is a bug in the RQT plug-in that causes a crash when rendering the base waypoint path so **RViz should be run as stand-alone**.  To use it as a stand-alone program, after roslaunching the styx program and connecting to the simulator, start another shell in the /ros/ folder and run:
+### Implementation Details
 
-    ```
-    source devel/setup.bash
-    rviz
-    ```
+#### Perception
 
-    A basic RViz layout can by loaded by going to the RViz menu *File > Open Config* and select the **rviz_basic.rviz** file.  In the RViz layout, the view can be switched between saved view settings in the *Views* list on the right side.  The mouse wheel and left/middle buttons can be used to move/zoom the camera.
+* [Traffic Light Detection Node](https://github.com/team-fusionx/CarND-Capstone/wiki/Traffic-Light-Detection)
 
-    [<img src="./imgs/screen_rviz_basic.png" width="800">](./imgs/screen_rviz_basic.png)
+#### Planning
+
+* [Waypoint Updater Node](https://github.com/team-fusionx/CarND-Capstone/wiki/Waypoint-Updater)
+
+#### Control
+
+* [Waypoint Follower](https://github.com/team-fusionx/CarND-Capstone/wiki/Waypoint-Follower)
+* [DBW Node (Twist Controller)](https://github.com/team-fusionx/CarND-Capstone/wiki/Twist-Controller-DBW)
+
+#### Integration
+
+* [Visualization Tools](https://github.com/team-fusionx/CarND-Capstone/wiki/Visualization-Tools)
 
 ---
 
-### *Original instructions from Udacity base repo:*
+### *Original setup instructions from Udacity base repo:*
 
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
