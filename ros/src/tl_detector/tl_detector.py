@@ -188,7 +188,8 @@ class TLDetector(object):
             self.prev_light_loc = None
             return TrafficLight.UNKNOWN
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -246,7 +247,7 @@ class TLDetector(object):
         stop_line = -1 
         stop_distance = 10000
         dx = ntl_wp - car_position
-        if dx>0 and dx < 1000:
+        if dx>=0 and dx < 1000:
         #stop line nearest to the nearest light
         #if ntl_wp > 0:
             for position in self.stop_line_waypoints:

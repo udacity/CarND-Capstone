@@ -2,6 +2,7 @@ from styx_msgs.msg import TrafficLight
 import keras
 from keras.utils.generic_utils import CustomObjectScope
 from keras.models import load_model
+from keras.applications import resnet50
 import rospy
 import numpy as np
 import cv2
@@ -15,7 +16,7 @@ class TLClassifier(object):
 #            model = load_model('light_classification/models/MobileNet-tl-weights-5-116-val_acc-0.94.hdf5')
 #       
         
-        model = load_model("light_classification/models/ResNet50-tl-weights-3-171-val_acc-1.00.hdf5")
+        model = load_model("light_classification/models/ResNet50-SimData-tl-weights-Best-val_acc-1.0.hdf5")
         
             
             
@@ -48,13 +49,14 @@ class TLClassifier(object):
         image = cv2.resize(image, (self.resize_width, self.resize_height))
         np_image_data = np.asarray(image)
         np_final = np.expand_dims(np_image_data,axis=0)
-        
-        np_final = np_final/255
+#        np_final = np_final/255
+        np_final = resnet50.preprocess_input(np_final.astype('float64'))
         t0 = rospy.Time.now()
         model = self.model
         with self.graph.as_default():
             yhat = model.predict(np_final)
-        dt = rospy.Time.now() - t0
+        dt = rospy.Time.now() - t0        
+        #yhat = yhat / yhat.sum()
         yhat=yhat[0]
         y_class = yhat.argmax(axis=-1)
         labels = self.labels
