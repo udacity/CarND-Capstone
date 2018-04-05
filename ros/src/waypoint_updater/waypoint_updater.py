@@ -27,7 +27,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
-
+MAX_DECEL = 1.0
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -43,7 +43,9 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher(
             'final_waypoints', Lane, queue_size=1)
         self.base_waypoints = []
+        self.next_wp_idx = -1
         self.next_stop_line_idx = -1
+          
         rospy.spin()
 
     def closest_waypoint(self, curr_pose):
@@ -82,10 +84,11 @@ class WaypointUpdater(object):
         return yaw
 
     def pose_cb(self, pose_stamped):
-        next_wp_idx = self.closest_waypoint(pose_stamped)
+        self.next_wp_idx = self.closest_waypoint(pose_stamped)
 
         waypoints = self.base_waypoints[
-            next_wp_idx:next_wp_idx+LOOKAHEAD_WPS
+            self.next_wp_idx:self.next_wp_idx+LOOKAHEAD_WPS
+
         ]
         if self.next_stop_line_idx != -1:
             waypoints = self.slowdown_to_stop(waypoints)
@@ -96,12 +99,16 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(final_waypoints_msg)
 
     def slowdown_to_stop(self, waypoints):
-        speed_change = waypoints[0].twist.twist.linear.x / len(waypoints)
-        copied_waypoints = deepcopy(waypoints)
-        for idx, waypoint in enumerate(reversed(copied_waypoints)):
-            waypoint.twist.twist.linear.x = 0
-            waypoint.twist.twist.angular.z
-        return copied_waypoints
+        last_idx = self.next_stop_line_idx-self.next_wp_idx
+        last = waypoints[last_idx]
+        last.twist.twist.linear.x = 0.
+        for wp in waypoints[:last_idx][::-1]:
+            dist = self.straight_dist(wp.pose.pose.position, last.pose.pose.position)
+            vel = math.sqrt(2 * MAX_DECEL * dist)
+            if vel < 1.:
+                vel = 0.
+            wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+        return waypoints
 
     def waypoints_cb(self, waypoints):
         self.base_waypoints = waypoints.waypoints
