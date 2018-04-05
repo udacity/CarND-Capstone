@@ -12,10 +12,9 @@ import cv2
 import yaml
 import math
 import os
-import time
 
 STATE_COUNT_THRESHOLD = 3
-DETECTION_DISTANCE = 300
+DETECTION_DISTANCE = 200
 
 
 class TLDetector(object):
@@ -41,15 +40,6 @@ class TLDetector(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
-        '''
-        /vehicle/traffic_lights provides you with the location of the traffic
-        light in 3D map space and helps you acquire an accurate ground truth
-        data source for the traffic light classifier by sending the current
-        color state of all traffic lights in the simulator. When testing on
-        the vehicle, the color state will not be available. You'll need to
-        rely on the position of the light and the camera image to predict it.
-        '''
         rospy.Subscriber('/vehicle/traffic_lights',
                          TrafficLightArray, self.traffic_cb)
         rospy.Subscriber('/image_color', Image, self.image_cb)
@@ -100,9 +90,6 @@ class TLDetector(object):
 
         """
 
-        # calculate the total process time of a frame
-        begin_time = time.time()
-
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
@@ -117,9 +104,6 @@ class TLDetector(object):
             self.site_post_process(state, light_wp)
         else:
             self.sim_post_process(state, light_wp)
-
-        end_time = time.time()
-        # rospy.loginfo('Total process tims is:' + str(end_time - begin_time))
 
     def sim_post_process(self, state, light_wp):
         """
@@ -219,7 +203,6 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
 
-        # Get classification
         return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
@@ -249,13 +232,15 @@ class TLDetector(object):
                     _, ahead_stop_line_wp = pair
 
                     if self.collect_data:
-                        if abs(car_waypoint - ahead_stop_line_wp) < DETECTION_DISTANCE:
+                        if (abs(car_waypoint - ahead_stop_line_wp) <
+                                DETECTION_DISTANCE):
                             # the car is near the stop line, save the front
                             # camera img
                             self.save_img(ind)
 
                     # if the car is near the stop line, start tl recognition
-                    if 0 < (ahead_stop_line_wp - car_waypoint) < DETECTION_DISTANCE:
+                    if (0 < (ahead_stop_line_wp - car_waypoint)
+                            < DETECTION_DISTANCE):
                         state = self.get_light_state()
                     break
 
