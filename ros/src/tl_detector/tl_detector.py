@@ -7,6 +7,7 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
+from light_classification.tl_model_classifier import TLModelClassifier
 import tf
 import cv2
 import numpy as np
@@ -54,17 +55,17 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-	
-	    # All stop line positions are fixed. Just need to load once
+        
+        # All stop line positions are fixed. Just need to load once
         self.stop_line_positions = self.config['stop_line_positions']
-
+        rospy.loginfo('stop_line_positions:\n {}'.format(self.stop_line_positions))
+        
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -75,6 +76,13 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        if(hasattr(self, 'light_classifier') == False):
+            if(len(self.lights) == 1):
+                rospy.loginfo('Using model based classifier.')
+                self.light_classifier = TLModelClassifier()
+            else:
+                rospy.loginfo('Using color based classifier.')
+                self.light_classifier = TLClassifier()
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -146,10 +154,10 @@ class TLDetector(object):
             pos_np_array = np.asarray([pose.position.x, pose.position.y])
             dist = np.sqrt(np.sum((np.asarray([(l[0], l[1]) for l in self.stop_line_positions]) - pos_np_array)**2, axis=1))
             idx = np.argmin(dist)
-	    if(dist[idx] > detect_range):
-		result = -1;
-	    else:
-		result = idx
+            if(dist[idx] > detect_range):
+                result = -1;
+            else:
+                result = idx
 
         #rospy.loginfo_throttle(3, 'get_closest_light_stop_line_idx\nPos: {}\nIndex:{}\nDistance: {}\nReturn: {}'.format(pos_np_array, idx, dist[idx], result))
         return result
@@ -181,8 +189,9 @@ class TLDetector(object):
         #self.save_training_data(cv_image, light.state)
 	    
         #Get classification
-        state = self.light_classifier.get_classification(cv_image)
-    	#rospy.loginfo_throttle(3, 'get_light_state\nResult from Classifiter: {}\nGround Truth:{}\nMatch: {}'.format(state, light.state, state == light.state))
+        if(hasattr(self, 'light_classifier')):
+            state = self.light_classifier.get_classification(cv_image)
+        #rospy.loginfo_throttle(3, 'get_light_state\nResult from Classifiter: {}\nGround Truth:{}\nMatch: {}'.format(state, light.state, state == light.state))
     	if(state != light.state and light.state == TrafficLight.RED):
     	    rospy.logwarn("RED NOT CAUGHT!")
     	    debug_data_dir = "debug_data/"
