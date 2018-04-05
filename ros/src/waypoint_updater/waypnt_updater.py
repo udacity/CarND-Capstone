@@ -460,7 +460,7 @@ class WaypointUpdater(object):
                       .format(jerk, curpt.JMTD.V, curpt.JMTD.A, self.min_moving_velocity*1.1,
                               final_dist, T, duration))
         return final_dist
-    
+
     def get_stopping_time(self, start, end):
         # Use JMT to figure out proper time for deceleration where 
         # curve does not wobbble below min_moving _velocity
@@ -721,7 +721,10 @@ class WaypointUpdater(object):
         if curpt.JMT_ptr == -1 or self.state != 'speedup':
             rospy.logwarn("Set car state to speedup")
             self.state = 'speedup'
-            curpt.JMT_ptr = self.setup_jmt(curpt, self.default_velocity)
+            accel_rate, a_dist = self.get_max_accel(curpt.ptr_id)
+            # a_dist = get_accel_distance(curpt.get_v(), self.default_velocity, accel_rate,
+            #                            curpt.get_a())
+            curpt.JMT_ptr = self.setup_speedup_jmt(curpt, a_dist, self.default_velocity)
             # accel_ratio = 1.0, time_factor = 1.0)
             jmt_ptr = curpt.JMT_ptr
         else:
@@ -825,14 +828,15 @@ class WaypointUpdater(object):
                     or 
                     math.fabs(self.stop_calc_a -
                     self.waypoints[self.final_waypoints_start_ptr].get_a()) > 0.1):
+
                 self.stop_calc_v = self.waypoints[self.final_waypoints_start_ptr].get_v()
                 self.stop_calc_a = self.waypoints[self.final_waypoints_start_ptr].get_a()
                 self.stopping_distance = get_accel_distance(
-                    self.waypoints[self.final_waypoints_start_ptr].get_v(),
-                    0.0, -self.default_accel/accel_ratio,
-                    self.waypoints[self.final_waypoints_start_ptr].get_a())
+                        self.waypoints[self.final_waypoints_start_ptr].get_v(),
+                        0.0, -self.default_accel/accel_ratio,
+                        self.waypoints[self.final_waypoints_start_ptr].get_a())
                 self.min_stop_distance = self.get_min_stopping_distance(
-                    self.final_waypoints_start_ptr)
+                        self.final_waypoints_start_ptr)
 
         rospy.loginfo("dist_to_tl at ptr = {} is {:4.3f}, stopping_dist = {:4.3f}, state = "
                       "{} min_stopping_distance = {}"
@@ -920,14 +924,49 @@ class WaypointUpdater(object):
         # self.prev_step_v = self.waypoints[self.final_waypoints_start_ptr].get_v()
         # self.prev_step_a = self.waypoints[self.final_waypoints_start_ptr].get_a()
 
-        # Log JMT profile values
-        jmt_log = "\nptr_id, JMT_ptr, time, S, V, A, J\n"
+        # Log JMT profile values - Vcalc is calculated value, wheras Veffective is value 
+        # in twist which might have been limited by local wpt.vMax or global self.max_velocity
+        jmt_log = "\nptr_id, JMT_ptr, time, S, Vcalc, A, J, Veffective\n"
         for wpt in self.waypoints[self.final_waypoints_start_ptr:
                                   self.final_waypoints_start_ptr +
                                   self.lookahead_wps]:
-            jmt_log += "{}, {}, {}\n".format(wpt.ptr_id, wpt.JMT_ptr, wpt.JMTD)
+            jmt_log += "{}, {}, {}, {:3.4f}\n".format(wpt.ptr_id, wpt.JMT_ptr, wpt.JMTD, wpt.get_v())
         rospy.loginfo(jmt_log)
 
+    def setup_speedup_jmt(self, curpt, a_dist, target_velocity):
+        # this is set up to speedup the car to a desired velocity
+
+        if curpt.get_a() < 0.0:
+            time_adjustment = 1.5  # 1.5
+        else:
+            time_adjustment = self.dyn_jmt_time_factor
+
+        # a_dist = get_accel_distance(curpt.get_v(), target_velocity, self.default_accel, curpt.get_a())
+
+        T = get_accel_time(a_dist, curpt.get_v(), target_velocity) *\
+            time_adjustment
+
+        if a_dist < 0.1 or T < 0.1:
+            # dummy values to prevent matrix singularity
+            # if no velocity change required
+            rospy.logwarn("No change in velocity needed.")
+            a_dist = 0.1
+            T = 0.1
+
+        start = [curpt.get_s(), curpt.get_v(), curpt.get_a()]
+        end = [curpt.get_s() + a_dist, target_velocity, 0.0]
+
+        T = self.get_speedup_time(start, end)
+        
+        rospy.loginfo("Car set to accel from v={:3.3f}, a={:3.3f} to v={:3.3f}"
+            " in dist {:3.3f} m in time {:3.3f} s"
+            .format(curpt.get_v(), curpt.get_a(), target_velocity,
+                    a_dist, T))
+
+        jmt = JMT(start, end, T)
+        self.JMT_List.append(jmt)
+        jmt_ptr = len(self.JMT_List)
+        return jmt_ptr-1
 
     def setup_jmt(self, curpt, target_velocity, accel_ratio=1.0,
                   time_factor=1.0):
@@ -962,6 +1001,174 @@ class WaypointUpdater(object):
         jmt_ptr = len(self.JMT_List)
 
         return jmt_ptr-1
+
+    def get_max_accel(self, ptr_id):
+        # Use JMT to figure out shortest speedup distance with
+        # maximum jerk of < 5.0 at 0.1 s after change in
+        # direction of acceleration
+        curpt = self.waypoints[ptr_id]
+        if curpt.get_v() >= self.default_velocity * 0.975:
+            return (0.5, 0.5)
+
+        timer_start = rospy.get_time()
+        too_short = False
+
+        if curpt.get_a() < 0.0:  # might prefer to check previous state to see if was in slowdown
+            rospy.logwarn("look for max accel since currently decelerating at {:3.2f}".format(curpt.get_a()))
+            accel_rate = 0.6
+            max_jerk = self.max_desired_jerk
+        else:  # assume here that this is startup condition
+            rospy.logwarn("just using std values for accel since not decelerating with a={:3.2f}".format(curpt.get_a()))
+            a_dist = get_accel_distance(curpt.get_v(), self.default_velocity, self.default_accel,
+                                        curpt.get_a())
+            return(self.default_accel, a_dist)
+         
+        a_dist = get_accel_distance(curpt.get_v(), self.default_velocity, accel_rate,
+                                    curpt.get_a())
+        T = get_accel_time(a_dist, curpt.get_v(), self.default_velocity)
+
+        start = [curpt.get_s(), curpt.get_v(), curpt.get_a()]
+        end = [curpt.get_s() + a_dist, self.default_velocity, 0.0]
+        rospy.logdebug("Test accel_rate={:3.3f} from v={:3.3f}, a={:3.3f} to v={:3.3f}"
+                       " in dist {:3.3f} m in time {:3.3f} s"
+                       .format(accel_rate, curpt.get_v(), curpt.get_a(), self.default_velocity, a_dist, T))
+
+        jmt = JMT(start, end, T)
+        jerk = jmt.get_j_at(0.1)
+        acc = jmt.get_a_at(T - 0.5)
+
+        rospy.logdebug("Using accel = {:3.2f}, found initial jerk of {:3.2f} with a_dist of {:3.2f}"
+                       " and final acc of {:3.2f} with a time of {:3.2f}"
+                       .format(accel_rate, jerk, a_dist, acc ,T))
+        if jerk > max_jerk:
+            too_short = True
+            acc_diff = -0.1
+        else:
+            acc_diff = 0.1
+                
+        optimized = False
+        counter = 0
+        while optimized is False:
+            counter += 1
+            old_jerk = jerk
+            accel_rate = accel_rate + acc_diff
+            a_dist = get_accel_distance(curpt.get_v(), self.default_velocity, accel_rate,
+                                    curpt.get_a())
+            T = get_accel_time(a_dist, curpt.get_v(), self.default_velocity)
+            if accel_rate < 0.0:
+                final_accel = accel_rate - acc_diff
+                duration = rospy.get_time() - timer_start
+                rospy.logdebug("greatest accel_rate of {3.2f} to accelerate with max_jerk"
+                        "={:3.3f} from v={:3.3f}, a={:3.3f} to v={:3.3f} in "
+                        "dist {:3.3f}m in time {:3.3f}s, took {:3.4f}s to calc"
+                        .format(final_accel, jerk, curpt.get_v(), curpt.get_a(), self.default_velocity,
+                                a_dist, T, duration))
+                return(final_accel,a_dist)
+
+            end = [curpt.JMTD.S + a_dist, self.default_velocity, 0.0]
+            T = get_accel_time(a_dist, curpt.JMTD.V, self.default_velocity)
+            rospy.logdebug("Test accel rate of {:3.2f} going from v={:3.3f}, a={:3.3f}"
+                           " to v={:3.3f} in dist {:3.3f} m in time {:3.3f} s"
+                           .format(accel_rate, curpt.get_v(), curpt.get_a(), self.default_velocity,
+                                a_dist, T))
+            jmt = JMT(start, end, T)
+            jerk = jmt.get_j_at(0.1)
+            acc = jmt.get_a_at(T - 0.5)
+
+            rospy.logdebug("Using accel = {:3.2f}, found initial jerk of {:3.2f} with a_dist of {:3.2f}"
+                       " and final acc of {:3.2f} with a time of {:3.2f}"
+                       .format(accel_rate, jerk, a_dist, acc ,T))
+    
+            if too_short is True:
+                # looking for first instance that matches
+                if jerk < max_jerk:
+                    final_accel = accel_rate
+                    optimized = True
+            else:
+                # looking for first instance that fails
+                if jerk  > max_jerk:
+                    final_accel = accel_rate - acc_diff
+                    a_dist = get_accel_distance(curpt.get_v(), self.default_velocity, final_accel,
+                                    curpt.get_a())
+                    jerk = old_jerk
+                    optimized = True
+ 
+            if counter > 30:
+                rospy.logwarn("counter is {} in get_max_accel - bail with acc={:3.2f}!"
+                              .format(counter, accel_rate))
+                final_accel = accel_rate
+                optimized = True
+        
+        duration = rospy.get_time() - timer_start
+        rospy.logdebug("greatest accel_rate of {:3.2f} to accelerate with max_jerk"
+                       "={:3.3f} from v={:3.3f}, a={:3.3f} to v={:3.3f} in "
+                       "dist {:3.3f}m in time {:3.3f}s, took {:3.4f}s to calc"
+                       .format(final_accel, jerk, curpt.get_v(), curpt.get_a(), self.default_velocity,
+                               a_dist, T, duration))
+        return (final_accel, a_dist)
+
+    def get_speedup_time(self, start, end):
+        # Use JMT to figure out proper time for acceleration where 
+        # curve does not wobbble above max _velocity
+        # start[s, velocity, acc]
+        # end[s, velocity, acc]
+
+        if start[1] >= self.default_velocity * 0.95:
+            return 0.5
+
+        timer_start = rospy.get_time()
+
+        if start[2] < 0.0:
+            # currently slowing down
+            time_factor = 1.0
+        else:
+            time_factor = self.dyn_jmt_time_factor
+
+        a_dist = end[0] - start[0]
+
+        T = get_accel_time(a_dist, start[1], end[1]) * time_factor
+
+        rospy.logdebug("Test accel from v={:3.3f}, a={:3.3f} to v={:3.3f}"
+                       " in dist {:3.3f} m in time {:3.3f} s"
+                       .format(start[1], start[2], end[1], a_dist, T))
+
+        jmt = JMT(start, end, T)
+        jerk = jmt.get_j_at(0.1)
+        acc = jmt.get_a_at(T - 0.5)
+
+        rospy.logdebug("found jerk of {:3.2f} with a_dist of {:3.2f}"
+                       " and acc of {:3.2f} with speedup time of {:3.2f}"
+                       .format(jerk, a_dist, acc ,T))
+                
+        optimized = False
+        time_diff = T * 0.01
+        counter = 0
+        if acc < 0.0:
+            while optimized is False:
+                T = T - time_diff
+                jmt = JMT(start, end, T)
+                jerk = jmt.get_j_at(0.1)
+                acc = jmt.get_a_at(T - 0.5)
+                counter = counter + 1
+                if acc > 0.0:
+                    optimized = True
+                if counter > 30:
+                    rospy.logwarn("counter is {} in get_speedup_time - bail!"
+                                .format(counter))
+                    optimized = True
+
+        rospy.logdebug("found jerk of {:3.2f} with a_dist of {:3.2f}"
+                       " and acc of {:3.2f} with a time of {:3.2f}"
+                       .format(jerk, a_dist, acc ,T))
+            
+
+        duration = rospy.get_time() - timer_start
+        rospy.loginfo("Shortest Time to accelerate with max_jerk={:3.3f}"
+                      "from v={:3.3f}, a={:3.3f} to v={:3.3f} in dist {:3.3f}"
+                      " m in time {:3.3f} s - took {:3.4f} s to calc"
+                      .format(jerk, start[1], start[2], end[1],
+                              a_dist, T, duration))
+        return T
 
     def check_point(self, pt):
         # check if JMT values at point exceed desired values
