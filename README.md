@@ -7,7 +7,7 @@ Udacity Self-Driving Car Nanodegree, 2018
 ### Team Members
 
 * Effendi Dufford
-* Taylor Raack
+* [Taylor Raack](https://github.com/dinoboy197)
 * Meenu Natarajan
 * Anthony Knight
 * Shripad Kondra
@@ -44,7 +44,7 @@ The Control area's **DBW Node (Twist Controller)** sets the **throttle, brake, a
 | Planning    | Waypoint Loader          | -              | -                | Use Udacity provided base code                                                                                                                                                                          |
 | Planning    | Waypoint Updater         | Anthony        | Effendi          | Design and implement a smooth speed profile planner using [Jerk Minimizing Trajectory (JMT)](http://courses.shadmehrlab.org/Shortcourse/minimumjerk.pdf) following dynamic red light stopping locations | 
 | Control     | Waypoint Follower        | Effendi        | Taylor           | Implement improvements to Autoware's base Pure Pursuit library to set target linear velocity and target angular velocity to follow upcoming waypoints                                                   |
-| Control     | DBW (Twist Controller)   | Taylor         | Effendi          | Implement & tune PID feedback control with low pass filtering for throttle/brake commands and kinematic yaw control for steering command                                                                |
+| Control     | [DBW (Twist Controller)](dbw_control.md)   | Taylor         | Effendi          | Implement & tune PID feedback control with low pass filtering for throttle/brake commands and kinematic yaw control for steering command                                                                |
 | Integration | Simulation Testing       | Meenu          | Anthony          | Test & debug fully integrated control system with the simulation on a highway track and test lot course                                                                                                 |
 | Integration | Real-world Image Testing | Meenu          | Shripad          | Test & debug traffic light classifier with real-world camera images from recorded ROS bag data                                                                                                          |
 | Integration | Visualization Tools      | Effendi        | Taylor           | Set up data visualization & analysis tools using ROS RQT with Multiplot plugin and RViz 3D scene viewer                                                                                                 |
@@ -62,7 +62,7 @@ The Control area's **DBW Node (Twist Controller)** sets the **throttle, brake, a
 #### Control
 
 * [Waypoint Follower](https://github.com/team-fusionx/CarND-Capstone/wiki/Waypoint-Follower)
-* [DBW Node (Twist Controller)](https://github.com/team-fusionx/CarND-Capstone/wiki/Twist-Controller-DBW)
+* [DBW Node (Twist Controller)](dbw_control.md)
 
 #### Integration
 
