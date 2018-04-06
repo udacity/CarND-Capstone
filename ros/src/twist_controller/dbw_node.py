@@ -59,6 +59,7 @@ class DBWNode(object):
 
         # Assume that drive-by-wire is disabled
         self.dbw_enbl = False
+        self.hold_veh = False
 
         # State of the car
         self.current_twist = None
