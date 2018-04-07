@@ -238,9 +238,12 @@ class TLDetector(object):
                             # camera img
                             self.save_img(ind)
 
-                    # if the car is near the stop line, start tl recognition
+                    # in simulator, if the car is near the stop line, start tl recognition
                     if (0 < (ahead_stop_line_wp - car_waypoint)
-                            < DETECTION_DISTANCE):
+                            < DETECTION_DISTANCE) and not self.site_test:
+                        state = self.get_light_state()
+                    # in site test(carla), the tl recognition is always on
+                    elif self.site_test:
                         state = self.get_light_state()
                     break
 
