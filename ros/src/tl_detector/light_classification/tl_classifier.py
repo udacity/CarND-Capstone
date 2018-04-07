@@ -16,8 +16,8 @@ class TLClassifier(object):
 #            model = load_model('light_classification/models/MobileNet-tl-weights-5-116-val_acc-0.94.hdf5')
 #       
         
-        model = load_model("light_classification/models/ResNet50-SimData-tl-weights-Best-val_acc-1.0.hdf5")
-        
+#        model = load_model("light_classification/models/ResNet50-SimData-tl-weights-Best-val_acc-1.0.hdf5")
+        model = load_model("light_classification/models/ResNet50-UdacityRealandSimMix-Best-val_acc-1.0.hdf5")        
             
             
             
@@ -61,7 +61,7 @@ class TLClassifier(object):
         y_class = yhat.argmax(axis=-1)
         labels = self.labels
 
-#        rospy.logdebug('%s (%.2f%%) : GPU time (s) : %f', labels[y_class], yhat[y_class]*100, dt.to_sec())
+#        rospy.logwarn('%s (%.2f%%) : GPU time (s) : %f', labels[y_class], yhat[y_class]*100, dt.to_sec())
         self.current_light = TrafficLight.UNKNOWN
         if (yhat[y_class]>0.5):
             if y_class == 0:

@@ -17,6 +17,8 @@ from scipy.spatial import KDTree
 STATE_COUNT_THRESHOLD = 3
 UPDATE_RATE = 10
 CLASSIFY_BY_GROUND_TRUTH = False
+tl_decoder = ['RED','YELLOW','GREEN','','UNKNOWN']
+
 
 class TLDetector(object):
     def __init__(self):
@@ -52,32 +54,38 @@ class TLDetector(object):
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
         self.previous_light_state = TrafficLight.UNKNOWN
+
         self.busy = False
 
         self.last_wp = -1
         self.state_count = 0
         self.L_update = False
+        self.light_change_to_red_or_yellow = False
 
         rospy.logdebug('Red: %s', TrafficLight.RED)
         rospy.logdebug('Yellow: %s', TrafficLight.YELLOW)
         rospy.logdebug('Green: %s', TrafficLight.GREEN)
         rospy.logdebug('Unknown: %s', TrafficLight.UNKNOWN)
-
-        #tl_detection node subscribes to:
-        #/base_waypoints provides the complete list of waypoints for the course.
-        #/current_pose can be used used to determine the vehicle's location.
-        #/image_color which provides an image stream from the car's camera. These images are used to determine the color of upcoming traffic lights.
-        #/vehicle/traffic_lights provides the (x, y, z) coordinates of all traffic lights.
+        
+        '''
+        tl_detection node subscribes to:
+        /base_waypoints provides the complete list of waypoints for the course.
+        /current_pose can be used used to determine the vehicle's location.
+        /image_color which provides an image stream from the car's camera. 
+             These images are used to determine the color of upcoming traffic lights.
+        /vehicle/traffic_lights provides the (x, y, z) coordinates of all traffic lights.
+        '''
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
 
         '''
-        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
-        helps you acquire an accurate ground truth data source for the traffic light
-        classifier by sending the current color state of all traffic lights in the
-        simulator. When testing on the vehicle, the color state will not be available. You'll need to
-        rely on the position of the light and the camera image to predict it.
+        /vehicle/traffic_lights provides you with the location of the traffic light in 
+        3D map space and helps you acquire an accurate ground truth data source for 
+        the traffic light classifier by sending the current color state of all traffic 
+        lights in the simulator. When testing on the vehicle, the color state will not 
+        be available. You'll need to rely on the position of the light and 
+        the camera image to predict it.
         '''
        
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb, queue_size=1)
@@ -85,14 +93,13 @@ class TLDetector(object):
 
         self.rate = rospy.Rate(UPDATE_RATE)
         self.loop()
-        #rospy.spin()
 
     def loop(self):
         while not rospy.is_shutdown():
             if self.has_image:        
-                #light_wp, state = self.process_traffic_lights()     
 
-                """ Added the following to confirm classifier light state - to rule out any latency issue
+                """ Added the following to confirm classifier light state 
+                    - to rule out any latency issue
                 """	
                 light_wp, gt_state, tl_state = self.process_traffic_lights()
         
@@ -111,19 +118,38 @@ class TLDetector(object):
                     self.state = state
                     self.L_update = True 
                 elif self.state_count >= STATE_COUNT_THRESHOLD:
+                    '''
+                    Condition to update wp only when light changing to red or yellow
+                    '''
+
+                    if (self.last_state == TrafficLight.GREEN 
+                        and state == TrafficLight.YELLOW):
+                            self.light_change_to_red_or_yellow = True
+                    elif state == TrafficLight.RED:
+                            self.light_change_to_red_or_yellow = True
+                    else:		
+                            self.light_change_to_red_or_yellow = False
+                    
+                    #Update last state and waypoint        
                     self.last_state = self.state
-                    light_wp = light_wp if state == TrafficLight.RED else -1
+
+                    if self.light_change_to_red_or_yellow:
+                        light_wp = light_wp
+                    else:
+                        light_wp = -1
+
                     self.last_wp = light_wp
                     self.upcoming_red_light_pub.publish(Int32(light_wp))
+
                     if self.L_update:
                         self.L_update = False
                         if self.light_classifier is not None:
-                             rospy.logdebug('Upcoming GT Light state: %s',gt_state)     
-                             rospy.logdebug('Upcoming Classifier Light state: %s',state)
+                             rospy.logwarn('Upcoming GT Light state: %s',tl_decoder[gt_state])     
+                             rospy.logwarn('Upcoming Classifier Light state: %s',tl_decoder[state])
                         else:
-                             rospy.logdebug('Upcoming GT Light state: %s',state)     
-                             rospy.logdebug('Upcoming Classifier Light state: %s',tl_state)			
-                        rospy.logdebug('Upcoming Stop line: %f',light_wp)
+                             rospy.logwarn('Upcoming GT Light state: %s',tl_decoder[state])     
+                             rospy.logwarn('Upcoming Classifier Light state: %s',tl_decoder[tl_state])			
+                        rospy.logwarn('Upcoming Stop line: %f',light_wp)
                 else:
                     self.upcoming_red_light_pub.publish(Int32(self.last_wp))
                 self.state_count += 1
@@ -213,12 +239,42 @@ class TLDetector(object):
         ntl_wp = -1
         gt_ntl_state =TrafficLight.UNKNOWN
         ntl_state =TrafficLight.UNKNOWN
-
+        classified_tl_state =TrafficLight.UNKNOWN  	
         if self.light_classifier is not None: 
             if not self.busy:
                 self.busy = True
-                ntl_state = self.get_light_state()
-                self.previous_light_state = ntl_state
+                classified_tl_state = self.get_light_state()
+
+                '''
+                Update next Traffic Light state only for Valid Light state transitions		
+                # State 0 - RED -> GREEN/RED
+                # State 1 - YELLOW -> RED/YELLOW/UNKNOWN
+                # State 2 - GREEN -> YELLOW/GREEN/RED(upcoming signal was already RED)/UNKNOWN 
+                # State 4 - Unknown -> RED/YELLOW/GREEN
+                Assign next Traffic light state = previous state -
+                   if there is no change in classification or 
+                   if the predicted state doesnt meet the expected state			
+                '''
+
+                if ((self.previous_light_state == TrafficLight.UNKNOWN) 
+                     or ((self.previous_light_state == TrafficLight.GREEN) 
+                          and (classified_tl_state == TrafficLight.YELLOW)) 
+                     or ((self.previous_light_state == TrafficLight.GREEN) 
+                          and (classified_tl_state == TrafficLight.RED)) 
+                     or ((self.previous_light_state == TrafficLight.GREEN) 
+                          and (classified_tl_state == TrafficLight.UNKNOWN)) 
+                     or ((self.previous_light_state == TrafficLight.YELLOW) 
+                          and (classified_tl_state == TrafficLight.RED)) 
+                     or ((self.previous_light_state == TrafficLight.YELLOW) 
+                          and (classified_tl_state == TrafficLight.UNKNOWN)) 
+                     or ((self.previous_light_state == TrafficLight.RED) 
+                          and (classified_tl_state == TrafficLight.GREEN)) 
+                   ):
+                    ntl_state= classified_tl_state
+                    self.previous_light_state = ntl_state
+                else:
+                    ntl_state = self.previous_light_state
+
                 self.busy = False
                 #clearing the image placeholder until the next image callback to avoid latching on the same image
                 self.camera_image = None
@@ -249,24 +305,17 @@ class TLDetector(object):
         dx = ntl_wp - car_position
         if dx>=0 and dx < 1000:
         #stop line nearest to the nearest light
-        #if ntl_wp > 0:
             for position in self.stop_line_waypoints:
                 if position < ntl_wp:
                     if ((ntl_wp - position) < stop_distance):
                         stop_distance = (ntl_wp - position)	
                         stop_line = position
 
-        #if stop_line > 0:
         if stop_distance < 1000:
-            #if TLC_ENABLED:
-            #   ntl_state = self.get_light_state()
-            #   #Argument light may not be required
             return stop_line,gt_ntl_state, ntl_state 
-            #return stop_line, ntl_state 
+
         else:
-            #rospy.logdebug('Light state: %s',TrafficLight.UNKNOWN)
             return -1, TrafficLight.UNKNOWN, TrafficLight.UNKNOWN
-            #return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
