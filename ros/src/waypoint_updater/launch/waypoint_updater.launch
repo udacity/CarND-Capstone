@@ -7,7 +7,7 @@
         <param name="handoff_velocity" type="double" value="1.0" />
         <param name="min_moving_velocity" type="double" value="1.0" />
         <param name="max_accel" type="double" value="5.0" />
-        <param name="max_desired_jerk" type="double" value="2.0" />
+        <param name="max_desired_jerk" type="double" value="1.0" />
         <param name="abs_max_jerk" type="double" value="4.0" />
     </node>
 </launch>

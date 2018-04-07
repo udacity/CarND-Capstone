@@ -74,17 +74,17 @@ class JMT(object):
             t += t_smallinc
             delta_s = displacement - self.get_s_at(t)
 
-        rospy.logdebug("delta_s = {}, t= {}, iterations = {}".format(
+        rospy.logdebug("delta_s = {:3.3f}, t= {:3.3f}, iterations = {}".format(
             delta_s, t, iterations))
         if delta_s > 0.1:
             rospy.loginfo("waypoint_updater:JMTD_at need to refine algo,"
-                          " delta_s is {}".format(delta_s))
+                          " delta_s is {:3.3f}".format(delta_s))
 
         details = JMTDetails(self.get_s_at(t), self.get_v_at(t),
                              self.get_a_at(t), self.get_j_at(t), t)
 
-        rospy.logdebug("waypoint_updater:JMTD_at displacement {} found "
-                       "s,v,a,j,t = {}".format(displacement, details))
+        rospy.logdebug("waypoint_updater:JMTD_at displacement {:3.3f} found "
+                       "t,s,v,a,j = {}".format(displacement, details))
 
         return details
 
