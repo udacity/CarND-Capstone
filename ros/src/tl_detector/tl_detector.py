@@ -54,8 +54,6 @@ class TLDetector(object):
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
-        self.bridge = CvBridge()
-        self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
@@ -65,6 +63,9 @@ class TLDetector(object):
         # All stop line positions are fixed. Just need to load once
         self.stop_line_positions = self.config['stop_line_positions']
         rospy.loginfo('stop_line_positions:\n {}'.format(self.stop_line_positions))
+        
+        self.bridge = CvBridge()
+        self.listener = tf.TransformListener()
         
         rospy.spin()
 
