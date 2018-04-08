@@ -14,14 +14,10 @@ ONE_MPH = 0.44704
 
 class Controller(object):
 
-    def __init__(self, default_update_interval, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, max_deceleration, max_acceleration, fuel_capacity, vehicle_mass, wheel_radius):
-        self.fuel_capacity = fuel_capacity
-        self.vehicle_mass = vehicle_mass
-        self.wheel_radius = wheel_radius
+    def __init__(self, default_update_interval, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, max_deceleration, max_throttle, fuel_capacity, vehicle_mass, wheel_radius):
         self.current_timestep = None
         self.previous_acceleration = 0.
-        self.max_deceleration = max_deceleration
-        self.max_acceleration = max_acceleration
+        self.max_throttle = max_throttle
         self.default_update_interval = default_update_interval
         self.velocity_increase_limit_constant = 0.25
         self.velocity_decrease_limit_constant = 0.1
@@ -31,6 +27,9 @@ class Controller(object):
         self.lpf_tau_throttle = 0.3
         self.lpf_tau_brake = 0.5
         self.lpf_tau_steering = 0.1
+
+        self.max_braking_torque = (
+            vehicle_mass + fuel_capacity * GAS_DENSITY) * max_deceleration * wheel_radius
 
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
@@ -103,8 +102,9 @@ class Controller(object):
             self.braking_pid_controller.reset()
             control_mode = "PID throttle"
 
-        # apply low pass filter on brake command
-        filtered_brake = self.brake_lpf.filt(brake_command)
+        # apply low pass filter and maximum limit on brake command
+        filtered_brake = min(
+            self.max_braking_torque, self.brake_lpf.filt(brake_command))
 
         # do not apply throttle if any brake is applied
         if filtered_brake < 10:
@@ -115,8 +115,9 @@ class Controller(object):
             throttle_command = 0
             self.velocity_pid_controller.reset()
 
-        # apply low pass filter on throttle command
-        filtered_throttle = self.throttle_lpf.filt(throttle_command)
+        # apply low pass filter and maximum limit on throttle command
+        filtered_throttle = min(
+            self.max_throttle, self.throttle_lpf.filt(throttle_command))
 
         rospy.loginfo('%s: current linear velocity %.2f, target linear velocity %.2f, is_decelerating %s, throttle_command %.2f, brake_command %.2f, error %.2f, thresh %.2f',
                       control_mode, current_linear_velocity, target_linear_velocity, is_decelerating, filtered_throttle, filtered_brake, velocity_error, error_thresh)

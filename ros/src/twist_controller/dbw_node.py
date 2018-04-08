@@ -31,6 +31,7 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        throttle_limit = rospy.get_param('~throttle_limit', 0.2)
 
         # TODO - define min_speed as a parameter in the parameter server?
         min_speed = 0.
@@ -57,7 +58,7 @@ class DBWNode(object):
 
         # Create `Controller` object
         self.controller = Controller(
-            default_update_rate, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, decel_limit, accel_limit, fuel_capacity, vehicle_mass, wheel_radius)
+            default_update_rate, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, decel_limit, throttle_limit, fuel_capacity, vehicle_mass, wheel_radius)
 
         # Subscribe to messages about car being under drive by wire control
         rospy.Subscriber(
