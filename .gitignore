@@ -9,3 +9,7 @@ profile.tmp
 
 # Idea
 .idea/
+
+
+data/*.bag
+ros/src/twist_controller/*.csv
