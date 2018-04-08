@@ -23,7 +23,7 @@ class Controller(object):
         self.velocity_decrease_limit_constant = 0.1
         self.braking_to_throttle_threshold_ratio = 4. / 3.
         self.manual_braking_upper_velocity_limit = 1.5
-        self.braking_torque_to_stop = 50
+        self.braking_torque_to_stop = 100
         self.lpf_tau_throttle = 0.3
         self.lpf_tau_brake = 0.5
         self.lpf_tau_steering = 0.1
