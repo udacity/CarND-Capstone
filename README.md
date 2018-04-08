@@ -6,7 +6,7 @@ We are the RockAutonomous Team, the team members are:
  Shen Zebang | shenzb12@lzu.edu.cn
  Cui Jiahao | 1120798947@qq.com
  chenzhao | chenzh8312@sina.com.cn
- shenghangao | gaoshenghan199123@gmail.com
+ Shenghan Gao | gaoshenghan199123@gmail.com
  Tian Run | tianrunison@163.com
 
 
