@@ -92,7 +92,7 @@ class WaypointUpdater(object):
         self.update_rate = 10
         self.max_velocity = 0.0  # set based on max velocity in waypoints
         self.default_velocity = 0.0 #10.7
-        self.lookahead_wps = 20  # 200 is too many
+        self.lookahead_wps = self.lookahead_wps_reset = 20  # 200 is too many
         self.subs = {}
         self.pubs = {}
         self.dyn_reconf_srv = None
@@ -105,6 +105,7 @@ class WaypointUpdater(object):
         self.stopping_distance = 0.0
         self.decel_at_min_moving_velocity = -0.1  # had biased to -0.5 but not needed
         self.got_to_end = False  # have we reached the end of the track?
+        self.dbw_enabled = False
 
         rospy.init_node('waypoint_updater', log_level=rospy.INFO)
         #rospy.init_node('waypoint_updater', log_level=rospy.DEBUG)
@@ -128,6 +129,9 @@ class WaypointUpdater(object):
 
         self.subs['/traffic_waypoint'] = \
             rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+
+        self.subs['/vehicle/dbw_enabled'] = \
+            rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         # TODO: Add a subscriber for /obstacle_waypoint
 
@@ -208,6 +212,7 @@ class WaypointUpdater(object):
                           .format(old_lookahead_wps,
                                   config['dyn_lookahead_wps']))
             self.lookahead_wps = config['dyn_lookahead_wps']
+            self.lookahead_wps_reset = self.lookahead_wps
 
         if old_test_stoplight_wp != config['dyn_test_stoplight_wp']\
                 and\
@@ -345,6 +350,12 @@ class WaypointUpdater(object):
             # just for debug to see what we're getting
             rospy.logdebug("same /traffic_waypoint message tl_wp = {} received."
                            .format(traffic_msg.data))
+
+    def dbw_enabled_cb(self, dbw_enabled_message):
+        if self.dbw_enabled != dbw_enabled_message.data:
+            rospy.logwarn("Setting dbw to {} in waypoint_updater"
+                          .format(dbw_enabled_message.data))
+            self.dbw_enabled = dbw_enabled_message.data
 
     def get_dist_to_tl(self):
         # this can happen before we get a traffic_wp msg
@@ -851,7 +862,7 @@ class WaypointUpdater(object):
         recalc = False       # indication that JMT calcs exceed bounds
 
         if self.final_waypoints_start_ptr == len(self.waypoints) - 1:
-            if self.got_to_end is False:
+            if self.got_to_end is False and self.dbw_enabled:
                 rospy.logwarn("reached end of track at ptr = {}".format(self.final_waypoints_start_ptr))
                 self.got_to_end = True
             dist_to_tl = 0.0
@@ -883,7 +894,9 @@ class WaypointUpdater(object):
                       .format(self.state, self.next_tl_wp, dist_to_tl))
 
         # handle case where car is stopped at lights and light is red
-        if self.state == 'stopped' and dist_to_tl < self.dyn_tl_buffer:
+        # or keep in stopped state when dbw_enabled is OFF and car is stopped
+        if ((self.state == 'stopped' and dist_to_tl < self.dyn_tl_buffer)
+                or (self.dbw_enabled is False and self.velocity < self.min_moving_velocity)):
             self.set_stopped(self.final_waypoints_start_ptr,
                              self.lookahead_wps)
 
@@ -1279,6 +1292,8 @@ class WaypointUpdater(object):
 
     def send_waypoints(self):
         # generates the list of LOOKAHEAD_WPS waypoints based on car location
+        if self.dbw_enabled is False:
+            self.reset_for_dbw()
 
         if self.got_to_end is False:
             self.final_waypoints_start_ptr = self.closest_waypoint()
@@ -1316,6 +1331,13 @@ class WaypointUpdater(object):
             self.is_decelerating = False
 
         self.pubs['/is_decelerating'].publish(self.is_decelerating)
+
+    def reset_for_dbw(self):
+        self.got_to_end = False
+        self.lookahead_wps = self.lookahead_wps_reset
+        if self.velocity < self.min_moving_velocity:
+            self.set_stopped(self.final_waypoints_start_ptr,
+                             self.lookahead_wps)
 
     def closest_waypoint(self):
 
