@@ -44,7 +44,7 @@ class Controller(object):
         # Keep full brake if target velocity is almost 0
         if self.cmd_vel < FULL_BRAKE_SPEED:
             throttle = 0.0
-            brake_torque = self.acceleration_to_torque(abs(self.decel_limit))
+            brake_torque = self.decel_limit * self.total_mass * self.wheel_radius 
         else:
             if cmd_acc > 0.0:
                 throttle = cmd_acc
@@ -59,5 +59,4 @@ class Controller(object):
 
                 # Compute brake torque, in Nm
                 brake_torque = deceleration * self.total_mass * self.wheel_radius 
-
         return throttle, brake_torque, steer
