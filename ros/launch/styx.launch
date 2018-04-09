@@ -16,10 +16,11 @@
     <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
 
     <!--Traffic Light Detector Node -->
-    <include file="$(find tl_detector)/launch/tl_detector.launch"/>
+    <!-- <include file="$(find tl_detector)/launch/tl_detector.launch"/> -->
 
     <!--Traffic Light Locations and Camera Config -->
-    <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
+
+    <!-- <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" /> -->
 
     <arg name="log_level" default="info" doc="Valid values: {info, debug}"/>
     <param name="log_level" value="$(arg log_level)" />
@@ -29,4 +30,5 @@
 
     <arg name="record_path" default="" doc="Directory path to save training data."/>
     <param name="record_path" value="$(arg record_path)" />
+
 </launch>
