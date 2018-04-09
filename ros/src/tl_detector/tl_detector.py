@@ -161,21 +161,26 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         """Callback fuction for list of all waypoints."""
-        self.waypoints = waypoints
+        t_waypoints = waypoints
 
         # Build KD tree for closest waypoint search
-        self.waypoints_2d = []
-        for wp in self.waypoints.waypoints:
-            self.waypoints_2d.append([wp.pose.pose.position.x,
-                                      wp.pose.pose.position.y])
-        self.waypoint_tree = KDTree(self.waypoints_2d)
+        t_waypoints_2d = []
+        for wp in t_waypoints.waypoints:
+            t_waypoints_2d.append([wp.pose.pose.position.x,
+                                   wp.pose.pose.position.y])
+        t_waypoint_tree = KDTree(t_waypoints_2d)
+
+        self.waypoints = t_waypoints
+        self.waypoints_2d = t_waypoints_2d
+        self.waypoint_tree = t_waypoint_tree
 
         # Build list of closest waypoint to each stop line position
-        self.stop_line_waypoints = []
+        t_stop_line_waypoints = []
         for pts in self.stop_line_positions:
             sl_wp = self.get_closest_waypoint(pts[0], pts[1])
-            self.stop_line_waypoints.append(sl_wp)
+            t_stop_line_waypoints.append(sl_wp)
 
+        self.stop_line_waypoints = t_stop_line_waypoints
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -283,13 +288,13 @@ class TLDetector(object):
                 ntl_state = self.previous_light_state
 
 
-        if self.pose and self.waypoints:
+        if self.pose and self.waypoint_tree:
             car_position = self.get_closest_waypoint(self.pose.pose.position.x,
                                                      self.pose.pose.position.y)
 
         # State = 0 : Red
         if ((ntl_state != 4) or (self.light_classifier is None)):
-            if car_position:
+            if car_position and self.waypoint_tree:
                 for tl in self.lights:
                     nearest_waypoint = self.get_closest_waypoint(
                                                     tl.pose.pose.position.x,
