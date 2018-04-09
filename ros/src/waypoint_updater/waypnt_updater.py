@@ -6,6 +6,7 @@
 
 import rospy
 import math
+import copy
 import numpy as np
 from scipy.spatial import KDTree
 from jmt import JMT, JMTDetails, JMTD_waypoint
@@ -485,6 +486,9 @@ class WaypointUpdater(object):
         # start[s, velocity, acc]
         # end[s, velocity, acc]
 
+        save_start = copy.deepcopy(start)
+        save_end = copy.deepcopy(end)
+
         if start[1] <= self.min_moving_velocity:
             return 0.5
 
@@ -504,6 +508,10 @@ class WaypointUpdater(object):
                        " in {:3.3f}m and {:3.3f}s."
                        .format(start[1], start[2], end[1], end[2], a_dist, T))
 
+        Tmin = (end[0] - start[0]) / self.default_velocity
+
+        save_T = T
+        try_reverse = False
         jmt = JMT(start, end, T)
         jerk = jmt.get_j_at(0.1)
         e_acc = jmt.get_a_at(T - 0.5)
@@ -528,13 +536,66 @@ class WaypointUpdater(object):
                 jerk = jmt.get_j_at(0.1)
                 e_acc = jmt.get_a_at(T - 0.5)
                 s_acc = jmt.get_a_at(0.5)
+
+                rospy.logdebug("e_acc={:3.2f}, e_acc-end2={:3.2f}, old_eacc-end2={:3.2f} ,s_acc={:3.2f}, s_acc-start2={:3.2f}, old_sacc-start2={:3.2f}"
+                        .format(e_acc, e_acc-end[2], old_e_acc-end[2], s_acc, s_acc-start[2],old_s_acc-start[2]))
                 if counter == 1 and\
-                        ( e_acc - end[2] > old_e_acc - end[2] or
-                         start[2] - s_acc > start[2] - old_e_acc):
+                        ((e_acc > end[2] and math.fabs(e_acc - end[2]) > math.fabs(old_e_acc - end[2])) or
+                        (s_acc > start[2] and math.fabs(start[2] - s_acc) > math.fabs(start[2] - old_e_acc))):
                     rospy.loginfo("searching wrong direction - go the other way")
                     time_diff = 0.0 - time_diff
 
-                if counter > 30:
+                if counter > 50 or T < Tmin:
+                    rospy.logwarn("counter is {} in get_stopping_time - bail on searching in this direction!"
+                                .format(counter))
+                    optimized = True
+                    try_reverse = True
+                rospy.logdebug("found initial jerk of {:3.2f}m/s^3 and start_acc={:3.3f}m/s^2 end_acc={:3.3f}m/s^2"
+                       " using a_dist of {:3.2f}m and T={:3.2f}s"
+                       .format(jerk, s_acc, e_acc, a_dist, T))
+
+        if try_reverse == False:
+            duration = rospy.get_time() - timer_start
+            rospy.loginfo("get_stopping_time found shortest distance to decelerate with max_neg_jerk={:3.3f}m/s^3 "
+                            "from v={:3.3f}m/s, a={:3.3f}m/s^2 to v={:3.3f}m/s a={:3.3f}m/s^2 in dist {:3.3f}m"
+                            " in time {:3.3f}s - Took {:3.4f}s to calc."
+                            .format(jerk, start[1], start[2], end[1], end[2],
+                                    a_dist, T, duration))
+            return T
+
+        #########
+        T = save_T
+        start = save_start
+        end = save_end
+        jmt = JMT(start, end, T)
+        jerk = jmt.get_j_at(0.1)
+        e_acc = jmt.get_a_at(T - 0.5)
+        s_acc = jmt.get_a_at(0.5)
+
+        rospy.logdebug("Reverse found initial jerk of {:3.2f}m/s^3 and start_acc={:3.3f}m/s^2 end_acc={:3.3f}m/s^2"
+                       " using a_dist of {:3.2f}m and time of {:3.2f}s"
+                       .format(jerk, s_acc, e_acc, a_dist, T))
+
+        optimized = False
+        time_diff = 0.0 - time_diff
+
+        counter = 0
+        while optimized is False:
+            old_e_acc = e_acc
+            old_s_acc = s_acc
+            if e_acc < end[2] and s_acc < start[2]:
+                optimized = True
+            else:
+                counter = counter + 1
+                T = T + time_diff
+                jmt = JMT(start, end, T)
+                jerk = jmt.get_j_at(0.1)
+                e_acc = jmt.get_a_at(T - 0.5)
+                s_acc = jmt.get_a_at(0.5)
+                rospy.logdebug("e_acc={:3.2f}, e_acc-end2={:3.2f}, old_eacc-end2={:3.2f} ,s_acc={:3.2f}, s_acc-start2={:3.2f}, old_sacc-start2={:3.2f}"
+                        .format(e_acc, e_acc-end[2], old_e_acc-end[2], s_acc, s_acc-start[2],old_s_acc-start[2]))
+
+                if counter > 50 or T < Tmin:
                     rospy.logwarn("counter is {} in get_stopping_time - bail!"
                                 .format(counter))
                     optimized = True
@@ -542,13 +603,12 @@ class WaypointUpdater(object):
                        " using a_dist of {:3.2f}m and T={:3.2f}s"
                        .format(jerk, s_acc, e_acc, a_dist, T))
 
-
         duration = rospy.get_time() - timer_start
         rospy.loginfo("get_stopping_time found shortest distance to decelerate with max_neg_jerk={:3.3f}m/s^3 "
-                      "from v={:3.3f}m/s, a={:3.3f}m/s^2 to v={:3.3f}m/s a={:3.3f}m/s^2 in dist {:3.3f}m"
-                      " in time {:3.3f}s - Took {:3.4f}s to calc."
-                      .format(jerk, start[1], start[2], end[1], end[2],
-                              a_dist, T, duration))
+                        "from v={:3.3f}m/s, a={:3.3f}m/s^2 to v={:3.3f}m/s a={:3.3f}m/s^2 in dist {:3.3f}m"
+                        " in time {:3.3f}s - Took {:3.4f}s to calc."
+                        .format(jerk, start[1], start[2], end[1], end[2],
+                                a_dist, T, duration))
         return T
 
     def setup_stop_jmt(self, ptr_id, a_dist):
@@ -1067,7 +1127,8 @@ class WaypointUpdater(object):
         # curve does not wobbble above max _velocity
         # start[s, velocity, acc]
         # end[s, velocity, acc]
-
+        save_start = copy.deepcopy(start)
+        save_end = copy.deepcopy(end)
         if start[1] >= self.default_velocity * 0.95 and\
             start[2] >= 0.0:
             rospy.logwarn("Only small velocity change, time of 0.5 returned")
@@ -1077,7 +1138,7 @@ class WaypointUpdater(object):
 
         if start[2] < 0.0:
             # currently slowing down
-            time_factor = 1.1
+            time_factor = 1.0 #1.1
         else:
             time_factor = 1.0  # self.dyn_jmt_time_factor
 
@@ -1089,39 +1150,105 @@ class WaypointUpdater(object):
                        " in dist {:3.3f} m in time {:3.3f} s"
                        .format(start[1], start[2], end[1], a_dist, T))
 
+        # time can not be shorter than this
+        Tmin = (end[0] - start[0]) / self.default_velocity
+
+        save_T = T
+        try_reverse = False
         jmt = JMT(start, end, T)
         jerk = jmt.get_j_at(0.1)
-        acc = jmt.get_a_at(T - 0.5)
+        e_acc = jmt.get_a_at(T - 0.5)
+        s_acc = jmt.get_a_at(0.5)
 
-        rospy.logdebug("found initial jerk={:3.2f}m/s^3 and final acc = {:3.2f}m/s^2 "
-                       "when using a_dist={:3.2f}m and T={:3.2f}s"
-                       .format(jerk, acc, a_dist, T))
+        rospy.logdebug("found initial jerk of {:3.2f}m/s^3 and start_acc={:3.3f}m/s^2 end_acc={:3.3f}m/s^2"
+                       " using a_dist of {:3.2f}m and time of {:3.2f}s"
+                       .format(jerk, s_acc, e_acc, a_dist, T))
 
         optimized = False
-        time_diff = T * 0.01
+        time_diff = T * 0.04
         counter = 0
-        if acc < 0.0:
-            while optimized is False:
+        while optimized is False:
+            old_e_acc = e_acc
+            old_s_acc = s_acc
+            if e_acc > end[2] and s_acc > start[2]:
+                optimized = True
+            else:
+                counter = counter + 1
                 T = T + time_diff
                 jmt = JMT(start, end, T)
                 jerk = jmt.get_j_at(0.1)
-                acc = jmt.get_a_at(T - 0.5)
-                rospy.logdebug("found initial jerk={:3.2f}m/s^3 and final acc = {:3.2f}m/s^2 "
-                               "when using a_dist={:3.2f}m and T={:3.2f}s"
-                               .format(jerk, acc, a_dist, T))
-                counter = counter + 1
-                if acc > 0.0:
+                e_acc = jmt.get_a_at(T - 0.5)
+                s_acc = jmt.get_a_at(0.5)
+                rospy.logdebug("start2={:3.4f}s_acc={:3.4f}, end2={:3.4f}, e_acc={:3.4f}, s_acc-olds_acc={:3.4f}, s_acc-start2={:3.4f}, old_sacc-start2={:3.4f}, e_acc-olde_acc={:3.4f}, e_acc-end2={:3.4f}, old_eacc-end2={:3.4f}"
+                        .format(start[2], s_acc, end[2], e_acc, s_acc-old_s_acc, s_acc-start[2], old_s_acc-start[2], e_acc-old_e_acc, e_acc-end[2], old_e_acc-end[2] ))
+                if counter == 1 and\
+                        (( e_acc < end[2] and math.fabs(e_acc - end[2]) > math.fabs(old_e_acc - end[2]) ) or
+                        (s_acc < start[2] and math.fabs( start[2] - s_acc ) > math.fabs(start[2] - old_e_acc))):
+                    rospy.loginfo("searching wrong direction - go the other way")
+                    time_diff = 0.0 - time_diff
+
+                if counter > 40 or T < Tmin:
+                    rospy.logwarn("counter is {} in get_speedup_time - bail on searching in this direction!"
+                                .format(counter))
                     optimized = True
-                if counter > 30:
+                    try_reverse = True
+                rospy.logdebug("found initial jerk of {:3.2f}m/s^3 and start_acc={:3.3f}m/s^2 end_acc={:3.3f}m/s^2"
+                            " using a_dist of {:3.2f}m and T={:3.2f}s"
+                            .format(jerk, s_acc, e_acc, a_dist, T))
+        if try_reverse == False:
+            duration = rospy.get_time() - timer_start
+            rospy.loginfo("get_speedup_time found shortest Time to accelerate with max_jerk={:3.3f}m/s^3 "
+                      "from v={:3.3f}m/s, a={:3.3f}m/s^2 to v={:3.3f}m/s a={:3.3f}m/s^2 in dist {:3.3f}m"
+                      " in time {:3.3f}s - Took {:3.4f}s to calc."
+                      .format(jerk, start[1], start[2], end[1], end[2],
+                              a_dist, T, duration))
+            return T
+
+        #########
+        T = save_T
+        start = save_start
+        end = save_end
+        jmt = JMT(start, end, T)
+        jerk = jmt.get_j_at(0.1)
+        e_acc = jmt.get_a_at(T - 0.5)
+        s_acc = jmt.get_a_at(0.5)
+
+        rospy.logdebug("Reverse found initial jerk of {:3.2f}m/s^3 and start_acc={:3.3f}m/s^2 end_acc={:3.3f}m/s^2"
+                       " using a_dist of {:3.2f}m and time of {:3.2f}s"
+                       .format(jerk, s_acc, e_acc, a_dist, T))
+
+        optimized = False
+        time_diff = 0.0 - time_diff
+
+        counter = 0
+        while optimized is False:
+            old_e_acc = e_acc
+            old_s_acc = s_acc
+            if e_acc > end[2] and s_acc > start[2]:
+                optimized = True
+            else:
+                counter = counter + 1
+                T = T + time_diff
+                jmt = JMT(start, end, T)
+                jerk = jmt.get_j_at(0.1)
+                e_acc = jmt.get_a_at(T - 0.5)
+                s_acc = jmt.get_a_at(0.5)
+                rospy.logdebug("start2={:3.4f}s_acc={:3.4f}, end2={:3.4f}, e_acc={:3.4f}, s_acc-olds_acc={:3.4f}, s_acc-start2={:3.4f}, old_sacc-start2={:3.4f}, e_acc-olde_acc={:3.4f}, e_acc-end2={:3.4f}, old_eacc-end2={:3.4f}"
+                        .format(start[2], s_acc, end[2], e_acc, s_acc-old_s_acc, s_acc-start[2], old_s_acc-start[2], e_acc-old_e_acc, e_acc-end[2], old_e_acc-end[2] ))
+
+                if counter > 30 or T < Tmin:
                     rospy.logwarn("counter is {} in get_speedup_time - bail!"
                                 .format(counter))
                     optimized = True
+                rospy.logdebug("found initial jerk of {:3.2f}m/s^3 and start_acc={:3.3f}m/s^2 end_acc={:3.3f}m/s^2"
+                            " using a_dist of {:3.2f}m and T={:3.2f}s"
+                            .format(jerk, s_acc, e_acc, a_dist, T))
 
         duration = rospy.get_time() - timer_start
-        rospy.loginfo("get_speedup_time found shortest Time to accelerate with max_jerk={:3.3f} and final acc={:3.2f}"
-                      " from v={:3.3f}, a={:3.3f} to v={:3.3f}, a={:3.3f} in dist {:3.3f}"
-                      " m in T={:3.3f}s - took {:3.4f}s to calc"
-                      .format(jerk, acc, start[1], start[2], end[1], end[2],
+        rospy.loginfo("get_speedup_time found shortest Time to accelerate with max_jerk={:3.3f}m/s^3 "
+                      "from v={:3.3f}m/s, a={:3.3f}m/s^2 to v={:3.3f}m/s a={:3.3f}m/s^2 in dist {:3.3f}m"
+                      " in time {:3.3f}s - Took {:3.4f}s to calc."
+                      .format(jerk, start[1], start[2], end[1], end[2],
                               a_dist, T, duration))
         return T
 
