@@ -29,7 +29,7 @@ class Controller(object):
         self.lpf_tau_steering = 0.1
 
         self.max_braking_torque = (
-            vehicle_mass + fuel_capacity * GAS_DENSITY) * max_deceleration * wheel_radius
+            vehicle_mass + fuel_capacity * GAS_DENSITY) * abs(max_deceleration) * wheel_radius
 
         self.yaw_controller = YawController(
             wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
