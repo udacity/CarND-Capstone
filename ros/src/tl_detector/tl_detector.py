@@ -122,8 +122,9 @@ class TLDetector(object):
                     Condition to update wp only when light changing to red or yellow
                     '''
 
-                    if (self.last_state == TrafficLight.GREEN 
-                        and state == TrafficLight.YELLOW):
+                    if ((self.last_state == TrafficLight.GREEN 
+                         or self.last_state == TrafficLight.UNKNOWN)
+                         and state == TrafficLight.YELLOW):
                             self.light_change_to_red_or_yellow = True
                     elif state == TrafficLight.RED:
                             self.light_change_to_red_or_yellow = True
