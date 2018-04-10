@@ -2,8 +2,6 @@
 
 Udacity Self-Driving Car Nanodegree, 2018
 
-<img src="./imgs/construction.gif">
-
 ### Team Members
 
 * Effendi Dufford
