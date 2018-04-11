@@ -191,13 +191,16 @@ class WaypointUpdater(object):
                           .format(old_default_velocity,
                                   config['dyn_default_velocity']))
 
-            if config['dyn_default_velocity'] > self.max_velocity:
+            if config['dyn_default_velocity'] > 0.96 * self.max_velocity:
                 rospy.logwarn("waypoint_updater:dyn_vars_cb default_velocity "
-                              "limited to max_velocity {:3.2f}m/s"
-                              .format(self.max_velocity))
-                self.default_velocity = self.max_velocity * 0.975
+                              "limited to 0.96 * max_velocity = {:3.2f}m/s"
+                              .format(self.max_velocity*0.96))
+                self.default_velocity = self.max_velocity * 0.96
             else:
                 self.default_velocity = config['dyn_default_velocity']
+                rospy.logwarn("waypoint_updater:dyn_vars_cb default_velocity "
+                              "set to {:3.2f}m/s"
+                              .format(self.default_velocity))
 
         if old_default_accel != config['dyn_default_accel']:
             rospy.logwarn("waypoint_updater:dyn_vars_cb Adjusting default_"
@@ -388,7 +391,10 @@ class WaypointUpdater(object):
 
         if math.fabs(-self.max_desired_jerk - max_neg_jerk) < 0.1:
             # if we are using_max_desired_jerk then start here
-            decel_rate = 0.6
+            if a > 1.1:
+                decel_rate = 0.25
+            else:
+                decel_rate = 0.4
         else:
             # empirical settings to start closer to goal
             if a < 1.0:
@@ -430,7 +436,10 @@ class WaypointUpdater(object):
         else:
             dist_diff = -1.0
         if math.fabs(max_neg_jerk + self.max_desired_jerk) < 0.1:
-            dist_diff = 2 * dist_diff
+            if too_short is True:
+                dist_diff = max(2 * dist_diff, a_dist *.025)
+            else:
+                dist_diff = min(2 * dist_diff, -a_dist *.025)
 
         optimized = False
         counter = 0
@@ -1078,7 +1087,7 @@ class WaypointUpdater(object):
             old_dist = a_dist
 
             accel_rate = accel_rate + acc_diff
-            if accel_rate < 0.0:
+            if accel_rate < 0.1: # prevent sending really small value to get_accel_distance
                 final_accel = accel_rate - acc_diff
                 duration = rospy.get_time() - timer_start
                 rospy.logdebug("greatest accel_rate of {:3.2f} to accelerate with max_jerk"
@@ -1297,7 +1306,7 @@ class WaypointUpdater(object):
 
         if self.got_to_end is False:
             self.final_waypoints_start_ptr = self.closest_waypoint()
-
+        
         # do this at start of each cycle so that it doesn't change
         # if traffic cb happens in middle of loop
         if self.next_tl_wp_tmp >= self.final_waypoints_start_ptr:
