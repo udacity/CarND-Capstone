@@ -123,6 +123,7 @@ class TLDetector(object):
                     '''
 
                     if ((self.last_state == TrafficLight.GREEN 
+                         or self.last_state == TrafficLight.YELLOW
                          or self.last_state == TrafficLight.UNKNOWN)
                          and state == TrafficLight.YELLOW):
                             self.light_change_to_red_or_yellow = True
