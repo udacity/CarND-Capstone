@@ -64,6 +64,7 @@ def get_accel_time(S, Vi, Vf):
 
 class WaypointUpdater(object):
     def __init__(self):
+        self.start_check = False
         self.testing = False
         # self.testing = True
         self.test_counter = 0
@@ -92,7 +93,7 @@ class WaypointUpdater(object):
         self.update_rate = 10
         self.max_velocity = 0.0  # set based on max velocity in waypoints
         self.default_velocity = 0.0 #10.7
-        self.lookahead_wps = self.lookahead_wps_reset = 20  # 200 is too many
+        self.lookahead_wps = self.lookahead_wps_reset = 40  # 200 is too many
         self.subs = {}
         self.pubs = {}
         self.dyn_reconf_srv = None
@@ -341,6 +342,9 @@ class WaypointUpdater(object):
 
     # Receive a msg from /traffic_waypoint about the next stop line
     def traffic_cb(self, traffic_msg):
+        if self.start_check is False and self.dyn_test_stoplight is False:
+            rospy.logwarn("Received traffic_msg - TL detection systems initialized.  Start updater")
+            self.start_check = True
         if traffic_msg.data != self.next_tl_wp_tmp:
             if self.dyn_test_stoplight is False:
                 self.next_tl_wp_tmp = traffic_msg.data
@@ -985,6 +989,7 @@ class WaypointUpdater(object):
             rospy.logwarn("recalc is set to {} we should recalculate"
                           .format(recalc))
 
+    def log_sent_waypoints(self):
         # Log JMT profile values - Vcalc is calculated value, wheras Veffective is value
         # in twist which might have been limited by local wpt.vMax or global self.max_velocity
         jmt_log = "\nptr_id, JMT_ptr, time, S, Vcalc, A, J, Veffective\n"
@@ -1307,30 +1312,24 @@ class WaypointUpdater(object):
         if self.got_to_end is False:
             self.final_waypoints_start_ptr = self.closest_waypoint()
         
-        # do this at start of each cycle so that it doesn't change
-        # if traffic cb happens in middle of loop
-        if self.next_tl_wp_tmp >= self.final_waypoints_start_ptr:
-            self.next_tl_wp = self.next_tl_wp_tmp
+        if self.start_check is True:
+            # do this at start of each cycle so that it doesn't change
+            # if traffic cb happens in middle of loop
+            if self.next_tl_wp_tmp >= self.final_waypoints_start_ptr:
+                self.next_tl_wp = self.next_tl_wp_tmp
+            else:
+                self.next_tl_wp = -1
+
+            # this manipulates self.next_tl_wp if self.testing is True
+            if self.testing is True:
+                self.run_tests()
+
+            self.set_waypoints_velocity()
         else:
-            self.next_tl_wp = -1
+            # keep the brakes on until other systems running
+            self.set_stopped_on_startup()        
 
-        # this manipulates self.next_tl_wp if self.testing is True
-        if self.testing is True:
-            self.run_tests()
-
-        self.set_waypoints_velocity()
-
-        lane = Lane()
-        waypoints = []
-        for wpt in self.waypoints[self.final_waypoints_start_ptr:
-                                  self.final_waypoints_start_ptr +
-                                  self.lookahead_wps]:
-            waypoints.append(wpt.waypoint)
-
-        lane.waypoints = list(waypoints)
-        lane.header.frame_id = '/world'
-        lane.header.stamp = rospy.Time.now()
-        self.pubs['/final_waypoints'].publish(lane)
+        self.publish_waypoints()
 
         # Publish is_decelerating intention boolean for DBW node to use for
         # braking control
@@ -1338,8 +1337,10 @@ class WaypointUpdater(object):
             self.is_decelerating = True
         else:
             self.is_decelerating = False
-
         self.pubs['/is_decelerating'].publish(self.is_decelerating)
+
+        # log the waypoints sent out
+        self.log_sent_waypoints()
 
     def reset_for_dbw(self):
         self.got_to_end = False
@@ -1347,6 +1348,24 @@ class WaypointUpdater(object):
         if self.velocity < self.min_moving_velocity:
             self.set_stopped(self.final_waypoints_start_ptr,
                              self.lookahead_wps)
+
+    def set_stopped_on_startup(self):
+        # hold car stopped until we know tl detection is working
+        self.stopping_distance = 0.0
+        self.min_stop_distance = 0.0
+        self.set_stopped(self.final_waypoints_start_ptr, self.lookahead_wps)
+
+    def publish_waypoints(self):
+        lane = Lane()
+        waypoints = []
+        for wpt in self.waypoints[self.final_waypoints_start_ptr:
+                                  self.final_waypoints_start_ptr +
+                                  self.lookahead_wps]:
+            waypoints.append(wpt.waypoint)
+        lane.waypoints = list(waypoints)
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time.now()
+        self.pubs['/final_waypoints'].publish(lane)
 
     def closest_waypoint(self):
 
