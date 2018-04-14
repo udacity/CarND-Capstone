@@ -31,4 +31,7 @@
     <arg name="record_path" default="" doc="Directory path to save training data."/>
     <param name="record_path" value="$(arg record_path)" />
 
+    <!-- Statistics -->
+    <rosparam param="enable_statistics">true</rosparam>
+
 </launch>

@@ -48,15 +48,16 @@ class WaypointUpdater(object):
         self.ego = None
         self.next_idx = -1
 
-        rate = rospy.Rate(30)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             self.publish()
             rate.sleep()
 
     def pose_cb(self, pose):
         #Get current pose
-        if self.ego is None or self.ego.header.seq < pose.header.seq:
-            self.ego = pose
+        #print("Ego and pose header seq : ", self.ego.header.seq, "  ", pose.header.seq)
+        #if self.ego is None or self.ego.header.seq < pose.header.seq:
+        self.ego = pose
 
     def waypoints_cb(self, lane):
         #Get list of waypoints from lane
