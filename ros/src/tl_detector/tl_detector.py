@@ -11,12 +11,18 @@ import tf
 import cv2
 import yaml
 import numpy as np
+import os
+import time
+import datetime
 
 STATE_COUNT_THRESHOLD = 3
 LIGHT_STATES = {0: 'RED', 1: 'YELLOW', 2: 'GREEN', 4: 'UNKNOWN'}
 
 # Distance in meters beyond which we consider the next traffic light is not visible.
-TRAFFIC_LIGHT_MAX_DISTANCE = 100
+TRAFFIC_LIGHT_MAX_DISTANCE = 120
+
+# Time in seconds to wait between consecutive camera captures.
+RECORD_SLEEP = 0.05
 
 
 class TLDetector(object):
@@ -69,6 +75,15 @@ class TLDetector(object):
         # 'oracle': we just use the state provided in topic '/vehicle/traffic_lights' (useful for testing purpose).
         # Default is 'detect', change it in styx.launch.
         self.get_light = rospy.get_param("/get_light").lower()
+        self.record_path = rospy.get_param("/record_path")
+
+        # We will save camera captures in folders structured as expected by the fine tuning script retrain.py.
+        for subfolder in ['0_red', '1_yellow', '2_green', '4_unknown']:
+            path = os.path.join(self.record_path, subfolder)
+            if not os.path.exists(path):
+                os.makedirs(path)
+
+        self.record_time = time.time()
 
         rospy.spin()
 
@@ -153,6 +168,17 @@ class TLDetector(object):
             return False
 
         if self.get_light == 'oracle':
+            if self.record_path != '' and time.time() - self.record_time > RECORD_SLEEP:
+                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+                # Make a unique identifier from a time stamp (good enough for a unique identifier and more readable than
+                # uuid).
+                now = datetime.datetime.utcnow()
+                format_arg = now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond
+                fname = 'TL_{}_{:02}_{:02}_{:02}_{:02}_{:02}_{:06}.jpg'.format(*format_arg)
+                subfolder = str(light.state) + '_' + LIGHT_STATES[light.state].lower()
+                path = os.path.join(self.record_path, subfolder, fname)
+                cv2.imwrite(path, cv_image)
+                self.record_time = time.time()
             return light.state
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
