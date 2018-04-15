@@ -88,7 +88,7 @@ class WaypointUpdater(object):
             cur_wp = Waypoint()
             cur_wp.pose = wp.pose
 
-            stop_idx = max(self.stopline_wp_idx - self.closest_idx - 3, 0) # 3 os conservative wp back from target line 
+            stop_idx = max(self.stopline_wp_idx - self.closest_idx - 4, 0) # 4 os conservative wp back from target line 
                                                                       # to prevent car front to passs the line
 
             distance = self.distance(waypoints, i, stop_idx)
