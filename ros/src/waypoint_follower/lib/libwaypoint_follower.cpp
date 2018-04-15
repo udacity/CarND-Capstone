@@ -104,7 +104,7 @@ double DecelerateVelocity(double distance, double prev_velocity)
   double decel_ms = 1.0;  // m/s
   double decel_velocity_ms = sqrt(2 * decel_ms * distance);
 
-  std::cout << "velocity/prev_velocity :" << decel_velocity_ms << "/" << prev_velocity << std::endl;
+  // std::cout << "velocity/prev_velocity :" << decel_velocity_ms << "/" << prev_velocity << std::endl;
   if (decel_velocity_ms < prev_velocity)
   {
     return decel_velocity_ms;
@@ -180,64 +180,24 @@ int getClosestWaypoint(const styx_msgs::Lane &current_path, geometry_msgs::Pose 
   if (wp.isEmpty())
     return -1;
 
-  // search closest candidate within a certain meter
-  double search_distance = 5.0;
-  std::vector<int> waypoint_candidates;
+  int waypoint_min = -1;
+  double distance_min = DBL_MAX;
   for (int i = 1; i < wp.getSize(); i++)
   {
-    if (getPlaneDistance(wp.getWaypointPosition(i), current_pose.position) > search_distance)
-      continue;
-
     if (!wp.isFront(i, current_pose))
       continue;
 
-    double angle_threshold = 90;
-    if (getRelativeAngle(wp.getWaypointPose(i), current_pose) > angle_threshold)
-      continue;
+    // if (!wp.isValid(i, current_pose))
+    //  continue;
 
-    waypoint_candidates.push_back(i);
-  }
-
-  // get closest waypoint from candidates
-  if (!waypoint_candidates.empty())
-  {
-    int waypoint_min = -1;
-    double distance_min = DBL_MAX;
-    for (auto el : waypoint_candidates)
+    double d = getPlaneDistance(wp.getWaypointPosition(i), current_pose.position);
+    if (d < distance_min)
     {
-      // ROS_INFO("closest_candidates : %d",el);
-      double d = getPlaneDistance(wp.getWaypointPosition(el), current_pose.position);
-      if (d < distance_min)
-      {
-        waypoint_min = el;
-        distance_min = d;
-      }
+      waypoint_min = i;
+      distance_min = d;
     }
-    return waypoint_min;
   }
-  else
-  {
-    ROS_INFO("no candidate. search closest waypoint from all waypoints...");
-    // if there is no candidate...
-    int waypoint_min = -1;
-    double distance_min = DBL_MAX;
-    for (int i = 1; i < wp.getSize(); i++)
-    {
-      if (!wp.isFront(i, current_pose))
-        continue;
-
-      // if (!wp.isValid(i, current_pose))
-      //  continue;
-
-      double d = getPlaneDistance(wp.getWaypointPosition(i), current_pose.position);
-      if (d < distance_min)
-      {
-        waypoint_min = i;
-        distance_min = d;
-      }
-    }
-    return waypoint_min;
-  }
+  return waypoint_min;
 }
 
 // let the linear equation be "ax + by + c = 0"
