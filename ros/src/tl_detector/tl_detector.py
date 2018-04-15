@@ -43,6 +43,7 @@ class TLDetector(object):
         self.stop_line_wp = []
         self.pose = None
         self.waypoints = None
+        self.has_image = False
         self.camera_image = None
         self.lights = []
 
@@ -64,10 +65,11 @@ class TLDetector(object):
         sub4 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
         sub5 = rospy.Subscriber('/final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
 
+        self.upcoming_waypoints = None
+        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
-
-        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
@@ -131,6 +133,7 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+        rospy.logdebug(['[TLD] State received: ', state])
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -172,10 +175,6 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
-            self.prev_light_loc = None
-            return False
-
         if self.get_light == 'oracle':
             return light.state
         elif self.get_light == 'detect':
@@ -186,11 +185,6 @@ class TLDetector(object):
                 #Get classification
                 return self.light_classifier.get_classification(cv_image)
         return TrafficLight.UNKNOWN
-
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -215,8 +209,8 @@ class TLDetector(object):
             # by the waypoint_updater in the header.seq of the first wp.
             car_position_index = car_position.pose.header.seq
             for i, st_wp in enumerate(self.stop_line_wp):
-                light_id = i
                 if st_wp >= car_position_index:
+                    light_id = i
                     break
 
             if st_wp < car_position_index:
@@ -228,27 +222,25 @@ class TLDetector(object):
 
             car_p = self.pose.pose.position
             light_p = light.pose.pose.position
-            distance = self.distance(car_p, light_p, 3)
+            tl_distance = self.distance(car_p, light_p, 3)
 
-            if distance > TRAFFIC_LIGHT_MAX_DISTANCE:
+            if tl_distance > TRAFFIC_LIGHT_MAX_DISTANCE:
                 # Next traffic light is too far away, we consider it is not visible.
                 light = None
 
-            rospy.logdebug(['car closest way point:', car_position_index])
+            #rospy.logdebug(['car closest way point:', car_position_index])
             rospy.logdebug(['next stop line closest way point:', light_wp])
             rospy.logdebug(['car position:', self.pose.pose.position])
             rospy.logdebug(['next stop line position:', self.waypoints.waypoints[light_wp].pose.pose.position])
-            rospy.logdebug(['distance to next traffic light:', distance])
+            rospy.logdebug(['distance to next traffic light:', tl_distance])
 
-            #TODO find the closest visible traffic light (if one exists)
-
-        if light:
-            state = self.get_light_state(light)
-            if self.get_light != 'oracle':
-                rospy.logdebug(['detected light state:', LIGHT_STATES[state]])
-            else:
-		rospy.logdebug(['oracle light state:', LIGHT_STATES[light.state]])
-            return light_wp, state
+            if light:
+                state = self.get_light_state(light)
+                if self.get_light != 'oracle':
+                    rospy.logdebug(['DETECTED light state:', LIGHT_STATES[state]])
+                else:
+                    rospy.logdebug(['ORACLE light state:', LIGHT_STATES[light.state]])
+                return light_wp, state
 
         return -1, TrafficLight.UNKNOWN
 

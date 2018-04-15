@@ -45,7 +45,7 @@ class DBWNode(object):
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
-        brake_deadband = rospy.get_param('~brake_deadband', .1)
+        self.brake_deadband = rospy.get_param('~brake_deadband', .1)
         decel_limit = rospy.get_param('~decel_limit', -5)
         accel_limit = rospy.get_param('~accel_limit', 1.)
         wheel_radius = rospy.get_param('~wheel_radius', 0.2413)
@@ -66,7 +66,7 @@ class DBWNode(object):
         self.controller = Controller(vehicle_mass, decel_limit, accel_limit,
                                      wheel_radius, wheel_base,
                                      steer_ratio, max_lat_accel,
-                                     max_steer_angle, brake_deadband,
+                                     max_steer_angle, self.brake_deadband,
                                      fuel_capacity)
 
         # ROS subscribers
@@ -85,7 +85,7 @@ class DBWNode(object):
 
         self.last_time = None
         self.prev_brake_throttle = ''
-       
+
 
         self.loop()
 
@@ -141,6 +141,9 @@ class DBWNode(object):
         bcmd = BrakeCmd()
         bcmd.enable = True
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        # Simulator adjustment
+        if self.brake_deadband > 0.1:
+            brake *= 1000.
         bcmd.pedal_cmd = brake
 
         # Create throttle command
