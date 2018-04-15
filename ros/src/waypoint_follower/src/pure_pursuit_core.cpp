@@ -231,7 +231,8 @@ bool PurePursuit::interpolateNextTarget(int next_waypoint, geometry_msgs::Point 
 
 bool PurePursuit::verifyFollowing() const
 {
-  double a = 0;
+  return false; // always recalc to solve swing issue
+  /*double a = 0;
   double b = 0;
   double c = 0;
   getLinearEquation(current_waypoints_.getWaypointPosition(1), current_waypoints_.getWaypointPosition(2), &a, &b, &c);
@@ -248,6 +249,7 @@ bool PurePursuit::verifyFollowing() const
     // ROS_INFO("Following : False");
     return false;
   }
+*/
 }
 geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocity) const
 {
