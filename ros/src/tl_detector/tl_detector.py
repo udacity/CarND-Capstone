@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from scipy.spatial import KDTree
 import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
@@ -18,6 +19,7 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
+        self.waypoints_2d = None
         self.pose = None
         self.waypoints = None
         self.waypoints_2d = None
@@ -59,6 +61,8 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
+        self.base_lane = waypoints
+        self.base_waypoints = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
@@ -67,6 +71,7 @@ class TLDetector(object):
         self.lights = msg.lights
 
     def image_cb(self, msg):
+
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
 
@@ -106,7 +111,6 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
         closest_idx = self.waypoint_tree.query([x,y], 1)[1]
         return closest_idx
 
@@ -120,9 +124,14 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        # if(not self.has_image):
-        #     self.prev_light_loc = None
-        #     return False
+        # In testing env, the light state is given
+        # TODO change to use classifier in the real code
+        if 1 == 1: 
+            return light.state
+
+        if(not self.has_image):
+            self.prev_light_loc = None
+            return False
 
         # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
@@ -139,37 +148,29 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        print("Process traffic light")
         closest_light = None
-        line_wp_index = None
-        line_pose = None
+        line_wp_idx = None
 
-        # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
+        # List of positions that correspond to the line to stop in front of for a given intersection
         if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
-            
-            #TODO find the closest visible traffic light (if one exists)
+            car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
             diff = len(self.waypoints.waypoints)
-            # Loop through all the lines
             for i, light in enumerate(self.lights):
-                # get stop line waypoint index
                 line = stop_line_positions[i]
                 temp_wp_idx = self.get_closest_waypoint(line[0], line[1])
-                d = temp_wp_idx - car_position
-                # If car is in front of the waypoint and if current light is closer than last stored line
-                # Find the cloesest stop line
-                if(d >= 0 and d < diff):
+
+                d = temp_wp_idx - car_wp_idx
+
+                if d >= 0 and d < diff:
                     diff = d
                     closest_light = light
-                    line_wp_index = temp_wp_idx
+                    line_wp_idx = temp_wp_idx
 
-        print(closest_light)
-        if closest_light:
-            state = self.get_light_state(closest_light)
-            return line_wp_index, state
-            
-        self.waypoints = None
+
+            if closest_light:
+                state = self.get_light_state(closest_light)
+                return line_wp_idx, state
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
