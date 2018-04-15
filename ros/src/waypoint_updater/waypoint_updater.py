@@ -44,9 +44,9 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
 
         self.desired_vel = 0.0  # the desired vehicle velocity at each timestep
-        self.max_vel = 11.0  # m/s
-        self.ramp_dist = 35  # distance to ramp up and down the acceleration (m)
-        self.acceleration = self.max_vel / self.ramp_dist
+        self.max_vel = None  # self.max_vel = 11.0
+        self.ramp_dist = None  # self.ramp_dist = 35
+        self.acceleration = 0.33  # self.acceleration = self.max_vel / self.ramp_dist
 
         self.updater_loop()
 
@@ -133,6 +133,12 @@ class WaypointUpdater(object):
         # simple cruise controller based on "distance" from traffic light and end of destination
 
         wheel_base = rospy.get_param('~wheel_base', 2.8498)
+
+        if not self.max_vel:
+            self.max_vel = self.base_waypoints[waypoint].MaxVel
+
+        if not self.ramp_dist:
+            self.ramp_dist = 3 * self.max_vel
 
         if traffic_light_state > 0.0:
             dist_x = self.base_waypoints[traffic_light_state].pose.pose.position.x - \
