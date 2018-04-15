@@ -45,33 +45,39 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        min_speed = 0
 
-        self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
-                                         SteeringCmd, queue_size=1)
-        self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
-                                            ThrottleCmd, queue_size=1)
-        self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
-                                         BrakeCmd, queue_size=1)
+        self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
+        self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
+        self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
 
-        # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        self.controller = Controller(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, vehicle_mass)
 
-        # TODO: Subscribe to all the topics you need to
+        self.reset()
+
+        rospy.Subscriber('/current_velocity', TwistStamped, callback = self.current_velocity_cb, queue_size = 1)
+        rospy.Subscriber('/twist_cmd', TwistStamped, callback = self.twist_cmd_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, callback = self.dbw_enabled_cb, queue_size = 1)
 
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            
+            # compute throttle, brake and steer command in autonomous mode
+            if self.dbw_enabled:
+                self.time_elapsed = rospy.get_time() - self.previous_time 
+                self.previous_time = rospy.get_time()
+                throttle, brake, steer = self.controller.control(self.linear_velocity,
+                                                             self.angular_velocity,
+                                                             self.current_velocity, 
+                                                             self.dbw_enabled,
+                                                             self.time_elapsed)
+                self.publish(throttle, brake, steer)
+            else:
+                self.reset()          
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -92,6 +98,26 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+    def current_velocity_cb(self, msg):
+        self.current_velocity = msg.twist.linear.x
+
+    def twist_cmd_cb(self, msg):
+        self.linear_velocity = msg.twist.linear.x
+        self.angular_velocity = msg.twist.angular.z
+
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = msg.data
+
+    def reset(self):
+        # reset when not in autonomous mode
+        self.current_velocity = 0
+        self.linear_velocity = 0
+        self.angular_velocity = 0
+        self.dbw_enabled = False
+        self.time_elapsed = 0
+        self.previous_time = rospy.get_time()
+        self.controller.pid_throttle.reset()
+        self.controller.pid_brake.reset()
 
 if __name__ == '__main__':
     DBWNode()
