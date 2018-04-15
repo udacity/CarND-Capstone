@@ -5,3 +5,5 @@ camera_info:
   image_height: 600
 stop_line_positions:
     - [8.0, 16.2]
+tl:
+  model: 'training/model_site/inference/frozen_inference_graph.pb'
