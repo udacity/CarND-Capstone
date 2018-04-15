@@ -51,9 +51,9 @@ class TLDetector(object):
 
         self.listener = tf.TransformListener()
 
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.previous_light_state = TrafficLight.UNKNOWN
+        self.state = TrafficLight.RED
+        self.last_state = TrafficLight.RED
+        self.previous_light_state = TrafficLight.RED
 
         self.busy = False
 
