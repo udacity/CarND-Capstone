@@ -88,7 +88,7 @@ class WaypointUpdater(object):
             cur_wp = Waypoint()
             cur_wp.pose = wp.pose
 
-            stop_idx = max(self.stopline_wp_idx - self.closest_idx - 3, 0) # 3 os conservative wp back from target line 
+            stop_idx = max(self.stopline_wp_idx - self.closest_idx - 4, 0) # 4 os conservative wp back from target line 
                                                                       # to prevent car front to passs the line
 
             distance = self.distance(waypoints, i, stop_idx)
@@ -132,7 +132,7 @@ class WaypointUpdater(object):
 
         cur_base_waypoints = self.base_waypoints.waypoints[self.closest_idx:farmost_idx]
 
-        self.stopline_wp_idx = 500 # Value to test until TL detection is in place
+        # self.stopline_wp_idx = 500 # Value to test until TL detection is in place
 
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farmost_idx):
             lane.waypoints = cur_base_waypoints
