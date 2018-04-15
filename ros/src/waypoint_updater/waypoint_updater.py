@@ -132,7 +132,7 @@ class WaypointUpdater(object):
 
         cur_base_waypoints = self.base_waypoints.waypoints[self.closest_idx:farmost_idx]
 
-        self.stopline_wp_idx = 500 # Value to test until TL detection is in place
+        # self.stopline_wp_idx = 500 # Value to test until TL detection is in place
 
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farmost_idx):
             lane.waypoints = cur_base_waypoints
