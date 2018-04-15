@@ -83,7 +83,7 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
-    
+
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message.
         # We will implement it later
@@ -123,6 +123,8 @@ class WaypointUpdater(object):
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time.now()
         lane.waypoints = self.base_waypoints.waypoints[closest_waypoint:closest_waypoint + LOOKAHEAD_WPS]
+        # Message for the TL_Detector: the index of the first final waypoint among the base_waypoints
+        lane.waypoints[0].pose.header.seq = closest_waypoint
         self.pub.publish(lane)
 
     def vector_from_quaternion(self, q):
