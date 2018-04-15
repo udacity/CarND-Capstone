@@ -15,10 +15,14 @@
 ### Submission checklist
 - [x] Smoothly follow waypoints in the simulator
 - [x] Respect the target top speed set for the waypoints
-- [ ] Stop at traffic lights when needed
+- [x] Stop at traffic lights when needed
 - [x] Stop and restart PID controllers depending on the state of `dbw_enabled`
 - [x] Publish throttle, steering, and brake commands at 50hz
-- [ ] Launch correctly using the launch files provided in the capstone repo
+- [x] Launch correctly using the launch files provided in the capstone repo
+
+
+### Demo
+[![Team Mauky Simulator Demo](https://img.youtube.com/vi/l4WpE4umq8o/0.jpg)](https://www.youtube.com/watch?v=l4WpE4umq8o)
 
 ### ROS Graph
 
