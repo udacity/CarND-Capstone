@@ -54,6 +54,7 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `Controller` object
+
         self.controller = Controller(
 		wheel_base=wheel_base, steer_ratio=steer_ratio,
 		max_lat_accel=max_lat_accel, max_steer_angle=max_steer_angle,
@@ -117,6 +118,18 @@ class DBWNode(object):
 
     def current_velocity_cb(self, msg):
 	self.current_vel = msg.twist.linear.x
+
+
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = msg
+
+    def twist_cb(self, msg):
+        self.linear_vel = msg.twist.linear.x
+        self.angular_vel = msg.twist.angular.z
+
+    def velocity_cb(self, msg):
+        self.current_vel = msg.twist.linear.x
+
 
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
