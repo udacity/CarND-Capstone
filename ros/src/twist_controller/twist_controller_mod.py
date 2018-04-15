@@ -25,7 +25,7 @@ class Controller(object):
         self.manual_braking_upper_velocity_limit = 1.5
         self.braking_torque_to_stop = 100
         self.lpf_tau_throttle = 0.3
-        self.lpf_tau_brake = 0.5
+        self.lpf_tau_brake = 0.3
         self.lpf_tau_steering = 0.1
 
         self.max_braking_torque = (
