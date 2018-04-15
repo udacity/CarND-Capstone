@@ -7,7 +7,6 @@ import tf
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane
-from styx_msgs.msg import Waypoint
 from scipy.spatial import KDTree
 import numpy as np
 
@@ -30,7 +29,8 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 MAX_DECELERATION = 1.0
-LOOKAHEAD_WPS = 45  # Number of waypoints we publish
+LOOKAHEAD_WPS = 100  # Number of waypoints we publish
+STOP_BUFFER = 5 # Number of waypoints to stop ahead of the stop_line_wp
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -183,8 +183,6 @@ class WaypointUpdater(object):
 
         closest_index = self.find_next_waypoint()
         furthest_index = closest_index + LOOKAHEAD_WPS
-        rospy.logdebug(['generate_lane - closest index: ', closest_index])
-        rospy.logdebug(['generate_lane - stopline_wp_index: ', self.stopline_wp_index])
 
         if (self.stopline_wp_index == -1) or (self.stopline_wp_index >= furthest_index):
             # If we are too far behind a traffic light, no need to modify anything
@@ -219,13 +217,13 @@ class WaypointUpdater(object):
             # line of the traffic light and we want to stop a little bit ahead of that,
             # we withdraw 2 waypoints
             # @todo: Improve that maybe
-            stop_index = max(self.stopline_wp_index - closest_index - 2, 0)
+            stop_index = max(self.stopline_wp_index - closest_index - STOP_BUFFER, 0)
             distance = self.distance(waypoints, i, stop_index)
 
             # The velocity at each point is a function of the distance to the stop line
             # so that the velocity decreases until reaching 0 when the car will be very
             # close to the stop line
-            velocity = np.sqrt(MAX_DECELERATION * distance / 2.0)
+            velocity = np.sqrt(2. * MAX_DECELERATION * distance)
             # If the velocity is almost 0, we set it to 0 to have a clear stop
             if velocity < 1.:
                 velocity = 0.
