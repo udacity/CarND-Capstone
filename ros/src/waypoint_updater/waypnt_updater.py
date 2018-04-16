@@ -74,7 +74,7 @@ class WaypointUpdater(object):
         self.velocity = None
         self.stop_calc_v = 0.0  # last measurement used to calc stopping distance
         self.stop_calc_a = 0.0  # last measurement used to calc stopping distance
-        self.stop_target = None
+        self.stop_target = 0  # None
         self.lights = None
         self.final_waypoints = []
         self.waypoints_2d = []  # store x,y pairs for use in KDTree
@@ -369,7 +369,8 @@ class WaypointUpdater(object):
         if not self.next_tl_wp:
             self.next_tl_wp = -1
         if self.next_tl_wp in range(1, len(self.waypoints)):
-            dist_to_tl = self.waypoints[self.next_tl_wp - 1].get_s() -\
+            #dist_to_tl = self.waypoints[self.next_tl_wp-1].get_s() -\
+            dist_to_tl = self.waypoints[self.next_tl_wp].get_s() -\
                         self.waypoints[self.final_waypoints_start_ptr].get_s()
         else:
             dist_to_tl = 5000  # big number
@@ -681,7 +682,7 @@ class WaypointUpdater(object):
         # cleanup jmt stack
         self.JMT_List[:] = []
         # won't match self.next_tl_wp when reset
-        self.stop_target = 0
+        # self.stop_target = 0
 
     def set_transition_to_stop(self, mod_ptr):
         # gracefully slow down to stopped at end of jmt decel curve
@@ -736,7 +737,7 @@ class WaypointUpdater(object):
             jmt_ptr = self.setup_stop_jmt(start_ptr, distance)
             curpt.JMT_ptr = jmt_ptr
             if self.state != 'slowdown':
-                rospy.logwarn("Set car state to slowdown at ptr = {}".format(curpt.ptr_id))
+                rospy.logwarn("Set car state to slowdown at ptr = {}, stop_target = {} - {:3.2}m".format(curpt.ptr_id, self.next_tl_wp, (self.dyn_tl_buffer - self.dyn_buffer_offset)))
                 self.state = 'slowdown'
         else:
             jmt_ptr = curpt.JMT_ptr
@@ -810,7 +811,7 @@ class WaypointUpdater(object):
         curpt = self.waypoints[start_ptr]
 
         if curpt.JMT_ptr == -1 or self.state != 'speedup':
-            rospy.logwarn("Set car state to speedup at ptr={}".format(start_ptr))
+            rospy.logwarn("Set car state to speedup at ptr = {}".format(start_ptr))
             self.state = 'speedup'
             accel_rate, a_dist, T = self.get_max_accel(curpt.ptr_id)
             curpt.JMT_ptr = self.setup_speedup_jmt(curpt, a_dist, self.default_velocity, T)
@@ -912,6 +913,7 @@ class WaypointUpdater(object):
                 or (self.dbw_enabled is False and self.velocity < self.min_moving_velocity)):
             self.set_stopped(self.final_waypoints_start_ptr,
                              self.lookahead_wps)
+            rospy.loginfo("Car is {:3.2f} m from stop target waypoint".format(self.get_distance_to_target()))
 
         # just creep up to red lights if stopped a short distance from them
         elif (self.state == 'stopped' or self.state == 'creeping' or\
@@ -925,6 +927,7 @@ class WaypointUpdater(object):
 
         # stay in previously calculated slowdown
         elif self.state == 'slowdown' and self.stop_target == self.next_tl_wp:
+            rospy.loginfo("Car is {:3.2f} m from stop target waypoint".format(self.get_distance_to_target()))
             if dist_to_tl < self.dyn_tl_buffer and\
                     self.velocity < self.min_moving_velocity:
                 self.set_stopped(self.final_waypoints_start_ptr, self.
@@ -946,7 +949,7 @@ class WaypointUpdater(object):
                             dist_to_tl - (self.dyn_tl_buffer - self.dyn_buffer_offset))
             else:
                 rospy.logwarn("Distance to Red light {:3.2f}m shorter than ability {:3.2f}m to slow down in time at ptr = {}"
-                                  .format(dist_to_tl, self.min_stop_distance, self.final_waypoints_start_ptr))
+                                  .format(dist_to_tl - self.dyn_tl_buffer, self.min_stop_distance, self.final_waypoints_start_ptr))
                 if self.state == 'maintainspeed':
                     self.maintain_speed(self.final_waypoints_start_ptr, self.
                                         lookahead_wps)
@@ -1312,7 +1315,7 @@ class WaypointUpdater(object):
         if self.got_to_end is False:
             self.final_waypoints_start_ptr = self.closest_waypoint()
         
-        if self.start_check is True:
+        if self.start_check is True or self.testing is True:
             # do this at start of each cycle so that it doesn't change
             # if traffic cb happens in middle of loop
             if self.next_tl_wp_tmp >= self.final_waypoints_start_ptr:
@@ -1366,6 +1369,14 @@ class WaypointUpdater(object):
         lane.header.frame_id = '/world'
         lane.header.stamp = rospy.Time.now()
         self.pubs['/final_waypoints'].publish(lane)
+
+    def get_distance_to_target(self):
+        x = self.pose.position.x
+        y = self.pose.position.y
+        x1 = self.waypoints[self.stop_target].get_x()
+        y1 = self.waypoints[self.stop_target].get_y()
+        dist = math.sqrt((x1-x)**2 + (y1-y)**2)
+        return dist
 
     def closest_waypoint(self):
 
@@ -1481,7 +1492,9 @@ class WaypointUpdater(object):
     def run_tests(self):
         self.next_tl_wp = -1
         ### Test for Track 2
-        if self.final_waypoints_start_ptr in range(25,50):
+        if self.final_waypoints_start_ptr in range(0,26):
+            self.test_counter = 0
+        if self.final_waypoints_start_ptr in range(26,50):
             self.next_tl_wp = 50
             if self.state != 'slowdown' and self.final_waypoints_start_ptr >= 46:
                 self.test_counter += 1
@@ -1496,15 +1509,21 @@ class WaypointUpdater(object):
                 self.test_counter += 1
                 if self.test_counter > 60:
                     self.next_tl_wp = -1
+        if self.final_waypoints_start_ptr in range(295,300):
+            self.test_counter = 0
         ## Test of seeing light too late
-        if self.final_waypoints_start_ptr > 400 and self.final_waypoints_start_ptr < 411:
-            self.next_tl_wp = 410
-        if self.final_waypoints_start_ptr > 420 and self.final_waypoints_start_ptr < 480:
+        if self.final_waypoints_start_ptr >= 400 and self.final_waypoints_start_ptr < 427:
+            self.next_tl_wp = 426
+            if self.state != 'slowdown' and self.final_waypoints_start_ptr >= 424:
+                self.test_counter += 1
+                if self.test_counter > 90:
+                    self.next_tl_wp = -1
+        if self.final_waypoints_start_ptr > 450 and self.final_waypoints_start_ptr < 480:
             self.test_counter = 0
             self.next_tl_wp = 500
-        if self.final_waypoints_start_ptr >= 510 and self.final_waypoints_start_ptr < 753:
+        if self.final_waypoints_start_ptr >= 510 and self.final_waypoints_start_ptr < 754:
             self.next_tl_wp = 753
-            if self.state != 'slowdown' and self.final_waypoints_start_ptr >= 748:
+            if self.state != 'slowdown' and self.final_waypoints_start_ptr >= 751:
                 self.test_counter += 1
                 if self.test_counter > 60:
                     self.next_tl_wp = -1
