@@ -25,7 +25,6 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-MAX_DECEL = 0.5 # Maximum deceleratiokn rate in m / s^2
 
 
 class WaypointUpdater(object):
@@ -100,28 +99,15 @@ class WaypointUpdater(object):
 
             cur_wp.twist.twist.linear.x = min(calc_vel, wp.twist.twist.linear.x)
 
-            # self.monitor_values(i, calc_vel, wp.twist.twist.linear.x, distance, cur_wp.twist.twist.linear.x)
-
             processed_wp_buffer.append(cur_wp)
 
         return processed_wp_buffer
 
-    def monitor_values(self, i, calc_vel, max_vel, distance, final_vel):
-        if i == 0 or i == 50 or i == 100 or i == 150 or i == 199:
-            print("i:")
-            print(i)
-            print("calc_vel:")
-            print(calc_vel)
-            print("Max wp vel:")
-            print(max_vel)
-            print("distance:")
-            print(distance)
+    def monitor_values(self):
             print("closest_idx:")
             print(self.closest_idx)
             print("stopline_wp_idx:")
             print(self.stopline_wp_idx)
-            print("final_vel:")
-            print(final_vel)
 
 
     def generate_lane(self):
@@ -132,7 +118,7 @@ class WaypointUpdater(object):
 
         cur_base_waypoints = self.base_waypoints.waypoints[self.closest_idx:farmost_idx]
 
-        # self.stopline_wp_idx = 500 # Value to test until TL detection is in place
+        # self.monitor_values()
 
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farmost_idx):
             lane.waypoints = cur_base_waypoints
@@ -146,7 +132,6 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         self.pose = msg
-
     def waypoints_cb(self, waypoints):
         self.base_waypoints = waypoints
 
@@ -160,7 +145,7 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         # print(msg)
-        self.stopline_wp_idx = msg
+        self.stopline_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
