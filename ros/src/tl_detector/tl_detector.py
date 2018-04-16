@@ -84,7 +84,6 @@ class TLDetector(object):
                 os.makedirs(path)
 
         self.record_time = time.time()
-
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -196,6 +195,11 @@ class TLDetector(object):
 
         """
         light_id = -1
+
+        # We need to make sure we have the stop line waypoints available
+        if not self.stop_line_wp:
+            self.find_stop_line_closest_waypoints()
+            rospy.logdebug(['closest way points to stop lines', self.stop_line_wp])
 
         if self.pose:
             car_position = self.get_closest_waypoint(self.pose.pose)
