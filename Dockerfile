@@ -18,7 +18,7 @@ RUN apt-get upgrade -y
 # install python packages
 RUN apt-get install -y python-pip
 COPY requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt -i https://pypi.douban.com/simple
 
 # install required ros dependencies
 RUN apt-get install -y ros-$ROS_DISTRO-cv-bridge
