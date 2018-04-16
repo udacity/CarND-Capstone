@@ -207,6 +207,11 @@ class TLDetector(object):
         """
         light_id = -1
 
+        # We need to make sure we have the stop line waypoints available
+        if not self.stop_line_wp:
+            self.find_stop_line_closest_waypoints()
+            rospy.logdebug(['closest way points to stop lines', self.stop_line_wp])
+
         if self.pose:
             car_position = self.get_closest_waypoint(self.pose.pose)
             for i, wp in enumerate(self.stop_line_wp):

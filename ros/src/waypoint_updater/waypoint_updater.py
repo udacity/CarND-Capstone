@@ -59,7 +59,7 @@ class WaypointUpdater(object):
         them in the final_waypoints topic.
         :return: None
         '''
-        rate = rospy.Rate(30)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             if self.ego and self.base_waypoints:
                 closest_waypoint_idx = self.find_next_waypoint()
@@ -67,7 +67,7 @@ class WaypointUpdater(object):
                               .format(self.ego.pose.position.x,
                                       self.ego.pose.position.y,
                                       self.waypoints_2d[closest_waypoint_idx][0],
-                                      self.waypoints_2d[closest_waypoint_idx][1],))
+                                      self.waypoints_2d[closest_waypoint_idx][1]))
                 self.publish(closest_waypoint_idx)
             rate.sleep()
 
