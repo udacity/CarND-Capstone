@@ -15,7 +15,7 @@ import os
 import time
 import datetime
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 1
 LIGHT_STATES = {0: 'RED', 1: 'YELLOW', 2: 'GREEN', 4: 'UNKNOWN'}
 
 # Distance in meters beyond which we consider the next traffic light is not visible.
@@ -43,10 +43,12 @@ class TLDetector(object):
         self.stop_line_wp = []
         self.pose = None
         self.waypoints = None
-        self.upcoming_waypoints = None
-        self.has_image = False
         self.camera_image = None
         self.lights = []
+
+        # Contains the closest way point for each traffic light stop line
+        # It is precomputed as soon as we get the full list of way points, in self.waypoints_cb.
+        self.stop_line_wp = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -76,12 +78,12 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
+
         # How will we determine the state of the next traffic light?
         # 'detect': we detect and classify the traffic light on the camera image (not implemented yet).
         # 'oracle': we just use the state provided in topic '/vehicle/traffic_lights' (useful for testing purpose).
         # Default is 'detect', change it in styx.launch.
         self.get_light = rospy.get_param("/get_light").lower()
-        # If record_path is set, the images will be saved in their corresponding folders.
         self.record_path = rospy.get_param("/record_path")
 
         # We will save camera captures in folders structured as expected by the fine tuning script retrain.py.
@@ -91,6 +93,10 @@ class TLDetector(object):
                 os.makedirs(path)
 
         self.record_time = time.time()
+
+        # That counter is used to reduce the calling frequency of self.image_cb.
+        self.image_cb_counter = -1
+
         self.loop()
 
     def pose_cb(self, msg):
@@ -166,6 +172,10 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        if(not self.has_image):
+            self.prev_light_loc = None
+            return False
+
         if self.get_light == 'oracle':
             return light.state
         elif self.get_light == 'detect':
@@ -177,24 +187,10 @@ class TLDetector(object):
                 return self.light_classifier.get_classification(cv_image)
         return TrafficLight.UNKNOWN
 
-    def save_img(self, state):
-        '''
-        Saves images of the traffic light to the respective folder based upon the
-        traffic light state ground truth.
-        :param state: Traffic Light State (color)
-        :return:
-        '''
-        if (time.time() - self.record_time) > RECORD_SLEEP:
-            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-            # Make a unique identifier from a time stamp (good enough for a unique identifier and more readable than
-            # uuid).
-            now = datetime.datetime.utcnow()
-            format_arg = now.year, now.month, now.day, now.hour, now.minute, now.second, now.microsecond
-            fname = 'TL_{}_{:02}_{:02}_{:02}_{:02}_{:02}_{:06}.jpg'.format(*format_arg)
-            subfolder = str(state) + '_' + LIGHT_STATES[state].lower()
-            path = os.path.join(self.record_path, subfolder, fname)
-            cv2.imwrite(path, cv_image)
-            self.record_time = time.time()
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+        #Get classification
+        return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -206,6 +202,11 @@ class TLDetector(object):
 
         """
         light_id = -1
+
+        # We need to make sure we have the stop line waypoints available
+        if not self.stop_line_wp:
+            self.find_stop_line_closest_waypoints()
+            rospy.logdebug(['closest way points to stop lines', self.stop_line_wp])
 
         if self.pose and self.stop_line_wp and self.upcoming_waypoints:
             #car_position = self.get_closest_waypoint(self.pose.pose)
@@ -241,10 +242,13 @@ class TLDetector(object):
 
             #TODO find the closest visible traffic light (if one exists)
 
-            if light:
-                state = self.get_light_state(light)
-                rospy.logdebug(['light state:', LIGHT_STATES[state]])
-                return light_wp, state
+        if light:
+            state = self.get_light_state(light)
+            if self.get_light != 'oracle':
+                rospy.logdebug(['detected light state:', LIGHT_STATES[state]])
+            else:
+		rospy.logdebug(['oracle light state:', LIGHT_STATES[light.state]])
+            return light_wp, state
 
         return -1, TrafficLight.UNKNOWN
 
