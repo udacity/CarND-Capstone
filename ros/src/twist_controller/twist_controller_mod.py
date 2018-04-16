@@ -20,7 +20,7 @@ class Controller(object):
         self.max_throttle = max_throttle
         self.default_update_interval = default_update_interval
         self.velocity_increase_limit_constant = 0.25
-        self.velocity_decrease_limit_constant = 0.1
+        self.velocity_decrease_limit_constant = 0.05
         self.braking_to_throttle_threshold_ratio = 4. / 3.
         self.manual_braking_upper_velocity_limit = 1.4
         self.braking_torque_to_stop = 100
