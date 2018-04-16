@@ -72,15 +72,18 @@ class WaypointLoader(object):
         return waypoints
 
     def publish(self, waypoints):
-        rate = rospy.Rate(1)
-        while not rospy.is_shutdown():
-            lane = Lane()
-            lane.header.frame_id = '/world'
-            lane.header.stamp = rospy.Time(0)
-            lane.waypoints = waypoints
-            self.pub.publish(lane)
-            rate.sleep()
-
+        '''
+        Publishes all the waypoints along the track
+        @note This method is only called once (connection latched). Any node subscribing
+        to the base_waypoint topic will receive what has been sent during this only call.
+        :param waypoints: All waypoints around the track.
+        :return: None
+        '''
+        lane = Lane()
+        lane.header.frame_id = '/world'
+        lane.header.stamp = rospy.Time(0)
+        lane.waypoints = waypoints
+        self.pub.publish(lane)
 
 if __name__ == '__main__':
     try:
