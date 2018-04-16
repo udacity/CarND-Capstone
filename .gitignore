@@ -4,3 +4,12 @@ build
 devel
 
 profile.tmp
+
+.DS_Store
+
+# Idea
+.idea/
+
+
+data/*.bag
+ros/src/twist_controller/*.csv

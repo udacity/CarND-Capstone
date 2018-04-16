@@ -1,3 +1,35 @@
+# Team Mauky's System Integration Project
+
+[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+
+## Team members
+
+| Name | Email | Scope of work |
+| ---- | ----- | ------------- |
+| Aaqib Ansari | [maaquib@gmail.com](mailto:maaquib@gmail.com) | Twist Controller |
+| Umar Qattan | [u.qattan@gmail.com](mailto:u.qattan@gmail.com) | Waypoint Updater |
+| Kevin Lu | [kevinyihchyunlu@gmail.com](mailto:kevinyihchyunlu@gmail.com) | Traffic light classification |
+| Yangzi Liu | [yangzi@google.com](mailto:yangzi@google.com) | Traffic light detection/classification |
+| Michael Zoellner | [michael.zoellner[at]rwth-aachen[do]tde] | Team lead, DBW node |
+
+### Submission checklist
+- [x] Smoothly follow waypoints in the simulator
+- [x] Respect the target top speed set for the waypoints
+- [x] Stop at traffic lights when needed
+- [x] Stop and restart PID controllers depending on the state of `dbw_enabled`
+- [x] Publish throttle, steering, and brake commands at 50hz
+- [x] Launch correctly using the launch files provided in the capstone repo
+
+
+### Demo
+[![Team Mauky Simulator Demo](https://img.youtube.com/vi/l4WpE4umq8o/0.jpg)](https://www.youtube.com/watch?v=l4WpE4umq8o)
+
+### ROS Graph
+
+![ROS Graph](final-project-ros-graph-v2.png "ROS Graph")
+
+## Provided by Udacity
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 Please use **one** of the two installation options, either native **or** docker installation.

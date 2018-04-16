@@ -201,3 +201,13 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+# Download h5 model
+set(PATH "${CMAKE_CURRENT_SOURCE_DIR}/light_classification")
+set(FILE "${PATH}/model.h5")
+message(STATUS "Checking and downloading model.h5 if needed ...")
+if (NOT EXISTS "${FILE}")
+  message(STATUS "... model does not exist. Downloading now ...")
+  execute_process(COMMAND curl -L https://www.dropbox.com/s/6j3lrdqagvx2h6j/vgg19_based_ros12_trained.h5?dl=1 -o ${FILE})
+endif()
+
