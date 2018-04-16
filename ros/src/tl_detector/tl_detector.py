@@ -15,7 +15,7 @@ import os
 import time
 import datetime
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 1
 LIGHT_STATES = {0: 'RED', 1: 'YELLOW', 2: 'GREEN', 4: 'UNKNOWN'}
 
 # Distance in meters beyond which we consider the next traffic light is not visible.
@@ -39,6 +39,10 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
 
+        # Contains the closest way point for each traffic light stop line
+        # It is precomputed as soon as we get the full list of way points, in self.waypoints_cb.
+        self.stop_line_wp = None
+
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -50,7 +54,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -66,9 +70,6 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        # Contains the closest way point for each traffic light stop line
-        # It is precomputed as soon as we get the full list of way points, in self.waypoints_cb.
-        self.stop_line_wp = None
 
         # How will we determine the state of the next traffic light?
         # 'detect': we detect and classify the traffic light on the camera image (not implemented yet).
@@ -84,6 +85,9 @@ class TLDetector(object):
                 os.makedirs(path)
 
         self.record_time = time.time()
+
+        # That counter is used to reduce the calling frequency of self.image_cb.
+        self.image_cb_counter = -1
 
         rospy.spin()
 
@@ -106,6 +110,12 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        # We need to reduce the frequency at which we process the camera data, otherwise there is a long delay for
+        # processing (despite using queue_size=1 in the subscriber).
+        self.image_cb_counter += 1
+        if self.image_cb_counter % 10 > 0 and self.get_light != 'oracle':
+            return
+
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
@@ -181,7 +191,7 @@ class TLDetector(object):
                 self.record_time = time.time()
             return light.state
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -229,7 +239,9 @@ class TLDetector(object):
 
         if light:
             state = self.get_light_state(light)
-            rospy.logdebug(['light state:', LIGHT_STATES[state]])
+            if self.get_light != 'oracle':
+                rospy.logdebug(['detected light state:', LIGHT_STATES[state]])
+            rospy.logdebug(['oracle light state:', LIGHT_STATES[light.state]])
             return light_wp, state
 
         return -1, TrafficLight.UNKNOWN
