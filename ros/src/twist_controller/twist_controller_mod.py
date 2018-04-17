@@ -26,7 +26,7 @@ class Controller(object):
         self.braking_torque_to_stop = 100
         self.lpf_tau_throttle = 0.3
         self.lpf_tau_brake = 0.3
-        self.lpf_tau_steering = 0.1
+        self.lpf_tau_steering = 0.2
 
         self.max_braking_torque = (
             vehicle_mass + fuel_capacity * GAS_DENSITY) * abs(max_deceleration) * wheel_radius
