@@ -131,12 +131,15 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish( self.generate_lane() )
 
     def pose_cb(self, msg):
+        # print(msg)
         self.pose = msg
     def waypoints_cb(self, waypoints):
         self.base_waypoints = waypoints
 
         if len(self.waypoints_2d) == 0:
             for i in range(1, len(waypoints.waypoints)):
+                # if i < 100:
+                #     print(waypoints.waypoints[i])
                 x = waypoints.waypoints[i].pose.pose.position.x
                 y = waypoints.waypoints[i].pose.pose.position.y
                 self.waypoints_2d.append([x, y])
