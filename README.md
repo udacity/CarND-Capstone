@@ -1,3 +1,15 @@
+
+Team: Lost in translation
+
+|           | Name                   | E-mail                      | Slack            |
+|-----------|------------------------|-----------------------------|------------------|
+| Team Lead | Anatolii Volkodav      | volkodavav@gmail.com        | @volkodav        |
+|           | David Piñeiro López    | davidpineirolopez@gmail.com | @davidpilop      |
+|           | Rohan Nachnolkar       | nachnorn@mail.uc.edu        | @rohannachnolkar |
+|           | Mahesh Sarode          | mmsarode@mtu.edu            | @mmsarode        |
+|           | Huaping Gu -8          | humphrey.gu@gmail.com       | @guhuaping       |
+
+----
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
 Please use **one** of the two installation options, either native **or** docker installation.
@@ -20,17 +32,40 @@ Please use **one** of the two installation options, either native **or** docker 
 * Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases).
 
 ### Docker Installation
-[Install Docker](https://docs.docker.com/engine/installation/)
+1. Install docker on OS of your choice. Find instructions follow by the link below:
 
-Build the docker container
+- [Install Docker for Mac users](https://docs.docker.com/docker-for-mac/install/)
+
+- [Install Docker for Windows users](https://docs.docker.com/docker-for-windows/install/)
+
+- [Install Docker for Ubuntu users](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+
+2. Download and install simulator follow by the link [System Integration v1.3](https://github.com/udacity/CarND-Capstone/releases/tag/v1.3)
+
+3. Build the docker container
 ```bash
 docker build . -t capstone
 ```
 
-Run the docker file
+4. Run the docker container
 ```bash
 docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
 ```
+
+5. Make and run styx in docker container
+```bash
+catkin_make clean && catkin_make && source devel/setup.bash && roslaunch launch/styx.launch
+```
+
+6. Run the simulator on your computer
+
+7. In simulator select `Highway` project
+
+8. Enable `Camera` in left upper corner
+
+9. Disable `Manual` in left upper corner
+
+10. Car should start to move
 
 ### Port Forwarding
 To set up port forwarding, please refer to the [instructions from term 2](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/16cf4a78-4fc7-49e1-8621-3450ca938b77)

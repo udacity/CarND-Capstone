@@ -5,3 +5,6 @@ camera_info:
   image_height: 600
 stop_line_positions:
     - [8.0, 16.2]
+traffic_light_detection:
+  model: 'light_classification/site_frozen_inference_graph.pb'
+  label_map: 'light_classification/label_map.pbtxt'

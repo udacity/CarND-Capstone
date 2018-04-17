@@ -10,3 +10,6 @@ stop_line_positions:
     - [821.96, 2905.8]
     - [161.76, 2303.82]
     - [351.84, 1574.65]
+traffic_light_detection:
+  model: 'light_classification/sim_frozen_inference_graph.pb'
+  label_map: 'light_classification/label_map.pbtxt'
