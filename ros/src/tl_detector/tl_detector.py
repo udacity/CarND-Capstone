@@ -114,9 +114,9 @@ class TLDetector(object):
                 used.
                 '''
                 if self.state != state:
-                     if (self.state == TrafficLight.YELLOW 
-                       and state == TrafficLight.RED):
-                           rospy.logwarn('Approaching RED Light state - Required to stop')     
+                    if (self.state == TrafficLight.YELLOW 
+                        and state == TrafficLight.RED):
+                            rospy.logwarn('Approaching RED Light state - Required to stop')     
                     else:
                         self.state_count = 0
                     self.state = state
