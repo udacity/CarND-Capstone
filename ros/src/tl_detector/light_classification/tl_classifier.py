@@ -8,22 +8,14 @@ from styx_msgs.msg import TrafficLight
 class TLClassifier(object):
     def __init__(self):
         # TODO load classifier
-        graph = self.load_graph(rospy.get_param("/traffic_light_model"))
-        self.input_operation = graph.get_operation_by_name('import/Placeholder')
-        self.output_operation = graph.get_operation_by_name('import/final_result')
-        self.sess = tf.Session(graph=graph)
+        model_path = rospy.get_param("/traffic_light_model")
 
-    @staticmethod
-    def load_graph(model_file):
-        graph = tf.Graph()
-        graph_def = tf.GraphDef()
-
-        with open(model_file, 'rb') as f:
-            graph_def.ParseFromString(f.read())
-        with graph.as_default():
-            tf.import_graph_def(graph_def)
-
-        return graph
+        self.sess = tf.Session()
+        saver = tf.train.import_meta_graph(model_path + '.meta')
+        saver.restore(self.sess, model_path)
+        graph = tf.get_default_graph()
+        self.input_operation = graph.get_operation_by_name('Placeholder')
+        self.output_operation = graph.get_operation_by_name('final_result')
 
     def predict(self, image):
         image = cv2.resize(image, (224, 224))

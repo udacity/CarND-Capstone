@@ -19,6 +19,6 @@
     <include file="$(find tl_detector)/launch/tl_detector.launch"/>
 
     <!--Traffic Light Locations and Camera Config -->
-    <param name="traffic_light_model" value="$(find tl_detector)/data/output_graph.pb" />
     <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
+    <param name="traffic_light_model" value="$(find tl_detector)/data/_retrain_checkpoint" />
 </launch>
