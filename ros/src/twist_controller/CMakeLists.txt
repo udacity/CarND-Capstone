@@ -9,6 +9,7 @@ project(twist_controller)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   dbw_mkz_msgs
+  dynamic_reconfigure
   geometry_msgs
   roscpp
   rospy
@@ -91,10 +92,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+   cfg/DynReconf.cfg
+)
 
 ###################################
 ## catkin specific configuration ##

@@ -2,10 +2,13 @@
 class LowPassFilter(object):
     def __init__(self, tau, ts):
         self.a = 1. / (tau / ts + 1.)
-        self.b = tau / ts / (tau / ts + 1.);
+        self.b = tau / ts / (tau / ts + 1.)
 
         self.last_val = 0.
-        self.ready = False
+
+        # Initialize from last_val = 0 instead of allowing an initial step
+        # change on activation when dbw_enabled turns ON
+        self.ready = True
 
     def get(self):
         return self.last_val

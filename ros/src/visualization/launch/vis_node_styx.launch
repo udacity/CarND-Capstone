@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="visualization" type="vis_node.py" name="vis_node">
+    	<param name="vis_enabled" type="bool" value="True" />
+    	<param name="vis_rate" type="int" value="5" />
+    	<param name="final_wpt_scale" type="double" value="2." />
+    	<param name="tl_marker_scale" type="double" value="8." />
+    </node>
+</launch>

@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <launch>
+    <!-- Enable message timing statistics for rqt_graph analysis -->
+    <rosparam param="enable_statistics">true</rosparam>
+
     <!-- Simulator Bridge -->
     <include file="$(find styx)/launch/server.launch" />
 
@@ -20,4 +23,7 @@
 
     <!--Traffic Light Locations and Camera Config -->
     <param name="traffic_light_config" textfile="$(find tl_detector)/sim_traffic_light_config.yaml" />
+
+    <!--Visualization Node -->
+    <include file="$(find visualization)/launch/vis_node_styx.launch"/>
 </launch>

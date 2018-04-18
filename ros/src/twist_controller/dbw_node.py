@@ -6,32 +6,18 @@ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
 
-from twist_controller import Controller
+from twist_controller_mod import Controller
+
 
 '''
-You can build this node only after you have built (or partially built) the `waypoint_updater` node.
-
-You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
-You can subscribe to any other message that you find important or refer to the document for list
-of messages subscribed to by the reference implementation of this node.
-
-One thing to keep in mind while building this node and the `twist_controller` class is the status
-of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
-not be the case. This may cause your PID controller to accumulate error because the car could
-temporarily be driven by a human instead of your controller.
-
-We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
-wheel_base) etc should not be altered in these files.
-
-We have also provided some reference implementations for PID controller and other utility classes.
-You are free to use them or build your own.
-
-Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
-that we have created in the `__init__` function.
-
+DBW node for controlling throttle, brake, and steering.
+Partially inspired by DataSpeed DBW controller:
+https://bitbucket.org/DataspeedInc/dbw_mkz_ros/raw/ecfb61cbad05e06d5de0d6a971c63c955230a982/README.pdf
 '''
+
 
 class DBWNode(object):
+
     def __init__(self):
         rospy.init_node('dbw_node')
 
@@ -45,6 +31,10 @@ class DBWNode(object):
         steer_ratio = rospy.get_param('~steer_ratio', 14.8)
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
+        throttle_limit = rospy.get_param('~throttle_limit', 0.2)
+
+        # TODO - define min_speed as a parameter in the parameter server?
+        min_speed = 0.
 
         self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
                                          SteeringCmd, queue_size=1)
@@ -53,25 +43,51 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        self.target_linear_velocity = None
+        self.target_angular_velocity = None
+        self.current_linear_velocity = None
+        self.is_decelerating = False
+        self.actual_linear_velocity = 0.0
+        self.update_rate_hz = 50.0
 
-        # TODO: Subscribe to all the topics you need to
+        # assume drive by wire is disabled to begin
+        self.dbw_enabled = False
+
+        # create low pass filter for measuring acceleration
+        default_update_rate = 1.0 / self.update_rate_hz
+
+        # Create `Controller` object
+        self.controller = Controller(
+            default_update_rate, wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle, decel_limit, throttle_limit, fuel_capacity, vehicle_mass, wheel_radius)
+
+        # Subscribe to messages about car being under drive by wire control
+        rospy.Subscriber(
+            '/vehicle/dbw_enabled', Bool, self.handleDBWEnabledMessage)
+
+        # Subscribe to messages from waypoint follower
+        rospy.Subscriber(
+            '/twist_cmd', TwistStamped, self.handle_target_velocity_message)
+
+        # Subscribe to steering report from vehicle
+        rospy.Subscriber(
+            '/current_velocity', TwistStamped, self.handle_steering_report)
+        
+        # Subscribe to is_decelerating message from waypoint updater
+        rospy.Subscriber(
+            '/is_decelerating', Bool, self.handle_is_decelerating)
 
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(self.update_rate_hz)
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            # Get predicted throttle, brake, and steering
+            if (self.can_predict_controls()):
+                throttle, brake, steering = self.controller.control(self.target_linear_velocity,
+                                                                    self.target_angular_velocity,
+                                                                    self.actual_linear_velocity,
+                                                                    self.is_decelerating)
+                self.publish(throttle, brake, steering)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -92,6 +108,27 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+    def handleDBWEnabledMessage(self, dbw_enabled_message):
+        self.dbw_enabled = dbw_enabled_message.data
+        rospy.loginfo(
+            'Drive by Wire %s', "enabled" if self.dbw_enabled else "disabled")
+        if (not self.dbw_enabled):
+            self.controller.reset()
+
+    def handle_is_decelerating(self, is_decelerating_message):
+        self.is_decelerating = is_decelerating_message.data
+
+    def handle_target_velocity_message(self, twist_velocity_command_message):
+        twist = twist_velocity_command_message.twist
+        self.target_linear_velocity = twist.linear.x
+        self.target_angular_velocity = twist.angular.z
+
+    def handle_steering_report(self, twist_current_velocity_message):
+        # record actual linear vehicle velocity
+        self.actual_linear_velocity = twist_current_velocity_message.twist.linear.x
+
+    def can_predict_controls(self):
+        return self.dbw_enabled and self.target_linear_velocity is not None and self.target_angular_velocity is not None and self.actual_linear_velocity is not None
 
 if __name__ == '__main__':
     DBWNode()
