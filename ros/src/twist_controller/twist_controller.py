@@ -9,21 +9,25 @@ ONE_MPH = 0.44704
 
 
 class Controller(object):
-    #def __init__(self, *args, **kwargs):
-    #    # TODO: Implement
-    #    pass
-    def __init__(self, vehicle_mass, fuel_capacity, brake_deadband, decel_limit,
-        accel_limit, wheel_radius, wheel_base, steer_ratio, max_lat_accel, max_steer_angle):
-        self.yaw_controller = YawController(wheel_base, steer_ratio, 0.1, max_lat_accel, max_steer_angle)
+    
+    def __init__(self, vehicle_mass, fuel_capacity, brake_deadband,
+                 decel_limit, accel_limit, wheel_radius, wheel_base,
+                 steer_ratio, max_lat_accel, max_steer_angle):
+
+        # Initialize yaw controller
+        self.yaw_controller = YawController(wheel_base, steer_ratio, 0.1,
+                                            max_lat_accel, max_steer_angle)
+        # Initialize PID controller
         kp = 0.3
         ki = 0.1
         kd = 0.
-        mn = 0. # min throttle value
+        mn = 0.  # min throttle value
         mx = 0.2 # max throttle value
         self.throttle_controller = PID(kp, ki, kd, mn, mx)
 
+        # Initialize low pass filter
         tau = 0.5 # 1/(2pi * tau) = cutoff frequency
-        ts = .02 # sample time
+        ts = .02  # sample time
         self.vel_lpf = LowPassFilter(tau, ts)
 
         self.vehicle_maxx = vehicle_mass
@@ -36,8 +40,6 @@ class Controller(object):
         self.last_time = rospy.get_time()
 
     def control(self, current_vel, dbw_enabled, linear_vel, angular_vel):
-        # TODO: Change the arg, kwarg list to suit your needs
-        # Return throttle, brake, steer
 
         if not dbw_enabled:
             self.throttle_controller.reset()
@@ -64,12 +66,13 @@ class Controller(object):
         brake = 0
 
         if linear_vel == 0. and current_vel < 0.1:
+            # if the speed is really slow, we want to stop the car completely
             throttle = 0
-            brake = 400 # N*m - to hold the car in place if we are stopped at a light.  Acceleration - 1m/s^2
+            brake = 400
         elif throttle < .1 and vel_error < 0:
+            # set the brake baed on speed error
             throttle = 0
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius # Torque N*m
         
         return throttle, brake, steering
-        return 1., 0., 0.
