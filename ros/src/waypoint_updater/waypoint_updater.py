@@ -78,12 +78,28 @@ class WaypointUpdater(object):
         return closest_idx
 
     def publish_waypoints(self, closest_idx):
+        final_lane = self.generate_lane()
+        self.final_waypoints_pub.publish(final_lane)
+
+    def generate_lane(self):
         lane = Lane()
-        lane.header = self.base_waypoints.header
-        lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
-        if self.traffic_waypoint_idx >= 0 and closest_idx < self.traffic_waypoint_idx < (closest_idx + LOOKAHEAD_WPS):
-            self.decelerate(lane.waypoints, self.traffic_waypoint_idx - closest_idx)
-        self.final_waypoints_pub.publish(lane)
+
+        closest_idx = self.get_closest_waypoint_idx()
+        farthest_idx = closest_idx + LOOKAHEAD_WPS
+        base_waypoints = self.base_waypoints[closest_idx:farthest_idx]
+
+        if self.traffic_waypoint_idx == -1 or (self.traffic_waypoint_idx >= farthest_idx):
+            lane.waypoints = base_waypoints
+        else:
+            lane.waypoints = self.decelerate(base_waypoints,self.traffic_waypoint_idx)
+
+        #lane.header = self.base_waypoints.header
+        #lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
+        #if self.traffic_waypoint_idx >= 0 and closest_idx < self.traffic_waypoint_idx < (closest_idx + LOOKAHEAD_WPS):
+        #    self.decelerate(lane.waypoints, self.traffic_waypoint_idx - closest_idx)
+
+        return lane
+
 
     def pose_cb(self, msg):
         self.pose = msg
