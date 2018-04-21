@@ -9,6 +9,7 @@ from geometry_msgs.msg import PoseStamped
 from scipy.spatial import KDTree
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane
+from styx_msgs.msg import Waypoint
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -36,7 +37,9 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/'
+                         ''
+                         '', Int32, self.traffic_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -88,10 +91,13 @@ class WaypointUpdater(object):
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
 
+        rospy.logdebug("self.traffic_waypoint_idx: %s" % self.traffic_waypoint_idx)
+
         if self.traffic_waypoint_idx == -1 or (self.traffic_waypoint_idx >= farthest_idx):
             lane.waypoints = base_waypoints
         else:
-            lane.waypoints = self.decelerate(base_waypoints,self.traffic_waypoint_idx)
+            rospy.logdebug("Decelerate started with idx as %s " % self.traffic_waypoint_idx)
+            lane.waypoints = self.decelerate(base_waypoints,closest_idx)
 
         #lane.header = self.base_waypoints.header
         #lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
@@ -124,18 +130,23 @@ class WaypointUpdater(object):
         p.twist.twist.linear.x = velocity
         return p
 
-    def decelerate(self, waypoints, waypoint):
-        waypoints[waypoint] = self.set_waypoint_velocity(waypoints, waypoint, 0)
-        for wp_idx in range(waypoint - 1, -1, -1):
-            dist = max(self.distance(waypoints, wp_idx, waypoint) - GAP_FOR_STOP_LINE, 0)
-            vel = math.sqrt(2 * MAX_DECEL * dist)
+    def decelerate(self, waypoints, closest_idx):
+        temp = []
+        for i, wp in enumerate(waypoints):
+            p = Waypoint()
+            p.pose = wp.pose
+
+            stop_idx = max(self.traffic_waypoint_idx - closest_idx - 2, 0)
+            dist = self.distance(waypoints,i,stop_idx)
+            vel = math.sqrt(2 + MAX_DECEL * dist)
             if vel < 1.:
                 vel = 0.
 
-            if vel < waypoints[wp_idx].twist.twist.linear.x:
-                waypoints[wp_idx] = self.set_waypoint_velocity(waypoints, wp_idx, vel)
-            else:
-                break
+            p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+            temp.append(p)
+
+        return temp
+
 
     def distance(self, waypoints, wp1, wp2):
         dist = 0
