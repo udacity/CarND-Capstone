@@ -11,7 +11,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, TrafficLightArray, TrafficLight
 
-STATE_COUNT_THRESHOLD = 3
+STATE_COUNT_THRESHOLD = 5
 STOP_LINE_DISTANCE = 100
 
 
@@ -40,9 +40,7 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        rospy.Subscriber('/image_color', Image, self.image_cb)
-        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -57,6 +55,10 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+        rospy.Subscriber('/image_color', Image, self.image_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
 
         rospy.spin()
 
@@ -184,7 +186,7 @@ class TLDetector(object):
             y = self.pose.pose.position.y
             min_distance_to_stop_line = STOP_LINE_DISTANCE + 1
 
-            # Find all the stop lines in 50m
+            # Find all the stop lines in 100m
             closest_idx_list = self.stop_line_positions_tree.query_ball_point([x, y], STOP_LINE_DISTANCE)
 
             for closest_idx in closest_idx_list:
