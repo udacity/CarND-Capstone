@@ -55,7 +55,7 @@ class WaypointUpdater(object):
 
         while not rospy.is_shutdown():
             # if pose (from simulator) and waypoints (from waypoint_loader) are received
-            if self.pose and self.base_waypoints:
+            if self.pose and self.waypoint_tree:
                 # get list of closest waypoints
                 closest_waypoint_idx = self.get_closest_waypoint_id()
                 # publish list of closest waypoints ahead of vehicle
