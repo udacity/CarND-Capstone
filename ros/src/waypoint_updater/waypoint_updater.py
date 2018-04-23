@@ -83,6 +83,10 @@ class WaypointUpdater(object):
             closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
         return closest_idx
 
+    def publish_waypoints(self, closest_idx):
+        final_lane = self.generate_lane(closest_idx)
+        self.final_waypoints_pub.publish(final_lane)
+
     def pose_cb(self, msg):
         # TODO: Implement
         pass
