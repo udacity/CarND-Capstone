@@ -105,17 +105,71 @@ class WaypointUpdater(object):
 
         return lane
 
+
+    def decelerate_waypoints(self, waypoints, closest_idx):
+        temp = []
+        stop_dist = max(self.stopline_wp_idx - closest_idx -1, 0)
+
+        for i, wp in enumerate(waypoints):
+            # create a waypoint and copy the original x, y, z position data
+            p = Waypoint()
+            p.pose = wp.pose
+            
+            dist = self.distance(waypoints, i, stop_dist)
+
+            max_break_dist = 35
+            max_velocity = 11.1
+
+            # car is further than max break distance from next red light
+            if stop_dist > max_break_dist:
+                # keep speed until max_break_dist (in m) before the light
+                if dist > max_break_dist:   
+                    vel = max_velocity
+                # then decelerate (linear)
+                else:
+                    vel = dist/max_break_dist * max_velocity
+            # car is close to red light
+            else:
+                # car is moving towards red light
+                if self.current_vel < 1 and stop_dist > 1:
+                    vel = max(0.1 * stop_dist, max_velocity)
+                else:
+                    if stop_dist < 1:
+                        vel = 0
+                    else:
+                        vel = dist/stop_dist * self.current_vel
+                # car is standing, but too far away from stop light
+                #vel = dist/stop_dist * self.current_vel
+
+
+            # if vel < 0.1:
+            #     vel = 0.0
+
+            # DEBUG
+            self.test.publish("\n" + "Distance: " + str(stop_dist))
+
+            p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+            temp.append(p)
+
+        return temp
+
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        self.pose = msg
+
+    def velocity_cb(self, msg):
+        self.current_vel = msg.twist.linear.x        
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        self.base_waypoints = waypoints
+        if not self.waypoints_2d:
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.stopline_wp_idx = msg.data
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
