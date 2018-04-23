@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
+from std_msgs.msg import Int32, String
 
 import math
+import numpy as np
+from scipy.spatial import KDTree
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -29,16 +32,36 @@ class WaypointUpdater(object):
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # test publisher for debugging
+        # self.test = rospy.Publisher('/test', String, queue_size=1)
 
-        rospy.spin()
+        # TODO: Add other member variables you need below
+        self.pose = None
+        self.base_waypoints = None
+        self.waypoints_2d = None
+        self.waypoint_tree = None
+        self.stopline_wp_idx = -1
+
+        self.loop()
+
+        def loop(self):
+        rate = rospy.Rate(50)
+
+        while not rospy.is_shutdown():
+            # if pose (from simulator) and waypoints (from waypoint_loader) are received
+            if self.pose and self.base_waypoints:
+                # get list of closest waypoints
+                closest_waypoint_idx = self.get_closest_waypoint_id()
+                # publish list of closest waypoints ahead of vehicle
+                self.publish_waypoints(closest_waypoint_idx)
+
+            rate.sleep()
 
     def pose_cb(self, msg):
         # TODO: Implement
