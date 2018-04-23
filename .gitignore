@@ -4,3 +4,8 @@ build
 devel
 
 profile.tmp
+
+# files related to dbw_test
+*.bag
+ros/src/twist_controller/*csv
+
