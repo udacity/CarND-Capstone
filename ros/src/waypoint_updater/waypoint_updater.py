@@ -87,6 +87,24 @@ class WaypointUpdater(object):
         final_lane = self.generate_lane(closest_idx)
         self.final_waypoints_pub.publish(final_lane)
 
+    def generate_lane(self, closest_idx):
+        lane = Lane()
+
+        farthest_idx = closest_idx + LOOKAHEAD_WPS
+        car_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
+
+        # DEBUG - Stage 1 - Use only base waypoints!
+        self.stopline_wp_idx = -1 # remove line later
+
+        # no red light in sight
+        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
+            lane.waypoints = car_waypoints
+        # red light coming up (in max waypoint range)
+        else:
+            lane.waypoints = self.decelerate_waypoints(car_waypoints, closest_idx)
+
+        return lane
+
     def pose_cb(self, msg):
         # TODO: Implement
         pass
