@@ -110,6 +110,6 @@ class TLClassifier(object):
                         g = g + p[1]
                         b = b + p[2]
 
-                if (g == 0 and r > 10) or r / g > red_green_contrast:
+                if (g == 0 and r > 10) or (g == 0 or r / g > red_green_contrast):
                     return TrafficLight.RED
         return TrafficLight.GREEN
