@@ -71,7 +71,6 @@ class TLDetector(object):
         self.lights = msg.lights
 
     def image_cb(self, msg):
-        rospy.logerr("In image_cb call")
 
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
@@ -140,7 +139,6 @@ class TLDetector(object):
 
         # #Get classification
         light_color = self.light_classifier.get_classification(rgb_image)
-        rospy.logerr("light_color: {}".format(light_color))
         return light_color
         #return light.state
 
