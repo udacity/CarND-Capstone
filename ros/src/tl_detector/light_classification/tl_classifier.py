@@ -149,12 +149,16 @@ class TLClassifier(object):
                         if(p[2] > 150):
                             b = b + p[2]
 
-                print("r, g, b:")
-                print(r, g, b)
+                # print("r, g, b:")
+                # print(r, g, b)
 
                 if float(r) > 10 * float(g):
+                     if self.previous_clasification != TrafficLight.RED:
+                        print("***********Changed to RED**********")
                      self.previous_clasification = TrafficLight.RED
                      return TrafficLight.RED
 
+        if self.previous_clasification != TrafficLight.GREEN:
+            print("**********Changed to GREEN**********")
         self.previous_clasification = TrafficLight.GREEN
         return TrafficLight.GREEN
