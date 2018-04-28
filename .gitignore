@@ -5,5 +5,6 @@ devel
 ckpt
 test
 train_data
+summary
 
 profile.tmp
