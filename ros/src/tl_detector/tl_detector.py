@@ -59,7 +59,6 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-	rospy.logInfo("waypoints")
         self.waypoints = waypoints.waypoints
 
     def traffic_cb(self, msg):
@@ -91,8 +90,10 @@ class TLDetector(object):
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
+            rospy.logdebug("publish red light : {}".format(Int32(light_wp)))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+            rospy.logdebug("publish last red light : {}".format(Int32(self.last_wp)))
         self.state_count += 1
 
     def get_closest_waypoint(self, pose):
@@ -136,11 +137,12 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
         
-        if RUN_WITH_SIMULATOR:
-            rospy.loginfo("light state: {}".format(light.state))
-            return light.state
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+        rospy.logdebug("light state: {}".format(light.state))
+        if RUN_WITH_SIMULATOR:
+            return light.state
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -154,6 +156,9 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        if self.waypoints is None:
+        	return -1, TrafficLight.UNKNOWN
+		
         light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
