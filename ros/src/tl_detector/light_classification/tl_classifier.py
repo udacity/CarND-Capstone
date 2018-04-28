@@ -1,13 +1,19 @@
+import os
 from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+from PIL import ImageDraw
 from scipy.stats import norm
+import scipy
+import scipy.misc
+import time
+import cv2
 
-SSD_GRAPH_FILE = 'frozen_models/ssd_inception_v2_coco_2017_11_17/frozen_inference_graph.pb'
+SSD_GRAPH_FILE = '/home/student/projects/capstone/ros/frozen_models/ssd_inception_v2_coco_2017_11_17/frozen_inference_graph.pb'
 confidence_cutoff = 0.3  # confidence to detect object and edge
-padx = 10   # the padding from the boundary 
-pady = 10   # the padding from the boundary 
+padx = 20   # the padding from the boundary 
+pady = 20   # the padding from the boundary 
 red_green_contrast = 1.8 # if red color is 1.8 times more than green color in the bounding box, treat as red light.
 type_traffic_light = 10.0 # seems class 10.0 is for traffic light like thing
 
@@ -54,6 +60,7 @@ class TLClassifier(object):
     
     
     def __init__(self):
+
         detection_graph = self.load_graph(SSD_GRAPH_FILE)
         # detection_graph = load_graph(RFCN_GRAPH_FILE)
         # detection_graph = load_graph(FASTER_RCNN_GRAPH_FILE)
@@ -74,9 +81,13 @@ class TLClassifier(object):
         self.detection_graph = detection_graph
     
     def get_classification(self, image):
-        image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
+
+        res_cv_image = cv2.resize(image, (0,0), fx=0.5, fy=0.5)
+        
+        image_np = np.expand_dims(np.asarray(res_cv_image, dtype=np.uint8), 0)
 
         with tf.Session(graph=self.detection_graph) as sess:                
+            time_before_nn = time.time()
             # Actual detection.
             (boxes, scores, classes) = sess.run([self.detection_boxes, self.detection_scores, self.detection_classes], 
                                                 feed_dict={self.image_tensor: image_np})
@@ -92,12 +103,24 @@ class TLClassifier(object):
 
             # The current box coordinates are normalized to a range between 0 and 1.
             # This converts the coordinates actual location on the image.
-            width, height = image.size
+            width = len(image[1,:])
+            height = len(image[:,1])
             box_coords = self.to_image_coords(boxes, height, width)
 
+            # img = Image.fromarray(image, 'RGB')
+            # draw = ImageDraw.Draw(img) 
+            # for i in range(len(box_coords)):
+            #     top, left, bot, right = box_coords[i, ...]
+            #     print(len(box_coords), top, left, bot, right)
+            #     draw.line([(left, top), (right, bot)], fill=200)
 
+            # scipy.misc.imsave('/home/student/projects/capstone/ros/src/tl_detector/debug_pics/outfile' + 
+            #                     str(timeit.timeit()) + '.jpg', img)
+
+        time_after_nn = time.time()
+
+        print("NN process time:" + str(time_after_nn - time_before_nn))
         # compare the red color with green color
-        pix = image.load()
         for i in range(len(box_coords)):
             if classes[i] == type_traffic_light: 
                 top, left, bot, right = box_coords[i, ...]
@@ -105,11 +128,18 @@ class TLClassifier(object):
 
                 for x in range(int(left) + padx, int(right) - padx):
                     for y in range(int(top) + pady, int(bot) - pady):
-                        p = pix[x, y]
-                        r = r + p[0]
-                        g = g + p[1]
-                        b = b + p[2]
+                        p = image[y, x]
+                        if(p[0] > 150):
+                            r = r + p[0]
+                        if(p[1] > 150):
+                            g = g + p[1]
+                        if(p[2] > 150):
+                            b = b + p[2]
 
-                if (g == 0 and r > 10) or (g == 0 or r / g > red_green_contrast):
-                    return TrafficLight.RED
+                print("r, g, b:")
+                print(r, g, b)
+
+                if float(r) > 10 * float(g):
+                     return TrafficLight.RED
+
         return TrafficLight.GREEN
