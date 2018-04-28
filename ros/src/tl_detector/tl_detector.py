@@ -54,7 +54,12 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        rate = rospy.Rate(2)
+        while not rospy.is_shutdown():
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -68,9 +73,11 @@ class TLDetector(object):
             self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
+        # rospy.logerr(msg)
         self.lights = msg.lights
 
     def image_cb(self, msg):
+        rospy.logerr("In image_cb call")
 
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
@@ -139,6 +146,7 @@ class TLDetector(object):
 
         # #Get classification
         light_color = self.light_classifier.get_classification(rgb_image)
+        rospy.logerr("light_color: {}".format(light_color))
         return light_color
         #return light.state
 
