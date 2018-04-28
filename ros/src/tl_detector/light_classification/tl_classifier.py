@@ -18,6 +18,10 @@ red_green_contrast = 1.8 # if red color is 1.8 times more than green color in th
 type_traffic_light = 10.0 # seems class 10.0 is for traffic light like thing
 
 class TLClassifier(object):
+    nn_process_counter = 0 # count each pass to bypass a percentage of the images to be able to test in VM
+    nn_process_bypass_num = 30 # amount of cycles to bypass
+    previous_clasification = TrafficLight.RED # previous clasification state
+
     def filter_boxes(self, min_score, boxes, scores, classes):
         """Return boxes with a confidence >= `min_score`"""
         n = len(classes)
@@ -86,6 +90,15 @@ class TLClassifier(object):
         
         image_np = np.expand_dims(np.asarray(res_cv_image, dtype=np.uint8), 0)
 
+        # Required to test in the VM
+        self.nn_process_counter = self.nn_process_counter + 1
+
+        if self.nn_process_counter < self.nn_process_bypass_num:
+            return self.previous_clasification
+        else:
+            self.nn_process_counter = 0
+
+
         with tf.Session(graph=self.detection_graph) as sess:                
             time_before_nn = time.time()
             # Actual detection.
@@ -140,6 +153,8 @@ class TLClassifier(object):
                 print(r, g, b)
 
                 if float(r) > 10 * float(g):
+                     self.previous_clasification = TrafficLight.RED
                      return TrafficLight.RED
 
+        self.previous_clasification = TrafficLight.GREEN
         return TrafficLight.GREEN
