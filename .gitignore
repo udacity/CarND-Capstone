@@ -2,5 +2,8 @@
 
 build
 devel
+ckpt
+test
+train_data
 
 profile.tmp
