@@ -11,15 +11,15 @@ from lxml import etree
 from lxml import builder
 from PIL import Image
 
-data_root_1 = '/mnt/data/datasets/dataset-sdcnd-capstone/data/real_training_data/'
-data_root_2 = '/mnt/data/datasets/dataset-sdcnd-capstone/data/sim_training_data/'
-data_root_3 = '/mnt/data/datasets/object-dataset/'
+data_root_1 = '/media/peng/Data/ROS_yuan/CarND-Capstone/ros/src/yolo_light/scripts/Data/dataset-sdcnd-capstone/data/real_training_data/'
+data_root_2 = '/media/peng/Data/ROS_yuan/CarND-Capstone/ros/src/yolo_light/scripts/Data/dataset-sdcnd-capstone/data/sim_training_data/'
+data_root_3 = '/media/peng/Data/ROS_yuan/CarND-Capstone/ros/src/yolo_light/scripts/Data/object-dataset/'
 
 anno_1 = 'real_data_annotations.yaml'
 anno_2 = 'sim_data_annotations.yaml'
 anno_3 = 'labels.csv'
 
-out_root = '/mnt/data/datasets/CarND-Capstone/'
+out_root = '/media/peng/Data/ROS_yuan/CarND-Capstone/ros/src/yolo_light/scripts/'
 if not os.path.isdir(out_root): os.mkdir(out_root)
 if not os.path.isdir(out_root+'Data/'): os.mkdir(out_root+'Data/')
 if not os.path.isdir(out_root+'Annotations/'): os.mkdir(out_root+'Annotations/')

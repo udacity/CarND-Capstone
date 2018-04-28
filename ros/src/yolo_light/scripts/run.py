@@ -9,9 +9,7 @@ options = {"test": "test/", "model": "cfg/tiny-yolo-udacity.cfg", "backup": "ckp
 
 tfnet = TFNet(options)
 
-#images = glob.glob('./test/*.jpg')
-images = glob.glob('../../../../train_data/*.png')
-
+images = glob.glob('./test/*.jpg')
 i = 0
 average = []
 for image in images:
