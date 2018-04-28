@@ -20,6 +20,9 @@ anno_2 = 'sim_data_annotations.yaml'
 anno_3 = 'labels.csv'
 
 out_root = '/mnt/data/datasets/CarND-Capstone/'
+if not os.path.isdir(out_root): os.mkdir(out_root)
+if not os.path.isdir(out_root+'Data/'): os.mkdir(out_root+'Data/')
+if not os.path.isdir(out_root+'Annotations/'): os.mkdir(out_root+'Annotations/')
 
 num_channels = 3
 
