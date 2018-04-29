@@ -1,3 +1,5 @@
-red
-yellow
-green
+car
+truck
+pedestrian
+traffic light
+cyclist

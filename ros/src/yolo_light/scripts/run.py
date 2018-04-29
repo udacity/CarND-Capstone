@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from net.build import TFNet
 from utils import loader
 import cv2
@@ -5,7 +7,7 @@ import glob
 import time
 import numpy as np
 
-options = {"test": "test/", "model": "cfg/tiny-yolo-udacity.cfg", "backup": "ckpt/","load": 8987, "gpu": 1.0}
+options = {"test": "test/", "model": "cfg/yolov2_ft.cfg", "backup": "ckpt/","load": 3000, "gpu": 1.0}
 
 tfnet = TFNet(options)
 
