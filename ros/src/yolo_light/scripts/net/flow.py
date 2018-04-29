@@ -67,10 +67,10 @@ def train(self):
 
     if ckpt: _save_ckpt(self, *args)
 
-def return_predict(self, im, imname):
+def return_predict(self, im):
     assert isinstance(im, np.ndarray), \
 				'Image is not a np.ndarray'
-    #_, h, w, _ = im.shape
+    # _, h, w, _ = im.shape
     h, w, _ = im.shape
     imgcv = np.copy(im)
     im = self.framework.resize_input(im)
@@ -106,15 +106,15 @@ def return_predict(self, im, imname):
                 "y": tmpBox[3]}
         })
 
-        print('boxes',tmpBox[0],tmpBox[1],tmpBox[2],tmpBox[3],tmpBox[4])
-        if 'traffic light' in tmpBox[4]:
+        # print('boxes',tmpBox[0],tmpBox[1],tmpBox[2],tmpBox[3],tmpBox[4])
+        if 'red' in tmpBox[4]:
             cv2.rectangle(imgcv,(tmpBox[0], tmpBox[2]), (tmpBox[1], tmpBox[3]), colors[max_indx], thick)
             cv2.putText(imgcv, tmpBox[4], (tmpBox[0], tmpBox[2] - 12), 0, 1e-3 * h, colors[max_indx],thick//3)
             
-    outfolder = '../../../../train_data/out/'
-    img_name = os.path.join(outfolder, imname.split('/')[-1]) 
+    # outfolder = './test/out/'
+    # img_name = os.path.join(outfolder, imname.split('/')[-1]) 
 
-    cv2.imwrite(img_name, imgcv)
+    # cv2.imwrite(img_name, imgcv)
     return imgcv, boxesInfo
 
 import math

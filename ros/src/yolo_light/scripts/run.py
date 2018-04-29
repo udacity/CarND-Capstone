@@ -18,7 +18,9 @@ for image in images:
     t = time.time()
     imgcv = cv2.imread(image)
     name = image
-    result = tfnet.return_predict(imgcv,name)
+    result, boxInfo = tfnet.return_predict(imgcv,name)
+    print result.shape
+    print boxInfo
     t2 = time.time()
     average.append(t2-t)
     i += 1
