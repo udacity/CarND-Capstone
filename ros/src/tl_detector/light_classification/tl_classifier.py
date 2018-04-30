@@ -19,7 +19,7 @@ type_traffic_light = 10.0 # seems class 10.0 is for traffic light like thing
 
 class TLClassifier(object):
     nn_process_counter = 0 # count each pass to bypass a percentage of the images to be able to test in VM
-    nn_process_bypass_num = 30 # amount of cycles to bypass
+    nn_process_bypass_num = 28 # amount of cycles to bypass
     previous_clasification = TrafficLight.RED # previous clasification state
 
     def filter_boxes(self, min_score, boxes, scores, classes):
