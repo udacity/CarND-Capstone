@@ -10,7 +10,7 @@ import scipy.misc
 import time
 import cv2
 
-SSD_GRAPH_FILE = '/home/student/projects/capstone/ros/frozen_models/ssd_inception_v2_coco_2017_11_17/frozen_inference_graph.pb'
+SSD_GRAPH_FILE = '../../frozen_models/ssd_inception_v2_coco_2017_11_17/frozen_inference_graph.pb'
 confidence_cutoff = 0.3  # confidence to detect object and edge
 padx = 20   # the padding from the boundary 
 pady = 20   # the padding from the boundary 
