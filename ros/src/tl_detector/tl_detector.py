@@ -54,7 +54,12 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        rate = rospy.Rate(20)
+        while not rospy.is_shutdown():
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -68,9 +73,11 @@ class TLDetector(object):
             self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
+        # rospy.logerr(msg)
         self.lights = msg.lights
 
     def image_cb(self, msg):
+        # rospy.logerr("In image_cb call")
 
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
@@ -126,18 +133,22 @@ class TLDetector(object):
         """
         # In testing env, the light state is given
         # TODO change to use classifier in the real code
-        if 1 == 1: 
-            return light.state
+#        if 1 == 1: 
+#            return light.state
 
         if(not self.has_image):
+            rospy.logerr("do not have image")
             self.prev_light_loc = None
             return False
 
-        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        rgb_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB) 
 
         # #Get classification
-        # return self.light_classifier.get_classification(cv_image)
-        return light.state
+        light_color = self.light_classifier.get_classification(rgb_image)
+        # rospy.logerr("light_color: {}".format(light_color))
+        return light_color
+        #return light.state
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
