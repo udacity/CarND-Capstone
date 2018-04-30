@@ -93,9 +93,6 @@ class WaypointUpdater(object):
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         car_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
 
-        # DEBUG - Stage 1 - Use only base waypoints!
-        self.stopline_wp_idx = -1 # remove line later
-
         # no red light in sight
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
             lane.waypoints = car_waypoints
