@@ -73,3 +73,22 @@ roslaunch launch/site.launch
 ```
 5. Confirm that traffic light detection works on real life images
 
+# About the authors
+
+For additional references, feel free to contact:
+
+
+Enrique Garcia [Drive-By-Wire]
+enriquegarcis@gmail.com
+
+Ling Yang [Drive-By-Wire]
+yanglin_us@yahoo.com
+
+Jack Su [Traffic light detection]
+jacksuyu@gmail.com
+
+Bryan Bui-Tuong [Traffic light detection]
+bryan.buituong@gmail.com
+
+Luis Paradela [Traffic light detection / Waypoint updater]
+luis.paradela@gmail.com
