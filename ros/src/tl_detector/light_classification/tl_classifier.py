@@ -1,12 +1,14 @@
 from styx_msgs.msg import TrafficLight
-from net.build import TFNet
+import os
 
-root_dir = "/media/peng/Data/ROS_yuan/CarND-Capstone/ros/src/yolo_light/scripts/"
+cwd = os.getcwd()
+os.system('export PYTHONPATH=' + cwd + ':$PYTHONPATH')
+from net.build import TFNet
 
 class TLClassifier(object):
     def __init__(self):
-		self.options = {"model": root_dir + "cfg/yolov2_ft.cfg",
-							 "backup": root_dir + "ckpt/",
+		self.options = {"model": cwd + "/cfg/yolov2_ft.cfg",
+							 "backup": cwd + "/ckpt/",
 							 "labels": 'labels.txt', "load": 3000, "gpu": 1.0}
 		self.tfnet = TFNet(self.options)
 		self.lightLabel = {'red':TrafficLight.RED, 'green':TrafficLight.GREEN, 'yellow':TrafficLight.YELLOW}
