@@ -25,6 +25,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+MAX_DECEL = 5
 
 
 class WaypointUpdater(object):
@@ -44,6 +45,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.pose = None
         self.base_waypoints = None
+        self.car_velocity = None
         self.waypoints_2d = None
         self.waypoint_tree = None
         self.stopline_wp_idx = -1
@@ -104,58 +106,52 @@ class WaypointUpdater(object):
 
 
     def decelerate_waypoints(self, waypoints, closest_idx):
-        temp = []
-        stop_dist = max(self.stopline_wp_idx - closest_idx -1, 0)
+        decel_waypoints = []
+        # create stop index for center of the car relative to the stop line
+        stop_idx = max(self.stopline_wp_idx - closest_idx -4, 0)
+        # calculate distance from car to stopping point
+        car_stop_distance = self.distance(waypoints, 0, stop_idx)
+
+        # calculate linear deceleration value: a = (v)2 / (2 * s)
+        if car_stop_distance <= 0.2:
+        	needed_decel = MAX_DECEL
+        else:
+        	needed_decel = (self.car_velocity * self.car_velocity) / (2 * car_stop_distance)
 
         for i, wp in enumerate(waypoints):
             # create a waypoint and copy the original x, y, z position data
             p = Waypoint()
             p.pose = wp.pose
             
-            dist = self.distance(waypoints, i, stop_dist)
-
-            max_break_dist = 35
-            max_velocity = 11.1
-
-            # car is further than max break distance from next red light
-            if stop_dist > max_break_dist:
-                # keep speed until max_break_dist (in m) before the light
-                if dist > max_break_dist:   
-                    vel = max_velocity
-                # then decelerate (linear)
-                else:
-                    vel = dist/max_break_dist * max_velocity
-            # car is close to red light
+            # keep the speed for current waypoint of the car
+            if (i == 0):
+                vel = self.car_velocity
+            # reduce speed for all following waypoints
             else:
-                # car is moving towards red light
-                if self.current_vel < 1 and stop_dist > 1:
-                    vel = max(0.1 * stop_dist, max_velocity)
+                dist = self.distance(waypoints, i, stop_idx)
+
+                # set velocity to zero for all waypoints behind red light
+                if (dist <= 0.):
+                    vel = 0.
                 else:
-                    if stop_dist < 1:
-                        vel = 0
-                    else:
-                        vel = dist/stop_dist * self.current_vel
-                # car is standing, but too far away from stop light
-                #vel = dist/stop_dist * self.current_vel
+                    delta_s = car_stop_distance - dist
+                    delta_v = math.sqrt(2*delta_s*needed_decel)
+
+                    vel = self.car_velocity - delta_v
+
+            p.twist.twist.linear.x = vel
+            decel_waypoints.append(p)
+
+        return decel_waypoints
 
 
-            # if vel < 0.1:
-            #     vel = 0.0
-
-            # DEBUG
-            self.test.publish("\n" + "Distance: " + str(stop_dist))
-
-            p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
-            temp.append(p)
-
-        return temp
 
     def pose_cb(self, msg):
         # TODO: Implement
         self.pose = msg
 
     def velocity_cb(self, msg):
-        self.current_vel = msg.twist.linear.x        
+        self.car_velocity = msg.twist.linear.x        
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
