@@ -7,9 +7,9 @@ from net.build import TFNet
 
 class TLClassifier(object):
     def __init__(self):
-		self.options = {"model": cwd + "/cfg/yolov2_ft.cfg",
+		self.options = {"model": cwd + "/cfg/yolov2-tiny_ft.cfg",
 							 "backup": cwd + "/ckpt/",
-							 "labels": 'labels.txt', "load": 3000, "gpu": 1.0}
+							 "labels": 'labels.txt', "load": 8240, "gpu": 1.0}
 		self.tfnet = TFNet(self.options)
 		self.lightLabel = {'red':TrafficLight.RED, 'green':TrafficLight.GREEN, 'yellow':TrafficLight.YELLOW}
 
@@ -31,7 +31,7 @@ class TLClassifier(object):
         	for i in boxInfo:
         		label.add(i['label'])
         	if len(label) == 1:
-        		print label
+        		# print label
         		return self.lightLabel[label.pop()]
 
         return TrafficLight.UNKNOWN
