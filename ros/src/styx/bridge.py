@@ -106,7 +106,7 @@ class Bridge(object):
 
     def calc_angular(self, yaw):
         angular_vel = 0.
-        if self.yaw is not None:
+        if self.yaw is not None and rospy.get_time() != self.prev_time:
             angular_vel = (yaw - self.yaw)/(rospy.get_time() - self.prev_time)
         self.yaw = yaw
         self.prev_time = rospy.get_time()
