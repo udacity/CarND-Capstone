@@ -1,9 +1,17 @@
 from styx_msgs.msg import TrafficLight
+import os
+
+cwd = os.getcwd()
+os.system('export PYTHONPATH=' + cwd + ':$PYTHONPATH')
+from net.build import TFNet
 
 class TLClassifier(object):
     def __init__(self):
-        #TODO load classifier
-        pass
+		self.options = {"model": cwd + "/cfg/yolov2-tiny_ft.cfg",
+							 "backup": cwd + "/ckpt/",
+							 "labels": 'labels.txt', "load": 8240, "gpu": 1.0}
+		self.tfnet = TFNet(self.options)
+		self.lightLabel = {'red':TrafficLight.RED, 'green':TrafficLight.GREEN, 'yellow':TrafficLight.YELLOW}
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -15,5 +23,15 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #TODO implement light color prediction
+        _, boxInfo = self.tfnet.return_predict(image)
+        if not boxInfo:
+        	return TrafficLight.GREEN
+        else:
+        	label = set()
+        	for i in boxInfo:
+        		label.add(i['label'])
+        	if len(label) == 1:
+        		# print label
+        		return self.lightLabel[label.pop()]
+
         return TrafficLight.UNKNOWN
