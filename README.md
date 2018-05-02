@@ -14,19 +14,19 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 ![alt text][image1]
 
-### Traffic light detection
+### Traffic Light Detection
 
 We use YOLO v2 tiny detector as our traffic light detector (https://pjreddie.com/darknet/yolov2/) for its real-time efficiency. We download the cfg file and weights pretrained on COCO dataset as our baseline. For training, we combine the Udacity Autonomous Driving Dataset 2 (https://github.com/udacity/self-driving-car/tree/master/annotations) and the traffic light dataset collected by https://github.com/coldKnight/TrafficLight_Detection-TensorFlowAPI, and then use `/ros/src/tl_detector/sort_data.py` to convert the annotations into trainable .xml files.
 
 #### Training
 
-Follow the instructions of darkflow (https://github.com/thtrieu/darkflow) and modify labels and config file accordingly. We 
+Follow the instructions of darkflow (https://github.com/thtrieu/darkflow) and modify labels and config file accordingly. 
 
 ```
 ./flow --model cfg/yolov2-tiny_ft.cfg --train --load bin/yolov2-tiny.weights --dataset "/mnt/data/datasets/CarND-Capstone/Data" --annotation "/mnt/data/datasets/CarND-Capstone/Annotations" --gpu 1.0 --lr 5e-4 --epoch 10 --save 1000 --trainer adam
 ```
 
-We also trained YOLO v2 full version but it underperforms the Tiny YOLO v2. This is probably due to overfitting with limited training data.
+We also trained YOLO v2 full version but it underperforms the Tiny YOLO v2. This is potentially due to overfitting with limited training data.
 
 Our checkpoint files can be found at
 
@@ -92,7 +92,7 @@ roslaunch launch/styx.launch
 ```
 4. Run the simulator
 
-### Real world testing
+### Real World Testing
 1. Download [training bag](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/traffic_light_bag_file.zip) that was recorded on the Udacity self-driving car.
 2. Unzip the file
 ```bash
