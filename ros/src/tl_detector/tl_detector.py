@@ -180,7 +180,7 @@ class TLDetector(object):
         elif self.get_light == 'detect':
             if self.has_image:
                 self.prev_light_loc = None
-                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
                 self.has_image = False
                 #Get classification
                 return self.light_classifier.get_classification(cv_image)
