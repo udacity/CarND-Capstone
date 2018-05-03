@@ -1,7 +1,7 @@
 # Capstone Project - A New Team
 
 ## Team Members
- - Avnay Srivastava([anvaysrivastava](https://github.com/anvaysrivastava),anvaysrivastava@gmail.com): Team lead
+ - Anvay Srivastava([anvaysrivastava](https://github.com/anvaysrivastava),anvaysrivastava@gmail.com): Team Lead
  - Francesc Navarro([franavar](https://github.com/frankynavar),f.navarro@outlook.com)
  - Diogo Leal([lealldiogo](https://github.com/lealldiogo),lealldiogo@gmail.com)
  - Chih-Chuan Chan([chihchuanchan](https://github.com/chc170),dincoco@gmail.com)
