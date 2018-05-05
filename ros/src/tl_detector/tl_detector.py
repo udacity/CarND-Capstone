@@ -59,7 +59,7 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
-        rospy.loginfo("NIHA  and Naushad1")
+        
         if not self.waypoints_2D:
             self.waypoints_2D = [[waypoint.pose.pose.position.x,waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints ]
             self.waypoint_TREE = KDTree(self.waypoints_2D)
@@ -77,7 +77,7 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        rospy.loginfo("NIHA  and Naushad3")
+       
         light_wp, state = self.process_traffic_lights()
 
         '''

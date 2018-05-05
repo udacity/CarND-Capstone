@@ -53,11 +53,10 @@ class WaypointUpdater(object):
         # rospy.spin()
     
     def loop(self):
-        rate = rospy.Rate(50)
+        rate = rospy.Rate(100)
         while not rospy.is_shutdown():
             if self.pose and self.base_lane:
-                closest_waypoint_idx = self.get_closest_waypoint_idx()
-                self.publish_waypoints(closest_waypoint_idx)
+                self.publish_waypoints()
             rate.sleep()
 
 
@@ -85,8 +84,9 @@ class WaypointUpdater(object):
     def traffic_cb(self,msg):
         self.stopline_wp_idx  = msg.data
 
-    def publish_waypoints(self,closest_idx):
+    def publish_waypoints(self):
         final_lane = self.generate_lane()
+        rospy.loginfo("Publishin final point")
         self.final_waypoints_pub.publish(final_lane)
     
 
