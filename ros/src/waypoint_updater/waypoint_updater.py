@@ -95,6 +95,9 @@ class WaypointUpdater(object):
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         car_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
 
+        # hard coded to only run at target speed to verify DBW_node and PID loop
+        self.stopline_wp_idx = -1
+
         # no red light in sight
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
             lane.waypoints = car_waypoints
