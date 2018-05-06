@@ -68,7 +68,7 @@ class DBWNode(object):
         
          # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/vehicle/dbw_enabled',Bool , self.dbw_enabled_cb)
-        rospy.Subscriber('/vehicle/twist_cmd',TwistStamped , self.twist_cb)
+        rospy.Subscriber('/twist_cmd',TwistStamped , self.twist_cb)
         rospy.Subscriber('/current_velocity',TwistStamped , self.velocity_cb)
 
         self.current_vel = None 
@@ -93,7 +93,7 @@ class DBWNode(object):
 
             
             if not None in (self.current_vel,self.linear_vel,self.angular_vel):
-                rospy.loginfo("Inside controller")
+                
                 self.throttle,self.brake,self.setering = self.controller.control(self.current_vel,
                                                                                 self.dbw_enabled,
                                                                                 self.linear_vel,
@@ -105,10 +105,6 @@ class DBWNode(object):
            
                 
             if self.dbw_enabled:
-                
-                self.throttle =0.2 
-                self.brake =0 
-                self.setering =0 
                 # rospy.loginfo("dbw_enable={:d} Throttle {:3.3f} brake {:3.3f} setering {:3.3f} ".format(self.dbw_enabled,self.throttle,self.brake,self.setering))
                 self.publish(self.throttle,self.brake,self.setering)
             rate.sleep()
@@ -121,7 +117,7 @@ class DBWNode(object):
     def twist_cb(self,msg):
         self.linear_vel = msg.twist.linear.x
         self.angular_vel = msg.twist.angular.z
-        rospy.loginfo("linear_vel={:3.3f} angular_vel={3.3f}".format( self.linear_vel ,self.angular_vel))
+       
     
 
 

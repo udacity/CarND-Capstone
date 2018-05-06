@@ -46,6 +46,7 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.waypoint_tree = None
         self.stopline_wp_idx = -1
+        self.stopline_wp_idx_backup = -1
         self.base_lane = None
 
         self.loop()
@@ -93,11 +94,12 @@ class WaypointUpdater(object):
 
     def generate_lane(self):
         lane = Lane()
+        self.stopline_wp_idx_backup = self.stopline_wp_idx 
         closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
-
-        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
+        
+        if self.stopline_wp_idx_backup == -1 or (self.stopline_wp_idx_backup >= farthest_idx):
             lane.waypoints = base_waypoints
         else:
             lane.waypoints = self.decelerate_waypoints(base_waypoints,closest_idx)
@@ -107,11 +109,13 @@ class WaypointUpdater(object):
 
     def decelerate_waypoints(self,waypoints,closest_idx):
         temp = []
+        
         for i,wp in enumerate(waypoints):
             p = Waypoint()
             p.pose = wp.pose
             
-            stop_idx = max(self.stopline_wp_idx - closest_idx - 2,0)
+            stop_idx = max(self.stopline_wp_idx_backup - closest_idx - 2,0)
+            # rospy.loginfo("len={:d},stop_idx={:d} stopline_wp_idx={:d} closest_idx={:d}".format(len(waypoints),stop_idx,self.stopline_wp_idx,closest_idx))
             dist = self.distance(waypoints,i,stop_idx)
             vel = math.sqrt(2*MAX_DECEL*dist)
 
