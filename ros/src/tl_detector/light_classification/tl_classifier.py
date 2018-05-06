@@ -10,15 +10,11 @@ class TLClassifier(object):
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
-	self.is_sim = self.config["is_sim"]
-
-        if self.is_sim:
-            PATH_TO_GRAPH = r'light_classification/model/ssd_sim/frozen_inference_graph.pb'
-        else:
-            PATH_TO_GRAPH = r'light_classification/model/ssd_udacity/frozen_inference_graph.pb'
 
         self.graph = tf.Graph()
         self.threshold = .5
+        PATH_TO_GRAPH = r"{}".format(self.config["model"])
+
 
 
         with self.graph.as_default():
