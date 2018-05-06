@@ -56,23 +56,23 @@ class TLClassifier(object):
                 feed_dict={self.image_tensor: img_expand})
             end = datetime.datetime.now()
             c = end - start
-            print(c.total_seconds())
+            #rospy.logdebug(c.total_seconds())
 
         boxes = np.squeeze(boxes)
         scores = np.squeeze(scores)
         classes = np.squeeze(classes).astype(np.int32)
 
-        print('SCORES: ', scores[0])
-        print('CLASSES: ', classes[0])
-
+        
+        #rospy.logdebug ('SCORE: {} Class: {}'.format(scores[0],classes[0]))
+        state = TrafficLight.UNKNOWN
         if scores[0] > self.threshold:
             if classes[0] == 1:
-                print('GREEN')
-                return TrafficLight.GREEN
+                state = TrafficLight.GREEN
             elif classes[0] == 2:
-                print('RED')
-                return TrafficLight.RED
+                state = TrafficLight.RED
             elif classes[0] == 3:
-                print('YELLOW')
-                return TrafficLight.YELLOW
-        return TrafficLight.UNKNOWN
+                state = TrafficLight.YELLOW
+            rospy.loginfo ('Detected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
+        else:
+            rospy.loginfo ('Undetected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
+        return state
