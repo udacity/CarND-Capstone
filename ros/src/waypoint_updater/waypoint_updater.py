@@ -51,7 +51,7 @@ class WaypointUpdater(object):
         self.waypoint_tree = None
         self.stopline_wp_idx = -1
 
-        self.decelerating = False
+        self.acceleration_status = 0 # 0: nothing / -1: decelerating / 1: accelerating
         self.path_decel = None
         self.last_trajectory_waypoints = None
         self.closest_idx_last = None
@@ -111,7 +111,11 @@ class WaypointUpdater(object):
         # no red light in sight
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
             # accelerate comfortably to target speed
-            lane.waypoints = self.accelerate_waypoints(car_waypoints, car_wp_distance)
+            # if self.acceleration_status == 1:
+            #     lane.waypoints = self.keep_old_trajectory(closest_idx)
+            # else:
+            lane.waypoints = self.accelerate_waypoints(car_waypoints, car_wp_distance, closest_idx)
+                
         # red light coming up (in max waypoint range)
         else:
             # create stop index for center of the car relative to the stop line
@@ -138,30 +142,30 @@ class WaypointUpdater(object):
                 # physically impossible to stop
                 if needed_decel > MAX_DECEL:
                     # accelerate quickly to target speed
-                    lane.waypoints = car_waypoints
-                    self.decelerating = False
+                    lane.waypoints = self.accelerate_waypoints(car_waypoints, car_wp_distance, closest_idx)  # modify to accel with max limit
                 # possible to stop
                 else:
-                    if self.decelerating == True:
-                        # calculated decel is far different from current path decel
+                    if self.acceleration_status == -1:
+                        # calculated decel is far different from current path decel --> calculate new trajectory
                         if abs(needed_decel - self.path_decel) > 1:
-                            lane.waypoints = self.decelerate_waypoints(car_waypoints, car_stop_distance, stop_idx, needed_decel)
-                            self.closest_idx_last = closest_idx
+                            lane.waypoints = self.decelerate_waypoints(car_waypoints, car_stop_distance, stop_idx, needed_decel, closest_idx)
                         else:
                             #lane.waypoints = self.decelerate_waypoints(car_waypoints, car_stop_distance, stop_idx, needed_decel)
                             lane.waypoints = self.keep_old_trajectory(closest_idx)
                     else:
                         if needed_decel > IDEAL_DECEL:
-                            lane.waypoints = self.decelerate_waypoints(car_waypoints, car_stop_distance, stop_idx, needed_decel)
-                            self.closest_idx_last = closest_idx
+                            lane.waypoints = self.decelerate_waypoints(car_waypoints, car_stop_distance, stop_idx, needed_decel, closest_idx)
                         else:
                             # accelerate comfortably to target speed
-                            lane.waypoints = self.accelerate_waypoints(car_waypoints, car_wp_distance)                   
+                            # if self.acceleration_status == 1:
+                            #     lane.waypoints = self.keep_old_trajectory(closest_idx)
+                            # else:
+                            lane.waypoints = self.accelerate_waypoints(car_waypoints, car_wp_distance, closest_idx)              
 
         return lane
 
 
-    def accelerate_waypoints(self, waypoints, car_wp_distance):
+    def accelerate_waypoints(self, waypoints, car_wp_distance, closest_idx):
         accel_waypoints = []
 
         for i, wp in enumerate(waypoints):
@@ -178,15 +182,16 @@ class WaypointUpdater(object):
             p.twist.twist.linear.x = vel
             accel_waypoints.append(p)
 
-        self.decelerating = False
+        self.acceleration_status = 1
+        self.closest_idx_last = closest_idx 
 
         # store a copy of waypoint list
-        #self.last_trajectory_waypoints = list(accel_waypoints)
+        self.last_trajectory_waypoints = list(accel_waypoints)
 
         return accel_waypoints
 
 
-    def decelerate_waypoints(self, waypoints, car_stop_distance, stop_idx, needed_decel):
+    def decelerate_waypoints(self, waypoints, car_stop_distance, stop_idx, needed_decel, closest_idx):
         decel_waypoints = []
 
         for i, wp in enumerate(waypoints):
@@ -208,8 +213,9 @@ class WaypointUpdater(object):
             p.twist.twist.linear.x = vel
             decel_waypoints.append(p)
 
-        self.decelerating = True
+        self.acceleration_status = -1
         self.path_decel = needed_decel
+        self.closest_idx_last = closest_idx 
 
         # store a copy of waypoint list
         self.last_trajectory_waypoints = list(decel_waypoints)
@@ -223,7 +229,11 @@ class WaypointUpdater(object):
         self.closest_idx_last = closest_idx
         self.last_trajectory_waypoints = self.last_trajectory_waypoints[car_step:]
 
-        # optional: add zero vel waypoints to end of path
+        # add target speed or zero vel waypoints to end of path
+        #if self.acceleration_status == -1:
+            # append zero waypoints
+        #else:
+            #append target speed waypoints
 
         return self.last_trajectory_waypoints
 
