@@ -133,7 +133,7 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-        rospy.logdebug(['[TLD] State received: ', state])
+        #rospy.logdebug(['[TLD] State received: ', state])
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -221,17 +221,18 @@ class TLDetector(object):
             light = self.lights[light_id]
 
             car_p = self.pose.pose.position
-            light_p = light.pose.pose.position
-            tl_distance = self.distance(car_p, light_p, 3)
+            #light_p = light.pose.pose.position
+            light_p = self.waypoints.waypoints[light_wp].pose.pose.position
+            tl_distance = self.distance(car_p, light_p, 2)
 
             if tl_distance > TRAFFIC_LIGHT_MAX_DISTANCE:
                 # Next traffic light is too far away, we consider it is not visible.
                 light = None
 
             #rospy.logdebug(['car closest way point:', car_position_index])
-            rospy.logdebug(['next stop line closest way point:', light_wp])
-            rospy.logdebug(['car position:', self.pose.pose.position])
-            rospy.logdebug(['next stop line position:', self.waypoints.waypoints[light_wp].pose.pose.position])
+            #rospy.logdebug(['next stop line closest way point:', light_wp])
+            #rospy.logdebug(['car position:', self.pose.pose.position])
+            #rospy.logdebug(['next stop line position:', light_p])
             rospy.logdebug(['distance to next traffic light:', tl_distance])
 
             if light:

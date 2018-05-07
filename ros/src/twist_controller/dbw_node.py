@@ -41,7 +41,11 @@ on the various publishers that we have created in the `__init__` function.
 class DBWNode(object):
     #Establishes a drive by wire node for controlling the vechile
     def __init__(self):
-        rospy.init_node('dbw_node')
+        log_level_param = rospy.get_param("/log_level")
+        if log_level_param.lower() == 'debug':
+            rospy.init_node('dbw_node', log_level=rospy.DEBUG)
+        else:
+            rospy.init_node('dbw_node')
 
         vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35)
         fuel_capacity = rospy.get_param('~fuel_capacity', 13.5)
@@ -142,8 +146,8 @@ class DBWNode(object):
         bcmd.enable = True
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         # Simulator adjustment
-        if self.brake_deadband > 0.1:
-            brake *= 1000.
+        #if self.brake_deadband > 0.1:
+        #    brake *= 1000.
         bcmd.pedal_cmd = brake
 
         # Create throttle command

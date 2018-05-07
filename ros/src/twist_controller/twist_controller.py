@@ -13,7 +13,7 @@ class Controller(object):
                  brake_deadband, fuel_capacity):
 
         self.velocity_filter = LowPassFilter(3.5, 1.)
-        self.velocity_pid = PID(1., 0.001, 0.,
+        self.velocity_pid = PID(0.8, 0.0, 0.05,
                                 mn=decel_limit, mx=0.25)
         self.yaw_controller = YawController(wheel_base, steer_ratio, 1,
                                             max_lat_accel, max_steer_angle)
@@ -21,7 +21,7 @@ class Controller(object):
         self.brake_deadband = brake_deadband
         self.total_mass = vehicle_mass + fuel_capacity * GAS_DENSITY
         self.decel_limit = decel_limit
-        
+
 
     def reset(self):
         #Reset controller
@@ -44,7 +44,8 @@ class Controller(object):
         # Keep full brake if target velocity is almost 0
         if self.cmd_vel < FULL_BRAKE_SPEED:
             throttle = 0.0
-            brake_torque = self.decel_limit * self.total_mass * self.wheel_radius 
+            brake_torque = -self.decel_limit * self.total_mass * self.wheel_radius
+            assert (brake_torque >= 0)
         else:
             if cmd_acc > 0.0:
                 throttle = cmd_acc
@@ -58,5 +59,6 @@ class Controller(object):
                     deceleration = 0.0
 
                 # Compute brake torque, in Nm
-                brake_torque = deceleration * self.total_mass * self.wheel_radius 
+                brake_torque = deceleration * self.total_mass * self.wheel_radius
+                assert (brake_torque >= 0)
         return throttle, brake_torque, steer
