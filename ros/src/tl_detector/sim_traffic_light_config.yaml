@@ -14,3 +14,4 @@ stop_line_positions:
 bypass_light_classify: true
 # the path to the model.
 model: "light_classification/model/ssd_sim/frozen_inference_graph.pb"
+#model: "frozen_models/frozen_sim_mobile/frozen_inference_graph.pb"
