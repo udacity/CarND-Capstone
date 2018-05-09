@@ -4,7 +4,7 @@ import math
 
 import rospy
 import tf
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TwistStamped
 from std_msgs.msg import Int32
 from styx_msgs.msg import Lane, Waypoint
 from scipy.spatial import KDTree
@@ -30,7 +30,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 MAX_DECELERATION = 1.0
 LOOKAHEAD_WPS = 100  # Number of waypoints we publish
-STOP_BUFFER = 5 # Number of waypoints to stop ahead of the stop_line_wp
+STOP_BUFFER = 3 # Number of waypoints to stop ahead of the stop_line_wp
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -44,6 +44,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=1)
 
         # TODO: Add a subscriber for /obstacle_waypoint
 
@@ -54,6 +55,7 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.waypoints_tree = None
         self.ego = None
+        self.current_velocity = 0.0
         self.next_idx = -1
         self.stopline_wp_index = -1
         self.publishing_loop()
@@ -74,6 +76,15 @@ class WaypointUpdater(object):
     def pose_cb(self, pose):
         #Get current pose
         self.ego = pose
+
+    def current_velocity_cb(self, msg):
+        '''
+        Callback providing the current car velocity
+
+        :param msg: Car velocity in meters per second
+        :return: None
+        '''
+        self.current_velocity = msg.twist.linear.x
 
     def waypoints_cb(self, waypoints):
         '''
@@ -184,14 +195,25 @@ class WaypointUpdater(object):
         closest_index = self.find_next_waypoint()
         furthest_index = closest_index + LOOKAHEAD_WPS
 
+
         if (self.stopline_wp_index == -1) or (self.stopline_wp_index >= furthest_index):
             # If we are too far behind a traffic light, no need to modify anything
             lane.waypoints = self.base_waypoints.waypoints[closest_index:furthest_index]
         else:
-            # We copy the waypoints to avoid modifying the base_waypoints themselves
-            # and end up having some issues when we'll loop back through these same points
-            base_waypoints = self.base_waypoints.waypoints[closest_index:furthest_index]
-            lane.waypoints = self.decelerate_trajectory(base_waypoints, closest_index)
+            stopping_distance = (self.current_velocity ** 2) / (2. * MAX_DECELERATION)
+            tl_distance = self.euclidean_dist(self.ego.pose.position, self.base_waypoints.waypoints[self.stopline_wp_index].pose.pose.position) + 2.
+            rospy.logdebug(['ego x: ', self.ego.pose.position])
+            rospy.logdebug(['ego x: ', self.base_waypoints.waypoints[self.stopline_wp_index].pose.pose.position.x])
+            rospy.logdebug(['stopping distance: ', stopping_distance])
+            rospy.logdebug(['tl distance: ', tl_distance])
+            if tl_distance < stopping_distance:
+                # if no room for stopping, no need to slow down
+                lane.waypoints = self.base_waypoints.waypoints[closest_index:furthest_index]
+            else:
+                # We copy the waypoints to avoid modifying the base_waypoints themselves
+                # and end up having some issues when we'll loop back through these same points
+                base_waypoints = self.base_waypoints.waypoints[closest_index:furthest_index]
+                lane.waypoints = self.decelerate_trajectory(base_waypoints, closest_index)
 
         # Message for the TL_Detector: the index of the first final waypoint among the base_waypoints
         lane.waypoints[0].pose.header.seq = closest_index
@@ -223,13 +245,15 @@ class WaypointUpdater(object):
             # The velocity at each point is a function of the distance to the stop line
             # so that the velocity decreases until reaching 0 when the car will be very
             # close to the stop line
-            velocity = np.sqrt(2. * MAX_DECELERATION * distance)
-            # If the velocity is almost 0, we set it to 0 to have a clear stop
-            if velocity < 1.:
+            if distance < 0.5:
+                # If the velocity is almost 0, we set it to 0 to have a clear stop
                 velocity = 0.
+            else:
+                velocity = np.sqrt(2. * MAX_DECELERATION * distance)
 
             # We don't want to increase the velocity, we
-            wp.twist.twist.linear.x = min(velocity, wp.twist.twist.linear.x)
+            wp.twist.twist.linear.x = min(velocity, base_wp.twist.twist.linear.x)
+
             final_wp.append(wp)
         return final_wp
 
