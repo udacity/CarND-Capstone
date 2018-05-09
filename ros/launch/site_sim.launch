@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <launch>
+    <!-- Simulator Bridge -->
+    <include file="$(find styx)/launch/server.launch" />
+
     <!--DBW Node -->
-    <include file="$(find twist_controller)/launch/dbw.launch"/>
+    <include file="$(find twist_controller)/launch/dbw_sim.launch"/>
 
     <!--Waypoint Loader -->
     <include file="$(find waypoint_loader)/launch/waypoint_loader_site.launch"/>
@@ -18,12 +21,6 @@
     <!--Traffic Light Detector Node -->
     <include file="$(find tl_detector)/launch/tl_detector_site.launch"/>
 
-    <!--Camera Calibration YAML -->
-    <param name="grasshopper_calibration_yaml" textfile="$(find styx)../../../data/grasshopper_calibration.yml" />
-
-    <!--Camera Info Publisher -->
-    <include file="$(find camera_info_publisher)/launch/camera_info_publisher.launch"/>
-
     <!--Logging Level -->
     <arg name="log_level" default="info" doc="Valid values: {info, debug}"/>
     <param name="log_level" value="$(arg log_level)" />
@@ -35,5 +32,4 @@
     <!--Data Recording Path -->
     <arg name="record_path" default="" doc="Directory path to save training data."/>
     <param name="record_path" value="$(arg record_path)" />
-
 </launch>

@@ -13,7 +13,7 @@ class Controller(object):
                  brake_deadband, fuel_capacity):
 
         self.velocity_filter = LowPassFilter(3.5, 1.)
-        self.velocity_pid = PID(0.8, 0.0, 0.05,
+        self.velocity_pid = PID(1.0, 0.01, 0.1,
                                 mn=decel_limit, mx=0.25)
         self.yaw_controller = YawController(wheel_base, steer_ratio, 1,
                                             max_lat_accel, max_steer_angle)

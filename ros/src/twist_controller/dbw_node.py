@@ -107,7 +107,7 @@ class DBWNode(object):
 
     def loop(self):
         #Actuate vehicle if enabled
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(50)
         while not rospy.is_shutdown():
             # Get current time
             cur_time = rospy.get_rostime()
