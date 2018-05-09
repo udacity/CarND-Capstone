@@ -1,8 +1,43 @@
+[ros-architecture]: ./imgs/ros-architecture.png "ros-archi"
+
+# Capstone Project - System Integration
+
+[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+[![Build Status](https://travis-ci.org/Labonneguigue/CarND-Capstone-System-Integration.svg?branch=master)](https://travis-ci.org/Labonneguigue/CarND-Capstone-System-Integration)
+
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
+
+### Team Members
+
+* [Guillaume Granié](https://github.com/Labonneguigue)
+* [Ahmed Yassin](https://github.com/AhmedMYassin)
+* [Akhil Umat](https://github.com/akhilumat)
+* [Emmanuel Onzon](https://github.com/manu291)
+* [Scott Schnelle](https://github.com/scs50)
+
+---
+
+## Objective
+
+Implementation of multiple software components interacting with each other to successfully drive a Lincoln MKZ first in a simulator and then in the real world in a constrained environment. The Robotic Operating System (ROS) for inter-components communication and to control the car using its drive-by-wire (DBW) system.
+
+## Implementation
+
+The following design allowed us to use the same code with the real car and the one in the simulator interchangeably.
+
+![alt text][ros-architecture]
+
+## Results
+
+[On their way ...]
+
+---
+
+## Installation
 
 Please use **one** of the two installation options, either native **or** docker installation.
 
-### Native Installation
+### Native - Option 1
 
 * Be sure that your workstation is running Ubuntu 16.04 Xenial Xerus or Ubuntu 14.04 Trusty Tahir. [Ubuntu downloads can be found here](https://www.ubuntu.com/download/desktop).
 * If using a Virtual Machine to install Ubuntu, use the following configuration as minimum:
@@ -19,7 +54,7 @@ Please use **one** of the two installation options, either native **or** docker 
   * Use this option to install the SDK on a workstation that already has ROS installed: [One Line SDK Install (binary)](https://bitbucket.org/DataspeedInc/dbw_mkz_ros/src/81e63fcc335d7b64139d7482017d6a97b405e250/ROS_SETUP.md?fileviewer=file-view-default)
 * Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases).
 
-### Docker Installation
+### Docker - Option 2
 [Install Docker](https://docs.docker.com/engine/installation/)
 
 Build the docker container

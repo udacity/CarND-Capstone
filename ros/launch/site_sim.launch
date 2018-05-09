@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Simulator Bridge -->
+    <include file="$(find styx)/launch/server.launch" />
+
+    <!--DBW Node -->
+    <include file="$(find twist_controller)/launch/dbw_sim.launch"/>
+
+    <!--Waypoint Loader -->
+    <include file="$(find waypoint_loader)/launch/waypoint_loader_site.launch"/>
+
+    <!--Waypoint Follower Node -->
+    <include file="$(find waypoint_follower)/launch/pure_pursuit.launch"/>
+
+    <!--Waypoint Updater Node -->
+    <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
+
+    <!--Traffic Light Locations and Camera Config -->
+    <param name="traffic_light_config" textfile="$(find tl_detector)/site_traffic_light_config.yaml" />
+
+    <!--Traffic Light Detector Node -->
+    <include file="$(find tl_detector)/launch/tl_detector_site.launch"/>
+
+    <!--Logging Level -->
+    <arg name="log_level" default="info" doc="Valid values: {info, debug}"/>
+    <param name="log_level" value="$(arg log_level)" />
+
+    <!--Traffic Light Detection Mode -->
+    <arg name="get_light" default="detect" doc="Method to get traffic light state. Valid values: {detect, oracle}"/>
+    <param name="get_light" value="$(arg get_light)" />
+
+    <!--Data Recording Path -->
+    <arg name="record_path" default="" doc="Directory path to save training data."/>
+    <param name="record_path" value="$(arg record_path)" />
+</launch>
