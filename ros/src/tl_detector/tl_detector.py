@@ -13,10 +13,10 @@ import yaml
 import math
 
 STATE_COUNT_THRESHOLD = 3
-RUN_WITH_SIMULATOR = True
 
 class TLDetector(object):
     def __init__(self):
+        #rospy.init_node('tl_detector', log_level=rospy.DEBUG)
         rospy.init_node('tl_detector')
 
         self.pose = None
@@ -140,12 +140,15 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        rospy.logdebug("light state: {}".format(light.state))
+        rospy.logdebug("expected light state: {}".format(light.state))
         if self.bypass_light_classify:
             return light.state
 
         #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        state = self.light_classifier.get_classification(cv_image) 
+        #if state != light.state:
+        #    rospy.logdebug("light state wrong. Expected:{} Detected:{}".format(light.state, state)) 
+        return state
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
