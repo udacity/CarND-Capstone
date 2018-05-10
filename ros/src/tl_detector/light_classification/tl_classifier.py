@@ -68,7 +68,7 @@ class TLClassifier(object):
                 state = TrafficLight.RED
             elif classes[0] == 3:
                 state = TrafficLight.YELLOW
-            rospy.loginfo ('Detected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
+            rospy.logdebug ('Detected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
         else:
-            rospy.loginfo ('Undetected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
+            rospy.logdebug ('Undetected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
         return state
