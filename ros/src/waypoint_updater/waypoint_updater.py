@@ -106,7 +106,7 @@ class WaypointUpdater(object):
         tw = TwistStamped()
         lane = Lane()
 
-        self.test.publish(str(self.dbw_status))
+        #self.test.publish(str(self.dbw_status))
 
         if self.dbw_status == False:
             self.acceleration_status = 0
