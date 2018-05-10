@@ -23,6 +23,8 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.lights = []
+        #when run with simulator, counting how many times that the detected state doesn't match the simulator's
+        self.light_state_wrong = 0
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -146,7 +148,8 @@ class TLDetector(object):
 
         #Get classification
         state = self.light_classifier.get_classification(cv_image) 
-        #if state != light.state:
+        if state != light.state:
+            self.light_state_wrong += 1
         #    rospy.logdebug("light state wrong. Expected:{} Detected:{}".format(light.state, state)) 
         return state
 
