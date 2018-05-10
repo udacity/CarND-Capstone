@@ -42,7 +42,7 @@ class WaypointUpdater(object):
         self.target_vel_pub = rospy.Publisher('/target_velocity', TwistStamped, queue_size=1)
 
         # test publisher for debugging
-        self.test = rospy.Publisher('/test', String, queue_size=1)
+        #self.test = rospy.Publisher('/test', String, queue_size=1)
 
         # object variables
         self.pose = None
