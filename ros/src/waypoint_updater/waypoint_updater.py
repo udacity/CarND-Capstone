@@ -3,11 +3,12 @@
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32, String
+from std_msgs.msg import Int32, String, Bool, Float64
 
 import math
 import numpy as np
 from scipy.spatial import KDTree
+from compute_cte import get_cte
 
 '''
 This node will publish waypoints from the car's current position to some LOOKAHEAD_WPS distance ahead.
@@ -21,10 +22,13 @@ info is then received by the node /pure_pursuit which creates a velocity command
 '''
 
 LOOKAHEAD_WPS = 200 # number of waypoints in front of the car
-IDEAL_DECEL = 1     # m/s2
-MAX_DECEL = 5       # m/s2
-IDEAL_ACCEL = 1     # m/s2
-MAX_ACCEL = 4       # m/s2
+IDEAL_DECEL = 0.5   # m/s2
+MAX_DECEL = 10.0    # m/s2
+IDEAL_ACCEL = 2.0   # m/s2
+MAX_ACCEL = 3.5     # m/s2
+
+IDEAL_JERK = 2.0    # m/s3
+MAX_JERK = 10.0     # m/s3
 
 
 class WaypointUpdater(object):
@@ -35,8 +39,12 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_status_cb)
 
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
+        self.target_vel_pub = rospy.Publisher('/target_velocity', TwistStamped, queue_size=1)
+
+        self.cte_pub = rospy.Publisher('/cte', Float64, queue_size=1)
 
         # test publisher for debugging
         #self.test = rospy.Publisher('/test', String, queue_size=1)
@@ -46,15 +54,19 @@ class WaypointUpdater(object):
         self.car_position = None
         self.base_waypoints = None
         self.car_velocity = None
-        self.target_velocity = None
+        self.speed_limit = None
         self.waypoints_2d = None
         self.waypoint_tree = None
         self.stopline_wp_idx = -1
+        self.dbw_status = False
 
         self.acceleration_status = 0 # 0: nothing / -1: decelerating / 1: accelerating
-        self.path_decel = None
-        self.last_trajectory_waypoints = None
-        self.closest_idx_last = None
+        self.v1 = 0.
+        self.t1 = 0.
+        self.a = 0.
+        self.j = 0.
+        self.T = 0.
+        self.v_middle = 0.
 
         self.loop()
 
@@ -66,8 +78,10 @@ class WaypointUpdater(object):
             if self.pose and self.waypoint_tree:
                 # get list of closest waypoints
                 closest_waypoint_idx = self.get_closest_waypoint_id()
-                # publish list of closest waypoints ahead of vehicle
-                self.publish_waypoints(closest_waypoint_idx)
+                # calculate and publish Cross Track Error (CTE)
+                self.cte_pub.publish(get_cte(self.base_waypoints.waypoints[closest_waypoint_idx-10:closest_waypoint_idx+9], self.pose.pose))
+                # publish waypoints ahead of vehicle
+                self.publish_wpts_and_vel(closest_waypoint_idx)
 
             rate.sleep()
 
@@ -93,149 +107,142 @@ class WaypointUpdater(object):
 
         return closest_idx
 
-    def publish_waypoints(self, closest_idx):
-        final_lane = self.generate_lane(closest_idx)
+    def publish_wpts_and_vel(self, closest_idx):
+        vel_twist, final_lane = self.waypoints_and_velocity(closest_idx)
+        self.target_vel_pub.publish(vel_twist)
         self.final_waypoints_pub.publish(final_lane)
 
-    def generate_lane(self, closest_idx):
+    def waypoints_and_velocity(self, closest_idx):
+        tw = TwistStamped()
         lane = Lane()
 
-        farthest_idx = closest_idx + LOOKAHEAD_WPS
-        car_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
+        #self.test.publish(str(self.dbw_status))
 
-        # calculate distance from car to first waypoint
-        a = self.car_position
-        b = car_waypoints[0].pose.pose.position
-        car_wp_distance = math.sqrt((a.x-b.x)**2+(a.y-b.y)**2+(a.z-b.z)**2)
-
-        # no red light in sight
-        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
-            # accelerate comfortably to target speed
-            # if self.acceleration_status == 1:
-            #     lane.waypoints = self.keep_old_trajectory(closest_idx)
-            # else:
-            lane.waypoints = self.accelerate_waypoints(car_waypoints, car_wp_distance, closest_idx)
-                
-        # red light coming up (in max waypoint range)
+        if self.dbw_status == False:
+            self.acceleration_status = 0
+            tw.twist.linear.x = 0
         else:
-            # create stop index for center of the car relative to the stop line
-            stop_idx = max(self.stopline_wp_idx - closest_idx -2, 0)
-            # calculate distance from car to stop index
-            car_stop_distance = car_wp_distance + self.distance(car_waypoints, 0, stop_idx)
+            farthest_idx = closest_idx + LOOKAHEAD_WPS
+            car_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
+            lane.waypoints = car_waypoints
 
-            # car is close to stopline and has low speed (prevent division by zero)
-            if car_stop_distance <= 0.1 and self.car_velocity < 0.5:
-                # set velocity of all waypoints to zero
-                zero_waypoints = []
-                for wp in car_waypoints:
-                    p = Waypoint()
-                    p.pose = wp.pose
-                    p.twist.twist.linear.x = 0.
-                    zero_waypoints.append(p)
+            # calculate distance from car to first waypoint
+            a = self.car_position
+            b = car_waypoints[0].pose.pose.position
+            car_wp_distance = math.sqrt((a.x-b.x)**2+(a.y-b.y)**2+(a.z-b.z)**2)
 
-                lane.waypoints = zero_waypoints
-
-            else: 
-                # calculate linear deceleration value: a = (v^2) / (2 * s)
-                needed_decel = (self.car_velocity**2) / (2 * car_stop_distance)
-
-                # physically impossible to stop
-                if needed_decel > MAX_DECEL:
-                    # accelerate quickly to target speed
-                    lane.waypoints = self.accelerate_waypoints(car_waypoints, car_wp_distance, closest_idx)  # modify to accel with max limit
-                # possible to stop
-                else:
-                    if self.acceleration_status == -1:
-                        # calculated decel is far different from current path decel --> calculate new trajectory
-                        if abs(needed_decel - self.path_decel) > 1:
-                            lane.waypoints = self.decelerate_waypoints(car_waypoints, car_stop_distance, stop_idx, needed_decel, closest_idx)
-                        else:
-                            #lane.waypoints = self.decelerate_waypoints(car_waypoints, car_stop_distance, stop_idx, needed_decel)
-                            lane.waypoints = self.keep_old_trajectory(closest_idx)
-                    else:
-                        if needed_decel > IDEAL_DECEL:
-                            lane.waypoints = self.decelerate_waypoints(car_waypoints, car_stop_distance, stop_idx, needed_decel, closest_idx)
-                        else:
-                            # accelerate comfortably to target speed
-                            # if self.acceleration_status == 1:
-                            #     lane.waypoints = self.keep_old_trajectory(closest_idx)
-                            # else:
-                            lane.waypoints = self.accelerate_waypoints(car_waypoints, car_wp_distance, closest_idx)              
-
-        return lane
-
-
-    def accelerate_waypoints(self, waypoints, car_wp_distance, closest_idx):
-        accel_waypoints = []
-
-        for i, wp in enumerate(waypoints):
-            # create a waypoint and copy the original x, y, z position data
-            p = Waypoint()
-            p.pose = wp.pose
-            
-            # calculate distance of each waypoint to current car position
-            delta_s = car_wp_distance + self.distance(waypoints, 0, i)
-
-            # calculate velocity for each point (respect speed limit)
-            vel = min(math.sqrt(self.car_velocity**2 + 2 * IDEAL_ACCEL * delta_s), self.target_velocity)
-
-            p.twist.twist.linear.x = vel
-            accel_waypoints.append(p)
-
-        self.acceleration_status = 1
-        self.closest_idx_last = closest_idx 
-
-        # store a copy of waypoint list
-        self.last_trajectory_waypoints = list(accel_waypoints)
-
-        return accel_waypoints
-
-
-    def decelerate_waypoints(self, waypoints, car_stop_distance, stop_idx, needed_decel, closest_idx):
-        decel_waypoints = []
-
-        for i, wp in enumerate(waypoints):
-            # create a waypoint and copy the original x, y, z position data
-            p = Waypoint()
-            p.pose = wp.pose
-            
-            # set velocity to zero for all waypoints behind red light
-            if (i >= stop_idx):
-                vel = 0.
-                dist = -1 # remove later
+            # no red light in sight
+            if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
+                tw.twist.linear.x = self.accelerating_s_curve(IDEAL_ACCEL, IDEAL_JERK)
+            # red light coming up (in max waypoint range)
             else:
-                # calculate distance of each waypoint to stop line
-                dist = self.distance(waypoints, i, stop_idx)
-                # calculate target velocity for each waypoint
-                delta_s = car_stop_distance - dist
-                vel = max(math.sqrt(self.car_velocity**2 - 2 * needed_decel * delta_s), 0)
+                # create stop index for center of the car relative to the stop line
+                stop_idx = max(self.stopline_wp_idx - closest_idx -2, 0)
+                # calculate distance from car to stop index
+                car_stop_distance = car_wp_distance + self.distance(car_waypoints, 0, stop_idx)
 
-            p.twist.twist.linear.x = vel
-            decel_waypoints.append(p)
+                # car is close to stopline and has low speed (prevent division by zero)
+                if car_stop_distance <= 0.1:
+                    # set target velocity to zero
+                    tw.twist.linear.x = 0
+                else: 
+                    # calculate linear deceleration value: a = (v^2) / (2 * s) --> times two for a_max of s profile
+                    needed_decel = 2 * (self.car_velocity**2) / (2 * car_stop_distance)
 
-        self.acceleration_status = -1
-        self.path_decel = needed_decel
-        self.closest_idx_last = closest_idx 
+                    # physically impossible to stop
+                    if needed_decel > MAX_DECEL:
+                        # accelerate quickly to target speed
+                        tw.twist.linear.x = self.accelerating_s_curve(MAX_ACCEL, MAX_JERK)  
+                    # possible to stop
+                    else:
+                        # already decelerating
+                        if self.acceleration_status == -1:
+                            # calculated decel is far different from current path decel --> calculate new velocity profile
+                            if abs(needed_decel - self.a) > 10:
+                                tw.twist.linear.x = self.decelerating_s_curve(needed_decel, car_stop_distance)
+                            else:
+                                tw.twist.linear.x = self.decelerating_s_curve(needed_decel, car_stop_distance)
+                        # acceleration_status == 0 or 1
+                        else:
+                            if needed_decel >= IDEAL_DECEL:
+                                tw.twist.linear.x = self.decelerating_s_curve(needed_decel, car_stop_distance)
+                            # car should accelerate
+                            else:
+                                tw.twist.linear.x = self.accelerating_s_curve(IDEAL_ACCEL, IDEAL_JERK)  
 
-        # store a copy of waypoint list
-        self.last_trajectory_waypoints = list(decel_waypoints)
+        tw.header.stamp = rospy.Time.now()
 
-        return decel_waypoints
+        return tw, lane
 
-    def keep_old_trajectory(self, closest_idx):
+    def accelerating_s_curve(self, acceleration, jerk):
+        # already accelerating
+        if self.acceleration_status == 1:
+            delta_t = rospy.get_time() - self.t1
+            # constant speed reached
+            if delta_t >= self.T:
+                return self.speed_limit
+            # in concav period
+            elif delta_t < self.T/2:
+                t = delta_t
+                return self.v1 + self.j * t**2 / 2
+            # in convex period
+            else:
+                t = delta_t - self.T/2
+                #return self.speed_limit
+                return self.v_middle + self.a * t - (self.j * t**2 / 2)
+        else:
+            self.t1 = rospy.get_time()
+            self.v1 = self.car_velocity
+            delta_v = (self.speed_limit-self.v1)
+            # delta_v = a_max^2/j_max
+            v_critical = acceleration**2 / jerk
+            if delta_v > v_critical:
+                self.a = acceleration
+                self.j = acceleration**2 / delta_v
+            else:
+                self.j = jerk
+                self.a = math.sqrt(delta_v*jerk)
+            # T = (2*delta_v)/a_max
+            self.T = 2*delta_v/self.a
+            self.v_middle = (self.v1 + self.speed_limit) / 2
+            self.acceleration_status = 1
 
-        # remove waypoints behind current car position from path
-        car_step = closest_idx - self.closest_idx_last
-        self.closest_idx_last = closest_idx
-        self.last_trajectory_waypoints = self.last_trajectory_waypoints[car_step:]
+            return self.car_velocity
 
-        # add target speed or zero vel waypoints to end of path
-        #if self.acceleration_status == -1:
-            # append zero waypoints
-        #else:
-            #append target speed waypoints
+    def decelerating_s_curve(self, acceleration, car_stop_distance):
+        # already decelerating
+        if self.acceleration_status == -1:
+            delta_t = rospy.get_time() - self.t1
+            # stop position reached
+            if delta_t >= self.T:
+                return 0
+            # in concav period
+            elif delta_t < self.T/2:
+                t = delta_t
+                return self.v1 + self.j * t**2 / 2
+            # in convex period
+            else:
+                t = delta_t - self.T/2
+                #return self.speed_limit
+                return self.v_middle + self.a * t - (self.j * t**2 / 2)
+        else:
+            self.t1 = rospy.get_time()
+            self.v1 = self.car_velocity
+            delta_v = self.v1
+            # T = 2 * delta_s / v1
+            self.T = 2*car_stop_distance/self.v1
+            # calculate jerk
+            self.j = -2 * acceleration / self.T
+            #if jerk too high, car cannot stop in time
 
-        return self.last_trajectory_waypoints
+            self.a = -acceleration
+            self.v_middle = self.v1 / 2
+            self.acceleration_status = -1
+
+            return self.car_velocity
+
+    def dbw_status_cb(self, msg):
+        self.dbw_status = msg.data
 
     def pose_cb(self, msg):
         # TODO: Implement
@@ -248,7 +255,7 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
         # TODO: Implement
         self.base_waypoints = waypoints
-        self.target_velocity = waypoints.waypoints[0].twist.twist.linear.x
+        self.speed_limit = waypoints.waypoints[0].twist.twist.linear.x
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
