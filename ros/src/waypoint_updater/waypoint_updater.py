@@ -3,11 +3,12 @@
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32, String, Bool
+from std_msgs.msg import Int32, String, Bool, Float64
 
 import math
 import numpy as np
 from scipy.spatial import KDTree
+from compute_cte import get_cte
 
 '''
 This node will publish waypoints from the car's current position to some LOOKAHEAD_WPS distance ahead.
@@ -21,10 +22,13 @@ info is then received by the node /pure_pursuit which creates a velocity command
 '''
 
 LOOKAHEAD_WPS = 200 # number of waypoints in front of the car
-IDEAL_DECEL = 2     # m/s2
-MAX_DECEL = 5       # m/s2
-IDEAL_ACCEL = 1     # m/s2
-MAX_ACCEL = 4       # m/s2
+IDEAL_DECEL = 0.5   # m/s2
+MAX_DECEL = 10.0    # m/s2
+IDEAL_ACCEL = 2.0   # m/s2
+MAX_ACCEL = 3.5     # m/s2
+
+IDEAL_JERK = 2.0    # m/s3
+MAX_JERK = 10.0     # m/s3
 
 
 class WaypointUpdater(object):
@@ -38,8 +42,9 @@ class WaypointUpdater(object):
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_status_cb)
 
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=1)
-
         self.target_vel_pub = rospy.Publisher('/target_velocity', TwistStamped, queue_size=1)
+
+        self.cte_pub = rospy.Publisher('/cte', Float64, queue_size=1)
 
         # test publisher for debugging
         #self.test = rospy.Publisher('/test', String, queue_size=1)
@@ -59,6 +64,9 @@ class WaypointUpdater(object):
         self.v1 = 0.
         self.t1 = 0.
         self.a = 0.
+        self.j = 0.
+        self.T = 0.
+        self.v_middle = 0.
 
         self.loop()
 
@@ -70,8 +78,10 @@ class WaypointUpdater(object):
             if self.pose and self.waypoint_tree:
                 # get list of closest waypoints
                 closest_waypoint_idx = self.get_closest_waypoint_id()
-                # publish list of closest waypoints ahead of vehicle
-                self.publish_waypoints(closest_waypoint_idx)
+                # calculate and publish Cross Track Error (CTE)
+                self.cte_pub.publish(get_cte(self.base_waypoints.waypoints[closest_waypoint_idx-10:closest_waypoint_idx+9], self.pose.pose))
+                # publish waypoints ahead of vehicle
+                self.publish_wpts_and_vel(closest_waypoint_idx)
 
             rate.sleep()
 
@@ -97,7 +107,7 @@ class WaypointUpdater(object):
 
         return closest_idx
 
-    def publish_waypoints(self, closest_idx):
+    def publish_wpts_and_vel(self, closest_idx):
         vel_twist, final_lane = self.waypoints_and_velocity(closest_idx)
         self.target_vel_pub.publish(vel_twist)
         self.final_waypoints_pub.publish(final_lane)
@@ -123,7 +133,7 @@ class WaypointUpdater(object):
 
             # no red light in sight
             if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
-                tw.twist.linear.x = self.accelerating(IDEAL_ACCEL)
+                tw.twist.linear.x = self.accelerating_s_curve(IDEAL_ACCEL, IDEAL_JERK)
             # red light coming up (in max waypoint range)
             else:
                 # create stop index for center of the car relative to the stop line
@@ -132,59 +142,104 @@ class WaypointUpdater(object):
                 car_stop_distance = car_wp_distance + self.distance(car_waypoints, 0, stop_idx)
 
                 # car is close to stopline and has low speed (prevent division by zero)
-                if car_stop_distance <= 0.1 :
+                if car_stop_distance <= 0.1:
                     # set target velocity to zero
                     tw.twist.linear.x = 0
                 else: 
-                    # calculate linear deceleration value: a = (v^2) / (2 * s)
-                    needed_decel = (self.car_velocity**2) / (2 * car_stop_distance)
+                    # calculate linear deceleration value: a = (v^2) / (2 * s) --> times two for a_max of s profile
+                    needed_decel = 2 * (self.car_velocity**2) / (2 * car_stop_distance)
 
                     # physically impossible to stop
                     if needed_decel > MAX_DECEL:
                         # accelerate quickly to target speed
-                        tw.twist.linear.x = self.accelerating(MAX_ACCEL)
+                        tw.twist.linear.x = self.accelerating_s_curve(MAX_ACCEL, MAX_JERK)  
                     # possible to stop
                     else:
                         # already decelerating
                         if self.acceleration_status == -1:
                             # calculated decel is far different from current path decel --> calculate new velocity profile
-                            if abs(needed_decel - self.a) > 5:
-                                tw.twist.linear.x = self.new_deceleration(needed_decel)
+                            if abs(needed_decel - self.a) > 10:
+                                tw.twist.linear.x = self.decelerating_s_curve(needed_decel, car_stop_distance)
                             else:
-                                # v2 = v1 - a * (t2 - t1)
-                                tw.twist.linear.x = max(self.v1 - self.a * (rospy.get_time() - self.t1), 0)
+                                tw.twist.linear.x = self.decelerating_s_curve(needed_decel, car_stop_distance)
                         # acceleration_status == 0 or 1
                         else:
                             if needed_decel >= IDEAL_DECEL:
-                                tw.twist.linear.x = self.new_deceleration(needed_decel)
-                                self.acceleration_status = -1
+                                tw.twist.linear.x = self.decelerating_s_curve(needed_decel, car_stop_distance)
                             # car should accelerate
                             else:
-                                tw.twist.linear.x = self.accelerating(IDEAL_ACCEL)  
+                                tw.twist.linear.x = self.accelerating_s_curve(IDEAL_ACCEL, IDEAL_JERK)  
 
         tw.header.stamp = rospy.Time.now()
 
         return tw, lane
 
-    def accelerating(self, acceleration):
+    def accelerating_s_curve(self, acceleration, jerk):
         # already accelerating
         if self.acceleration_status == 1:
-            # v2 = v1 + a * (t2 - t1)
-            return min(self.v1 + self.a * (rospy.get_time() - self.t1), self.speed_limit)
+            delta_t = rospy.get_time() - self.t1
+            # constant speed reached
+            if delta_t >= self.T:
+                return self.speed_limit
+            # in concav period
+            elif delta_t < self.T/2:
+                t = delta_t
+                return self.v1 + self.j * t**2 / 2
+            # in convex period
+            else:
+                t = delta_t - self.T/2
+                #return self.speed_limit
+                return self.v_middle + self.a * t - (self.j * t**2 / 2)
         else:
             self.t1 = rospy.get_time()
             self.v1 = self.car_velocity
-            self.a = acceleration
+            delta_v = (self.speed_limit-self.v1)
+            # delta_v = a_max^2/j_max
+            v_critical = acceleration**2 / jerk
+            if delta_v > v_critical:
+                self.a = acceleration
+                self.j = acceleration**2 / delta_v
+            else:
+                self.j = jerk
+                self.a = math.sqrt(delta_v*jerk)
+            # T = (2*delta_v)/a_max
+            self.T = 2*delta_v/self.a
+            self.v_middle = (self.v1 + self.speed_limit) / 2
             self.acceleration_status = 1
 
             return self.car_velocity
 
-    def new_deceleration(self, needed_decel):
-        self.t1 = rospy.get_time()
-        self.v1 = self.car_velocity
-        self.a = needed_decel
+    def decelerating_s_curve(self, acceleration, car_stop_distance):
+        # already decelerating
+        if self.acceleration_status == -1:
+            delta_t = rospy.get_time() - self.t1
+            # stop position reached
+            if delta_t >= self.T:
+                return 0
+            # in concav period
+            elif delta_t < self.T/2:
+                t = delta_t
+                return self.v1 + self.j * t**2 / 2
+            # in convex period
+            else:
+                t = delta_t - self.T/2
+                #return self.speed_limit
+                return self.v_middle + self.a * t - (self.j * t**2 / 2)
+        else:
+            self.t1 = rospy.get_time()
+            self.v1 = self.car_velocity
+            delta_v = self.v1
+            # T = 2 * delta_s / v1
+            self.T = 2*car_stop_distance/self.v1
+            # calculate jerk
+            self.j = -2 * acceleration / self.T
+            #if jerk too high, car cannot stop in time
 
-        return self.car_velocity
+            self.a = -acceleration
+            self.v_middle = self.v1 / 2
+            self.acceleration_status = -1
+
+            return self.car_velocity
 
     def dbw_status_cb(self, msg):
         self.dbw_status = msg.data
