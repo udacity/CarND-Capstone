@@ -223,7 +223,7 @@ class TLDetector(object):
         #self.saveImage(self.camera_image, state)
         if state != light.state and state != TrafficLight.UNKNOWN:
             self.light_state_wrong += 1
-            if 200 > self.state_count > 100 :
+            if 500 > self.state_count > 100 :
                 self.saveImage(self.camera_image, state)
             rospy.loginfo("light state wrong. Expected:{} Detected:{} state count:{}".format(light.state, state, self.state_count)) 
         return state
