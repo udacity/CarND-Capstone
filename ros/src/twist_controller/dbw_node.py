@@ -54,6 +54,9 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         self.current_vel = 0
+        self.linear_vel = 0
+        self.angular_vel = 0
+        self.dbw_enabled = False
         # TODO: Create `Controller` object
         self.controller = Controller(
             vehicle_mass=vehicle_mass,
