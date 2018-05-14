@@ -53,6 +53,7 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        self.current_vel = 0
         # TODO: Create `Controller` object
         self.controller = Controller(
             vehicle_mass=vehicle_mass,
