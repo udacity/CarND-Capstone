@@ -8,9 +8,6 @@ import math
 
 from twist_controller import Controller
 
-from geometry_msgs import TwistStamped
-from std_msgs.msg import Bool
-
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
 
