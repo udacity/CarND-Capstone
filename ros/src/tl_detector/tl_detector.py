@@ -112,17 +112,18 @@ class TLDetector(object):
         #image_data = cv2.resize(img, (224,224))
         image_data = img
         img= PIL_Image.fromarray(image_data, 'RGB')
+        #NOTE: change to ".png" and 'PNG' if you want to save in png format.
         if state == TrafficLight.RED:
-            img.save('./images/red/'+str(self.save_image_seq).zfill(5)+'.png', 'PNG')
+            img.save('./images/red/'+str(self.save_image_seq).zfill(5)+'.jpg', 'JPEG')
             self.save_image_seq += 1
         if state == TrafficLight.YELLOW:
-            img.save('./images/yellow/'+str(self.save_image_seq).zfill(5)+'.png', 'PNG')
+            img.save('./images/yellow/'+str(self.save_image_seq).zfill(5)+'.jpg', 'JPEG')
             self.save_image_seq += 1
         elif state == TrafficLight.GREEN:
-            img.save('./images/green/'+str(self.save_image_seq).zfill(5)+'.png', 'PNG')
+            img.save('./images/green/'+str(self.save_image_seq).zfill(5)+'.jpg', 'JPEG')
             self.save_image_seq += 1
         else:
-            img.save('./images/unknown/'+str(self.save_image_seq).zfill(5)+'.png', 'PNG')
+            img.save('./images/unknown/'+str(self.save_image_seq).zfill(5)+'.jpg', 'JPEG')
             self.save_image_seq += 1
     
 
@@ -220,12 +221,13 @@ class TLDetector(object):
 
         #Get classification
         state = self.light_classifier.get_classification(cv_image) 
-        #self.saveImage(self.camera_image, state)
-        if state != light.state and state != TrafficLight.UNKNOWN:
+        #self.saveImage(self.camera_image, light.state)
+        if state != light.state : # and state != TrafficLight.UNKNOWN:
             self.light_state_wrong += 1
-            if 500 > self.state_count > 100 :
-                self.saveImage(self.camera_image, state)
-            rospy.loginfo("light state wrong. Expected:{} Detected:{} state count:{}".format(light.state, state, self.state_count)) 
+            rospy.loginfo("light state wrong. Expected:{} Detected:{} count:{}".format(light.state, state, self.light_state_wrong)) 
+            #NOTE: you can use light_state_wrong to determine which images to dump
+            #if 500 > self.light_state_wrong > 100 :
+                #self.saveImage(self.camera_image, light.state)
         return state
 
     def process_traffic_lights(self):
