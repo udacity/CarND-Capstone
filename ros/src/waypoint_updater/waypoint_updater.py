@@ -81,7 +81,7 @@ class WaypointUpdater(object):
         self.final_waypoints_pub.publish(lane)
 
     def pose_cb(self, msg):
-        rospy.loginfo('pose_cb')
+        rospy.loginfo('pose_cb: {}'.format(msg))
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
