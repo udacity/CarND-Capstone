@@ -54,8 +54,10 @@ class WaypointUpdater(object):
             rate.sleep()
 
     def get_closest_waypoint_idx(self):
+        rospy.loginfo('get_closest_waypoint_idx')
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
+        rospy.loginfo('pose (x,y)= {},{}'.format(x,y))
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
 
         closest_pt = self.waypoints_2d[closest_idx]
@@ -68,6 +70,7 @@ class WaypointUpdater(object):
         val = np.dot(closest_vect - prev_vect, car_vect - closest_vect)
         if val > 0:
             closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
+        rospy.loginfo('closest_idx = {}'.format(closest_idx))
         return closest_idx
 
     def publish_waypoints(self, closest_idx):
@@ -76,7 +79,7 @@ class WaypointUpdater(object):
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[closest_idx : closest_idx + LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(lane)
-        pass
+
     def pose_cb(self, msg):
         rospy.loginfo('pose_cb')
         self.pose = msg
@@ -91,8 +94,6 @@ class WaypointUpdater(object):
                 for waypoint in waypoints.waypoints
             ]
             self.waypoint_tree = KDTree(self.waypoints_2d)
-
-        pass
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
