@@ -89,14 +89,15 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
-            throttle, brake, steering = self.controller.control(
-                current_vel=self.current_vel,
-                dbw_enabled=self.dbw_enabled,
-                linear_vel=self.linear_vel,
-                angular_vel=self.angular_vel)
-            rospy.loginfo('loop thr: {} brk: {} steer: {}'.format(throttle, brake, steering))
-            if self.dbw_enabled:
-                self.publish(throttle, brake, steering)
+            if self.current_vel and self.linear_vel and self.angular_vel:
+                throttle, brake, steering = self.controller.control(
+                    current_vel=self.current_vel,
+                    dbw_enabled=self.dbw_enabled,
+                    linear_vel=self.linear_vel,
+                    angular_vel=self.angular_vel)
+                rospy.loginfo('loop thr: {} brk: {} steer: {}'.format(throttle, brake, steering))
+                if self.dbw_enabled:
+                    self.publish(throttle, brake, steering)
             rate.sleep()
 
     def twist_cb(self, msg):
