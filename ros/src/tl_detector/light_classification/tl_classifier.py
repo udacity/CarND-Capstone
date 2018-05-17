@@ -4,6 +4,8 @@ import numpy as np
 import datetime
 import rospy
 import yaml
+import cv2
+from PIL import Image as PIL_Image
 
 class TLClassifier(object):
     def __init__(self):
@@ -12,7 +14,7 @@ class TLClassifier(object):
         self.config = yaml.load(config_string)
 
         self.graph = tf.Graph()
-        self.threshold = .5
+        self.threshold = .45
         PATH_TO_GRAPH = r"{}".format(self.config["model"])
 
 
@@ -23,6 +25,7 @@ class TLClassifier(object):
                 with tf.gfile.GFile(PATH_TO_GRAPH, 'rb') as fid:
                     od_graph_def.ParseFromString(fid.read())
                     tf.import_graph_def(od_graph_def, name='')
+                    rospy.loginfo("used light classifier model:{}".format(PATH_TO_GRAPH))
             except EnvironmentError:
                 rospy.logfatal("Can't load model:".format(PATH_TO_GRAPH))
 
@@ -44,6 +47,15 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
+        def saveImage(img):
+            #img = cv2.resize(img, (224,224))
+            img= PIL_Image.fromarray(img, 'RGB')
+            img.save("test.png", "PNG")
+
+        h, w = image.shape[:2]
+        image = cv2.resize(image, (h//2,w//2))
+        #saveImage(image)
         with self.graph.as_default():
             img_expand = np.expand_dims(image, axis=0)
             start = datetime.datetime.now()
@@ -68,7 +80,7 @@ class TLClassifier(object):
                 state = TrafficLight.RED
             elif classes[0] == 3:
                 state = TrafficLight.YELLOW
-            rospy.logdebug ('Detected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
-        else:
-            rospy.logdebug ('Undetected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
+        #    rospy.logdebug ('Detected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
+        #else:
+        #    rospy.logdebug ('Undetected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
         return state

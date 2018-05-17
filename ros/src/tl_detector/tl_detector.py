@@ -62,6 +62,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.cb_count = 0
 
         self.create_dump_dir("red")
         self.create_dump_dir("green")
@@ -114,16 +115,16 @@ class TLDetector(object):
         img= PIL_Image.fromarray(image_data, 'RGB')
         #NOTE: change to ".png" and 'PNG' if you want to save in png format.
         if state == TrafficLight.RED:
-            img.save('./images/red/'+str(self.save_image_seq).zfill(5)+'.jpg', 'JPEG')
+            img.save('./images/red/'+str(self.cb_count).zfill(5)+'.jpg', 'JPEG')
             self.save_image_seq += 1
         if state == TrafficLight.YELLOW:
-            img.save('./images/yellow/'+str(self.save_image_seq).zfill(5)+'.jpg', 'JPEG')
+            img.save('./images/yellow/'+str(self.cb_count).zfill(5)+'.jpg', 'JPEG')
             self.save_image_seq += 1
         elif state == TrafficLight.GREEN:
-            img.save('./images/green/'+str(self.save_image_seq).zfill(5)+'.jpg', 'JPEG')
+            img.save('./images/green/'+str(self.cb_count).zfill(5)+'.jpg', 'JPEG')
             self.save_image_seq += 1
         else:
-            img.save('./images/unknown/'+str(self.save_image_seq).zfill(5)+'.jpg', 'JPEG')
+            img.save('./images/unknown/'+str(self.cb_count).zfill(5)+'.jpg', 'JPEG')
             self.save_image_seq += 1
     
 
@@ -138,6 +139,7 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
+        self.cb_count += 1
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -215,19 +217,11 @@ class TLDetector(object):
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        rospy.logdebug("expected light state: {}".format(light.state))
         if self.bypass_light_classify:
             return light.state
 
         #Get classification
         state = self.light_classifier.get_classification(cv_image) 
-        #self.saveImage(self.camera_image, light.state)
-        if state != light.state : # and state != TrafficLight.UNKNOWN:
-            self.light_state_wrong += 1
-            rospy.loginfo("light state wrong. Expected:{} Detected:{} count:{}".format(light.state, state, self.light_state_wrong)) 
-            #NOTE: you can use light_state_wrong to determine which images to dump
-            #if 500 > self.light_state_wrong > 100 :
-                #self.saveImage(self.camera_image, light.state)
         return state
 
     def process_traffic_lights(self):
@@ -280,8 +274,15 @@ class TLDetector(object):
 
         if light:
             state = self.get_light_state(light)
+            dist = light_wp - car_position
+            if state != light.state and dist < 50:
+                self.light_state_wrong += 1
+                rospy.loginfo("light state wrong. Expected:{} Detected:{} dist: {} frame:{}".format(light.state, state, dist, self.cb_count)) 
+                if self.cb_count > 1000:
+                    self.saveImage(self.camera_image, light.state)
             return light_wp, state
         self.waypoints = None
+        rospy.loginfo("not found light {} ".format(self.cb_count))
         return -1, TrafficLight.UNKNOWN
 
 
