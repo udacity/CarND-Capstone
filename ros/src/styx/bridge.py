@@ -12,7 +12,7 @@ import sensor_msgs.point_cloud2 as pcl2
 from std_msgs.msg import Header
 from cv_bridge import CvBridge, CvBridgeError
 
-from styx_msgs.msg import TrafficLight, TrafficLightArray, Lane
+from styx_msgs.msg import TrafficLight, TrafficLightArray
 import numpy as np
 from PIL import Image as PIL_Image
 from io import BytesIO
@@ -31,7 +31,6 @@ TYPE = {
     'steer_cmd': SteeringCmd,
     'brake_cmd': BrakeCmd,
     'throttle_cmd': ThrottleCmd,
-    'path_draw': Lane,
     'image':Image
 }
 
@@ -49,7 +48,6 @@ class Bridge(object):
             '/vehicle/steering_cmd': self.callback_steering,
             '/vehicle/throttle_cmd': self.callback_throttle,
             '/vehicle/brake_cmd': self.callback_brake,
-        '/final_waypoints': self.callback_path
         }
 
         self.subscribers = [rospy.Subscriber(e.topic, TYPE[e.type], self.callbacks[e.topic])
@@ -190,17 +188,3 @@ class Bridge(object):
 
     def callback_brake(self, data):
         self.server('brake', data={'brake': str(data.pedal_cmd)})
-
-    def callback_path(self, data):
-        x_values = []
-        y_values = []
-        z_values = []
-        for waypoint in data.waypoints:
-            x = waypoint.pose.pose.position.x
-            y = waypoint.pose.pose.position.y
-            z = waypoint.pose.pose.position.z+0.5
-            x_values.append(x)
-            y_values.append(y)
-            z_values.append(z)
-
-        self.server('drawline', data={'next_x': x_values, 'next_y': y_values, 'next_z': z_values})
