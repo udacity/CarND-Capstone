@@ -201,7 +201,7 @@ class WaypointUpdater(object):
                 self.j = acceleration**2 / delta_v
             else:
                 self.j = jerk
-                self.a = math.sqrt(delta_v*jerk)
+                self.a = math.sqrt(max(delta_v*jerk), 0)
             # T = (2*delta_v)/a_max
             self.T = 2*delta_v/self.a
             self.v_middle = (self.v1 + self.speed_limit) / 2

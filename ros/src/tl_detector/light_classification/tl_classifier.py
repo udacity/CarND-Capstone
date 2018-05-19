@@ -53,8 +53,8 @@ class TLClassifier(object):
             img= PIL_Image.fromarray(img, 'RGB')
             img.save("test.png", "PNG")
 
-        h, w = image.shape[:2]
-        image = cv2.resize(image, (h//2,w//2))
+        #h, w = image.shape[:2]
+        #image = cv2.resize(image, (h//2,w//2))
         #saveImage(image)
         with self.graph.as_default():
             img_expand = np.expand_dims(image, axis=0)

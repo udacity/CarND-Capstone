@@ -152,16 +152,18 @@ class TLDetector(object):
         if self.state != state:
             self.state_count = 0
             self.state = state
+            #rospy.loginfo("state count:{} frame:{}".format(self.state_count, self.cb_count))
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
             light_wp = light_wp if (state == TrafficLight.RED or state == TrafficLight.YELLOW) else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
-            #rospy.loginfo("publish stable light : {} state count:{}".format(Int32(light_wp)), self.state_count)
+            #rospy.loginfo("publish stable light : {} state count:{} frame:{}".format(Int32(light_wp), self.state_count, self.cb_count))
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-            #rospy.loginfo("publish last light : {}".format(Int32(self.last_wp)))
+            #rospy.loginfo("publish last light : {} frame:{}".format(Int32(self.last_wp), self.cb_count))
         self.state_count += 1
+
 
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
@@ -222,6 +224,7 @@ class TLDetector(object):
 
         #Get classification
         state = self.light_classifier.get_classification(cv_image) 
+        #rospy.loginfo("light state Expected:{} Detected:{} frame:{}".format(light.state, state, self.cb_count)) 
         return state
 
     def process_traffic_lights(self):
@@ -278,8 +281,12 @@ class TLDetector(object):
             if state != light.state and dist < 50:
                 self.light_state_wrong += 1
                 rospy.loginfo("light state wrong. Expected:{} Detected:{} dist: {} frame:{}".format(light.state, state, dist, self.cb_count)) 
-                if self.cb_count > 1000:
-                    self.saveImage(self.camera_image, light.state)
+                #if self.cb_count > 1000:
+                    #self.saveImage(self.camera_image, light.state)
+
+            #if dist < 200 and state == TrafficLight.UNKNOWN:
+            #    state = TrafficLight.RED
+
             return light_wp, state
         self.waypoints = None
         rospy.loginfo("not found light {} ".format(self.cb_count))
