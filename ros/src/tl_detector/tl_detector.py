@@ -223,7 +223,7 @@ class TLDetector(object):
             return light.state
 
         #Get classification
-        state = self.light_classifier.get_classification(cv_image) 
+        state = self.light_classifier.get_classification(cv_image, light.state) 
         #rospy.loginfo("light state Expected:{} Detected:{} frame:{}".format(light.state, state, self.cb_count)) 
         return state
 

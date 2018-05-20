@@ -12,17 +12,19 @@ stop_line_positions:
     - [351.84, 1574.65]
 # bypass the traffic light classifier, use the light.state from simulator instead.
 bypass_light_classify: false
+force_to_yellow: true
 # the path to the model.
 # Alex, inception
 #model: "light_classification/model/ssd_sim/frozen_inference_graph.pb"
 #
-#model: "light_classification/model/ssd_mobile_sim_5k/frozen_inference_graph.pb"
+model: "light_classification/model/ssd_mobile_sim_5k/frozen_inference_graph.pb"
 #model: "light_classification/model/ssd_mobile_sim_10k/frozen_inference_graph.pb"
 #model: "light_classification/model/ssd_mobile_sim_alex_20k/frozen_inference_graph.pb"
 #model: "light_classification/model/ssd-mobilenet-alex-sim-test4/frozen_inference_graph.pb"
 #model: "light_classification/frozen_models/ssd_mobilenet_alex_7k/frozen_inference_graph.pb"
 #model: "light_classification/frozen_models/ssd_mobilenet-vat-7k/frozen_inference_graph.pb"
-model: "light_classification/frozen_models/ssd_mobilenet-alex-7k/frozen_inference_graph.pb"
+#model: "light_classification/frozen_models/ssd_mobilenet-alex-7k/frozen_inference_graph.pb"
+#model: "light_classification/model/output_15k_new_data_mobile/frozen_inference_graph.pb"
 #model: "light_classification/model/frozen_sim_mobile_35/frozen_inference_graph.pb"
 #Trained by Ming
 #model: "light_classification/model/ssd_inception_alex_20k_sim/frozen_inference_graph.pb"
