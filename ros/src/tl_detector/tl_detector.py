@@ -108,7 +108,9 @@ class TLDetector(object):
                 img.encoding = "rgb8"
         else:
             img.encoding = 'rgb8'
-        img = self.bridge.imgmsg_to_cv2(img, "rgb8")
+        #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+
 
         #image_data = cv2.resize(img, (224,224))
         image_data = img
