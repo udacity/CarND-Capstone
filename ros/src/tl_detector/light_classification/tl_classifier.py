@@ -16,8 +16,6 @@ class TLClassifier(object):
         self.graph = tf.Graph()
         self.threshold = .45
         PATH_TO_GRAPH = r"{}".format(self.config["model"])
-        #The model is not sensitive to yellow lights, i.e, may classify a yellow light as green.
-        #Added this "feature engineering" to be conservative .
         self.force_to_yellow = self.config["force_to_yellow"]
 
 
@@ -39,6 +37,7 @@ class TLClassifier(object):
             self.num_detections = self.graph.get_tensor_by_name('num_detections:0')
 
         self.sess = tf.Session(graph=self.graph)
+
 
     def get_classification(self, image,true_state):
         """Determines the color of the traffic light in the image
@@ -83,30 +82,32 @@ class TLClassifier(object):
                 state = TrafficLight.RED
             elif classes[0] == 3:
                 state = TrafficLight.YELLOW
-            if (self.force_to_yellow):
-                h, w = image.shape[:2]
-                crop = map(int, (boxes[0][0]*h , boxes[0][2]*h, boxes[0][1]*w,  boxes[0][3]*w))
-                #saveImage(image[crop[0]:crop[1], crop[2]:crop[3]])
-                cropped = image[crop[0]:crop[1], crop[2]:crop[3]]
-                hist_b = np.squeeze(cv2.calcHist([cropped],[0],None,[8],[0,256]))
-                hist_g = np.squeeze(cv2.calcHist([cropped],[1],None,[8],[0,256]))
-                hist_r = np.squeeze(cv2.calcHist([cropped],[2],None,[8],[0,256]))
-                b = hist_b[-1]
-                g = hist_g[-1]
-                r = hist_r[-1]
-                avg = np.mean((b, g, r))
-                if  state != TrafficLight.RED and r>0 and 1.1 > g/r > 0.9 and b/r < 0.1:
-                    state = TrafficLight.YELLOW
-                    #print ("forced state light to Yellow")
-
-            #print(">>>>>>>>>>>>")
-            #print("true:", true_state, "detected:", state, "score:", scores[0])
-            #print(map(int, hist_b))
-            #print(map(int, hist_g))
-            #print(map(int, hist_r))
-            #print("<<<<<<<<<<<")
 
             #rospy.loginfo ('Detected. SCORE: {} Class: {} box:{}'.format(scores[0],classes[0], boxes[0]))
         #else:
             #rospy.loginfo ('Undetected. SCORE: {} Class: {} box:{}'.format(scores[0],classes[0], boxes[0]))
         return state
+
+    def force_to_yellow(self):
+        if (self.force_to_yellow):
+            h, w = image.shape[:2]
+            crop = map(int, (boxes[0][0]*h , boxes[0][2]*h, boxes[0][1]*w,  boxes[0][3]*w))
+            #saveImage(image[crop[0]:crop[1], crop[2]:crop[3]])
+            cropped = image[crop[0]:crop[1], crop[2]:crop[3]]
+            hist_b = np.squeeze(cv2.calcHist([cropped],[0],None,[8],[0,256]))
+            hist_g = np.squeeze(cv2.calcHist([cropped],[1],None,[8],[0,256]))
+            hist_r = np.squeeze(cv2.calcHist([cropped],[2],None,[8],[0,256]))
+            b = hist_b[-1]
+            g = hist_g[-1]
+            r = hist_r[-1]
+            avg = np.mean((b, g, r))
+            if  state != TrafficLight.RED and r>0 and 1.1 > g/r > 0.9 and b/r < 0.1:
+                state = TrafficLight.YELLOW
+                #print ("forced state light to Yellow")
+
+        #print(">>>>>>>>>>>>")
+        #print("true:", true_state, "detected:", state, "score:", scores[0])
+        #print(map(int, hist_b))
+        #print(map(int, hist_g))
+        #print(map(int, hist_r))
+        #print("<<<<<<<<<<<")
