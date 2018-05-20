@@ -16,6 +16,8 @@ class TLClassifier(object):
         self.graph = tf.Graph()
         self.threshold = .45
         PATH_TO_GRAPH = r"{}".format(self.config["model"])
+        #The model is not sensitive to yellow lights, i.e, may classify a yellow light as green.
+        #Added this "feature engineering" to be conservative .
         self.force_to_yellow = self.config["force_to_yellow"]
 
 
