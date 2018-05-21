@@ -11,7 +11,8 @@ stop_line_positions:
     - [161.76, 2303.82]
     - [351.84, 1574.65]
 # bypass the traffic light classifier, use the light.state from simulator instead.
-bypass_light_classify: true
-# the path to the model.
-#model: "light_classification/model/ssd_sim/frozen_inference_graph.pb"
-model: "light_classification/model/ssd_sim/ssd_mobile.pb"
+bypass_light_classify: false
+force_to_yellow: false
+#model: "light_classification/model/ssd_mobile_sim_5k/frozen_inference_graph.pb"
+#model: "light_classification/model/output_20k_ssd_inception_alex_data/frozen_inference_graph.pb"
+model: "light_classification/model/ssd_mobile_sim_20k/frozen_inference_graph.pb"

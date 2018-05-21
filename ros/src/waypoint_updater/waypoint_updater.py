@@ -196,23 +196,23 @@ class WaypointUpdater(object):
             self.v1 = self.car_velocity
             delta_v = (self.speed_limit-self.v1)
 
-            if delta_v <= 0:
-                return self.speed_limit
+            # delta_v = a_max^2/j_max
+            v_critical = acceleration**2 / jerk
+            if delta_v > v_critical:
+                self.a = acceleration
+                self.j = acceleration**2 / delta_v
             else:
-                # delta_v = a_max^2/j_max
-                v_critical = acceleration**2 / jerk
-                if delta_v > v_critical:
-                    self.a = acceleration
-                    self.j = acceleration**2 / delta_v
-                else:
-                    self.j = jerk
-                    self.a = math.sqrt(delta_v*jerk)
-                # T = (2*delta_v)/a_max
+                self.j = jerk
+                self.a = math.sqrt(max(delta_v*jerk, 0))
+            # T = (2*delta_v)/a_max
+            try:
                 self.T = 2*delta_v/self.a
-                self.v_middle = (self.v1 + self.speed_limit) / 2
-                self.acceleration_status = 1
+            except ZeroDivisionError:
+                self.T = 0
+            self.v_middle = (self.v1 + self.speed_limit) / 2
+            self.acceleration_status = 1
 
-                return self.car_velocity
+            return self.car_velocity
 
     def decelerating_s_curve(self, acceleration, car_stop_distance):
         # already decelerating

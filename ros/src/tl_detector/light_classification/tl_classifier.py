@@ -4,6 +4,8 @@ import numpy as np
 import datetime
 import rospy
 import yaml
+import cv2
+from PIL import Image as PIL_Image
 
 class TLClassifier(object):
     def __init__(self):
@@ -12,8 +14,9 @@ class TLClassifier(object):
         self.config = yaml.load(config_string)
 
         self.graph = tf.Graph()
-        self.threshold = .5
+        self.threshold = .45
         PATH_TO_GRAPH = r"{}".format(self.config["model"])
+        self.force_to_yellow = self.config["force_to_yellow"]
 
 
 
@@ -23,6 +26,7 @@ class TLClassifier(object):
                 with tf.gfile.GFile(PATH_TO_GRAPH, 'rb') as fid:
                     od_graph_def.ParseFromString(fid.read())
                     tf.import_graph_def(od_graph_def, name='')
+                    rospy.loginfo("used light classifier model:{}".format(PATH_TO_GRAPH))
             except EnvironmentError:
                 rospy.logfatal("Can't load model:".format(PATH_TO_GRAPH))
 
@@ -34,7 +38,8 @@ class TLClassifier(object):
 
         self.sess = tf.Session(graph=self.graph)
 
-    def get_classification(self, image):
+
+    def get_classification(self, image,true_state):
         """Determines the color of the traffic light in the image
 
         Args:
@@ -44,6 +49,15 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
+        def saveImage(img):
+            #img = cv2.resize(img, (224,224))
+            img= PIL_Image.fromarray(img, 'RGB')
+            img.save("test.png", "PNG")
+
+        #h, w = image.shape[:2]
+        #image = cv2.resize(image, (h//2,w//2))
+        #saveImage(image)
         with self.graph.as_default():
             img_expand = np.expand_dims(image, axis=0)
             start = datetime.datetime.now()
@@ -68,7 +82,32 @@ class TLClassifier(object):
                 state = TrafficLight.RED
             elif classes[0] == 3:
                 state = TrafficLight.YELLOW
-            rospy.logdebug ('Detected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
-        else:
-            rospy.logdebug ('Undetected. SCORE: {} Class: {}'.format(scores[0],classes[0]))
+
+            #rospy.loginfo ('Detected. SCORE: {} Class: {} box:{}'.format(scores[0],classes[0], boxes[0]))
+        #else:
+            #rospy.loginfo ('Undetected. SCORE: {} Class: {} box:{}'.format(scores[0],classes[0], boxes[0]))
         return state
+
+    def force_to_yellow(self):
+        if (self.force_to_yellow):
+            h, w = image.shape[:2]
+            crop = map(int, (boxes[0][0]*h , boxes[0][2]*h, boxes[0][1]*w,  boxes[0][3]*w))
+            #saveImage(image[crop[0]:crop[1], crop[2]:crop[3]])
+            cropped = image[crop[0]:crop[1], crop[2]:crop[3]]
+            hist_b = np.squeeze(cv2.calcHist([cropped],[0],None,[8],[0,256]))
+            hist_g = np.squeeze(cv2.calcHist([cropped],[1],None,[8],[0,256]))
+            hist_r = np.squeeze(cv2.calcHist([cropped],[2],None,[8],[0,256]))
+            b = hist_b[-1]
+            g = hist_g[-1]
+            r = hist_r[-1]
+            avg = np.mean((b, g, r))
+            if  state != TrafficLight.RED and r>0 and 1.1 > g/r > 0.9 and b/r < 0.1:
+                state = TrafficLight.YELLOW
+                #print ("forced state light to Yellow")
+
+        #print(">>>>>>>>>>>>")
+        #print("true:", true_state, "detected:", state, "score:", scores[0])
+        #print(map(int, hist_b))
+        #print(map(int, hist_g))
+        #print(map(int, hist_r))
+        #print("<<<<<<<<<<<")
