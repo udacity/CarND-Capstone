@@ -219,13 +219,14 @@ class TLDetector(object):
             return False
         
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
         if self.bypass_light_classify:
             return light.state
 
         #Get classification
-        state = self.light_classifier.get_classification(cv_image) 
+        state = self.light_classifier.get_classification(cv_image, light.state) 
         #rospy.loginfo("light state Expected:{} Detected:{} frame:{}".format(light.state, state, self.cb_count)) 
         return state
 
@@ -282,7 +283,7 @@ class TLDetector(object):
             dist = light_wp - car_position
             if state != light.state and dist < 50:
                 self.light_state_wrong += 1
-                rospy.loginfo("light state wrong. Expected:{} Detected:{} dist: {} frame:{}".format(light.state, state, dist, self.cb_count)) 
+                #rospy.loginfo("light state wrong. Expected:{} Detected:{} dist: {} frame:{}".format(light.state, state, dist, self.cb_count)) 
                 #if self.cb_count > 1000:
                     #self.saveImage(self.camera_image, light.state)
 
@@ -291,7 +292,7 @@ class TLDetector(object):
 
             return light_wp, state
         self.waypoints = None
-        rospy.loginfo("not found light {} ".format(self.cb_count))
+        #rospy.loginfo("not found light {} ".format(self.cb_count))
         return -1, TrafficLight.UNKNOWN
 
 

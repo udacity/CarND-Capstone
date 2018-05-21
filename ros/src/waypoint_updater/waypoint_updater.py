@@ -79,7 +79,8 @@ class WaypointUpdater(object):
                 # get list of closest waypoints
                 closest_waypoint_idx = self.get_closest_waypoint_id()
                 # calculate and publish Cross Track Error (CTE)
-                self.cte_pub.publish(get_cte(self.base_waypoints.waypoints[closest_waypoint_idx-10:closest_waypoint_idx+9], self.pose.pose))
+                cte = get_cte(self.base_waypoints.waypoints[closest_waypoint_idx-10:closest_waypoint_idx+9], self.pose.pose) # ISSUE: stops at end of track (waypoint index starts again)
+                self.cte_pub.publish(cte)
                 # publish waypoints ahead of vehicle
                 self.publish_wpts_and_vel(closest_waypoint_idx)
 
@@ -151,7 +152,7 @@ class WaypointUpdater(object):
 
                     # physically impossible to stop
                     if needed_decel > MAX_DECEL:
-                        # accelerate quickly to target speed
+                        # keep target speed or accelerate quickly to it
                         tw.twist.linear.x = self.accelerating_s_curve(MAX_ACCEL, MAX_JERK)  
                     # possible to stop
                     else:
@@ -194,6 +195,7 @@ class WaypointUpdater(object):
             self.t1 = rospy.get_time()
             self.v1 = self.car_velocity
             delta_v = (self.speed_limit-self.v1)
+
             # delta_v = a_max^2/j_max
             v_critical = acceleration**2 / jerk
             if delta_v > v_critical:
@@ -201,9 +203,12 @@ class WaypointUpdater(object):
                 self.j = acceleration**2 / delta_v
             else:
                 self.j = jerk
-                self.a = math.sqrt(max(delta_v*jerk), 0)
+                self.a = math.sqrt(max(delta_v*jerk, 0))
             # T = (2*delta_v)/a_max
-            self.T = 2*delta_v/self.a
+            try:
+                self.T = 2*delta_v/self.a
+            except ZeroDivisionError:
+                self.T = 0
             self.v_middle = (self.v1 + self.speed_limit) / 2
             self.acceleration_status = 1
 

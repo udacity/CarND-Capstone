@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import rospy
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float64
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
 
 from twist_controller import Controller
+
+from lowpass import LowPassFilter
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -46,12 +48,11 @@ class DBWNode(object):
         max_lat_accel = rospy.get_param('~max_lat_accel', 3.)
         max_steer_angle = rospy.get_param('~max_steer_angle', 8.)
 
-        self.steer_pub = rospy.Publisher('/vehicle/steering_cmd',
-                                         SteeringCmd, queue_size=1)
-        self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd',
-                                            ThrottleCmd, queue_size=1)
-        self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
-                                         BrakeCmd, queue_size=1)
+        self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
+        self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
+        self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)
+
+        self.cte_2_pub = rospy.Publisher('/cte_2', Float64, queue_size=1)
 
         # TODO: Create `Controller` object
         self.controller = Controller(vehicle_mass = vehicle_mass,
@@ -69,6 +70,7 @@ class DBWNode(object):
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+        rospy.Subscriber('/cte', Float64, self.cte_cb)
 
         self.current_vel = None
         self.curr_ang_vel = None
@@ -78,6 +80,11 @@ class DBWNode(object):
         self.throttle = 0
         self.steering = 0
         self.brake = 0
+        self.cte = 0
+
+        tau = 0.2   # 1 / (2*pi* tau) = cuttoff freq f_c
+        ts = 0.02   # sample time f_s
+        self.cte_lpf = LowPassFilter(tau, ts)
 
         self.loop()
 
@@ -90,7 +97,8 @@ class DBWNode(object):
                 self.throttle, self.brake, self.steering = self.controller.control(self.current_vel,
                                                                 self.dbw_enabled,
                                                                 self.linear_vel,
-                                                                self.angular_vel)
+                                                                self.angular_vel,
+                                                                self.cte)
             if self.dbw_enabled:
                 self.publish(self.throttle, self.brake, self.steering)
             rate.sleep()
@@ -105,12 +113,17 @@ class DBWNode(object):
     def velocity_cb(self, msg):
         self.current_vel = msg.twist.linear.x
 
+    def cte_cb(self, msg):
+        self.cte = msg.data
+        cte_2 = self.cte_lpf.filt(self.cte)
+        self.cte_2_pub.publish(cte_2)
+        #self.cte = cte_2
+
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
         tcmd.enable = True
         tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
         tcmd.pedal_cmd = throttle
-#        tcmd.pedal_cmd = 0.20   #hard-coded value just to test that the car can move - remove after verifying
         self.throttle_pub.publish(tcmd)
 
         scmd = SteeringCmd()
