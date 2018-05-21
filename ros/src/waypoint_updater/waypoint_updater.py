@@ -212,7 +212,7 @@ class WaypointUpdater(object):
             self.v_middle = (self.v1 + self.speed_limit) / 2
             self.acceleration_status = 1
 
-                return self.car_velocity
+            return self.car_velocity
 
     def decelerating_s_curve(self, acceleration, car_stop_distance):
         # already decelerating
