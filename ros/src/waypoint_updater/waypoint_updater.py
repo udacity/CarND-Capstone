@@ -24,10 +24,10 @@ info is then received by the node /pure_pursuit which creates a velocity command
 LOOKAHEAD_WPS = 200 # number of waypoints in front of the car
 IDEAL_DECEL = 0.5   # m/s2
 MAX_DECEL = 10.0    # m/s2
-IDEAL_ACCEL = 2.0   # m/s2
+IDEAL_ACCEL = 1.0   # m/s2
 MAX_ACCEL = 3.5     # m/s2
 
-IDEAL_JERK = 2.0    # m/s3
+IDEAL_JERK = 1.0    # m/s3
 MAX_JERK = 10.0     # m/s3
 
 
