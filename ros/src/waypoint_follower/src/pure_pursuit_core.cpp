@@ -47,6 +47,11 @@ void PurePursuit::callbackFromCurrentVelocity(const geometry_msgs::TwistStampedC
   velocity_set_ = true;
 }
 
+void PurePursuit::callbackFromTargetVelocity(const geometry_msgs::TwistStampedConstPtr &msg)
+{
+  target_velocity_ = *msg;
+}
+
 void PurePursuit::callbackFromWayPoints(const styx_msgs::LaneConstPtr &msg)
 {
   current_waypoints_.setPath(*msg);
@@ -62,7 +67,10 @@ double PurePursuit::getCmdVelocity(int waypoint) const
     return 0;
   }
 
-  double velocity = current_waypoints_.getWaypointVelocityMPS(waypoint);
+  // double velocity = current_waypoints_.getWaypointVelocityMPS(waypoint);
+
+  double velocity = target_velocity_.twist.linear.x;
+
   // ROS_INFO_STREAM("waypoint : " << mps2kmph(velocity) << " km/h ( " << velocity << "m/s )");
   return velocity;
 }
@@ -317,7 +325,7 @@ geometry_msgs::TwistStamped PurePursuit::outputZero() const
 }
 geometry_msgs::TwistStamped PurePursuit::outputTwist(geometry_msgs::Twist t) const
 {
-  double g_lateral_accel_limit = 5.0;
+  double g_lateral_accel_limit = 5.0; 
   double ERROR = 1e-8;
 
   geometry_msgs::TwistStamped twist;

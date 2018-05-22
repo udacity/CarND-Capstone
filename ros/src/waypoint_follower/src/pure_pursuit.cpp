@@ -62,6 +62,10 @@ int main(int argc, char **argv)
   ros::Subscriber est_twist_subscriber =
       nh.subscribe("current_velocity", 10, &waypoint_follower::PurePursuit::callbackFromCurrentVelocity, &pp);
 
+  ros::Subscriber target_vel_subscriber =
+      nh.subscribe("target_velocity", 10, &waypoint_follower::PurePursuit::callbackFromTargetVelocity, &pp);
+
+
   ROS_INFO("pure pursuit start");
   ros::Rate loop_rate(LOOP_RATE);
   while (ros::ok())

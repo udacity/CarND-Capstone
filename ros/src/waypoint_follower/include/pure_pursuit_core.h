@@ -77,6 +77,8 @@ private:
   geometry_msgs::TwistStamped current_velocity_;
   WayPoints current_waypoints_;
 
+  geometry_msgs::TwistStamped target_velocity_;
+
   double getCmdVelocity(int waypoint) const;
   void calcLookaheadDistance(int waypoint);
   double calcCurvature(geometry_msgs::Point target) const;
@@ -98,8 +100,8 @@ public:
     , initial_velocity_(5.0)
     , lookahead_distance_calc_ratio_(2.0)
     , minimum_lookahead_distance_(6.0)
-    , displacement_threshold_(0.2)
-    , relative_angle_threshold_(5.)
+    , displacement_threshold_(0.05)
+    , relative_angle_threshold_(5.0)
     , waypoint_set_(false)
     , pose_set_(false)
     , velocity_set_(false)
@@ -115,6 +117,8 @@ public:
   void callbackFromCurrentPose(const geometry_msgs::PoseStampedConstPtr &msg);
   void callbackFromCurrentVelocity(const geometry_msgs::TwistStampedConstPtr &msg);
   void callbackFromWayPoints(const styx_msgs::LaneConstPtr &msg);
+
+  void callbackFromTargetVelocity(const geometry_msgs::TwistStampedConstPtr &msg);
 
   // for debug
   geometry_msgs::Point getPoseOfNextWaypoint() const
