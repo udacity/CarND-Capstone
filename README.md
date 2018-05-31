@@ -39,7 +39,7 @@ To set up port forwarding, please refer to the [instructions from term 2](https:
 
 1. Clone the project repository
 ```bash
-git clone https://github.com/udacity/CarND-Capstone.git
+git clone https://github.com/rekon/CarND-Capstone.git
 ```
 
 2. Install python dependencies
