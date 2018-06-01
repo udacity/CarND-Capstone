@@ -56,7 +56,13 @@ class DBWNode(object):
         # TODO: Create `Controller` object
         # self.controller = Controller(<Arguments you wish to provide>)
 
+        self.current_vel = None
+        self.linear_vel = None
+        self.angular_vel = None
+        
+        self.throttle = self.steering = self.brake = 0
         # TODO: Subscribe to all the topics you need to
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         self.loop()
 
@@ -65,13 +71,13 @@ class DBWNode(object):
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            if not None in (self.current_vel, self.linear_vel, self.angular_vel )
+                    throttle, brake, steering = self.controller.control(self.current_vel,
+                                                                     self.dbw_enabled,
+                                                                     self.linear_vel,
+                                                                     self.angular_vel)
+            if self.dbw_enabled:
+                self.publish(self.throttle, self.brake, self.steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -92,6 +98,11 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = bool(msg.data)
+
+        
 
 if __name__ == '__main__':
     DBWNode()
