@@ -35,14 +35,15 @@ class Controller(object):
     def control(self, current_vel, dbw_enabled, linear_vel, angular_vel):
         # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
+        # rospy.logwarn('In controller.control')
         if not dbw_enabled:
             self.throttle_controller.reset()
-            return 1., 0., 0.
+            return 0., 0., 0.
             
         current_vel = self.vel_lpf.filt(current_vel)
         
         steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
-        vel_error = linerar_vel - current_vel
+        vel_error = linear_vel - current_vel
         self.last_vel = current_vel
         
         current_time = rospy.get_time()
@@ -57,8 +58,8 @@ class Controller(object):
             brake = 400 #400Nm to hold the car in place
             
         elif throttle < 0.1 and vel_error < 0:
-        throttle = 0
-        decel = max(vel_error, self.decel_limit)
-        brake = abs(decel)*self.vehicle_mass*self.wheel_radius #Torque Nm
+            throttle = 0
+            decel = max(vel_error, self.decel_limit)
+            brake = abs(decel)*self.vehicle_mass*self.wheel_radius #Torque Nm
         
         return throttle, brake, steering
