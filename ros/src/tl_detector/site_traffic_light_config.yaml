@@ -7,3 +7,6 @@ stop_line_positions:
     - [8.0, 16.2]
 is_sim: false
 bypass_light_classify: false
+
+force_to_yellow: false
+model: "light_classification/model/ssd_inception_real_world_20k/frozen_inference_graph.pb"
