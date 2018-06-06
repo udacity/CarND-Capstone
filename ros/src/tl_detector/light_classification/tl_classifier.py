@@ -26,6 +26,7 @@ class TLClassifier(object):
 
         if self.sim_model_path != None and os.path.exists(self.sim_model_path):
             self.model = load_model(path)
+            rospy.loginfo('Searched for:', self.sim_model_path,'Model loaded successfully!!')
         else:
             # print('Searched for:', self.sim_model_path,'No saved model found!!')
             rospy.logerror('Searched for:', self.sim_model_path,'No saved model found!!')
@@ -41,18 +42,27 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #TODO implement light color prediction
-
+        #resize the image as accepted by the model
         image = cv2.resize(image,(IMAGE_WIDTH, IMAGE_HEIGHT))
-        if self.model != None:
-            image = np.reshape( image, (1, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNEL))
-            scores = self.model.predict(image)
-            image_class = np.argmax(scores)
-            if image_class == 0:
-                return TrafficLight.RED
-            elif image_class == 1:
-                return TrafficLight.GREEN
+
+        try:
+            if self.model != None:
+                image = np.reshape( image, (1, IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNEL))
+                scores = self.model.predict(image)
+                if type(scores)!= None and len(scores) > 0
+                    image_class = np.argmax(scores)
+
+                    if image_class == 0:
+                        return TrafficLight.RED
+                    elif image_class == 1:
+                        return TrafficLight.GREEN
+                    else:
+                        return TrafficLight.UNKNOWN
+                else:
+                    rospy.logwarn('Model prediction empty')
+                    return TrafficLight.UNKNOWN
             else:
                 return TrafficLight.UNKNOWN
-        else:
+        except Exception as e:
+            logerror('TL Classifier failed', e)
             return TrafficLight.UNKNOWN
