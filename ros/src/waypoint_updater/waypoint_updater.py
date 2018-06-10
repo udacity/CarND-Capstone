@@ -32,10 +32,8 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: correct msg types below?
-        rospy.Subscriber('/traffic_waypoint', Waypoint, self.traffic_cb)
-        rospy.Subscriber('/obstacle_waypoints', Waypoint, self.obstacle_cb)
-
+        # TODO: correct msg types? Subscribe to /traffic_waypoint and /obstacle_waypoint below
+        # TODO Use "rostopic list/info" and "rosmsg info" to figure out correct types
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -85,6 +83,7 @@ class WaypointUpdater(object):
         lane.header = self.base_waypoints.header
         # No buffer overrun, end is auto-truncated at end in Python
         lane.waypoints = self.base_waypoints.waypoints[closest_idx : closest_idx + LOOKAHEAD_WPS]
+        # According to "4. WAypoint Updater Node (Partial)" final_waypoints_pub's type is styx_msgs/Lane
         self.final_waypoints_pub.publish(lane)
 
     def pose_cb(self, msg):
