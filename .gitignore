@@ -4,3 +4,10 @@ build
 devel
 
 profile.tmp
+
+# PyCharm project files
+.idea
+
+# Udacity VMs
+Ubuntu 64-bit Udacity VM V1.0.0.ova
+Udacity_VM_Base_V1.0.0.zip
