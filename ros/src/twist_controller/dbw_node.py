@@ -55,9 +55,6 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
-
         self.controller = Controller(
             vehicle_mass=vehicle_mass,
             fuel_capacity=fuel_capacity,
@@ -70,7 +67,6 @@ class DBWNode(object):
             max_lat_accel=max_lat_accel,
             max_steer_angle=max_steer_angle)
 
-        # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
@@ -82,8 +78,6 @@ class DBWNode(object):
         self.angular_velocity = None
         self.throttle = self.steering = self.brake = 0
 
-        rospy.loginfo('Starting DBW Node')
-
         self.loop()
 
     def loop(self):
@@ -93,10 +87,10 @@ class DBWNode(object):
                             self.linear_velocity,
                             self.angular_velocity):
                 self.throttle, self.brake, self.steering = \
-                self.controller.control(self.current_velocity,
-                                        self.dbw_enabled,
-                                        self.linear_velocity,
-                                        self.angular_velocity)
+                    self.controller.control(self.current_velocity,
+                                            self.dbw_enabled,
+                                            self.linear_velocity,
+                                            self.angular_velocity)
                 if self.dbw_enabled:
                     self.publish(self.throttle, self.brake, self.steering)
                 rate.sleep()
@@ -111,7 +105,6 @@ class DBWNode(object):
     def velocity_cb(self, msg):
         self.current_velocity = msg.twist.linear.x
 
-
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
         tcmd.enable = True
@@ -122,8 +115,6 @@ class DBWNode(object):
         scmd = SteeringCmd()
         scmd.enable = True
         scmd.steering_wheel_angle_cmd = steer
-        scmd.ignore = True
-        scmd.steering_wheel_angle_velocity = 10000.
         self.steer_pub.publish(scmd)
 
         bcmd = BrakeCmd()

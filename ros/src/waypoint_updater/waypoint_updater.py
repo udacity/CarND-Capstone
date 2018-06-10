@@ -3,7 +3,7 @@
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import Lane, Waypoint, TrafficLight
 from scipy.spatial import KDTree
 import math
 
@@ -31,10 +31,10 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        # rospy.Subscriber('/traffic_waypoints', Lane, self.traffic_waypoints_cb)
-
+        # rospy.Subscriber(
+        #     '/traffic_waypoint', TrafficLight, self.traffic_cb)
+        # rospy.Subscriber(
+        #     '/obstacle_waypoint', Waypoint, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher(
             'final_waypoints', Lane, queue_size=1)
@@ -46,8 +46,6 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.waypoint_tree = None
 
-        # rospy.spin()
-
         rospy.loginfo('Starting WaypointUpdater Node')
 
         self.loop()
@@ -56,14 +54,14 @@ class WaypointUpdater(object):
         # As recommmended, take control of update frequency
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
-            if self.pose and self.base_waypoints:
+            if self.pose is not None and self.base_waypoints is not None:
                 closest_waypoint_index = self.get_closest_waypoint_index()
                 self.publish_waypoints(closest_waypoint_index)
             rate.sleep()
 
     def get_closest_waypoint_index(self):
-        x = self.pose.pose.position.x
-        y = self.pose.pose.position.y
+        position = self.pose.pose.position
+        x, y = position.x, position.y
         closest_index = self.waypoint_tree.query([x, y], 1)[1]
 
         # check that the waypoint is ahead of the vehicle
@@ -93,14 +91,12 @@ class WaypointUpdater(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        rospy.loginfo('Loading base waypoints')
-
         def position(waypoint):
             position = waypoint.pose.pose.position
             return [position.x, position.y]
 
         self.base_waypoints = waypoints
-        if not self.waypoints_2d:
+        if self.waypoints_2d is None:
             self.waypoints_2d = [ \
                 position(waypoint) for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
