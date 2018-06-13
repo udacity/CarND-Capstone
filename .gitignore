@@ -8,6 +8,7 @@ profile.tmp
 # PyCharm project files
 .idea
 
-# Udacity VMs
+# Udacity VMs and simulators
 Ubuntu 64-bit Udacity VM V1.0.0.ova
 Udacity_VM_Base_V1.0.0.zip
+*sys_int.zip
