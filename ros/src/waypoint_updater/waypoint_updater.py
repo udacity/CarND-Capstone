@@ -23,7 +23,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -38,14 +38,15 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher(
             'final_waypoints', Lane, queue_size=1)
-
+	
+	self.base_lane = None
         self.pose = None
         self.base_waypoints = None
         self.traffic_waypoints = None
         self.obstacle_waypoints = None
         self.waypoints_2d = None
         self.waypoint_tree = None
-
+	self.stopline_wp_idx = -1
         rospy.loginfo('Starting WaypointUpdater Node')
 
         self.loop()
@@ -86,7 +87,7 @@ class WaypointUpdater(object):
 
     def generate_lane(self):
 	lane = Lane()
-	closest_idx = self.get_closest_waypoint_idx()
+	closest_idx = self.get_closest_waypoint_index()
 	farthest_idx = closest_idx + LOOKAHEAD_WPS
 	base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
 
@@ -115,11 +116,12 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         self.pose = msg
 
-    def position(waypoint):
-        position = waypoint.pose.pose.position
-        return [position.x, position.y]
-
     def waypoints_cb(self, waypoints):
+	self.base_lane = waypoints
+        def position(waypoint):
+            position = waypoint.pose.pose.position
+            return [position.x, position.y]
+
         self.base_waypoints = waypoints
         if self.waypoints_2d is None:
             self.waypoints_2d = [ \
