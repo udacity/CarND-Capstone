@@ -8,8 +8,9 @@ GAS_DENSITY = 2.858
 # 1 mile per hour = 0.44704 m/s
 ONE_MPH = 0.44704
 
-# TODO disable debug logging once things work properly
-DEBUG_LOG = True
+# Logging slows down everything down so bad it's lagging behind
+# the simulator when logging to a visible console
+DEBUG_LOG = False
 
 
 class Controller(object):
