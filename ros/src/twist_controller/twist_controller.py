@@ -21,9 +21,13 @@ class Controller(object):
                                             max_lat_accel=max_lat_accel, max_steer_angle=max_steer_angle)
 
         # Throttle PID controller parameters
-        kp = 0.3
-        ki = 0.1
-        kd = 0.0
+        # Tuned using Ziegler-Nichols method, temporarily using mx=1.0
+        # see https://en.wikipedia.org/wiki/PID_controller#Ziegler%E2%80%93Nichols_method
+        # Which gives the parameters Ku=2.1, Tu=1.4s
+        # Which in turn results in:
+        kp = 1.26
+        ki = 1.8
+        kd = 0.294
 
         # Throttle range, 0 is minimum. 0.2 max for safety and comfort, real max is 1.0
         mn = 0.0
