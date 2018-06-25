@@ -21,8 +21,8 @@ class Controller(object):
         wheel_base,
         steer_ratio,
         max_lat_accel,
-        max_steer_angle):
-
+        max_steer_angle,
+        max_throttle):
         # Yaw controller to controller the turning
         vehicle_min_velocity = 0.1
         self.yaw_controller = YawController(
@@ -32,19 +32,17 @@ class Controller(object):
             max_lat_accel,
             max_steer_angle)
 
-        kp, ki, kd, mn, mx = .3, .1, 0., 0., .2
+        kp, ki, kd, mn, mx = .3, .1, 0., 0., max_throttle
         self.throttle_controller = PID(kp, ki, kd, mn, mx)
 
         # Remove high frequency noise on the velocity
         tau, ts = .5, .02
-        self.filter = LowPassFilter(tau, ts)
+        self.low_pass = LowPassFilter(tau, ts)
 
         # These can be used by a new controller to refine the driving
-        self.vehicle_mass = vehicle_mass
-        self.fuel_capacity = fuel_capacity
-        self.brake_deadband = brake_deadband
+        fuel_mass = fuel_capacity * GAS_DENSITY
+        self.total_mass = vehicle_mass + fuel_mass
         self.decel_limit = decel_limit
-        self.accel_limit = accel_limit
         self.wheel_radius = wheel_radius
 
         self.last_time = rospy.get_time()
@@ -59,7 +57,7 @@ class Controller(object):
             self.throttle_controller.reset()
             return .0, .0, .0
 
-        current_velocity = self.filter.filt(current_velocity)
+        current_velocity = self.low_pass.filter(current_velocity)
 
         steering = self.yaw_controller.get_steering(
             linear_velocity,
@@ -83,10 +81,9 @@ class Controller(object):
             # Keep car in place when it is stopped
             throttle = 0.
             brake = 400.
-
         elif throttle < .1 and abs(delta_velocity) < eps:
             throttle = 0.
             decel = max(delta_velocity, self.decel_limit)
-            brake = abs(decel) * self.vehicle_mass * self.wheel_radius
+            brake = abs(decel) * self.total_mass * self.wheel_radius
 
         return throttle, brake, steering

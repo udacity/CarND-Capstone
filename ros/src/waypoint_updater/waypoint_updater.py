@@ -51,11 +51,18 @@ class WaypointUpdater(object):
 
         self.loop()
 
+    def initialized_waypoints(self):
+        return None not in (
+            self.base_lane,
+            self.base_waypoints,
+            self.waypoints_2d,
+            self.waypoint_tree)
+
     def loop(self):
         # As recommmended, take control of update frequency
         rate = rospy.Rate(50)
         while not rospy.is_shutdown():
-            if self.pose is not None and self.base_waypoints is not None:
+            if self.pose is not None and self.initialized_waypoints():
                 closest_waypoint_index = self.get_closest_waypoint_index()
                 self.publish_waypoints(closest_waypoint_index)
             rate.sleep()
@@ -82,21 +89,21 @@ class WaypointUpdater(object):
         return closest_index
 
     def publish_waypoints(self, closest_waypoint_index):
-	final_lane = self.generate_lane()
-	self.final_waypoints_pub.publish(final_lane)
+    	final_lane = self.generate_lane()
+    	self.final_waypoints_pub.publish(final_lane)
 
     def generate_lane(self):
-	lane = Lane()
-	closest_idx = self.get_closest_waypoint_index()
-	farthest_idx = closest_idx + LOOKAHEAD_WPS
-	base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
+    	lane = Lane()
+    	closest_idx = self.get_closest_waypoint_index()
+    	farthest_idx = closest_idx + LOOKAHEAD_WPS
+    	base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
 
-	if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
-	    lane.waypoints = base_waypoints
-	else:
-	    lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
+    	if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
+    	    lane.waypoints = base_waypoints
+    	else:
+    	    lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
 
-	return lane
+    	return lane
 
     def decelerate_waypoints(self, waypoints, closest_idx):
     	temp = []
@@ -121,9 +128,9 @@ class WaypointUpdater(object):
             position = waypoint.pose.pose.position
             return [position.x, position.y]
 
-    	self.base_lane = waypoints
-        self.base_waypoints = waypoints
-        if self.waypoints_2d is None:
+        if not self.initialized_waypoints():
+            self.base_lane = waypoints
+            self.base_waypoints = waypoints
             self.waypoints_2d = [ \
                 position(waypoint) for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
