@@ -38,15 +38,15 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher(
             'final_waypoints', Lane, queue_size=1)
-	
-	self.base_lane = None
+
+        self.base_lane = None
         self.pose = None
         self.base_waypoints = None
         self.traffic_waypoints = None
         self.obstacle_waypoints = None
         self.waypoints_2d = None
         self.waypoint_tree = None
-	self.stopline_wp_idx = -1
+        self.stopline_wp_idx = -1
         rospy.loginfo('Starting WaypointUpdater Node')
 
         self.loop()
@@ -95,33 +95,33 @@ class WaypointUpdater(object):
 	    lane.waypoints = base_waypoints
 	else:
 	    lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
-	
+
 	return lane
 
     def decelerate_waypoints(self, waypoints, closest_idx):
-	temp = []
-	for i, wp in enumerate(waypoints):
-	    p = Waypoint()
-	    p.pose = wp.pose
-	    stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
-	    dist = self.distance(waypoints, i, stop_idx)
-	    vel = math.sqrt(2 * MAX_DECEL * dist)
-	    if vel <1.:
-		vel = 0
-	    
-	    p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
-	    temp.append(p)
-	return temp
+    	temp = []
+    	for i, wp in enumerate(waypoints):
+    	    p = Waypoint()
+    	    p.pose = wp.pose
+    	    stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
+    	    dist = self.distance(waypoints, i, stop_idx)
+    	    vel = math.sqrt(2 * MAX_DECEL * dist)
+    	    if vel <1.:
+    		vel = 0
+
+    	    p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+    	    temp.append(p)
+    	return temp
 
     def pose_cb(self, msg):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-	self.base_lane = waypoints
         def position(waypoint):
             position = waypoint.pose.pose.position
             return [position.x, position.y]
 
+    	self.base_lane = waypoints
         self.base_waypoints = waypoints
         if self.waypoints_2d is None:
             self.waypoints_2d = [ \
