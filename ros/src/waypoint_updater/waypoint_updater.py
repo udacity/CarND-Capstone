@@ -38,6 +38,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.pose = None
         self.base_waypoints = None
+        self.max_velocity = None
         self.waypoints_2d = None
         self.waypoints_tree = None
 
@@ -49,6 +50,12 @@ class WaypointUpdater(object):
         """Wait until all subscriptions has provided at least one value."""
         while not rospy.is_shutdown():
             if None not in (self.pose, self.base_waypoints):
+                # All base waypoints should have the same velocity (in this project).
+                self.max_velocity = self.get_waypoint_velocity(self.base_waypoints.waypoints[0])
+                # Just make sure the assumption above is correct.
+                assert(all(self.max_velocity == self.get_waypoint_velocity(waypoint)
+                           for waypoint in self.base_waypoints.waypoints))
+
                 # Preprocess to make it faster to search for closest waypoint using the k-d tree algorithm.
                 self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y]
                                      for waypoint in self.base_waypoints.waypoints]
@@ -83,10 +90,21 @@ class WaypointUpdater(object):
         return closest_idx
 
     def publish_waypoints(self, closest_idx):
-        lane = Lane()
-        lane.header = self.base_waypoints.header
-        lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
-        self.final_waypoints_pub.publish(lane)
+        final_waypoints = Lane()
+        final_waypoints.header = self.base_waypoints.header
+        final_waypoints.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
+        self.keep_speed_limit(final_waypoints)
+        self.final_waypoints_pub.publish(final_waypoints)
+
+    def keep_speed_limit(self, final_waypoints):
+        """ Makes sure we never exceeds max velocity """
+        for i in range(len(final_waypoints.waypoints)):
+            velocity = self.get_waypoint_velocity(final_waypoints.waypoints[i])
+            if velocity > self.max_velocity:
+                # Note that this is not expected to ever happen. However it's perhaps not a fatal error since the
+                # velocity can be limited to the max allowed value here.
+                rospy.logerr('Calculated velocity %s exceeds max allowed value %s.', velocity, self.max_velocity)
+                self.set_waypoint_velocity(final_waypoints.waypoints, i, self.max_velocity)
 
     def pose_cb(self, msg):
         self.pose = msg
