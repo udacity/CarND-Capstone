@@ -23,7 +23,7 @@ class Controller(object):
         self.max_steer_angle = max_steer_angle
 
         self.yaw_controller = YawController(wheel_base, steer_ratio, 0.1, max_lat_accel, max_steer_angle)
-        self.throttle_controller = PID(kp=0.3, ki=0.1, kd=0.0, mn=0.0, mx=0.2)
+        self.throttle_controller = PID(kp=1.5, ki=0.1, kd=0.0, mn=0.0, mx=0.2)
         self.vel_lpf = LowPassFilter(tau=0.5, ts=0.02)
         self.last_time = rospy.get_time()
 
@@ -53,4 +53,5 @@ class Controller(object):
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel) * self.vehicle_mass * self.wheel_radius  # Brake torque in Nm
 
+        rospy.loginfo("actualSpeed=%s, targetSpeed=%s, error=%s", current_vel, linear_vel, vel_error)
         return throttle, brake, steering
