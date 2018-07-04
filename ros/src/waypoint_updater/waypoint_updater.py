@@ -13,7 +13,7 @@ import math
 This node will publish waypoints from the car's current position to some `x` distance ahead.
 
 As mentioned in the doc, you should ideally first implement a version which does not care
-about traffic lights or obstacles.
+about traffic lights.
 
 Once you have created dbw_node, you will update this node to use the status of traffic lights too.
 
@@ -36,9 +36,6 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        # TODO: determine correct obstacle_waypoint type, PoseStamped or Int32 or ?.
-        # TODO Use "rostopic list/info" and "rosmsg info"
-        # rospy.Subscriber('/obstacle_waypoint', PoseStamped, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -130,10 +127,6 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         self.stopline_wp_idx = msg.data
-
-    def obstacle_cb(self, msg):
-        # Unused, no need to implement anything
-        pass
 
     @staticmethod
     def get_waypoint_velocity(waypoint):
