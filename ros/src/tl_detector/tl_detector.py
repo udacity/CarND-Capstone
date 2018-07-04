@@ -53,7 +53,7 @@ class TLDetector(object):
 
         self.waypoints_2d = None
         self.waypoints_tree = None
-
+        self.n_waypoints = 0
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -63,7 +63,7 @@ class TLDetector(object):
         self.waypoints = waypoints
         # Preprocess to make it faster to search for closest waypoint using the k-d tree algorithm.
         self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y]
-                             for waypoint in self.base_waypoints.waypoints]
+                             for waypoint in self.waypoints.waypoints]
         self.waypoints_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
@@ -77,6 +77,9 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        if self.waypoints_tree is None:
+            return
+
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
@@ -109,7 +112,7 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        closest_idx = self.waypoint_tree.query([x, y], 1)[1]
+        closest_idx = self.waypoints_tree.query([x, y], 1)[1]
         return closest_idx
 
     def get_light_state(self, light):
@@ -146,10 +149,10 @@ class TLDetector(object):
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
-            car_wp_idx = self.get_closest_waypoint(self.pose.position.x, self.pose.position.y)
+            car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
 
         #TODO find the closest visible traffic light (if one exists)
-        diff = len(self.waypoints)
+        diff = len(self.waypoints.waypoints)
         for i, light in enumerate(self.lights):
             line = stop_line_positions[i]
             temp_wp_idx = self.get_closest_waypoint(line[0], line[1])
