@@ -2,6 +2,7 @@
 
 import rospy
 from copy import deepcopy
+from std_msgs.msg import Bool
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from styx_msgs.msg import Lane, TrafficLightArray, TrafficLight, Waypoint
 from scipy.spatial import KDTree
@@ -36,6 +37,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -45,8 +47,8 @@ class WaypointUpdater(object):
         self.max_velocity = None
         self.base_waypoints_msg = None
         self.traffic_lights_msg = None
+        self.dbw_enabled_msg = None
 
-        self.wp_calc = None
         self.rate = rospy.Rate(50)
 
         self.waitUntilInit()
@@ -55,7 +57,8 @@ class WaypointUpdater(object):
     def waitUntilInit(self):
         """Wait until all subscriptions has provided at least one msg."""
         while not rospy.is_shutdown():
-            if None not in (self.pose_msg, self.velocity_msg, self.base_waypoints_msg, self.traffic_lights_msg):
+            if None not in (self.pose_msg, self.velocity_msg, self.base_waypoints_msg,
+                            self.traffic_lights_msg, self.dbw_enabled_msg):
                 self.wp_calc = WaypointCalculator(self.base_waypoints_msg, self.load_stop_line_positions())
                 break
             self.rate.sleep()
@@ -67,8 +70,11 @@ class WaypointUpdater(object):
 
     def loopForEver(self):
         while not rospy.is_shutdown():
-            waypoints = self.wp_calc.calc_waypoints(self.pose_msg, self.velocity_msg, self.traffic_lights_msg)
-            self.publish_waypoints(waypoints)
+            if self.dbw_enabled_msg.data:
+                waypoints = self.wp_calc.calc_waypoints(self.pose_msg, self.velocity_msg, self.traffic_lights_msg)
+                self.publish_waypoints(waypoints)
+            else:
+                self.wp_calc.reset()
             self.rate.sleep()
 
     def publish_waypoints(self, waypoints):
@@ -97,6 +103,9 @@ class WaypointUpdater(object):
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
 
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled_msg = msg
+
 
 class WaypointCalculator(object):
     def __init__(self, base_waypoints_msg, stop_line_positions):
@@ -109,6 +118,14 @@ class WaypointCalculator(object):
         self.stop_line_wp_indices = [self.wp_search.get_closest_waypoint_idx_behind(x, y) - STOPLINE_WPS_MARGIN
                                      for x, y in stop_line_positions]
         self.__set_max_velocity()
+
+    def reset(self):
+        """Reset internal state.
+
+        Call this method when drive-by-wire is reactivated after manual control.
+        """
+        # Let preceding_waypoint be calculated from current vehicle state, instead of using some out-dated index.
+        self.previous_first_idx = None
 
     def __set_max_velocity(self):
         """Set the max_velocity according to velocities in the base waypoints.
