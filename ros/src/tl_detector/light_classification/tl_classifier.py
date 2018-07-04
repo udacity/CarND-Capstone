@@ -1,4 +1,9 @@
 from styx_msgs.msg import TrafficLight
+import cv2
+import time
+import datetime
+import random
+
 
 class TLClassifier(object):
     def __init__(self):
@@ -15,5 +20,11 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        ts = time.time()
+        st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d-%H-%M-%S')
+        print('Save image as : ' + st + '.png')
+        cv2.imwrite(st + '.png',image)
+
+
         #TODO implement light color prediction
         return TrafficLight.UNKNOWN
