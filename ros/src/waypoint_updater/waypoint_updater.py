@@ -39,13 +39,14 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
+        # ROS topic messages
         self.pose_msg = None
         self.velocity_msg = None
         self.max_velocity = None
         self.base_waypoints_msg = None
         self.traffic_lights_msg = None
-        self.wp_search = None
-        self.stop_line_wp_indices = None
+
+        self.wp_calc = None
         self.rate = rospy.Rate(50)
 
         self.waitUntilInit()
@@ -55,14 +56,7 @@ class WaypointUpdater(object):
         """Wait until all subscriptions has provided at least one msg."""
         while not rospy.is_shutdown():
             if None not in (self.pose_msg, self.velocity_msg, self.base_waypoints_msg, self.traffic_lights_msg):
-                # All base waypoints should have the same velocity (in this project).
-                self.max_velocity = self.get_waypoint_velocity(self.base_waypoints_msg.waypoints[0])
-                # Just make sure the assumption above is correct.
-                assert(all(self.max_velocity == self.get_waypoint_velocity(waypoint)
-                           for waypoint in self.base_waypoints_msg.waypoints))
-                self.wp_search = WaypointSearch(self.base_waypoints_msg.waypoints)
-                self.stop_line_wp_indices = [self.wp_search.get_closest_waypoint_idx_behind(x, y) - STOPLINE_WPS_MARGIN
-                                             for x, y in self.load_stop_line_positions()]
+                self.wp_calc = WaypointCalculator(self.base_waypoints_msg, self.load_stop_line_positions())
                 break
             self.rate.sleep()
 
@@ -72,106 +66,10 @@ class WaypointUpdater(object):
         return traffic_light_config['stop_line_positions']
 
     def loopForEver(self):
-        previous_first_idx = None
-        waypoints = None
         while not rospy.is_shutdown():
-            # Extract base_waypoints ahead of vehicle as a starting point for the final_waypoints.
-            first_idx = self.wp_search.get_closest_waypoint_idx_ahead(self.pose_msg.pose.position.x,
-                                                                      self.pose_msg.pose.position.y)
-            if previous_first_idx is None:
-                # Construct previous waypoint from the vehicles initial pose and velocity.
-                preceding_waypoint = Waypoint()
-                preceding_waypoint.pose.pose = self.pose_msg.pose
-                preceding_waypoint.twist.twist = self.velocity_msg.twist
-            elif previous_first_idx != first_idx:
-                # Copy the preceding waypoint before updating the waypoint list.
-                preceding_waypoint = waypoints[first_idx - previous_first_idx - 1]
-
-            waypoints = deepcopy(self.base_waypoints_msg.waypoints[first_idx:first_idx + LOOKAHEAD_WPS])
-            previous_first_idx = first_idx
-
-            # Calculate the final_waypoints
-            self.accelerate_to_speed_limit(preceding_waypoint, waypoints)
-            self.adjust_for_traffic_lights(waypoints, first_idx)
-            self.assert_speed_limit(waypoints)
-
+            waypoints = self.wp_calc.calc_waypoints(self.pose_msg, self.velocity_msg, self.traffic_lights_msg)
             self.publish_waypoints(waypoints)
             self.rate.sleep()
-
-    def accelerate_to_speed_limit(self, preceding_waypoint, waypoints):
-        """Set waypoints speed to accelerate the vehicle to max velocity.
-
-        Parameters
-        ----------
-        preceding_waypoint : The last waypoint already visited, e.g. the nearest one behind the vehicle.
-        waypoints : The waypoints to follow ahead of the vehicle.
-
-        """
-
-        # Base the acceleration on the velocity from preceding waypoint.
-        current_speed = self.get_waypoint_velocity(preceding_waypoint)
-        speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=current_speed,
-                                     target_acceleration=0.0, current_accleration=0.0,
-                                     acceleration_limit=10.0, jerk_limit=10.0)
-        distances = self.calc_distances(preceding_waypoint, waypoints)
-        for idx in range(len(waypoints)):
-            speed = speed_calc.get_speed_at_distance(distances[idx])
-            self.set_waypoint_velocity(waypoints, idx, speed)
-
-    def adjust_for_traffic_lights(self, waypoints, first_idx):
-        """Adjust the speed to break for traffic lights ahead that not is at state green.
-
-        Parameters
-        ----------
-        waypoints : The waypoints to be adjusted.
-        first_idx : The base_waypoint index from where waypoints have been derived.
-        """
-
-        # Check if there is a stop-line along the range of waypoints
-        for base_idx in range(first_idx - STOPLINE_WPS_MARGIN, first_idx + LOOKAHEAD_WPS):
-            if base_idx in self.stop_line_wp_indices:
-                tl_idx = self.stop_line_wp_indices.index(base_idx)
-                if self.traffic_lights_msg.lights[tl_idx].state is not TrafficLight.GREEN:
-                    final_idx = max(0, base_idx - first_idx)
-                    rospy.loginfo("Stopping at base_idx=%s final_idx=%s", base_idx, final_idx)
-                    self.stop_at_waypoint(final_idx, waypoints)
-                    break
-        else:
-            rospy.loginfo("No speed adjustments for traffic lights.")
-
-    def stop_at_waypoint(self, stop_idx, waypoints):
-        """ Reduce speed to stop at stop_idx.
-
-        Parameters
-        ----------
-        stop_idx : The waypoint index where the vehicle should reach a speed of zero.
-        waypoints : The waypoints to be adjusted.
-        """
-
-        # Set the velocity for all waypoints after the stop_idx to zero.
-        for idx in range(stop_idx, len(waypoints)):
-            self.set_waypoint_velocity(waypoints, idx, 0.0)
-
-        # Calculate the deceleration backwards from the stop_idx,
-        # until reaching a speed that is greater than what was already requested.
-        speed = 0.0
-        acceleration = -1.0  # Speed change per waypoint
-        for idx in range(stop_idx, -1, -1):
-            self.set_waypoint_velocity(waypoints, idx, speed)
-            acceleration = min(-0.1, acceleration * 0.9)
-            speed -= acceleration
-            if speed > self.get_waypoint_velocity(waypoints[idx - 1]):
-                break
-
-    def assert_speed_limit(self, waypoints):
-        """Makes sure we never exceeds max velocity"""
-        for i in range(len(waypoints)):
-            velocity = self.get_waypoint_velocity(waypoints[i])
-            if velocity > self.max_velocity:
-                # Note that this is not expected to ever happen. However it's perhaps not a fatal error since the
-                # velocity can be limited to the max allowed value here.
-                rospy.logerr('Calculated velocity %s exceeds max allowed value %s.', velocity, self.max_velocity)
-                self.set_waypoint_velocity(waypoints, i, self.max_velocity)
 
     def publish_waypoints(self, waypoints):
         final_waypoints_msg = Lane()
@@ -199,13 +97,71 @@ class WaypointUpdater(object):
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
 
-    def get_waypoint_velocity(self, waypoint):
-        return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, idx, velocity):
-        waypoints[idx].twist.twist.linear.x = velocity
+class WaypointCalculator(object):
+    def __init__(self, base_waypoints_msg, stop_line_positions):
+        self.base_waypoints_msg = base_waypoints_msg
+        self.previous_first_idx = None
+        self.waypoints = None
+        self.wp_search = WaypointSearch(self.base_waypoints_msg.waypoints)
 
-    def calc_distances(self, preceding_waypoint, waypoints):
+        # Calculate the waypoints behind closest behind the stoplines (with some margin).
+        self.stop_line_wp_indices = [self.wp_search.get_closest_waypoint_idx_behind(x, y) - STOPLINE_WPS_MARGIN
+                                     for x, y in stop_line_positions]
+        self.__set_max_velocity()
+
+    def __set_max_velocity(self):
+        """Set the max_velocity according to velocities in the base waypoints.
+
+          All base waypoints should have the same velocity (in this project). This assumption is also verified to be
+          correct.
+        """
+        self.max_velocity = get_waypoint_velocity(self.base_waypoints_msg.waypoints[0])
+        assert(all(self.max_velocity == get_waypoint_velocity(waypoint)
+                   for waypoint in self.base_waypoints_msg.waypoints))
+
+    def calc_waypoints(self, pose_msg, velocity_msg, traffic_lights_msg):
+        # Extract base_waypoints ahead of vehicle as a starting point for the final_waypoints.
+        first_idx = self.wp_search.get_closest_waypoint_idx_ahead(pose_msg.pose.position.x,
+                                                                  pose_msg.pose.position.y)
+        if self.previous_first_idx is None:
+            # Construct previous waypoint from the vehicles initial pose and velocity.
+            self.preceding_waypoint = Waypoint()
+            self.preceding_waypoint.pose.pose = pose_msg.pose
+            self.preceding_waypoint.twist.twist = velocity_msg.twist
+        elif self.previous_first_idx != first_idx:
+            # Copy the preceding waypoint before updating the waypoint list.
+            self.preceding_waypoint = self.waypoints[first_idx - self.previous_first_idx - 1]
+
+        self.waypoints = deepcopy(self.base_waypoints_msg.waypoints[first_idx:first_idx + LOOKAHEAD_WPS])
+        self.previous_first_idx = first_idx
+
+        # Calculate the final_waypoints
+        self.__accelerate_to_speed_limit()
+        self.__adjust_for_traffic_lights(first_idx, traffic_lights_msg)
+        self.__assert_speed_limit()
+        return self.waypoints
+
+    def __accelerate_to_speed_limit(self):
+        """Set waypoints speed to accelerate the vehicle to max velocity."""
+
+        # Base the acceleration on the velocity from preceding waypoint.
+        current_speed = get_waypoint_velocity(self.preceding_waypoint)
+        speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=current_speed,
+                                     target_acceleration=0.0, current_accleration=0.0,
+                                     acceleration_limit=10.0, jerk_limit=10.0)
+        distances = self.__calc_distances(self.preceding_waypoint)
+        for idx in range(len(self.waypoints)):
+            speed = speed_calc.get_speed_at_distance(distances[idx])
+            set_waypoint_velocity(self.waypoints, idx, speed)
+
+    def __calc_distances(self, preceding_waypoint):
+        """Calculates the distances from the preceding waypoint to each of the waypoints in the path.
+
+        Parameters
+        ----------
+        preceding_waypoint : The last visited waypoint behind the vehicle.
+        """
         total_dist = 0
         distances = []
 
@@ -213,13 +169,68 @@ class WaypointUpdater(object):
             return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2)
 
         total_dist += dl(preceding_waypoint.pose.pose.position,
-                         waypoints[0].pose.pose.position)
+                         self.waypoints[0].pose.pose.position)
         distances.append(total_dist)
 
-        for wp1, wp2 in zip(waypoints, waypoints[1:]):
+        for wp1, wp2 in zip(self.waypoints, self.waypoints[1:]):
             total_dist += dl(wp1.pose.pose.position, wp2.pose.pose.position)
             distances.append(total_dist)
         return distances
+
+    def __adjust_for_traffic_lights(self, first_idx, traffic_lights_msg):
+        """Adjust the speed to break for traffic lights ahead that not is at state green.
+
+        Parameters
+        ----------
+        first_idx : The base_waypoint index from where waypoints have been derived.
+        traffic_lights_msg : contains traffic light states
+        """
+
+        # Check if there is a stop-line along the range of waypoints
+        for base_idx in range(first_idx - STOPLINE_WPS_MARGIN, first_idx + LOOKAHEAD_WPS):
+            if base_idx in self.stop_line_wp_indices:
+                tl_idx = self.stop_line_wp_indices.index(base_idx)
+                if traffic_lights_msg.lights[tl_idx].state is not TrafficLight.GREEN:
+                    final_idx = max(0, base_idx - first_idx)
+                    rospy.loginfo("Stopping at base_idx=%s final_idx=%s", base_idx, final_idx)
+                    self.__stop_at_waypoint(final_idx, self.waypoints)
+                    break
+        else:
+            rospy.loginfo("No speed adjustments for traffic lights.")
+
+    def __stop_at_waypoint(self, stop_idx, waypoints):
+        """ Reduce speed to stop at stop_idx.
+
+        Parameters
+        ----------
+        stop_idx : The waypoint index where the vehicle should reach a speed of zero.
+        waypoints : The waypoints to be adjusted.
+        """
+
+        # Set the velocity for all waypoints after the stop_idx to zero.
+        for idx in range(stop_idx, len(waypoints)):
+            set_waypoint_velocity(waypoints, idx, 0.0)
+
+        # Calculate the deceleration backwards from the stop_idx,
+        # until reaching a speed that is greater than what was already requested.
+        speed = 0.0
+        acceleration = -1.0  # Speed change per waypoint
+        for idx in range(stop_idx, -1, -1):
+            set_waypoint_velocity(waypoints, idx, speed)
+            acceleration = min(-0.1, acceleration * 0.9)
+            speed -= acceleration
+            if speed > get_waypoint_velocity(waypoints[idx - 1]):
+                break
+
+    def __assert_speed_limit(self):
+        """Makes sure we never exceeds max velocity"""
+        for i in range(len(self.waypoints)):
+            velocity = get_waypoint_velocity(self.waypoints[i])
+            if velocity > self.max_velocity:
+                # Note that this is not expected to ever happen. However it's perhaps not a fatal error since the
+                # velocity can be limited to the max allowed value here.
+                rospy.logerr('Calculated velocity %s exceeds max allowed value %s.', velocity, self.max_velocity)
+                set_waypoint_velocity(self.waypoints, i, self.max_velocity)
 
 
 class WaypointSearch(object):
@@ -256,6 +267,15 @@ class WaypointSearch(object):
         pos_vect = np.array([x, y])
         val = np.dot(cl_vect - prev_vect, pos_vect - cl_vect)
         return val < 0
+
+
+# Helper functions
+def get_waypoint_velocity(waypoint):
+    return waypoint.twist.twist.linear.x
+
+
+def set_waypoint_velocity(waypoints, idx, velocity):
+    waypoints[idx].twist.twist.linear.x = velocity
 
 
 if __name__ == '__main__':
