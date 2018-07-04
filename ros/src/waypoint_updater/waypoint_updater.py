@@ -2,12 +2,13 @@
 
 import rospy
 from copy import deepcopy
-from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, TrafficLightArray, TrafficLight
+from geometry_msgs.msg import PoseStamped, TwistStamped
+from styx_msgs.msg import Lane, TrafficLightArray, TrafficLight, Waypoint
 from scipy.spatial import KDTree
 import numpy as np
 import math
 import yaml
+from speed_calculator import SpeedCalculator
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -32,12 +33,14 @@ class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         self.pose_msg = None
+        self.velocity_msg = None
         self.max_velocity = None
         self.base_waypoints_msg = None
         self.traffic_lights_msg = None
@@ -51,7 +54,7 @@ class WaypointUpdater(object):
     def waitUntilInit(self):
         """Wait until all subscriptions has provided at least one msg."""
         while not rospy.is_shutdown():
-            if None not in (self.pose_msg, self.base_waypoints_msg, self.traffic_lights_msg):
+            if None not in (self.pose_msg, self.velocity_msg, self.base_waypoints_msg, self.traffic_lights_msg):
                 # All base waypoints should have the same velocity (in this project).
                 self.max_velocity = self.get_waypoint_velocity(self.base_waypoints_msg.waypoints[0])
                 # Just make sure the assumption above is correct.
@@ -69,21 +72,54 @@ class WaypointUpdater(object):
         return traffic_light_config['stop_line_positions']
 
     def loopForEver(self):
+        previous_first_idx = None
+        waypoints = None
         while not rospy.is_shutdown():
             # Extract base_waypoints ahead of vehicle as a starting point for the final_waypoints.
             first_idx = self.wp_search.get_closest_waypoint_idx_ahead(self.pose_msg.pose.position.x,
                                                                       self.pose_msg.pose.position.y)
+            if previous_first_idx is None:
+                # Construct previous waypoint from the vehicles initial pose and velocity.
+                preceding_waypoint = Waypoint()
+                preceding_waypoint.pose.pose = self.pose_msg.pose
+                preceding_waypoint.twist.twist = self.velocity_msg.twist
+            elif previous_first_idx != first_idx:
+                # Copy the preceding waypoint before updating the waypoint list.
+                preceding_waypoint = waypoints[first_idx - previous_first_idx - 1]
+
             waypoints = deepcopy(self.base_waypoints_msg.waypoints[first_idx:first_idx + LOOKAHEAD_WPS])
+            previous_first_idx = first_idx
 
             # Calculate the final_waypoints
+            self.accelerate_to_speed_limit(preceding_waypoint, waypoints)
             self.adjust_for_traffic_lights(waypoints, first_idx)
-            self.adjust_for_speed_limit(waypoints)
+            self.assert_speed_limit(waypoints)
 
             self.publish_waypoints(waypoints)
             self.rate.sleep()
 
+    def accelerate_to_speed_limit(self, preceding_waypoint, waypoints):
+        """Set waypoints speed to accelerate the vehicle to max velocity.
+
+        Parameters
+        ----------
+        preceding_waypoint : The last waypoint already visited, e.g. the nearest one behind the vehicle.
+        waypoints : The waypoints to follow ahead of the vehicle.
+
+        """
+
+        # Base the acceleration on the velocity from preceding waypoint.
+        current_speed = self.get_waypoint_velocity(preceding_waypoint)
+        speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=current_speed,
+                                     target_acceleration=0.0, current_accleration=0.0,
+                                     acceleration_limit=10.0, jerk_limit=10.0)
+        distances = self.calc_distances(preceding_waypoint, waypoints)
+        for idx in range(len(waypoints)):
+            speed = speed_calc.get_speed_at_distance(distances[idx])
+            self.set_waypoint_velocity(waypoints, idx, speed)
+
     def adjust_for_traffic_lights(self, waypoints, first_idx):
-        """Adjust the speed to break for traffic lights ahead that not is at state green
+        """Adjust the speed to break for traffic lights ahead that not is at state green.
 
         Parameters
         ----------
@@ -104,7 +140,7 @@ class WaypointUpdater(object):
             rospy.loginfo("No speed adjustments for traffic lights.")
 
     def stop_at_waypoint(self, stop_idx, waypoints):
-        """ Reduce speed to stop at stop_idx
+        """ Reduce speed to stop at stop_idx.
 
         Parameters
         ----------
@@ -127,7 +163,7 @@ class WaypointUpdater(object):
             if speed > self.get_waypoint_velocity(waypoints[idx - 1]):
                 break
 
-    def adjust_for_speed_limit(self, waypoints):
+    def assert_speed_limit(self, waypoints):
         """Makes sure we never exceeds max velocity"""
         for i in range(len(waypoints)):
             velocity = self.get_waypoint_velocity(waypoints[i])
@@ -146,7 +182,10 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         """Callback for /current_pose topic"""
         self.pose_msg = msg
-        pass
+
+    def velocity_cb(self, msg):
+        """Callback for /current_velocity topic"""
+        self.velocity_msg = msg
 
     def waypoints_cb(self, msg):
         """Callback for /base_waypoints topic"""
@@ -160,26 +199,27 @@ class WaypointUpdater(object):
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
 
-    def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
-        pass
-
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+    def set_waypoint_velocity(self, waypoints, idx, velocity):
+        waypoints[idx].twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, wp1, wp2):
-        dist = 0
+    def calc_distances(self, preceding_waypoint, waypoints):
+        total_dist = 0
+        distances = []
 
         def dl(a, b):
             return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2)
 
-        for i in range(wp1, wp2 + 1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
-        return dist
+        total_dist += dl(preceding_waypoint.pose.pose.position,
+                         waypoints[0].pose.pose.position)
+        distances.append(total_dist)
+
+        for wp1, wp2 in zip(waypoints, waypoints[1:]):
+            total_dist += dl(wp1.pose.pose.position, wp2.pose.pose.position)
+            distances.append(total_dist)
+        return distances
 
 
 class WaypointSearch(object):
