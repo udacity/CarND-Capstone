@@ -10,6 +10,7 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -46,7 +47,7 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        self.waypoints_2d = []
+        self.waypoints_2d = None
         self.waypoint_tree = None
         self.has_image = False
 
@@ -58,14 +59,16 @@ class TLDetector(object):
         rospy.spin()
 
     def pose_cb(self, msg):
+        """Car position updates"""
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
+        """Complete track's waypoint initialization"""
         self.waypoints = waypoints
         if not self.waypoints_2d:
-            self.waypoints_2d = [[waypoints.pose.pose.position.x, waypoint.pose.pose.position.y]
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y]
                                  for waypoint in waypoints.waypoints]
-            self.waypoint_tree = KDTree(Self.waypoints_2d)
+            self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -81,7 +84,7 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-        # rospy.logwarn("Closes light wp: {0} \n And light state: {1}".format(light_wp, state))
+        # rospy.logwarn("Closest light wp: {0} \n And light state: {1}".format(light_wp, state))
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -166,6 +169,7 @@ class TLDetector(object):
                 # Find closest stop line waypoint index ahead
                 d = temp_wp_idx - car_wp_idx
                 if 0 <= d < diff:
+                    # TODO check if also d < max-distance-to-brake-safely to avoid computing get_light_state()
                     diff = d
                     closest_light = light
                     line_wp_idx = temp_wp_idx
