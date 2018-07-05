@@ -63,11 +63,11 @@ def analyze_image(image):
     return 0
 
 
-img_files = [f for f in listdir('./imgs') if isfile(join('./imgs', f))]
+#img_files = [f for f in listdir('./imgs') if isfile(join('./imgs', f))]
 
-for file in img_files:
-    print(file)
-    img = cv2.imread(join('./imgs/', file))
-    analyze_image(img)
-    print('----')
+#for file in img_files:
+#    print(file)
+#    img = cv2.imread(join('./imgs/', file))
+#    analyze_image(img)
+#    print('----')
 
