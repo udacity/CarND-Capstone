@@ -2,18 +2,18 @@
 Self-Driving Car Engineer Nanodegree Program
 
 [//]: # (Image References)
-[image1]: ./imgs/training_trafficlight_sg/training_monitoring.png "moni1"
-[image2]: ./imgs/training_trafficlight_sg/training_monitoring2.png "moni2"
+[image1]: ./training_trafficlight_sg/training_monitoring.png "moni1"
+[image2]: ./training_trafficlight_sg/training_monitoring2.png "moni2"
 
-[image3]: ./imgs/training_trafficlight_sg/detection1.jpg "detect1"
-[image4]: ./imgs/training_trafficlight_sg/detection1b.jpg "detect2"
-[image5]: ./imgs/training_trafficlight_sg/detection1c.jpg "detect3"
-[image6]: ./imgs/training_trafficlight_sg/detection2.jpg "detect4"
-[image7]: ./imgs/training_trafficlight_sg/detection2b.jpg "detect5"
-[image8]: ./imgs/training_trafficlight_sg/detection3.jpg "detect6"
+[image3]: ./training_trafficlight_sg/detection1.jpg "detect1"
+[image4]: ./training_trafficlight_sg/detection1b.jpg "detect2"
+[image5]: ./training_trafficlight_sg/detection1c.jpg "detect3"
+[image6]: ./training_trafficlight_sg/detection2.jpg "detect4"
+[image7]: ./training_trafficlight_sg/detection2b.jpg "detect5"
+[image8]: ./training_trafficlight_sg/detection3.jpg "detect6"
 
-[image9]: ./imgs/training_trafficlight_sg/daySequence1.jpg "orig_modality1"
-[image10]: ./imgs/training_trafficlight_sg/daySequence1b.jpg "orig_modality2"
+[image9]: ./training_trafficlight_sg/daySequence1.jpg "orig_modality1"
+[image10]: ./training_trafficlight_sg/daySequence1b.jpg "orig_modality2"
 
 [image11]: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/img/kites_detections_output.jpg "tensorflow_object"
 
