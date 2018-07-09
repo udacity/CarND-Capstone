@@ -27,7 +27,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
-STOPLINE_WPS_MARGIN = 2  # Number of waypoints to use as a safety margin when stopping at traffic lights.
+STOPLINE_WPS_MARGIN = 4  # Number of waypoints to use as a safety margin when stopping at traffic lights.
 
 
 class WaypointUpdater(object):
@@ -214,34 +214,47 @@ class WaypointCalculator(object):
                 if traffic_lights_msg.lights[tl_idx].state is not TrafficLight.GREEN:
                     final_idx = max(0, base_idx - first_idx)
                     rospy.loginfo("Stopping at base_idx=%s final_idx=%s", base_idx, final_idx)
-                    self.__stop_at_waypoint(final_idx, self.waypoints)
+                    self.__stop_at_waypoint(final_idx)
                     break
         else:
             rospy.loginfo("No speed adjustments for traffic lights.")
 
-    def __stop_at_waypoint(self, stop_idx, waypoints):
+    def __stop_at_waypoint(self, stop_idx):
         """ Reduce speed to stop at stop_idx.
 
         Parameters
         ----------
         stop_idx : The waypoint index where the vehicle should reach a speed of zero.
-        waypoints : The waypoints to be adjusted.
         """
 
         # Set the velocity for all waypoints after the stop_idx to zero.
-        for idx in range(stop_idx, len(waypoints)):
-            set_waypoint_velocity(waypoints, idx, 0.0)
+        for idx in range(stop_idx, len(self.waypoints)):
+            set_waypoint_velocity(self.waypoints, idx, 0.0)
+            self.waypoints[idx].acceleration = 0.0
 
         # Calculate the deceleration backwards from the stop_idx,
         # until reaching a speed that is greater than what was already requested.
-        speed = 0.0
-        acceleration = -1.0  # Speed change per waypoint
-        for idx in range(stop_idx, -1, -1):
-            set_waypoint_velocity(waypoints, idx, speed)
-            acceleration = min(-0.1, acceleration * 0.9)
-            speed -= acceleration
-            if speed > get_waypoint_velocity(waypoints[idx - 1]):
+        speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=0.0,
+                                     target_acceleration=0.0, current_accleration=0.0,
+                                     acceleration_limit=10.0, jerk_limit=10.0)
+        distances = self.__calc_distances(self.preceding_waypoint)
+        stop_distance = distances[stop_idx]
+        distances = [stop_distance - distance for distance in distances]
+        for idx in range(stop_idx - 1, -1, -1):
+            speed = speed_calc.get_speed_at_distance(distances[idx])
+            acceleration = -speed_calc.get_acceleration_at_distance(distances[idx])
+            if speed >= get_waypoint_velocity(self.waypoints[idx]):
+                rospy.loginfo('reached speed = %s which is above %s at itx %s', speed,
+                              get_waypoint_velocity(self.waypoints[idx]), idx)
                 break
+            set_waypoint_velocity(self.waypoints, idx, speed)
+            self.waypoints[idx].acceleration = acceleration
+        else:
+            rospy.logerr('Unable to stop in time.')
+            # ToDo should not even try to break when not possible to stop in time.
+
+        rospy.loginfo('Stopping at %s with [speed, acc] %s', stop_idx,
+                      [[get_waypoint_velocity(wp), wp.acceleration] for wp in self.waypoints])
 
     def __assert_speed_limit(self):
         """Makes sure we never exceeds max velocity"""
