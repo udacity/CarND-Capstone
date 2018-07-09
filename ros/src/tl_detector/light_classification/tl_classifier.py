@@ -24,7 +24,7 @@ class TLClassifier(object):
         self.detection_threshold = 0.5
 
         # Path to frozen Graph
-        graph_path = 'src/tl_detector/light_classification/inference_graph/frozen_inference_graph.pb'
+        graph_path = 'light_classification/inference_graph/frozen_inference_graph.pb'
 
         # Create the TensorFlow session in which the graph is loaded
         self.session = tf.Session()
@@ -127,10 +127,10 @@ class TestTLClassifier(object):
 
     def test_classification(self):
         # Load image
-        image_path_green = ('src/tl_detector/light_classification/test_images/green.jpg', TrafficLight.GREEN)
-        image_path_yellow = ('src/tl_detector/light_classification/test_images/yellow.jpg', TrafficLight.YELLOW)
-        image_path_red = ('src/tl_detector/light_classification/test_images/red.jpg', TrafficLight.RED)
-        image_path_na = ('src/tl_detector/light_classification/test_images/NA.jpg', TrafficLight.UNKNOWN)
+        image_path_green = ('light_classification/test_images/green.jpg', TrafficLight.GREEN)
+        image_path_yellow = ('light_classification/test_images/yellow.jpg', TrafficLight.YELLOW)
+        image_path_red = ('light_classification/test_images/red.jpg', TrafficLight.RED)
+        image_path_na = ('light_classification/test_images/NA.jpg', TrafficLight.UNKNOWN)
 
         for image_path in [image_path_green, image_path_yellow, image_path_red, image_path_na]:
             image = np.asarray(Image.open(image_path[0]))
@@ -145,7 +145,7 @@ class TestTLClassifier(object):
 
     def measure_time(self):
         # Load image
-        image_path = 'src/tl_detector/light_classification/test_images/green.jpg'
+        image_path = 'light_classification/test_images/green.jpg'
         image = np.asarray(Image.open(image_path))
         image = np.expand_dims(image, 0)
 
