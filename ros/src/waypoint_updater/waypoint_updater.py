@@ -146,6 +146,7 @@ class WaypointCalculator(object):
             self.preceding_waypoint = Waypoint()
             self.preceding_waypoint.pose.pose = pose_msg.pose
             self.preceding_waypoint.twist.twist = velocity_msg.twist
+            self.preceding_waypoint.acceleration = 0.0
         elif self.previous_first_idx != first_idx:
             # Copy the preceding waypoint before updating the waypoint list.
             self.preceding_waypoint = self.waypoints[first_idx - self.previous_first_idx - 1]
@@ -164,13 +165,16 @@ class WaypointCalculator(object):
 
         # Base the acceleration on the velocity from preceding waypoint.
         current_speed = get_waypoint_velocity(self.preceding_waypoint)
+        current_acceleration = self.preceding_waypoint.acceleration
         speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=current_speed,
-                                     target_acceleration=0.0, current_accleration=0.0,
+                                     target_acceleration=0.0, current_accleration=current_acceleration,
                                      acceleration_limit=10.0, jerk_limit=10.0)
         distances = self.__calc_distances(self.preceding_waypoint)
         for idx in range(len(self.waypoints)):
             speed = speed_calc.get_speed_at_distance(distances[idx])
             set_waypoint_velocity(self.waypoints, idx, speed)
+            acceleration = speed_calc.get_acceleration_at_distance(distances[idx])
+            self.waypoints[idx].acceleration = acceleration
 
     def __calc_distances(self, preceding_waypoint):
         """Calculates the distances from the preceding waypoint to each of the waypoints in the path.
