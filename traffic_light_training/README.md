@@ -28,6 +28,7 @@ To build up a robust and computational efficient system for traffic light detect
 - What neural network architecture to use
 - What datasets for training can be used
 - How to augment images for creating a robust network
+- How to monitor the training of the chosen model
 - How to deploy the trained model to the car environment
 
 
@@ -55,8 +56,9 @@ It is usefull to start with a pre-trained network and fine tune it on the specif
 
 For this project, I want to use the following datasets for fine tuning:
 - [Lisa Traffic Light Dataset](https://www.kaggle.com/mbornoe/lisa-traffic-light-dataset/home)
-- [CamVid](http://mi.eng.cam.ac.uk/research/projects/VideoRec/CamVid/)
+- ~~[CamVid](http://mi.eng.cam.ac.uk/research/projects/VideoRec/CamVid/)~~ (in the end not used)
 - [Bosch Small Traffic Lights Dataset](https://hci.iwr.uni-heidelberg.de/node/6132)
+- [Udacity Simulator and Site Dataset packed into TFRecord files by Shyam Jaganathan](https://drive.google.com/drive/folders/0Bz-TOGv42ojzOHhpaXJFdjdfZTA)
 
 
 ### Training
