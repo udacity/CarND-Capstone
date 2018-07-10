@@ -24,7 +24,7 @@ This task is about the perception module of the capstone project of the Udacity 
 
 To build up a robust and computational efficient system for traffic light detection and classification based on a deep neural network architecture, one might think about the following points:
 
-- What framework to use for training and inference (TensorFlow can be used in the car environment)
+- [What framework to use for training and inference (TensorFlow can be used in the car environment)](https://github.com/stela/CarND-Capstone/tree/traffic-lights-detection/traffic_light_training#framework)
 - What neural network architecture to use
 - What datasets for training can be used
 - How to augment images for creating a robust network
