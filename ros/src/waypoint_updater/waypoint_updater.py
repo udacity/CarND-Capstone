@@ -27,7 +27,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
-STOPLINE_WPS_MARGIN = 4  # Number of waypoints to use as a safety margin when stopping at traffic lights.
+STOPLINE_WPS_MARGIN = 2  # Number of waypoints to use as a safety margin when stopping at traffic lights.
 
 
 class WaypointUpdater(object):
@@ -227,34 +227,55 @@ class WaypointCalculator(object):
         stop_idx : The waypoint index where the vehicle should reach a speed of zero.
         """
 
-        # Set the velocity for all waypoints after the stop_idx to zero.
-        for idx in range(stop_idx, len(self.waypoints)):
-            set_waypoint_velocity(self.waypoints, idx, 0.0)
-            self.waypoints[idx].acceleration = 0.0
+        # Calculate the reverse distances from the stop_idx and backwards.
+        distances = [0.0] + self.__calc_distances(self.preceding_waypoint)
+        distances = [distances[stop_idx] - distance for distance in distances]
 
-        # Calculate the deceleration backwards from the stop_idx,
-        # until reaching a speed that is greater than what was already requested.
-        speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=0.0,
-                                     target_acceleration=0.0, current_accleration=0.0,
-                                     acceleration_limit=10.0, jerk_limit=10.0)
-        distances = self.__calc_distances(self.preceding_waypoint)
-        stop_distance = distances[stop_idx]
-        distances = [stop_distance - distance for distance in distances]
-        for idx in range(stop_idx - 1, -1, -1):
-            speed = speed_calc.get_speed_at_distance(distances[idx])
-            acceleration = -speed_calc.get_acceleration_at_distance(distances[idx])
-            if speed >= get_waypoint_velocity(self.waypoints[idx]):
-                rospy.loginfo('reached speed = %s which is above %s at itx %s', speed,
-                              get_waypoint_velocity(self.waypoints[idx]), idx)
+        # Try more and more harsh jerk_limits until finding one that decelerate to stop in time.
+        # When also unable to stop using the max permitted jerk limit of 10 m/s^3, then deceleration is skipped.
+        for jerk_limit in np.arange(2.5, 10.1, 2.5):
+            # Create temporary lists with speed and acceleration to be modified below.
+            speeds = [get_waypoint_velocity(self.preceding_waypoint)] + \
+                     [get_waypoint_velocity(wp) for wp in self.waypoints]
+            accs = [self.preceding_waypoint.acceleration] + \
+                   [wp.acceleration for wp in self.waypoints]
+            temp_stop_idx = stop_idx + 1  # Offset due to inserting the preceding waypoint.
+
+            # Set the speed and acceleration after the temp_stop_idx to zero.
+            speeds[temp_stop_idx + 1:] = [0.0] * (len(speeds) - temp_stop_idx - 1)
+            accs[temp_stop_idx + 1:] = [0.0] * (len(accs) - temp_stop_idx - 1)
+
+            # Calculate the deceleration backwards from the temp_stop_idx,
+            # until reaching a speed that is greater than what was already requested.
+            speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=0.0,
+                                         target_acceleration=0.0, current_accleration=0.0,
+                                         acceleration_limit=10.0, jerk_limit=jerk_limit)
+
+            for idx in range(temp_stop_idx, -1, -1):
+                speed = speed_calc.get_speed_at_distance(distances[idx])
+                acc = -speed_calc.get_acceleration_at_distance(distances[idx])
+                if speed > speeds[idx] or np.isclose(speed, speeds[idx]):
+                    rospy.logdebug('Success: jerk_limit %s decelerates from %s m/s (>=%s m/s) at idx %s',
+                                   jerk_limit, speed, speeds[idx], idx)
+                    stop_possible = True
+                    break
+                speeds[idx] = speed
+                accs[idx] = acc
+
+            else:
+                rospy.logdebug('Failed: jerk_limit %s only decelerates from %s m/s (<%s m/s) at idx %s',
+                               jerk_limit, speed, get_waypoint_velocity(self.preceding_waypoint), idx)
+                stop_possible = False
+
+            if stop_possible:
+                for idx in range(len(self.waypoints)):
+                    set_waypoint_velocity(self.waypoints, idx, speeds[idx + 1])
+                    self.waypoints[idx].acceleration = accs[idx + 1]
                 break
-            set_waypoint_velocity(self.waypoints, idx, speed)
-            self.waypoints[idx].acceleration = acceleration
         else:
-            rospy.logerr('Unable to stop in time.')
-            # ToDo should not even try to break when not possible to stop in time.
-
-        rospy.loginfo('Stopping at %s with [speed, acc] %s', stop_idx,
-                      [[get_waypoint_velocity(wp), wp.acceleration] for wp in self.waypoints])
+            rospy.loginfo('Unable to stop from %s m/s in %s m',
+                          get_waypoint_velocity(self.preceding_waypoint),
+                          distances[0])
 
     def __assert_speed_limit(self):
         """Makes sure we never exceeds max velocity"""
