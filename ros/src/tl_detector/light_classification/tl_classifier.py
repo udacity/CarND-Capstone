@@ -105,11 +105,11 @@ class TLClassifier(object):
                                     'score': score,
                                     'id': labels[i]})
 
-	if len(results) > 0:
-	    # The boxes are encoded as xmin, xmax, ymin, ymax with normalized coordinates [0..1].
-	    # So lets find just the biggest box and take the traffic light state from it.
-	    max_sized_result = max(results, key=lambda bb: (bb['box'][1] - bb['box'][0]) * (bb['box'][3] - bb['box'][2]))
-	    traffic_light_id = max_sized_result['id']
+        if len(results) > 0:
+            # The boxes are encoded as xmin, xmax, ymin, ymax with normalized coordinates [0..1].
+            # So lets find just the biggest box and take the traffic light state from it.
+            max_sized_result = max(results, key=lambda bb: (bb['box'][1] - bb['box'][0]) * (bb['box'][3] - bb['box'][2]))
+            traffic_light_id = max_sized_result['id']
 
         return id_mapping[traffic_light_id]
 

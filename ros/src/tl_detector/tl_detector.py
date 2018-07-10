@@ -115,7 +115,7 @@ class TLDetector(object):
             self.state_count = 0
             self.state = state
         elif self.state_count >= self.statecount_threshold:
-	    if self.last_state != self.state:
+            if self.last_state != self.state:
                 rospy.loginfo("LiveDetect: {0} | TrafficLight : {1}".format(str(self.use_tf_detection), readable_state))
 
             self.last_state = self.state
