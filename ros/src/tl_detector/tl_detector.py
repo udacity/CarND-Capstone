@@ -105,8 +105,6 @@ class TLDetector(object):
         light_wp, state = self.process_traffic_lights()
         readable_state = self.state_to_text(state)
 
-        rospy.logwarn("Closest light wp: {0} \n And light state: {1}".format(light_wp, readable_state))
-
         '''
         Publish upcoming red lights at camera frequency.
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
@@ -117,10 +115,13 @@ class TLDetector(object):
             self.state_count = 0
             self.state = state
         elif self.state_count >= self.statecount_threshold:
+	    if self.last_state != self.state:
+                rospy.loginfo("LiveDetect: {0} | TrafficLight : {1}".format(str(self.use_tf_detection), readable_state))
+
             self.last_state = self.state
             # SG: I think we should break on Yellow, too
-            brake_state = state == TrafficLight.RED or state == TrafficLight.YELLOW
-            light_wp = light_wp if brake_state else -1
+            should_brake = state == TrafficLight.RED or state == TrafficLight.YELLOW
+            light_wp = light_wp if should_brake else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:

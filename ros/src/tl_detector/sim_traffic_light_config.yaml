@@ -14,5 +14,5 @@ stop_line_positions:
     - [161.76, 2303.82]
     - [351.84, 1574.65]
 use_tensorflow_detection: True
-use_tensorflow_nth_frame: 8
+use_tensorflow_nth_frame: 6
 state_count_threshold: 2
