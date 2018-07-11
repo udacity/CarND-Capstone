@@ -3,5 +3,11 @@ camera_info:
   focal_length_y: 1353.838257
   image_width: 800
   image_height: 600
+camera_preprocessing:
+  image_width: 800
+  image_height: 600
 stop_line_positions:
     - [8.0, 16.2]
+use_tensorflow_detection: True
+use_tensorflow_nth_frame: 4
+state_count_threshold: 3

@@ -1,6 +1,9 @@
 camera_info:
   image_width: 800
   image_height: 600
+camera_preprocessing:
+  image_width: 400
+  image_height: 300
 stop_line_positions:
     - [1148.56, 1184.65]
     - [1559.2, 1158.43]
@@ -10,3 +13,6 @@ stop_line_positions:
     - [821.96, 2905.8]
     - [161.76, 2303.82]
     - [351.84, 1574.65]
+use_tensorflow_detection: True
+use_tensorflow_nth_frame: 6
+state_count_threshold: 2

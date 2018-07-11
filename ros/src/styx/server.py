@@ -53,11 +53,12 @@ def obstacle(sid, data):
 
 @sio.on('trafficlights')
 def trafficlights(sid, data):
-    bridge.publish_traffic(data)
+    bridge.publish_traffic(data) 
 
 @sio.on('image')
 def image(sid, data):
     bridge.publish_camera(data)
+
 
 if __name__ == '__main__':
 

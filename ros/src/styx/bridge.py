@@ -49,7 +49,7 @@ class Bridge(object):
             '/vehicle/steering_cmd': self.callback_steering,
             '/vehicle/throttle_cmd': self.callback_throttle,
             '/vehicle/brake_cmd': self.callback_brake,
-        '/final_waypoints': self.callback_path
+            '/final_waypoints': self.callback_path
         }
 
         self.subscribers = [rospy.Subscriber(e.topic, TYPE[e.type], self.callbacks[e.topic])
