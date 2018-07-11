@@ -30,8 +30,10 @@ To build up a robust and computational efficient system for traffic light detect
 - [What datasets for training can be used](#dataset)
 - [How to setup training with the chosen framework](#setup-the-training-and-evaluation-pipeline)
 - [How to augment images for creating a robust network](#image-augmentation)
-- [How to monitor the training of the chosen model](#training-monitoring)
-- How to deploy the trained model to the car environment
+- [How to monitor the training](#training-monitoring)
+- [Train a model for proof of concept](#proof-of-concept-testing-faster-rcnn-resnet50-on-lisa-traffic-light-dataset)
+- [Train the actual model](#training-the-single-shot-detector-with-mobilenet-backend)
+- [How to deploy the trained model to the car environment](#deploy-to-the-ros-system)
 
 
 ### Framework
@@ -213,7 +215,7 @@ Both, precision values and validation images can be shown in Tensorboard.
 ![monitor2][image2]
 
 
-#### Proof of concept: Testing Faster RCNN (ResNet50) on Lisa Traffic Light Dataset
+### Proof of concept: Testing Faster RCNN (ResNet50) on Lisa Traffic Light Dataset
 -----
 The first test is done with finetuning a *Faster RCNN Network with ResNet50 Backbone (pretrained on MS COCO)*. This network is fine tuned 200k steps and only on the [Lisa Traffic Light Dataset](https://www.kaggle.com/mbornoe/lisa-traffic-light-dataset/home).
 
@@ -227,7 +229,7 @@ Results with the Faster RCNN ResNet architecture:
 The network was able to generalize to the Udacity site images.
 
 
-#### Training the Single Shot Detector with MobileNet Backend
+### Training the Single Shot Detector with MobileNet Backend
 -----
 After the proof of concept succeeded, the actual training of the SSD MobileNet can be done. This training is now with the help of all four datasets, encoded in the TFRecord files.
 
@@ -243,4 +245,24 @@ The training process runs for around 80.000 steps and reaches a mean Average Pre
 The network is able to generalize over all four modalities.
 
 ![tb3][image13]
+
+
+
+### Deploy to the ROS system
+-----
+
+To deploy the model to the ROS system, the frozen graph has to be used. The tensorflow graph is imported via *tf.import_graph_def()* in the [ROS node for Traffic Light Classification](../ros/src/tl_detector/light_classification/tl_classifier.py). The most important thing to think of are the tensors we need from the graph. These are the graph tensors that are being used for inference:
+
+|Tensor name|Description|
+|-|-|
+|image_tensor:0|The tensor where the input image is fed into|
+|num_detections:0|The count of the detections. This is static and depends on the training configuration.|
+|detection_boxes:0|The respective bounding boxes that refer to the detections.|
+|detection_scores:0|The respective scores or probabilities for the detections.|
+|detection_classes:0|The respective class for the detections.|
+
+We filter the scores with a threshold of 0.5.
+
+
+To test the model, the class TestTLClassifier in tl_classifier.py is used. The detection runs on a virtual machine on CPU with about **8 ms per image**. The images are subsampled to 400x300 pixels before they are fed into the model.
 
