@@ -155,7 +155,7 @@ class TLDetector(object):
 
         # For testing, just return the light state provided by the simulator. Won't work real-world!!!
         if self.use_tf_detection is False:
-            return light.state
+            return light.state if light is not None else TrafficLight.UNKNOWN
 
         if not self.has_image:
             return self.last_state
@@ -177,7 +177,7 @@ class TLDetector(object):
 
         """
         closest_light = None
-        line_wp_idx = None
+        line_wp_idx = -1
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
@@ -198,11 +198,8 @@ class TLDetector(object):
                     closest_light = light
                     line_wp_idx = temp_wp_idx
 
-        if closest_light:
-            state = self.get_light_state(closest_light)
-            return line_wp_idx, state
-
-        return -1, TrafficLight.UNKNOWN
+        state = self.get_light_state(closest_light)
+        return line_wp_idx, state
 
 
 if __name__ == '__main__':
