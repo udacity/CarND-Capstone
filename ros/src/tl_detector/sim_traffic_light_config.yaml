@@ -10,3 +10,6 @@ stop_line_positions:
     - [821.96, 2905.8]
     - [161.76, 2303.82]
     - [351.84, 1574.65]
+model:
+   graph: 'perception/frozen_inference_graph-sim.pb'
+   labels: 'perception/label_map-sim.pbtxt'
