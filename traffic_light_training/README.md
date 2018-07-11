@@ -25,8 +25,8 @@ This task is about the perception module of the capstone project of the Udacity 
 To build up a robust and computational efficient system for traffic light detection and classification based on a deep neural network architecture, one might think about the following points:
 
 - [What framework to use for training and inference (TensorFlow can be used in the car environment)](#framework)
-- What neural network architecture to use
-- What datasets for training can be used
+- [What neural network architecture to use](#neural-network-architectures)
+- [What datasets for training can be used](#dataset)
 - How to augment images for creating a robust network
 - How to monitor the training of the chosen model
 - How to deploy the trained model to the car environment
@@ -60,6 +60,93 @@ For this project, I want to use the following datasets for fine tuning:
 - [Bosch Small Traffic Lights Dataset](https://hci.iwr.uni-heidelberg.de/node/6132)
 - [Udacity Simulator and Site Dataset packed into TFRecord files by Shyam Jaganathan](https://drive.google.com/drive/folders/0Bz-TOGv42ojzOHhpaXJFdjdfZTA)
 
+#### How to prepare the dataset
+
+This section describes how to prepare the different datasets for unified training. 
+
+* Download the dataset files
+* Extract the zip files and arrange the data in the following way:
+
+In my case, the base directory is **/data/Datasets**
+
+```
+. \
+├── _LisaTrafficLight
+    ├── _Annotations
+        ├── dayTrain
+        └── dayVal
+    ├── _dayTraining
+        ├── dayClip1
+        └── ...
+    ├── _dayTest
+        ├── daySequence1
+        └── daySequence2
+        
+├── Bosch Traffic Lights Dataset
+    ├── train.yaml
+    ├── test.yaml
+    └── _rgb
+        └── _test
+            ├── 24968.png
+            └── ...
+        └── _train       
+            ├── 2015-10-05-10-52-01_bag
+            └── ...
+            
+├── _UdacityData
+    ├── traffic-light-site-train.record
+    ├── traffic-light-sim-train.record
+    ├── traffic-light-site-test.record
+    └── traffic-light-sim-test.record
+```
+
+After that, have a look into the main-function of the [conversion script](scripts/utilities/convert_datasets/conversion.py). From line 351 starting, the main function executes the
+
+* Annotation file parsing for each dataset
+* Conversion of the annotation to a unified python dictionary
+* Dataset image frequency normalization
+* Conversion to TFRecords (for training and validation)
+
+Take care of the base path which is **/data/Datasets** by default in the script.
+
+#### Dataset normalization
+
+Each dataset consists of a different number of samples. To harmonize training and not fit the network to one of the given image modalities, the dataset image countings are being normalized in the conversion.py script. This is done by random sampling until the needed number of samples is reached. These are the counts of the specific datasets before the normalization:
+
+|Dataset name|Number of train images|Number of val images|
+|-|-|-|
+|Lisa Traffic Light Dataset|12775|7473|
+|Bosch Small Traffic Lights Dataset|3153|7147|
+|Udacity Simulator Images|494|871|
+|Udacity Site Images|871|41|
+
+And after normalization:
+
+|Dataset name|Number of train images|Number of val images|
+|-|-|-|
+|Lisa Traffic Light Dataset|12775|7473|
+|Bosch Small Traffic Lights Dataset|12775|7473|
+|Udacity Simulator Images|12775|7473|
+|Udacity Site Images|12775|7473|
+
+
+### Image Augmentation
+
+To train a robust object detector with built-in classifier, image augmentation is a crucial point. This regularization method enforces the network to better generalize to unseen images, and thus be invariant to different image scences.
+
+The Tensorflow Object Detection API offers several image augmentation methods, that can be applied during training. For this task, I enabled the following augmentations:
+
+|Method|Description/Reason|
+|-|-|
+|random_horizontal_flip|To generate 'more' data out of the given data. Since the traffic light scenes are invariant to horizontal flip, this generates new 'mirrored' image data.|
+|random_pixel_value_scale|A good technique to change the pixel value in a random manner (for all pixels in the image).|
+|random_adjust_brightness|Change the brightness of the image (like pixel value scale) by a random factor.|
+|random_adjust_contrast|Change the contrast of the image by a random factor.|
+|random_rgb_to_gray|Randomly changes the RGB colorspace to grayscale. This should force the network to extract the location features of the traffic light lamp.|
+|random_adjust_hue|Random change of hue. This may force the network to rely on the traffic light lamp position, not as much on the color feature (since the color of the red lamp in the site images looks rather orange!)|
+|random_distort_color|This performs a cascade of different color distortion functions.|
+|random_jitter_boxes|Randomly jitters boxes.|
+|ssd_random_crop|Randomly crops the image.|
 
 ### Training
 
