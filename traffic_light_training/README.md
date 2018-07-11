@@ -27,9 +27,9 @@ To build up a robust and computational efficient system for traffic light detect
 - [What framework to use for training and inference (TensorFlow can be used in the car environment)](#framework)
 - [What neural network architecture to use](#neural-network-architectures)
 - [What datasets for training can be used](#dataset)
-- How to setup training with the chosen framework
-- How to augment images for creating a robust network
-- How to monitor the training of the chosen model
+- [How to setup training with the chosen framework](#setup-the-training-and-evaluation-pipeline)
+- [How to augment images for creating a robust network](#image-augmentation)
+- [How to monitor the training of the chosen model](#training-monitoring)
 - How to deploy the trained model to the car environment
 
 
@@ -140,7 +140,7 @@ And after normalization:
 ### Setup the Training and Evaluation Pipeline
 -----
 
-The use the [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) for the Udacity Capstone project, it is nessecary to clone the [Github Repository tensorflow/models](https://github.com/tensorflow/models). 
+To use the [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) for the Udacity Capstone project, it is nessecary to clone the [Github Repository tensorflow/models](https://github.com/tensorflow/models). 
 
 But since the car *Carla* only supports Tensorflow 1.3.0, its crucial to checkout an older release of the repo. The official release tag 1.4.0 would be ok, but they removed the research models that we need. 
 
@@ -200,8 +200,9 @@ The Tensorflow Object Detection API offers several image augmentation methods, t
 |random_jitter_boxes|Randomly jitters boxes.|
 |ssd_random_crop|Randomly crops the image.|
 
-### Training
 
+### Training monitoring
+-----
 Before the training begins, the specific datasets have to be converted to the framework-specific format. In this case to TF Record files. Three classes (red, yellow, green) are encoded with their bounding boxes.
 
 The actual training is done via [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) and is monitored with Tensorboard.
@@ -213,9 +214,7 @@ Both, precision values and validation images can be shown in Tensorboard.
 ![monitor2][image2]
 
 
-
-
-## Iteration 1 - Testing Faster RCNN (ResNet50) on Lisa Traffic Light Dataset
+### Proof of concept: Testing Faster RCNN (ResNet50) on Lisa Traffic Light Dataset
 
 Iteration 1 is done with finetuning a *Faster RCNN Network with ResNet50 Backbone (pretrained on MS COCO)*. This network is fine tuned 200k steps on the [Lisa Traffic Light Dataset](https://www.kaggle.com/mbornoe/lisa-traffic-light-dataset/home).
 
@@ -225,10 +224,7 @@ The images of the Lisa Traffic Light Dataset look like this:
 :-:|:-:
 ![orig_1][image9]|![orig_2][image10]
 
-
-
-### Current results on Udacity-images
----
+Results with the Faster RCNN ResNet architecture:
 
 | | |
 :-:|:-:
@@ -237,12 +233,9 @@ The images of the Lisa Traffic Light Dataset look like this:
 ![detection5][image7]|![detection6][image8]
 
 
-## Work to do
 
-- Training on the other datasets
-- Speed up by training different architectures
-- Get invariance of traffic light size
-- Integrate into main project
+### Training the Single Shot Detector with MobileNet Backend
+
 
 
 
