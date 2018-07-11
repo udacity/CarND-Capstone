@@ -17,6 +17,7 @@ Self-Driving Car Engineer Nanodegree Program
 
 [image11]: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/img/kites_detections_output.jpg "tensorflow_object"
 [image12]: ./training_trafficlight_sg/datasets_images.png "datasets"
+[image13]: ./training_trafficlight_sg/training_monitoring3.png "moni3"
 
 ## Training a Traffic Lights Detection and Classification Network
 
@@ -203,9 +204,7 @@ The Tensorflow Object Detection API offers several image augmentation methods, t
 
 ### Training monitoring
 -----
-Before the training begins, the specific datasets have to be converted to the framework-specific format. In this case to TF Record files. Three classes (red, yellow, green) are encoded with their bounding boxes.
-
-The actual training is done via [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) and is monitored with Tensorboard.
+The Training is monitored with Tensorboard. To generate the events for tensorboard, the [run_eval_SSD_MobilenetV1.sh](scripts/object_detect_training/run_eval_SSD_MobilenetV1.sh) script must be executed in parallel (!) to the training process.
 
 ![monitor1][image1]
 
@@ -214,28 +213,34 @@ Both, precision values and validation images can be shown in Tensorboard.
 ![monitor2][image2]
 
 
-### Proof of concept: Testing Faster RCNN (ResNet50) on Lisa Traffic Light Dataset
-
-Iteration 1 is done with finetuning a *Faster RCNN Network with ResNet50 Backbone (pretrained on MS COCO)*. This network is fine tuned 200k steps on the [Lisa Traffic Light Dataset](https://www.kaggle.com/mbornoe/lisa-traffic-light-dataset/home).
-
-The images of the Lisa Traffic Light Dataset look like this:
-
-| Day Scene 1 | Day Scene 2 |
-:-:|:-:
-![orig_1][image9]|![orig_2][image10]
+#### Proof of concept: Testing Faster RCNN (ResNet50) on Lisa Traffic Light Dataset
+-----
+The first test is done with finetuning a *Faster RCNN Network with ResNet50 Backbone (pretrained on MS COCO)*. This network is fine tuned 200k steps and only on the [Lisa Traffic Light Dataset](https://www.kaggle.com/mbornoe/lisa-traffic-light-dataset/home).
 
 Results with the Faster RCNN ResNet architecture:
 
 | | |
 :-:|:-:
-![detection1][image3]|![detection2][image4]
 ![detection3][image5]|![detection4][image6]
 ![detection5][image7]|![detection6][image8]
 
+The network was able to generalize to the Udacity site images.
 
 
-### Training the Single Shot Detector with MobileNet Backend
+#### Training the Single Shot Detector with MobileNet Backend
+-----
+After the proof of concept succeeded, the actual training of the SSD MobileNet can be done. This training is now with the help of all four datasets, encoded in the TFRecord files.
 
+The training process runs for around 80.000 steps and reaches a mean Average Precision (at 0.5 Intersection over Union):
 
+|Class|mAP @0.5 IOU|
+|-|-|
+|Green|0.52|
+|Yellow|0.86|
+|Red|0.68|
+|N/A|0.93|
 
+The network is able to generalize over all four modalities.
+
+![tb3][image13]
 
