@@ -16,7 +16,7 @@ Self-Driving Car Engineer Nanodegree Program
 [image10]: ./training_trafficlight_sg/daySequence1b.jpg "orig_modality2"
 
 [image11]: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/img/kites_detections_output.jpg "tensorflow_object"
-
+[image12]: ./training_trafficlight_sg/datasets_images.png "datasets"
 
 ## Training a Traffic Lights Detection and Classification Network
 
@@ -27,19 +27,20 @@ To build up a robust and computational efficient system for traffic light detect
 - [What framework to use for training and inference (TensorFlow can be used in the car environment)](#framework)
 - [What neural network architecture to use](#neural-network-architectures)
 - [What datasets for training can be used](#dataset)
+- How to setup training with the chosen framework
 - How to augment images for creating a robust network
 - How to monitor the training of the chosen model
 - How to deploy the trained model to the car environment
 
 
 ### Framework
-
+-----
 The [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) is a way to tackle the problem. Next to other really handy frameworks like [Darknet YOLO](https://pjreddie.com/darknet/yolo/), it is easy to use for fast prototyping, training, training monitoring and graph exports.
 
 ![detectionAPI][image11]
 
 ### Neural Network Architectures
-
+-----
 There are several architectures for object detection that have pros and cons. To name some of them:
 
 - Faster RCNN Architectures with different backends (slow but very accurate)
@@ -47,18 +48,21 @@ There are several architectures for object detection that have pros and cons. To
 - You Only Look Once (YOLO) with Darknet backends (fast and accurate)
 
 
-### Pre-Trained Network
+#### Pre-Trained Network
 
 It is usefull to start with a pre-trained network and fine tune it on the specific task. Most networks are pre-trained on object-detection datasets like [COCO Dataset](http://cocodataset.org/#home) 
 
 
 ### Dataset
-
+-----
 For this project, I want to use the following datasets for fine tuning:
 - [Lisa Traffic Light Dataset](https://www.kaggle.com/mbornoe/lisa-traffic-light-dataset/home)
 - ~~[CamVid](http://mi.eng.cam.ac.uk/research/projects/VideoRec/CamVid/)~~ (in the end not used)
 - [Bosch Small Traffic Lights Dataset](https://hci.iwr.uni-heidelberg.de/node/6132)
 - [Udacity Simulator and Site Dataset packed into TFRecord files by Shyam Jaganathan](https://drive.google.com/drive/folders/0Bz-TOGv42ojzOHhpaXJFdjdfZTA)
+
+![datasetsimages][image12]
+
 
 #### How to prepare the dataset
 
@@ -130,8 +134,56 @@ And after normalization:
 |Udacity Site Images|12775|7473|
 
 
-### Image Augmentation
+**The script outputs train_records.tfrecord and val_records.tfrecord.**
 
+
+### Setup the Training and Evaluation Pipeline
+-----
+
+The use the [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection) for the Udacity Capstone project, it is nessecary to clone the [Github Repository tensorflow/models](https://github.com/tensorflow/models). 
+
+But since the car *Carla* only supports Tensorflow 1.3.0, its crucial to checkout an older release of the repo. The official release tag 1.4.0 would be ok, but they removed the research models that we need. 
+
+* So I used this [commit as my code basis for the Tensorflow Object Detection API](https://github.com/tensorflow/models/commit/d1cdc444efb93bb4c38c6fbc619ece0b3ae3582a).
+
+
+#### Choose the pretrained model
+
+Having a look at the [Model Zoo](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md), the **ssd_mobilenet_v1_coco** is the only one that is really fast and supported by Tensorflow 1.3.0. So this may be the right choice. 
+
+* Download the pretrained weights for this model.
+
+
+#### Create the training configuration
+
+There are really good example configuration files in the [tensorflow respository](https://github.com/tensorflow/models/tree/master/research/object_detection/samples/configs). The resulting script for starting the training can be found in scripts: [ssd_mobilenetv1_coco_pipeline.config](scripts/object_detect_training/ssd_mobilenetv1_coco_pipeline.config).
+
+Here are the main parts I have changed in this configuration file:
+* num_classes
+* resizer to fixed_shape_resizer 
+* learning rate to manual_step_learning_rate 
+* data_augmentation_options
+* fine_tune_checkpoint 
+* train_input_reader
+* eval_input_reader
+* eval_config
+
+
+#### Start the training and monitoring
+
+To start the training and monitoring, adjust the paths in the [run_training_SSD_MobileNetV1.sh](scripts/object_detect_training/run_training_SSD_MobileNetV1.sh) and [run_eval_SSD_MobilenetV1.sh](scripts/object_detect_training/run_eval_SSD_MobilenetV1.sh) and start Tensorboard in the respective output directory! Be sure the traindata is located properly in the *traindata* and *valdata* directories.
+
+
+#### Evaluate after training
+
+To test the model after training, adjust the paths in the [export_graph_SSD_MobileNet.sh](scripts/object_detect_training/export_graph_SSD_MobileNet.sh) script and run it to freeze and export the tensorflow graph with embedded weights.
+
+After that, you can use the [inference.py](scripts/object_detection_inference/inference.py) script to test the model and inpaint the detections. Be sure to configure your project correctly, so that the object detection code can be included properly.
+
+
+
+### Image Augmentation
+-----
 To train a robust object detector with built-in classifier, image augmentation is a crucial point. This regularization method enforces the network to better generalize to unseen images, and thus be invariant to different image scences.
 
 The Tensorflow Object Detection API offers several image augmentation methods, that can be applied during training. For this task, I enabled the following augmentations:
