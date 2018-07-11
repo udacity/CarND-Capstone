@@ -11,4 +11,5 @@ stop_line_positions:
     - [161.76, 2303.82]
     - [351.84, 1574.65]
 model:
-   classification: 'perception/classification_sim.h5'
+   graph: 'perception/frozen_inference_graph-sim.pb'
+   labels: 'perception/label_map-sim.pbtxt'
