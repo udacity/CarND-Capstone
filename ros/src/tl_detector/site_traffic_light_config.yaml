@@ -5,3 +5,4 @@ camera_info:
   image_height: 600
 stop_line_positions:
     - [8.0, 16.2]
+is_site: True
