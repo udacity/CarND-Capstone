@@ -2,15 +2,14 @@
 
 import rospy
 from copy import deepcopy
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Int32
 from geometry_msgs.msg import PoseStamped, TwistStamped
-from styx_msgs.msg import Lane, TrafficLightArray, TrafficLight, Waypoint
-from scipy.spatial import KDTree
+from styx_msgs.msg import Lane, TrafficLight, Waypoint
 import numpy as np
 import math
 import yaml
 from speed_calculator import SpeedCalculator
-
+from waypoint_search import WaypointSearch
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
 
@@ -33,10 +32,10 @@ STOPLINE_WPS_MARGIN = 2  # Number of waypoints to use as a safety margin when st
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_waypoint_cb)
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
@@ -46,7 +45,7 @@ class WaypointUpdater(object):
         self.velocity_msg = None
         self.max_velocity = None
         self.base_waypoints_msg = None
-        self.traffic_lights_msg = None
+        self.traffic_waypoint_msg = None
         self.dbw_enabled_msg = None
 
         self.rate = rospy.Rate(50)
@@ -58,20 +57,15 @@ class WaypointUpdater(object):
         """Wait until all subscriptions has provided at least one msg."""
         while not rospy.is_shutdown():
             if None not in (self.pose_msg, self.velocity_msg, self.base_waypoints_msg,
-                            self.traffic_lights_msg, self.dbw_enabled_msg):
-                self.wp_calc = WaypointCalculator(self.base_waypoints_msg, self.load_stop_line_positions())
+                            self.traffic_waypoint_msg, self.dbw_enabled_msg):
+                self.wp_calc = WaypointCalculator(self.base_waypoints_msg)
                 break
             self.rate.sleep()
-
-    def load_stop_line_positions(self):
-        traffic_light_config_string = rospy.get_param("/traffic_light_config")
-        traffic_light_config = yaml.load(traffic_light_config_string)
-        return traffic_light_config['stop_line_positions']
 
     def loopForEver(self):
         while not rospy.is_shutdown():
             if self.dbw_enabled_msg.data:
-                waypoints = self.wp_calc.calc_waypoints(self.pose_msg, self.velocity_msg, self.traffic_lights_msg)
+                waypoints = self.wp_calc.calc_waypoints(self.pose_msg, self.velocity_msg, self.traffic_waypoint_msg)
                 self.publish_waypoints(waypoints)
             else:
                 self.wp_calc.reset()
@@ -99,24 +93,20 @@ class WaypointUpdater(object):
         """Callback for /vehicle/traffic_lights topic"""
         self.traffic_lights_msg = msg
 
-    def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+    def traffic_waypoint_cb(self, msg):
+        """Callback for /traffic_waypoint topic"""
+        self.traffic_waypoint_msg = msg
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled_msg = msg
 
 
 class WaypointCalculator(object):
-    def __init__(self, base_waypoints_msg, stop_line_positions):
+    def __init__(self, base_waypoints_msg):
         self.base_waypoints_msg = base_waypoints_msg
         self.previous_first_idx = None
         self.waypoints = None
         self.wp_search = WaypointSearch(self.base_waypoints_msg.waypoints)
-
-        # Calculate the waypoints behind closest behind the stoplines (with some margin).
-        self.stop_line_wp_indices = [self.wp_search.get_closest_waypoint_idx_behind(x, y) - STOPLINE_WPS_MARGIN
-                                     for x, y in stop_line_positions]
         self.__set_max_velocity()
 
     def reset(self):
@@ -137,7 +127,7 @@ class WaypointCalculator(object):
         assert(all(self.max_velocity == get_waypoint_velocity(waypoint)
                    for waypoint in self.base_waypoints_msg.waypoints))
 
-    def calc_waypoints(self, pose_msg, velocity_msg, traffic_lights_msg):
+    def calc_waypoints(self, pose_msg, velocity_msg, traffic_waypoint_msg):
         # Extract base_waypoints ahead of vehicle as a starting point for the final_waypoints.
         first_idx = self.wp_search.get_closest_waypoint_idx_ahead(pose_msg.pose.position.x,
                                                                   pose_msg.pose.position.y)
@@ -156,7 +146,7 @@ class WaypointCalculator(object):
 
         # Calculate the final_waypoints
         self.__accelerate_to_speed_limit()
-        self.__adjust_for_traffic_lights(first_idx, traffic_lights_msg)
+        self.__adjust_for_traffic_lights(first_idx, traffic_waypoint_msg)
         self.__assert_speed_limit()
         return self.waypoints
 
@@ -198,24 +188,21 @@ class WaypointCalculator(object):
             distances.append(total_dist)
         return distances
 
-    def __adjust_for_traffic_lights(self, first_idx, traffic_lights_msg):
+    def __adjust_for_traffic_lights(self, first_idx, traffic_waypoint_msg):
         """Adjust the speed to break for traffic lights ahead that not is at state green.
 
         Parameters
         ----------
         first_idx : The base_waypoint index from where waypoints have been derived.
-        traffic_lights_msg : contains traffic light states
+        traffic_waypoint_msg : contains traffic-light waypoint to stop at, otherwise -1
         """
 
-        # Check if there is a stop-line along the range of waypoints
-        for base_idx in range(first_idx - STOPLINE_WPS_MARGIN, first_idx + LOOKAHEAD_WPS):
-            if base_idx in self.stop_line_wp_indices:
-                tl_idx = self.stop_line_wp_indices.index(base_idx)
-                if traffic_lights_msg.lights[tl_idx].state is not TrafficLight.GREEN:
-                    final_idx = max(0, base_idx - first_idx)
-                    rospy.loginfo("Stopping at base_idx=%s final_idx=%s", base_idx, final_idx)
-                    self.__stop_at_waypoint(final_idx)
-                    break
+        if traffic_waypoint_msg.data is not -1:
+            stop_idx = (traffic_waypoint_msg.data - first_idx) % len(self.base_waypoints_msg.waypoints)
+            stop_idx_with_margin = max(0, stop_idx - STOPLINE_WPS_MARGIN)
+
+            rospy.loginfo("Stopping at base_idx=%s final_idx=%s", traffic_waypoint_msg.data, stop_idx_with_margin)
+            self.__stop_at_waypoint(stop_idx_with_margin)
         else:
             rospy.loginfo("No speed adjustments for traffic lights.")
 
@@ -286,42 +273,6 @@ class WaypointCalculator(object):
                 # velocity can be limited to the max allowed value here.
                 rospy.logerr('Calculated velocity %s exceeds max allowed value %s.', velocity, self.max_velocity)
                 set_waypoint_velocity(self.waypoints, i, self.max_velocity)
-
-
-class WaypointSearch(object):
-    """Organize waypoints to make it fast to search for the closest to a position"""
-    def __init__(self, waypoints):
-        # Preprocess waypoints using the k-d tree algorithm
-        self.waypoints_2d = [[wp.pose.pose.position.x, wp.pose.pose.position.y] for wp in waypoints]
-        self.waypoints_tree = KDTree(self.waypoints_2d)
-
-    def get_closest_waypoint_idx_ahead(self, x, y):
-        closest_idx = self.get_closest_waypoint_idx(x, y)
-
-        if not self.__is_closest_idx_ahead(closest_idx, x, y):
-            closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
-        return closest_idx
-
-    def get_closest_waypoint_idx_behind(self, x, y):
-        closest_idx = self.get_closest_waypoint_idx(x, y)
-        if self.__is_closest_idx_ahead(closest_idx, x, y):
-            closest_idx = (closest_idx - 1) % len(self.waypoints_2d)
-        return closest_idx
-
-    def get_closest_waypoint_idx(self, x, y):
-        return self.waypoints_tree.query([x, y], 1)[1]
-
-    def __is_closest_idx_ahead(self, closest_idx, x, y):
-        """ Check if closest_idx is ahead or behind position"""
-        closest_coord = self.waypoints_2d[closest_idx]
-        prev_coord = self.waypoints_2d[closest_idx - 1]
-
-        # Equation for hyperplane through closest_coord
-        cl_vect = np.array(closest_coord)
-        prev_vect = np.array(prev_coord)
-        pos_vect = np.array([x, y])
-        val = np.dot(cl_vect - prev_vect, pos_vect - cl_vect)
-        return val < 0
 
 
 # Helper functions
