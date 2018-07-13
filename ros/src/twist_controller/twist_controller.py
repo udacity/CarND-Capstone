@@ -1,7 +1,7 @@
 import rospy
 from yaw_controller import YawController
 from lowpass import LowPassFilter
-from pid import PID
+from twiddle import Twiddle
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -23,7 +23,7 @@ class Controller(object):
         self.max_steer_angle = max_steer_angle
 
         self.yaw_controller = YawController(wheel_base, steer_ratio, 0.1, max_lat_accel, max_steer_angle)
-        self.throttle_controller = PID(kp=1.5, ki=0.1, kd=0.0, mn=0.0, mx=0.2)
+        self.throttle_controller = Twiddle(kp=1.5, ki=0.1, kd=0.0, mn=0.0, mx=0.2)
         self.vel_lpf = LowPassFilter(tau=0.5, ts=0.02)
         self.last_time = rospy.get_time()
 
