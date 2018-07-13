@@ -87,7 +87,7 @@ class WaypointUpdater(object):
         closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         lane_waypoints = self.base_lane.waypoints
-        base_waypoints = self.calc_base_waypoints(lane_waypoints, closest_idx, farthest_idx)
+        base_waypoints = self.calc_base_waypoints(lane_waypoints, closest_idx)
 
         if self.stopline_wp_idx == -1 or self.stopline_wp_idx >= farthest_idx:
             lane.waypoints = base_waypoints
@@ -98,9 +98,10 @@ class WaypointUpdater(object):
 
     @staticmethod
     def calc_base_waypoints(lane_waypoints, closest_idx):
-        # No buffer overrun, end is auto-truncated at end in Python
         farthest_idx = closest_idx + LOOKAHEAD_WPS
-        base_waypoints = lane_waypoints[closest_idx: farthest_idx]
+        # No buffer over/under-run, auto-truncated
+        base_waypoints = lane_waypoints[closest_idx:farthest_idx]
+        base_waypoints += lane_waypoints[0:LOOKAHEAD_WPS - len(base_waypoints)]
         return base_waypoints
 
     def decelerate_waypoints(self, waypoints, closest_idx):
