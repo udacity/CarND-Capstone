@@ -6,4 +6,5 @@ camera_info:
 stop_line_positions:
     - [8.0, 16.2]
 model:
-  classification: 'perception/classification_site.h5'
+   graph: 'perception/frozen_inference_graph-real.pb'
+   labels: 'perception/label_map-real.pbtxt'
