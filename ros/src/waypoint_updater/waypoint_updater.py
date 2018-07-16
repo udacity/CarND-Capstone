@@ -139,7 +139,8 @@ class WaypointCalculator(object):
             self.preceding_waypoint.acceleration = 0.0
         elif self.previous_first_idx != first_idx:
             # Copy the preceding waypoint before updating the waypoint list.
-            self.preceding_waypoint = self.waypoints[first_idx - self.previous_first_idx - 1]
+            self.preceding_waypoint = self.waypoints[(first_idx - self.previous_first_idx - 1) %
+                                                     len(self.base_waypoints_msg.waypoints)]
 
         self.waypoints = deepcopy(self.base_waypoints_msg.waypoints[first_idx:first_idx + LOOKAHEAD_WPS])
         self.previous_first_idx = first_idx
@@ -159,27 +160,22 @@ class WaypointCalculator(object):
         speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=current_speed,
                                      target_acceleration=0.0, current_accleration=current_acceleration,
                                      acceleration_limit=10.0, jerk_limit=10.0)
-        distances = self.__calc_distances(self.preceding_waypoint)
+        distances = self.__calc_distances()
         for idx in range(len(self.waypoints)):
             speed = speed_calc.get_speed_at_distance(distances[idx])
             set_waypoint_velocity(self.waypoints, idx, speed)
             acceleration = speed_calc.get_acceleration_at_distance(distances[idx])
             self.waypoints[idx].acceleration = acceleration
 
-    def __calc_distances(self, preceding_waypoint):
-        """Calculates the distances from the preceding waypoint to each of the waypoints in the path.
-
-        Parameters
-        ----------
-        preceding_waypoint : The last visited waypoint behind the vehicle.
-        """
+    def __calc_distances(self):
+        """Calculates the distances from the preceding waypoint to each of the waypoints in the path."""
         total_dist = 0
         distances = []
 
         def dl(a, b):
             return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2)
 
-        total_dist += dl(preceding_waypoint.pose.pose.position,
+        total_dist += dl(self.preceding_waypoint.pose.pose.position,
                          self.waypoints[0].pose.pose.position)
         distances.append(total_dist)
 
@@ -201,8 +197,12 @@ class WaypointCalculator(object):
             stop_idx = (traffic_waypoint_msg.data - first_idx) % len(self.base_waypoints_msg.waypoints)
             stop_idx_with_margin = max(0, stop_idx - STOPLINE_WPS_MARGIN)
 
-            rospy.loginfo("Stopping at base_idx=%s final_idx=%s", traffic_waypoint_msg.data, stop_idx_with_margin)
-            self.__stop_at_waypoint(stop_idx_with_margin)
+            if stop_idx_with_margin < len(self.waypoints):
+                rospy.loginfo("Stopping at base_idx=%s final_idx=%s", traffic_waypoint_msg.data, stop_idx_with_margin)
+                self.__stop_at_waypoint(stop_idx_with_margin)
+            else:
+                rospy.loginfo("Stopping at base_idx=%s final_idx=%s (beyond planed trajectory)",
+                              traffic_waypoint_msg.data, stop_idx_with_margin)
         else:
             rospy.loginfo("No speed adjustments for traffic lights.")
 
@@ -214,8 +214,10 @@ class WaypointCalculator(object):
         stop_idx : The waypoint index where the vehicle should reach a speed of zero.
         """
 
+        stop_idx += 1  # Offset for preceding waypoint
+
         # Calculate the reverse distances from the stop_idx and backwards.
-        distances = [0.0] + self.__calc_distances(self.preceding_waypoint)
+        distances = [0.0] + self.__calc_distances()  # distance to preceding waypoint is 0
         distances = [distances[stop_idx] - distance for distance in distances]
 
         # Try more and more harsh jerk_limits until finding one that decelerate to stop in time.
@@ -226,19 +228,18 @@ class WaypointCalculator(object):
                      [get_waypoint_velocity(wp) for wp in self.waypoints]
             accs = [self.preceding_waypoint.acceleration] + \
                    [wp.acceleration for wp in self.waypoints]
-            temp_stop_idx = stop_idx + 1  # Offset due to inserting the preceding waypoint.
 
-            # Set the speed and acceleration after the temp_stop_idx to zero.
-            speeds[temp_stop_idx + 1:] = [0.0] * (len(speeds) - temp_stop_idx - 1)
-            accs[temp_stop_idx + 1:] = [0.0] * (len(accs) - temp_stop_idx - 1)
+            # Set the speed and acceleration after the stop_idx to zero.
+            speeds[stop_idx + 1:] = [0.0] * (len(speeds) - stop_idx - 1)
+            accs[stop_idx + 1:] = [0.0] * (len(accs) - stop_idx - 1)
 
-            # Calculate the deceleration backwards from the temp_stop_idx,
+            # Calculate the deceleration backwards from the stop_idx,
             # until reaching a speed that is greater than what was already requested.
             speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=0.0,
                                          target_acceleration=0.0, current_accleration=0.0,
                                          acceleration_limit=10.0, jerk_limit=jerk_limit)
 
-            for idx in range(temp_stop_idx, -1, -1):
+            for idx in range(stop_idx, -1, -1):
                 speed = speed_calc.get_speed_at_distance(distances[idx])
                 acc = -speed_calc.get_acceleration_at_distance(distances[idx])
                 if speed > speeds[idx] or np.isclose(speed, speeds[idx]):
