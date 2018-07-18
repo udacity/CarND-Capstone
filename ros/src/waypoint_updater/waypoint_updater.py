@@ -110,6 +110,12 @@ class WaypointUpdater(object):
         # No buffer over/under-run, auto-truncated
         base_waypoints = lane_waypoints[closest_idx:farthest_idx]
         base_waypoints += lane_waypoints[0:LOOKAHEAD_WPS - len(base_waypoints)]
+
+        # Last waypoint has speed set to 0, override it to nudge the car forward on wraparound
+        for bwp in base_waypoints:
+            if bwp.twist.twist.linear.x == 0:
+                bwp.twist.twist.linear.x = 10
+
         return base_waypoints
 
     def decelerate_waypoints(self, waypoints, closest_idx):
