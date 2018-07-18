@@ -50,9 +50,6 @@ class WaypointUpdater(object):
 
         self.rate = rospy.Rate(50)
 
-        self.waitUntilInit()
-        self.loopForEver()
-
     def waitUntilInit(self):
         """Wait until all subscriptions has provided at least one msg."""
         while not rospy.is_shutdown():
@@ -107,7 +104,9 @@ class WaypointCalculator(object):
         self.previous_first_idx = None
         self.waypoints = None
         self.wp_search = WaypointSearch(self.base_waypoints_msg.waypoints)
-        self.__set_max_velocity()
+        self.set_max_velocity()
+        self.set_target_velocity()
+        self.set_jerk_limit()
 
     def reset(self):
         """Reset internal state.
@@ -117,15 +116,30 @@ class WaypointCalculator(object):
         # Let preceding_waypoint be calculated from current vehicle state, instead of using some out-dated index.
         self.previous_first_idx = None
 
-    def __set_max_velocity(self):
-        """Set the max_velocity according to velocities in the base waypoints.
+    def set_max_velocity(self, max_velocity=None):
+        """Set the max_velocity.
 
-          All base waypoints should have the same velocity (in this project). This assumption is also verified to be
-          correct.
         """
-        self.max_velocity = get_waypoint_velocity(self.base_waypoints_msg.waypoints[0])
-        assert(all(self.max_velocity == get_waypoint_velocity(waypoint)
+        if max_velocity is None:
+            # All base waypoints should have the same velocity (in this project).
+            self.max_velocity = get_waypoint_velocity(self.base_waypoints_msg.waypoints[0])
+            # Verify assumption above.
+            assert(all(self.max_velocity == get_waypoint_velocity(waypoint)
                    for waypoint in self.base_waypoints_msg.waypoints))
+        else:
+            self.max_velocity = max_velocity
+
+    def set_target_velocity(self, target_velocity=None):
+        if target_velocity is None:
+            self.target_velocity = self.max_velocity
+        else:
+            self.target_velocity = target_velocity
+            if self.max_velocity < self.target_velocity:
+                rospy.logwarn("Increasing max_velocity from %s to %s", self.max_velocity, self.target_velocity)
+                self.max_velocity = self.target_velocity
+
+    def set_jerk_limit(self, jerk_limit=10.0):
+        self.jerk_limit = jerk_limit
 
     def calc_waypoints(self, pose_msg, velocity_msg, traffic_waypoint_msg):
         # Extract base_waypoints ahead of vehicle as a starting point for the final_waypoints.
@@ -157,9 +171,9 @@ class WaypointCalculator(object):
         # Base the acceleration on the velocity from preceding waypoint.
         current_speed = get_waypoint_velocity(self.preceding_waypoint)
         current_acceleration = self.preceding_waypoint.acceleration
-        speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=current_speed,
+        speed_calc = SpeedCalculator(target_speed=self.target_velocity, current_speed=current_speed,
                                      target_acceleration=0.0, current_accleration=current_acceleration,
-                                     acceleration_limit=10.0, jerk_limit=10.0)
+                                     acceleration_limit=10.0, jerk_limit=self.jerk_limit)
         distances = self.__calc_distances()
         for idx in range(len(self.waypoints)):
             speed = speed_calc.get_speed_at_distance(distances[idx])
@@ -287,6 +301,8 @@ def set_waypoint_velocity(waypoints, idx, velocity):
 
 if __name__ == '__main__':
     try:
-        WaypointUpdater()
+        wp_updater = WaypointUpdater()
+        wp_updater.waitUntilInit()
+        wp_updater.loopForEver()
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start waypoint updater node.')

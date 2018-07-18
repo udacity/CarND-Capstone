@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Empty
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
@@ -43,6 +43,13 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+        if rospy.get_param('~tuning_active', False):
+            rospy.loginfo("Controller tuning is active.")
+            rospy.Subscriber('/set_next_tuning', Empty, self.set_next_tuning_cb)
+            tuning_active = True
+        else:
+            tuning_active = False
+
         self.controller = Controller(vehicle_mass=rospy.get_param('~vehicle_mass', 1736.35),
                                      fuel_capacity=rospy.get_param('~fuel_capacity', 13.5),
                                      brake_deadband=rospy.get_param('~brake_deadband', .1),
@@ -52,7 +59,8 @@ class DBWNode(object):
                                      wheel_base=rospy.get_param('~wheel_base', 2.8498),
                                      steer_ratio=rospy.get_param('~steer_ratio', 14.8),
                                      max_lat_accel=rospy.get_param('~max_lat_accel', 3.),
-                                     max_steer_angle=rospy.get_param('~max_steer_angle', 8.))
+                                     max_steer_angle=rospy.get_param('~max_steer_angle', 8.),
+                                     tuning_active=tuning_active)
 
         # Topics
         self.current_vel = None
@@ -118,6 +126,9 @@ class DBWNode(object):
 
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg.data
+
+    def set_next_tuning_cb(self, msg):
+        self.controller.set_next_params()
 
 
 if __name__ == '__main__':
