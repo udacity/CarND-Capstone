@@ -5,18 +5,15 @@ import numpy as np
 
 class Twiddle(pid.PID):
 
-    def __init__(self, kp, ki, kd,
+    def __init__(self, coeffs,
                  mn=pid.MIN_NUM, mx=pid.MAX_NUM,
-                 dkp=None, dki=None, dkd=None,
+                 delta_coeffs=None,
                  active=False):
-        super(Twiddle, self).__init__(kp, ki, kd, mn, mx)
+        super(Twiddle, self).__init__(coeffs, mn, mx)
 
-        # Tuning delta for each coefficient kp, ki and kd
-        self.delta_coeffs = [dkp if dkp is not None else kp * 0.1,
-                             dki if dki is not None else ki * 0.1,
-                             dkd if dkd is not None else kd * 0.1]
+        # Tuning delta for each coefficient
+        self.delta_coeffs = delta_coeffs if delta_coeffs is not None else [coeff * 0.1 for coeff in coeffs]
         self.coeff_idx = 0
-
         self.active = active
         self.lowest_error = np.inf
         self.tuning_count = 0

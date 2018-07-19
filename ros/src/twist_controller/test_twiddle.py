@@ -8,14 +8,14 @@ import math
 class TestTwiddle(unittest.TestCase):
     def test_twiddle_inactive(self):
         """Twiddle should behave just as the PID controller when inactive"""
-        pid = PID(kp=1.0, ki=2.0, kd=3.0)
-        twiddle = Twiddle(kp=1.0, ki=2.0, kd=3.0)
+        pid = PID(coeffs=[1.0, 2.0, 3.0])
+        twiddle = Twiddle(coeffs=[1.0, 2.0, 3.0])
         for i in range(1000):
             error = random.uniform(-10.0, 10.0)
             self.assertEqual(twiddle.step(error, 1), pid.step(error, 1))
 
     def test_twiddle_improves_pid_controller(self):
-        twiddle = Twiddle(kp=0.01, ki=0.0001, kd=0.03, active=True)
+        twiddle = Twiddle(coeffs=[0.01, 0.0001, 0.03], active=True)
         lowest_error = float('inf')
         verify_runs = [0, 500, 1000]
         sys = TestSystem()
