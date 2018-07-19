@@ -3,6 +3,7 @@ import numpy as np
 from speed_calculator import SpeedCalculator
 import matplotlib.pyplot as plt
 
+
 class TestAcceleration(unittest.TestCase):
     def test_acceleration_distribution(self):
         """Test how the acceleration is distributed along an distance.
@@ -80,7 +81,6 @@ class TestAcceleration(unittest.TestCase):
             self.assertEqual(speeds[-1], 30.0)
             self.assertTrue(all(accs <= acc_limit))
 
-
             acceleration_distance = speeds.index(30.0)
             if is_acceleration_effectively_limited:
                 if acceleration_distance < previous_acceleration_distance:
@@ -97,6 +97,41 @@ class TestAcceleration(unittest.TestCase):
             previous_acceleration_distance = acceleration_distance
         self.assertTrue(numFasterAccelerations > 0)
         self.assertTrue(numEqualAccelerations > 0)
+
+    def test_imbalanced_acceleration(self):
+        """Test non-equal current and target acceleration.
+
+        First calculate a balanced acceleration curve as reference,
+        then make sure that any values along that curve gives roughly the same output.
+
+        Expected behavior:
+            Continuing on an ongoing acceleration should produce similar result as in the initial calculation.
+        """
+        target_speed = 30.0
+        distances = np.arange(0.0, 100.0, 1.0)
+
+        ref_speed_calc = SpeedCalculator(target_speed=target_speed, current_speed=0.0,
+                                         target_acceleration=0.0, current_accleration=0.0,
+                                         acceleration_limit=10.0, jerk_limit=10.0)
+        ref_speeds = [ref_speed_calc.get_speed_at_distance(distance) for distance in distances]
+        ref_accs = [ref_speed_calc.get_acceleration_at_distance(distance) for distance in distances]
+#        plt.figure(1), plt.plot(distances, ref_speeds, 'r')
+#        plt.figure(2), plt.plot(distances, ref_accs, 'r')
+        for i in range(len(distances)):
+            current_speed = ref_speeds[i]
+            current_acceleration = ref_accs[i]
+
+            speed_calc = SpeedCalculator(target_speed=target_speed, current_speed=current_speed,
+                                         target_acceleration=0.0, current_accleration=current_acceleration,
+                                         acceleration_limit=10.0, jerk_limit=10.0)
+            speeds = [speed_calc.get_speed_at_distance(distance - distances[i]) for distance in distances[i:]]
+            accs = [speed_calc.get_acceleration_at_distance(distance - distances[i]) for distance in distances[i:]]
+            np.testing.assert_array_almost_equal(speeds, ref_speeds[i:], decimal=1)
+            np.testing.assert_array_almost_equal(accs, ref_accs[i:], decimal=1)
+#            plt.figure(1), plt.plot(distances[i:], speeds, 'b')
+#            plt.figure(2), plt.plot(distances[i:], accs, 'b')
+
+#        plt.show()
 
     def test_deceleration_distribution(self):
         """Test how the deceleration is distributed along an distance.
