@@ -25,7 +25,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
-STOPLINE_WPS_MARGIN = 2  # Number of waypoints to use as a safety margin when stopping at traffic lights.
+STOPLINE_MARGIN = 3.0  # The distance to use as extra margin when stopping at traffic lights.
 MAX_VELOCITY_MARGIN = 0.5  # Max velocity safety margin in m/s.
 ACCELERATION_PERMITTED = 10.0  # Permitted acceleration in Carla.
 ACCELERATION_LIMIT_MARGIN = 1.0  # Use a safety margin of 1 m/s^2 to make sure not exceeding permitted value.
@@ -213,7 +213,7 @@ class WaypointCalculator(object):
 
         if traffic_waypoint_msg.data is not -1:
             stop_idx = (traffic_waypoint_msg.data - first_idx) % len(self.base_waypoints_msg.waypoints)
-            stop_idx_with_margin = max(0, stop_idx - STOPLINE_WPS_MARGIN)
+            stop_idx_with_margin = max(0, stop_idx - self.__calc_stopline_waypoint_margin(traffic_waypoint_msg.data))
 
             if stop_idx_with_margin < len(self.waypoints):
                 rospy.loginfo("Stopping at base_idx=%s final_idx=%s", traffic_waypoint_msg.data, stop_idx_with_margin)
@@ -223,6 +223,27 @@ class WaypointCalculator(object):
                               traffic_waypoint_msg.data, stop_idx_with_margin)
         else:
             rospy.loginfo("No speed adjustments for traffic lights.")
+
+    def __calc_stopline_waypoint_margin(self, stopline_wps_idx):
+        """Calculate the stopline margin in number of waypoints
+
+        Parameters
+        ----------
+        stopline_wps_idx : The base waypoint index of the stopline
+        """
+
+        def dl(a, b):
+            return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2)
+
+        total_dist = 0
+        current_idx = stopline_wps_idx
+        while total_dist <= STOPLINE_MARGIN:
+            previous_idx = current_idx
+            current_idx = (current_idx - 1) % len(self.base_waypoints_msg.waypoints)
+            total_dist += dl(self.base_waypoints_msg.waypoints[previous_idx].pose.pose.position,
+                             self.base_waypoints_msg.waypoints[current_idx].pose.pose.position)
+
+        return (stopline_wps_idx - current_idx) % len(self.base_waypoints_msg.waypoints)
 
     def __stop_at_waypoint(self, stop_idx):
         """ Reduce speed to stop at stop_idx.
