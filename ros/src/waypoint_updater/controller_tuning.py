@@ -59,12 +59,12 @@ class TuningSettings(object):
         if self.state == self.State.ACCELERATE and np.isclose(current_speed, self.settings[self.idx][0], atol=0.5):
             self.state = self.State.KEEP_SPEED
             self.start_time = rospy.get_time()
-        elif self.state == self.State.KEEP_SPEED and (rospy.get_time() - self.start_time) > 5.0:
+        elif self.state == self.State.KEEP_SPEED and (rospy.get_time() - self.start_time) > 20.0:
             self.state = self.State.DECELERATE
         elif self.state == self.State.DECELERATE and np.isclose(current_speed, 0.0, atol=0.005):
             self.state = self.State.STAND_STILL
             self.start_time = rospy.get_time()
-        elif self.state == self.State.STAND_STILL and (rospy.get_time() - self.start_time) > 2.0:
+        elif self.state == self.State.STAND_STILL and (rospy.get_time() - self.start_time) > 5.0:
             self.state = self.State.ACCELERATE
             self.idx += 1
             if self.idx == len(self.settings):

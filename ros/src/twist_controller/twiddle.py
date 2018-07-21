@@ -29,14 +29,14 @@ class Twiddle(pid.PID):
         """Calculate the score for the twiddle algorithm
 
         Larger errors are punished more by taking the square.
-        Negative errors, that is when the actual value is above the target value, is punished by an extra factor of 10.
+        Negative errors, that is when the actual value is above the target value, is punished by an extra factor of 2.
         """
         if error > 0.0:
             # Actual value is below target value.
             self.accumulated_error += (error**2.0)
         else:
             # Actual value is above target value.
-            self.accumulated_error += 10.0 * (error**2.0)
+            self.accumulated_error += 2.0 * (error**2.0)
         return super(Twiddle, self).step(error, sample_time)
 
     def set_next_params(self):
