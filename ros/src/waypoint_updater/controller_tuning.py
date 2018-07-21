@@ -26,7 +26,7 @@ class ControllerTuning(WaypointUpdater):
 
                 # Update settings in waypoint calculator
                 self.wp_calc.set_target_velocity(target_velocity)
-                self.wp_calc.set_jerk_limit(jerk_limit)
+                self.wp_calc.set_limits(jerk_limit=jerk_limit)
 
                 waypoints = self.wp_calc.calc_waypoints(self.pose_msg, self.velocity_msg, self.traffic_waypoint_msg)
                 self.publish_waypoints(waypoints)

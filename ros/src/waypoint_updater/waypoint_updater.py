@@ -4,10 +4,9 @@ import rospy
 from copy import deepcopy
 from std_msgs.msg import Bool, Int32
 from geometry_msgs.msg import PoseStamped, TwistStamped
-from styx_msgs.msg import Lane, TrafficLight, Waypoint
+from styx_msgs.msg import Lane, Waypoint
 import numpy as np
 import math
-import yaml
 from speed_calculator import SpeedCalculator
 from waypoint_search import WaypointSearch
 '''
@@ -26,7 +25,14 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
-STOPLINE_WPS_MARGIN = 2  # Number of waypoints to use as a safety margin when stopping at traffic lights.
+STOPLINE_MARGIN = 3.0  # The distance to use as extra margin when stopping at traffic lights.
+MAX_VELOCITY_MARGIN = 0.5  # Max velocity safety margin in m/s.
+ACCELERATION_PERMITTED = 10.0  # Permitted acceleration in Carla.
+ACCELERATION_LIMIT_MARGIN = 1.0  # Use a safety margin of 1 m/s^2 to make sure not exceeding permitted value.
+ACCELERATION_LIMIT = ACCELERATION_PERMITTED - ACCELERATION_LIMIT_MARGIN
+JERK_PERMITTED = 10.0  # Permitted jerk in Carla.
+JERK_LIMIT_MARGIN = 1.0  # Use a safety margin of 1 m/s^3 to make sure not exceeding permitted value.
+JERK_LIMIT = JERK_PERMITTED - JERK_LIMIT_MARGIN
 
 
 class WaypointUpdater(object):
@@ -86,10 +92,6 @@ class WaypointUpdater(object):
         """Callback for /base_waypoints topic"""
         self.base_waypoints_msg = msg
 
-    def traffic_lights_cb(self, msg):
-        """Callback for /vehicle/traffic_lights topic"""
-        self.traffic_lights_msg = msg
-
     def traffic_waypoint_cb(self, msg):
         """Callback for /traffic_waypoint topic"""
         self.traffic_waypoint_msg = msg
@@ -106,7 +108,7 @@ class WaypointCalculator(object):
         self.wp_search = WaypointSearch(self.base_waypoints_msg.waypoints)
         self.set_max_velocity()
         self.set_target_velocity()
-        self.set_jerk_limit()
+        self.set_limits()
 
     def reset(self):
         """Reset internal state.
@@ -126,6 +128,7 @@ class WaypointCalculator(object):
             # Verify assumption above.
             assert(all(self.max_velocity == get_waypoint_velocity(waypoint)
                    for waypoint in self.base_waypoints_msg.waypoints))
+            self.max_velocity = max(0.0, self.max_velocity - MAX_VELOCITY_MARGIN)
         else:
             self.max_velocity = max_velocity
 
@@ -138,7 +141,8 @@ class WaypointCalculator(object):
                 rospy.logwarn("Increasing max_velocity from %s to %s", self.max_velocity, self.target_velocity)
                 self.max_velocity = self.target_velocity
 
-    def set_jerk_limit(self, jerk_limit=10.0):
+    def set_limits(self, jerk_limit=JERK_LIMIT, acceleration_limit=ACCELERATION_LIMIT):
+        self.acceleration_limit = acceleration_limit
         self.jerk_limit = jerk_limit
 
     def calc_waypoints(self, pose_msg, velocity_msg, traffic_waypoint_msg):
@@ -173,7 +177,7 @@ class WaypointCalculator(object):
         current_acceleration = self.preceding_waypoint.acceleration
         speed_calc = SpeedCalculator(target_speed=self.target_velocity, current_speed=current_speed,
                                      target_acceleration=0.0, current_accleration=current_acceleration,
-                                     acceleration_limit=10.0, jerk_limit=self.jerk_limit)
+                                     acceleration_limit=self.acceleration_limit, jerk_limit=self.jerk_limit)
         distances = self.__calc_distances()
         for idx in range(len(self.waypoints)):
             speed = speed_calc.get_speed_at_distance(distances[idx])
@@ -209,7 +213,7 @@ class WaypointCalculator(object):
 
         if traffic_waypoint_msg.data is not -1:
             stop_idx = (traffic_waypoint_msg.data - first_idx) % len(self.base_waypoints_msg.waypoints)
-            stop_idx_with_margin = max(0, stop_idx - STOPLINE_WPS_MARGIN)
+            stop_idx_with_margin = max(0, stop_idx - self.__calc_stopline_waypoint_margin(traffic_waypoint_msg.data))
 
             if stop_idx_with_margin < len(self.waypoints):
                 rospy.loginfo("Stopping at base_idx=%s final_idx=%s", traffic_waypoint_msg.data, stop_idx_with_margin)
@@ -219,6 +223,27 @@ class WaypointCalculator(object):
                               traffic_waypoint_msg.data, stop_idx_with_margin)
         else:
             rospy.loginfo("No speed adjustments for traffic lights.")
+
+    def __calc_stopline_waypoint_margin(self, stopline_wps_idx):
+        """Calculate the stopline margin in number of waypoints
+
+        Parameters
+        ----------
+        stopline_wps_idx : The base waypoint index of the stopline
+        """
+
+        def dl(a, b):
+            return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2 + (a.z - b.z)**2)
+
+        total_dist = 0
+        current_idx = stopline_wps_idx
+        while total_dist <= STOPLINE_MARGIN:
+            previous_idx = current_idx
+            current_idx = (current_idx - 1) % len(self.base_waypoints_msg.waypoints)
+            total_dist += dl(self.base_waypoints_msg.waypoints[previous_idx].pose.pose.position,
+                             self.base_waypoints_msg.waypoints[current_idx].pose.pose.position)
+
+        return (stopline_wps_idx - current_idx) % len(self.base_waypoints_msg.waypoints)
 
     def __stop_at_waypoint(self, stop_idx):
         """ Reduce speed to stop at stop_idx.
@@ -235,8 +260,8 @@ class WaypointCalculator(object):
         distances = [distances[stop_idx] - distance for distance in distances]
 
         # Try more and more harsh jerk_limits until finding one that decelerate to stop in time.
-        # When also unable to stop using the max permitted jerk limit of 10 m/s^3, then deceleration is skipped.
-        for jerk_limit in np.arange(2.5, 10.1, 2.5):
+        # When also unable to stop using the max permitted jerk limit, then deceleration is skipped.
+        for jerk_limit in np.arange(2.5, self.jerk_limit, 2.5):
             # Create temporary lists with speed and acceleration to be modified below.
             speeds = [get_waypoint_velocity(self.preceding_waypoint)] + \
                      [get_waypoint_velocity(wp) for wp in self.waypoints]
@@ -251,7 +276,7 @@ class WaypointCalculator(object):
             # until reaching a speed that is greater than what was already requested.
             speed_calc = SpeedCalculator(target_speed=self.max_velocity, current_speed=0.0,
                                          target_acceleration=0.0, current_accleration=0.0,
-                                         acceleration_limit=10.0, jerk_limit=jerk_limit)
+                                         acceleration_limit=self.acceleration_limit, jerk_limit=jerk_limit)
 
             for idx in range(stop_idx, -1, -1):
                 speed = speed_calc.get_speed_at_distance(distances[idx])
