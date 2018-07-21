@@ -24,7 +24,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 20  # Number of waypoints we will publish. You can change this number
 MAX_DECEL = 0.5
 
 
@@ -86,7 +86,7 @@ class WaypointUpdater(object):
 
         closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
-        base_waypoints = self.base_lane.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
+        base_waypoints = self.base_lane.waypoints[closest_idx: farthest_idx]
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
             # No buffer overrun, end is auto-truncated at end in Python
             lane.waypoints = base_waypoints
@@ -117,11 +117,11 @@ class WaypointUpdater(object):
 
     # whole track (Lane type) is provided once, so save away for later use, optimized for searching
     def waypoints_cb(self, waypoints):
-        self.base_lane = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y]
                                  for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
+        self.base_lane = waypoints
 
     def traffic_cb(self, msg):
         self.stopline_wp_idx = msg.data
