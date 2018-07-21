@@ -23,11 +23,10 @@ class Controller(object):
         self.max_steer_angle = max_steer_angle
 
         self.yaw_controller = YawController(wheel_base, steer_ratio, 0.1, max_lat_accel, max_steer_angle)
-
         # When parameter tuning_active is false, then Twiddle behaves just like a PID controller.
         self.throttle_controller = Twiddle(
-            coeffs=[1.1999999999999993, 0.0, -0.003874204890000004],
-            delta_coeffs=[0.004031356972346669, 0.0, 0.0002503155504993245],
+            coeffs=[1.2039910434026229, 0.0, -0.0035236404646812065],
+            delta_coeffs=[0.0035204594750199024, 0.0, 0.00014780882941434616],
             mn=0.0, mx=1.0, active=tuning_active)
         self.vel_lpf = LowPassFilter(tau=0.5, ts=0.02)
         self.last_time = rospy.get_time()
