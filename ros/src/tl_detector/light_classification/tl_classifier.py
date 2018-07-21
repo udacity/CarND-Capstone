@@ -19,9 +19,9 @@ class TLClassifier(object):
     https://github.com/tensorflow/models/blob/master/research/object_detection/inference/detection_inference.py
 
     """
-    def __init__(self, path_to_tensorflow_graph):
+    def __init__(self, path_to_tensorflow_graph, confidence_thresh):
         # Threshold for detections
-        self.detection_threshold = 0.5
+        self.detection_threshold = confidence_thresh
 
         # Create the TensorFlow session in which the graph is loaded
         self.session = tf.Session()

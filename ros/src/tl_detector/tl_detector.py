@@ -52,9 +52,10 @@ class TLDetector(object):
 
         # Load the specific Tensorflow graph (site or sim is decided automatically)
         graph_path = self.config['tensorflow_graph_path']
+        confidence_thresh = self.config['tensorflow_confidence_thesh']
 
         # Initialize the classifier
-        self.light_classifier = TLClassifier(path_to_tensorflow_graph=graph_path)
+        self.light_classifier = TLClassifier(path_to_tensorflow_graph=graph_path, confidence_thresh=confidence_thresh)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
