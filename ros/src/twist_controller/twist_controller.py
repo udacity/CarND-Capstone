@@ -26,8 +26,8 @@ class Controller(object):
 
         # When parameter tuning_active is false, then Twiddle behaves just like a PID controller.
         self.throttle_controller = Twiddle(
-            coeffs=[1.1999999999999993, -0.021952551922336052, -0.003874204890000004],
-            delta_coeffs=[0.004031356972346669, 0.00041132098483284045, 0.0002503155504993245],
+            coeffs=[1.1999999999999993, 0.0, -0.003874204890000004],
+            delta_coeffs=[0.004031356972346669, 0.0, 0.0002503155504993245],
             mn=0.0, mx=1.0, active=tuning_active)
         self.vel_lpf = LowPassFilter(tau=0.5, ts=0.02)
         self.last_time = rospy.get_time()
@@ -58,7 +58,7 @@ class Controller(object):
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel) * self.vehicle_mass * self.wheel_radius  # Brake torque in Nm
 
-#        rospy.loginfo("actualSpeed=%s, targetSpeed=%s, error=%s", current_vel, linear_vel, vel_error)
+        rospy.loginfo("actualSpeed=%s, targetSpeed=%s, error=%s", current_vel, linear_vel, vel_error)
         return throttle, brake, steering
 
     def set_next_params(self):
