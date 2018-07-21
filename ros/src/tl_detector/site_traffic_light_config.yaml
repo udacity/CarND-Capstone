@@ -8,7 +8,7 @@ camera_preprocessing:
   image_height: 600
 stop_line_positions:
     - [8.0, 16.2]
-is_site: True
 use_tensorflow_detection: True
 use_tensorflow_nth_frame: 4
+tensorflow_graph_path: 'light_classification/inference_graph/site/frozen_inference_graph.pb'
 state_count_threshold: 3

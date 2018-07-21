@@ -28,7 +28,6 @@ class TLDetector(object):
         self.waypoint_tree = None
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -51,6 +50,11 @@ class TLDetector(object):
         self.statecount_threshold = self.config['state_count_threshold']
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
+        # Load the specific Tensorflow graph (site or sim is decided automatically)
+        graph_path = self.config['tensorflow_graph_path']
+
+        # Initialize the classifier
+        self.light_classifier = TLClassifier(path_to_tensorflow_graph=graph_path)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
