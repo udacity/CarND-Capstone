@@ -36,6 +36,10 @@ class TLDetector(object):
         self.state_count = 0
         self.has_image = False
 
+        # These lists are used for FIR filtering of the detections
+        self.last_detections = []
+        self.last_detections_w_unknown = []
+
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
@@ -48,6 +52,17 @@ class TLDetector(object):
         self.preprocessing_height = self.config['camera_preprocessing']['image_height']
 
         self.statecount_threshold = self.config['state_count_threshold']
+
+        # Last detections without UNKNOWN - for FIR filtering
+        self.last_detections_size = self.config['detections_filter_size']
+
+        # Last detections with UNKNOWN - for FIR filtering
+        self.no_detections_size = self.config['no_detections_filter_size']
+
+        # If in the last detections are more than x percent of UNKNOWN detections,
+        # then the current detection is set to UNKNOWN
+        self.no_detections_thresh = self.config['no_detections_threshold']
+
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         # Load the specific Tensorflow graph (site or sim is decided automatically)
@@ -90,6 +105,34 @@ class TLDetector(object):
     def state_to_text(self, state):
         return {0: 'red', 1: 'yellow', 2: 'green', 4: 'unknown'}[state]
 
+    def add_traffic_light_detection(self, traffic_light):
+        # We manage two lists:
+        # One with the UNKNOWN- detections, and one without UNKNOWN
+        self.last_detections_w_unknown.append(traffic_light)
+
+        if traffic_light != TrafficLight.UNKNOWN:
+            self.last_detections.append(traffic_light)
+
+        # If filter is full, pop first element off
+        if len(self.last_detections) > self.last_detections_size:
+            self.last_detections.pop(0)
+
+        if len(self.last_detections_w_unknown) > self.no_detections_size:
+            self.last_detections_w_unknown.pop(0)
+
+    def get_traffic_light_detection_histogram(self):
+        return np.bincount(self.last_detections)
+
+    def get_unknown_rate(self):
+        if len(self.last_detections_w_unknown) > 0:
+            histogram = np.bincount(self.last_detections_w_unknown)
+            histogram = histogram / float(np.sum(histogram))
+            if len(histogram) == 5:
+                return float(histogram[4])
+            return 0.0
+        else:
+            return 0.0
+
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
@@ -108,7 +151,6 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-        readable_state = self.state_to_text(state)
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -116,21 +158,42 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+
+        # Add detection to last detections
+        self.add_traffic_light_detection(state)
+
+        # Get the histogram over the last detections
+        last_detections_hist = self.get_traffic_light_detection_histogram()
+
+        if len(last_detections_hist) > 0:
+            if self.get_unknown_rate() > self.no_detections_thresh:
+                # print(self.state_to_text(TrafficLight.UNKNOWN))
+                state = TrafficLight.UNKNOWN
+            else:
+                # print(self.state_to_text(np.argmax(last_detections_hist)))
+                state = np.argmax(last_detections_hist)
+
+        readable_state = self.state_to_text(state)
+
+        # Check if there was a change in the detection state
         if self.state != state:
             self.state_count = 0
             self.state = state
-        elif self.state_count >= self.statecount_threshold:
-            if self.last_state != self.state:
-                rospy.loginfo("LiveDetect: {0} | TrafficLight : {1}".format(str(self.use_tf_detection), readable_state))
-
-            self.last_state = self.state
-            # SG: I think we should break on Yellow, too
-            should_brake = state == TrafficLight.RED or state == TrafficLight.YELLOW
-            light_wp = light_wp if should_brake else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
+            # If there was no change, set if thresholds are exceeded
         else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+            if self.state_count >= self.statecount_threshold:
+                if self.last_state != self.state:
+                    rospy.loginfo("LiveDetect: {0} | TrafficLight : {1}".format(str(self.use_tf_detection), readable_state))
+
+                self.last_state = self.state
+                # SG: I think we should break on Yellow, too
+                should_brake = state == TrafficLight.RED or state == TrafficLight.YELLOW
+                light_wp = light_wp if should_brake else -1
+                self.last_wp = light_wp
+                self.upcoming_red_light_pub.publish(Int32(light_wp))
+            else:
+                self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+
         self.state_count += 1
 
     def get_closest_waypoint(self, x, y):
@@ -165,7 +228,7 @@ class TLDetector(object):
         if not self.has_image:
             return self.last_state
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
         cv_image = cv2.resize(cv_image, (self.preprocessing_width, self.preprocessing_height))
         cv_image = np.expand_dims(cv_image, 0)
 

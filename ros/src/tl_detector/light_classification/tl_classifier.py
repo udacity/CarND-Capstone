@@ -103,6 +103,8 @@ class TLClassifier(object):
                                     'id': labels[i]})
 
         if len(results) > 0:
+            #print('Nums: '+str(len(results))+' '+str(results[0]['score'])+ ' ' + str(results[0]['id']))
+
             # The boxes are encoded as xmin, xmax, ymin, ymax with normalized coordinates [0..1].
             # So lets find just the biggest box and take the traffic light state from it.
             max_sized_result = max(results, key=lambda bb: (bb['box'][1] - bb['box'][0]) * (bb['box'][3] - bb['box'][2]))
