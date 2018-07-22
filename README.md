@@ -12,7 +12,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 | ---- | ----- |
 | Stefan Larsson * | stefan at larsson<span/>*.*<span/>nu |
 | William Dodson | wdodson at epix<span/>*.*<span/>net |
-| Stefan Gerlach | skutch27 at googlemail<span/>*.*<span/>com |
+| Stefan Gerlach | stefan.gerlach1 at gmx<span/>*.*<span/>de |
 | Mahmoud Taha | mmitm94 at gmail<span/>*.*<span/>com |
 | Juan Venegas | jc.venegasrincon at gmail<span/>*.*<span/>com |
 

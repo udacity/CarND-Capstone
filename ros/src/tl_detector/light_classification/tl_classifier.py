@@ -19,12 +19,9 @@ class TLClassifier(object):
     https://github.com/tensorflow/models/blob/master/research/object_detection/inference/detection_inference.py
 
     """
-    def __init__(self):
+    def __init__(self, path_to_tensorflow_graph, confidence_thresh):
         # Threshold for detections
-        self.detection_threshold = 0.5
-
-        # Path to frozen Graph
-        graph_path = 'light_classification/inference_graph/frozen_inference_graph.pb'
+        self.detection_threshold = confidence_thresh
 
         # Create the TensorFlow session in which the graph is loaded
         self.session = tf.Session()
@@ -39,7 +36,7 @@ class TLClassifier(object):
         # Load the trained and frozen model graph with respective weights
         with self.session.graph.as_default():
             od_graph_def = tf.GraphDef()
-            with tf.gfile.GFile(graph_path, 'rb') as fid:
+            with tf.gfile.GFile(path_to_tensorflow_graph, 'rb') as fid:
                 serialized_graph = fid.read()
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
@@ -98,14 +95,16 @@ class TLClassifier(object):
                                                       self.detected_scores_tensor,
                                                       self.detected_labels_tensor],
                                                      feed_dict={self.image_tensor: image})
-            # Filter for probability (score)
+            # Filter for probability (score) and classification
             for i, score in enumerate(scores):
-                if score > self.detection_threshold:
+                if score > self.detection_threshold and labels[i] != traffic_light_id:
                     results.append({'box': boxes[i],
                                     'score': score,
                                     'id': labels[i]})
 
         if len(results) > 0:
+            #print('Nums: '+str(len(results))+' '+str(results[0]['score'])+ ' ' + str(results[0]['id']))
+
             # The boxes are encoded as xmin, xmax, ymin, ymax with normalized coordinates [0..1].
             # So lets find just the biggest box and take the traffic light state from it.
             max_sized_result = max(results, key=lambda bb: (bb['box'][1] - bb['box'][0]) * (bb['box'][3] - bb['box'][2]))

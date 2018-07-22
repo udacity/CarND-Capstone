@@ -4,11 +4,15 @@ camera_info:
   image_width: 800
   image_height: 600
 camera_preprocessing:
-  image_width: 800
-  image_height: 600
+  image_width: 300
+  image_height: 300
 stop_line_positions:
     - [8.0, 16.2]
-is_site: True
 use_tensorflow_detection: True
-use_tensorflow_nth_frame: 4
-state_count_threshold: 3
+use_tensorflow_nth_frame: 2
+tensorflow_graph_path: 'light_classification/inference_graph/site/frozen_inference_graph.pb'
+tensorflow_confidence_thesh: 0.15
+detections_filter_size: 15
+no_detections_filter_size: 15
+no_detections_threshold: 0.75
+state_count_threshold: 4
