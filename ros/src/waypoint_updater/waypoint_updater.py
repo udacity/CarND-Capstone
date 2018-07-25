@@ -159,8 +159,7 @@ class WaypointCalculator(object):
             # Copy the preceding waypoint before updating the waypoint list.
             self.preceding_waypoint = self.waypoints[(first_idx - self.previous_first_idx - 1) %
                                                      len(self.base_waypoints_msg.waypoints)]
-
-        self.waypoints = deepcopy(self.base_waypoints_msg.waypoints[first_idx:first_idx + LOOKAHEAD_WPS])
+        self.waypoints = self.base_waypoints_msg.waypoints[first_idx:first_idx + LOOKAHEAD_WPS]
         self.previous_first_idx = first_idx
 
         # Calculate the final_waypoints
