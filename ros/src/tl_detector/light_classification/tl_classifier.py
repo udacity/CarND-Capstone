@@ -20,6 +20,7 @@ class TLClassifier(object):
 
     """
     def __init__(self, path_to_tensorflow_graph, confidence_thresh):
+
         # Threshold for detections
         self.detection_threshold = confidence_thresh
 
@@ -82,6 +83,7 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
         traffic_light_id = 4  # 4 equals to unknown
 
         id_mapping = {4: TrafficLight.UNKNOWN,
@@ -103,12 +105,16 @@ class TLClassifier(object):
                                     'id': labels[i]})
 
         if len(results) > 0:
-            #print('Nums: '+str(len(results))+' '+str(results[0]['score'])+ ' ' + str(results[0]['id']))
+            # print('Nums: '+str(len(results))+' '+str(results[0]['score'])+ ' ' + str(results[0]['id']))
 
             # The boxes are encoded as xmin, xmax, ymin, ymax with normalized coordinates [0..1].
             # So lets find just the biggest box and take the traffic light state from it.
-            max_sized_result = max(results, key=lambda bb: (bb['box'][1] - bb['box'][0]) * (bb['box'][3] - bb['box'][2]))
-            traffic_light_id = max_sized_result['id']
+            # max_sized_result = max(results, key=lambda bb: (bb['box'][1] - bb['box'][0]) * (bb['box'][3] - bb['box'][2]))
+            # traffic_light_id = max_sized_result['id']
+
+            # Better take the best score than the biggest box !
+            max_score_result = max(results, key=lambda bb: bb['score'])
+            traffic_light_id = max_score_result['id']
 
         return id_mapping[traffic_light_id]
 

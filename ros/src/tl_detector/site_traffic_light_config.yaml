@@ -9,10 +9,10 @@ camera_preprocessing:
 stop_line_positions:
     - [8.0, 16.2]
 use_tensorflow_detection: True
-use_tensorflow_nth_frame: 2
+use_tensorflow_nth_frame: 6
 tensorflow_graph_path: 'light_classification/inference_graph/site/frozen_inference_graph.pb'
-tensorflow_confidence_thesh: 0.15
-detections_filter_size: 5
-no_detections_filter_size: 5
-no_detections_threshold: 0.75
-state_count_threshold: 4
+tensorflow_confidence_thesh: 0.6
+detections_filter_size: 3
+no_detections_filter_size: 12
+no_detections_threshold: 0.8
+state_count_threshold: 2
