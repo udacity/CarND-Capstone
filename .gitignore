@@ -4,3 +4,15 @@ build
 devel
 
 profile.tmp
+
+# PyCharm project files
+.idea
+
+# Udacity VMs, simulators, data downloads, python venv, etc...
+Ubuntu 64-bit Udacity VM V1.0.0.ova
+Udacity_VM_Base_V1.0.0.zip
+*sys_int.zip
+# https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/files/reference.bag.zip
+reference.bag.zip
+data/dbw_test.rosbag.bag
+venv

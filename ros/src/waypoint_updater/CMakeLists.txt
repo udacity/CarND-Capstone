@@ -199,4 +199,7 @@ include_directories(
 # endif()
 
 ## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+# More info: http://docs.ros.org/kinetic/api/catkin/html/dev_guide/generated_cmake_api.html#catkin-add-nosetests-ref
+if (CATKIN_ENABLE_TESTING)
+  catkin_add_nosetests(test)
+endif()
