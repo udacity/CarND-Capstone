@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import rospy
 from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
+from geometry_msgs.msg import PoseStamped, Pose, Quaternion
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
@@ -10,13 +10,14 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
+import os
 
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
-
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -90,6 +91,9 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
+    def distance(self, x1, y1, x2, y2):
+        return math.sqrt((x2-x1)**2 + (y2-y1)**2)
+
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -100,8 +104,18 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+
+        distance = float('inf')
+        dist_wp = lambda w1, w2: math.sqrt((w1.x-w2.x)**2 + (w1.y-w2.y)**2  + (w1.z-w2.z)**2)
+
+        index_wp = 0
+        for i in range(len(self.waypoints.waypoints)):
+            new_distance  = dist_wp (pose.position, self.waypoints.waypoints[i].pose.pose.position)
+            if new_distance < distance:
+                distance = new_distance
+                index_wp = i
+
+        return index_wp
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -122,6 +136,15 @@ class TLDetector(object):
         #Get classification
         return self.light_classifier.get_classification(cv_image)
 
+    def create_light(self, x, y, z, yaw):
+        light = TrafficLight()
+
+        light.pose.pose.position.x = x
+        light.pose.pose.position.y = y
+        light.pose.pose.position.z = z
+
+        return light
+		
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -131,19 +154,42 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+
         light = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
+
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
-        #TODO find the closest visible traffic light (if one exists)
+            # find the closest visible traffic light (if one exists)
+            distance = float('inf')
+            for i, stop_line_position in enumerate(stop_line_positions):
+                temp_light = self.create_light(stop_line_position[0], stop_line_position[1], 0.0, 0.0)
+                light_position = self.get_closest_waypoint(temp_light.pose.pose)
+                car_x = self.waypoints.waypoints[car_position].pose.pose.position.x
+                car_y = self.waypoints.waypoints[car_position].pose.pose.position.y
+                light_x = self.waypoints.waypoints[light_position].pose.pose.position.x
+                light_y = self.waypoints.waypoints[light_position].pose.pose.position.y
+                temp_distance = self.distance(car_x, car_y, light_x,light_y)
 
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
+                # use the light ahead of car
+                if (light_position > car_position) and (temp_distance < distance):
+                    light = temp_light
+                    closest_light_wp = light_position
+                    distance = temp_distance 
+
+            if light:
+                state = self.get_light_state(light)
+
+                rospy.loginfo('Bugbug next traffic light {}, color: {}'.format(closest_light_wp, state))
+
+                return closest_light_wp, state
+
+        #bugbug this line will cause error between last light and end of lap
+        #self.waypoints = None
+        rospy.loginfo('Bugbug no next traffic light')
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
