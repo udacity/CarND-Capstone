@@ -32,7 +32,7 @@ _STOP_CUSHION = 3
 
 class WaypointUpdater(object):
     """
-    This node publishes waypoints from the car's current position to some `x` distance ahead.
+    This node publishes waypoints from the car's current position to some distance ahead.
     """
 
     def __init__(self):
