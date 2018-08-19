@@ -17,6 +17,7 @@ import math
 
 import numpy as np
 import rospy
+from std_msgs.msg import Int32
 from scipy.spatial import KDTree
 
 from geometry_msgs.msg import PoseStamped
@@ -26,7 +27,8 @@ from styx_msgs.msg import Lane, Waypoint
 _NUM_WAYPOINTS_AHEAD = 200
 # Spin frequency in hertz.
 _SPIN_FREQUENCY = 50
-
+# Waypoint cushion from targeted stopline before traffic light or obstacle
+_STOP_CUSHION = 3
 
 class WaypointUpdater(object):
     """
@@ -40,6 +42,8 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_callback)
         rospy.Subscriber('/base_waypoints', Lane, self.base_waypoints_callback)
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_callback)
+        rospy.Subscriber('/obstacle_waypoint', Int32, self.obstacle_callback)
 
         # Publishers.
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
@@ -49,6 +53,8 @@ class WaypointUpdater(object):
         self.base_waypoints = None
         self.waypoints_2d = None
         self.waypoints_tree = None
+        self.traffic_light_wp_idx = None
+        self.obstacle_wp_idx = None
 
     def spin(self, freq):
         """
@@ -92,10 +98,66 @@ class WaypointUpdater(object):
 
         :param index of the first waypoint.
         """
-        lane = Lane()
+        lane = self.get_final_lane(index)
         lane.header = self.base_waypoints.header
-        lane.waypoints = self.base_waypoints.waypoints[index:index + _NUM_WAYPOINTS_AHEAD]
+        #lane.waypoints = self.base_waypoints.waypoints[index:index + _NUM_WAYPOINTS_AHEAD]
         self.final_waypoints_pub.publish(lane)
+
+    # update final Lane's waypoints base on traffic light or obstacle waypoint index
+    def get_final_lane(self, closest_wp_idx):
+        lane = Lane()
+        farthest_wp_idx = closest_wp_idx + _NUM_WAYPOINTS_AHEAD
+        base_waypoints = self.base_waypoints.waypoints[closest_wp_idx:farthest_wp_idx]
+        # determine if vehicle is clear from traffic light and obstacle
+        if self.traffic_light_wp_idx == None or self.traffic_light_wp_idx == -1 or self.traffic_light_wp_idx >= farthest_wp_idx:
+            traffic_light_clear = 1
+        else:
+            traffic_light_clear = 0
+        if self.obstacle_wp_idx == None or self.obstacle_wp_idx == -1 or self.obstacle_wp_idx >= farthest_wp_idx:
+            obstacle_clear = 1
+        else:
+            obstacle_clear = 0
+        target_wp_idx = closest_wp_idx
+        # use base waypoints if no traffic light or obstacle detected
+        if traffic_light_clear and obstacle_clear:
+            lane.waypoints = base_waypoints
+        # either traffic light or obstacle is detected
+        else:
+            # use traffic lights waypoint index if only traffic light is detected
+            if traffic_light_clear == 0 and obstacle_clear == 1:
+                target_wp_idx = self.traffic_light_wp_idx
+            # use obstacle waypoint index if only obstacle is detected
+            elif traffic_light_clear == 1 and obstacle_clear == 0:
+                target_wp_idx = self.obstacle_wp_idx
+            # both traffic light and obstacle are detected
+            # find the closet waypoint among traffic light and obstacle waypoint index
+            elif self.traffic_light_wp_idx > self.obstacle_wp_idx:
+                target_wp_idx = self.traffic_light_wp_idx
+            else:
+                target_wp_idx = self.obstacle_wp_idx
+            lane.waypoints = self.declerate_waypoints(base_waypoints, closest_wp_idx, target_wp_idx)
+        return lane
+
+    # find decelerating waypoints
+    def declerate_waypoints(self, base_waypoints, closest_wp_idx, target_wp_idx):
+        decel_wp = []
+        # loop through each base_waypoint to adjust its linear verlocity x
+        for i, wp in enumerate(base_waypoints):
+            p = Waypoint()
+            # position of waypoint won't change
+            p.pose = wp.pose
+
+            stop_idx = max(target_wp_idx - closest_wp_idx - 2, 0)
+            # velocity = distance
+            dist = self.distance(base_waypoints, i, stop_idx)
+            vel = math.sqrt(2 * MAX_DECEL * dist)
+            if vel < 1.:
+                vel = 0.
+
+            p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+            decel_wp.append(p)
+        return decel_wp
+
 
     def pose_callback(self, pose):
         """
@@ -116,13 +178,13 @@ class WaypointUpdater(object):
         self.base_waypoints = base_waypoints
         rospy.loginfo('base_waypoints initialized')
 
-    def traffic_cb(self, msg):
+    def traffic_callback(self, data):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.traffic_light_wp_idx = data
 
-    def obstacle_cb(self, msg):
+    def obstacle_callback(self, data):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
-        pass
+        self.obstacle_wp_idx = data
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
