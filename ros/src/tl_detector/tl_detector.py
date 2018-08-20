@@ -51,8 +51,6 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        self.spin(SPIN_FREQUENCY)
-
     def spin(self, freq):
         """
         Spins this ROS node based on the given frequency.
@@ -68,7 +66,7 @@ class TLDetector(object):
             of times till we start using it. Otherwise the previous stable state is
             used.
             '''
-            if self.pose is not None and self.waypoints is not None and self.camera_image is not None:
+            if None not in (self.pose, self.waypoints, self.camera_image):
                 light_wp, state = self.process_traffic_lights()
                 # once process traffic light set camera_image to None so if no image coming we will skip this block
                 self.camera_image = None
@@ -213,6 +211,6 @@ class TLDetector(object):
 
 if __name__ == '__main__':
     try:
-        TLDetector()
+        TLDetector().spin(SPIN_FREQUENCY)
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start traffic node.')
