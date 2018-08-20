@@ -14,6 +14,7 @@ import math
 import os
 
 STATE_COUNT_THRESHOLD = 3
+SPIN_FREQUENCY = 30
 
 class TLDetector(object):
     def __init__(self):
@@ -50,7 +51,39 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        rospy.spin()
+        self.spin(SPIN_FREQUENCY)
+
+    def spin(self, freq):
+        """
+        Spins this ROS node based on the given frequency.
+
+        :param freq: frequency in hertz.
+        """
+        rate = rospy.Rate(freq)
+        while not rospy.is_shutdown():
+
+            '''
+            Publish upcoming red lights at camera frequency.
+            Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+            of times till we start using it. Otherwise the previous stable state is
+            used.
+            '''
+            if self.pose is not None and self.waypoints is not None and self.camera_image is not None:
+                light_wp, state = self.process_traffic_lights()
+                # once process traffic light set camera_image to None so if no image coming we will skip this block
+                self.camera_image = None
+                if self.state != state:
+                    self.state_count = 0
+                    self.state = state
+                elif self.state_count >= STATE_COUNT_THRESHOLD:
+                    self.last_state = self.state
+                    light_wp = light_wp if state == TrafficLight.RED else -1
+                    self.last_wp = light_wp
+                    self.upcoming_red_light_pub.publish(Int32(light_wp))
+                else:
+                    self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                self.state_count += 1
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -71,25 +104,6 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
-
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        self.state_count += 1
 
     def distance(self, x1, y1, x2, y2):
         return math.sqrt((x2-x1)**2 + (y2-y1)**2)
@@ -127,14 +141,18 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
-            self.prev_light_loc = None
-            return False
+        # Manual Testing
+        return light.state
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        # This block will be back with Classifier
+        # if(not self.has_image):
+        #     self.prev_light_loc = None
+        #     return False
+        #
+        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        #
+        # #Get classification
+        # return self.light_classifier.get_classification(cv_image)
 
     def create_light(self, x, y, z, yaw):
         light = TrafficLight()
@@ -167,6 +185,7 @@ class TLDetector(object):
             distance = float('inf')
             for i, stop_line_position in enumerate(stop_line_positions):
                 temp_light = self.create_light(stop_line_position[0], stop_line_position[1], 0.0, 0.0)
+                temp_light.state = self.lights[i].state
                 light_position = self.get_closest_waypoint(temp_light.pose.pose)
                 car_x = self.waypoints.waypoints[car_position].pose.pose.position.x
                 car_y = self.waypoints.waypoints[car_position].pose.pose.position.y

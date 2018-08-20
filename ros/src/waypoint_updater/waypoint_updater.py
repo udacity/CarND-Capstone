@@ -188,7 +188,7 @@ class WaypointUpdater(object):
         """
         Traffic waypoints subscriber callback function.
         """
-        self.traffic_light_wp_idx = data
+        self.traffic_light_wp_idx = data.data
 
     def obstacle_callback(self, data):
         """
