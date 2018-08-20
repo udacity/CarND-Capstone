@@ -15,6 +15,7 @@ import os
 from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
+SPIN_FREQUENCY = 30
 
 class TLDetector(object):
     def __init__(self):
@@ -54,7 +55,37 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        rospy.spin()
+    def spin(self, freq):
+        """
+        Spins this ROS node based on the given frequency.
+
+        :param freq: frequency in hertz.
+        """
+        rate = rospy.Rate(freq)
+        while not rospy.is_shutdown():
+
+            '''
+            Publish upcoming red lights at camera frequency.
+            Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+            of times till we start using it. Otherwise the previous stable state is
+            used.
+            '''
+            if None not in (self.pose, self.waypoints, self.camera_image):
+                light_wp, state = self.process_traffic_lights()
+                # once process traffic light set camera_image to None so if no image coming we will skip this block
+                self.camera_image = None
+                if self.state != state:
+                    self.state_count = 0
+                    self.state = state
+                elif self.state_count >= STATE_COUNT_THRESHOLD:
+                    self.last_state = self.state
+                    light_wp = light_wp if state == TrafficLight.RED else -1
+                    self.last_wp = light_wp
+                    self.upcoming_red_light_pub.publish(Int32(light_wp))
+                else:
+                    self.upcoming_red_light_pub.publish(Int32(self.last_wp))
+                self.state_count += 1
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg
@@ -86,25 +117,6 @@ class TLDetector(object):
         """
         self.has_image = True
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
-
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        if self.state != state:
-            self.state_count = 0
-            self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
-            self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
-            self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-        self.state_count += 1
 
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
@@ -121,7 +133,7 @@ class TLDetector(object):
         closest_idx = self.waypoints_tree.query([x, y], 1)[1]
         return closest_idx
 
-    def get_light_state(self):
+    def get_light_state(self, light):
         """Determines the current color of the traffic light
 
         Args:
@@ -131,14 +143,18 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
-            self.prev_light_loc = None
-            return False
+        # Manual Testing
+        return light.state
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        # This block will be back with Classifier
+        # if(not self.has_image):
+        #     self.prev_light_loc = None
+        #     return False
+        #
+        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        #
+        # #Get classification
+        # return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -149,12 +165,11 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-
         if(self.pose):
             car_position = self.get_closest_waypoint(self.pose.pose)
             for i in range(len(self.stopline_list)):
                 if self.stopline_list[i] >= car_position:
-                    state = self.get_light_state()
+                    state = self.get_light_state(self.lights[i])
                     return self.stopline_list[i], state
 
         #bugbug this line will cause error between last light and end of lap
@@ -163,6 +178,6 @@ class TLDetector(object):
 
 if __name__ == '__main__':
     try:
-        TLDetector()
+        TLDetector().spin(SPIN_FREQUENCY)
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start traffic node.')
