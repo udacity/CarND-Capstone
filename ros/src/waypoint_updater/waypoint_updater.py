@@ -29,9 +29,8 @@ _NUM_WAYPOINTS_AHEAD = 200
 _SPIN_FREQUENCY = 50
 # Waypoint cushion from targeted stopline before traffic light or obstacle.
 _STOP_CUSHION = 3
-# Maximum deceleration.
-_MAX_DECEL = .5
-
+# Maximum deceleration
+_MAX_DECEL = 0.5
 
 class WaypointUpdater(object):
     """
@@ -157,6 +156,7 @@ class WaypointUpdater(object):
             # To decelerate from speed v to 0 in a distance of s:
             # s = 1/2 * a * v^2  =>  v = sqrt(2 * a * s)
             dist = WaypointUpdater.waypoint_distance(sliced_base_waypoints, i, stop_idx)
+
             vel = math.sqrt(2 * _MAX_DECEL * dist)
             if vel < 1.:
                 vel = 0.
