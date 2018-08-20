@@ -27,8 +27,11 @@ from styx_msgs.msg import Lane, Waypoint
 _NUM_WAYPOINTS_AHEAD = 200
 # Spin frequency in hertz.
 _SPIN_FREQUENCY = 50
-# Waypoint cushion from targeted stopline before traffic light or obstacle
+# Waypoint cushion from targeted stopline before traffic light or obstacle.
 _STOP_CUSHION = 3
+# Maximum deceleration.
+_MAX_DECEL = .5
+
 
 class WaypointUpdater(object):
     """
@@ -97,76 +100,70 @@ class WaypointUpdater(object):
 
         :param index of the first waypoint.
         """
-        lane = self.get_final_lane(index)
-        lane.header = self.base_waypoints.header
-        self.final_waypoints_pub.publish(lane)
+        self.final_waypoints_pub.publish(self.get_final_lane(index))
 
     def get_final_lane(self, closest_wp_idx):
         """
-        Updates final Lane's waypoints base on traffic light or obstacle waypoint index
+        Updates final lane's waypoints based on traffic light or obstacle waypoint index.
         
-        :return: lane with waypoints updated with decelerating linear velocity 
+        :return: lane with waypoints updated with decelerating linear velocity.
         """
         lane = Lane()
+        lane.header = self.base_waypoints.header
+
         farthest_wp_idx = closest_wp_idx + _NUM_WAYPOINTS_AHEAD
-        base_waypoints = self.base_waypoints.waypoints[closest_wp_idx:farthest_wp_idx]
-        # determine if vehicle is clear from traffic light and obstacle
-        if self.traffic_light_wp_idx == None or self.traffic_light_wp_idx == -1 or self.traffic_light_wp_idx >= farthest_wp_idx:
-            traffic_light_clear = 1
-        else:
-            traffic_light_clear = 0
-        if self.obstacle_wp_idx == None or self.obstacle_wp_idx == -1 or self.obstacle_wp_idx >= farthest_wp_idx:
-            obstacle_clear = 1
-        else:
-            obstacle_clear = 0
-        target_wp_idx = closest_wp_idx
-        # use base waypoints if no traffic light or obstacle detected
+        sliced_base_waypoints = self.base_waypoints.waypoints[closest_wp_idx:farthest_wp_idx]
+
+        # Determine if vehicle is clear from traffic light and obstacle.
+        traffic_light_clear = (self.traffic_light_wp_idx is None or
+                               self.traffic_light_wp_idx == -1 or
+                               self.traffic_light_wp_idx >= farthest_wp_idx)
+        obstacle_clear = (self.obstacle_wp_idx is None or
+                          self.obstacle_wp_idx == -1 or
+                          self.obstacle_wp_idx >= farthest_wp_idx)
+
         if traffic_light_clear and obstacle_clear:
-            lane.waypoints = base_waypoints
-        # either traffic light or obstacle is detected
+            # No traffic light or obstacle detected.
+            lane.waypoints = sliced_base_waypoints
         else:
-            # use traffic lights waypoint index if only traffic light is detected
-            if traffic_light_clear == 0 and obstacle_clear == 1:
+            if not traffic_light_clear and obstacle_clear:
+                # Only traffic light is detected.
                 target_wp_idx = self.traffic_light_wp_idx
-            # use obstacle waypoint index if only obstacle is detected
-            elif traffic_light_clear == 1 and obstacle_clear == 0:
+            elif traffic_light_clear and not obstacle_clear:
+                # Only obstacle is detected.
                 target_wp_idx = self.obstacle_wp_idx
-            # both traffic light and obstacle are detected
-            # find the closet waypoint among traffic light and obstacle waypoint index
-            elif self.traffic_light_wp_idx > self.obstacle_wp_idx:
-                target_wp_idx = self.traffic_light_wp_idx
             else:
-                target_wp_idx = self.obstacle_wp_idx
-            lane.waypoints = self.declerate_waypoints(base_waypoints, closest_wp_idx, target_wp_idx)
+                # Both traffic light and obstacle are detected.
+                target_wp_idx = min(self.traffic_light_wp_idx, self.obstacle_wp_idx)
+            lane.waypoints = self.decelerate_waypoints(sliced_base_waypoints, target_wp_idx - closest_wp_idx)
         return lane
 
-    def declerate_waypoints(self, base_waypoints, closest_wp_idx, target_wp_idx):
+    @staticmethod
+    def decelerate_waypoints(sliced_base_waypoints, stop_idx):
         """
         Loops through base waypoints to update the linear velocity base on deceleration with
-        respect to the targeting stop waypoint
+        respect to the targeting stop waypoint.
         
-        :return: list of waypoints with updated linear velocity, x 
+        :return: list of waypoints with updated linear velocity.
         """
         decel_wp = []
-        stop_idx = max(target_wp_idx - closest_wp_idx - 2, 0)
-        # loop through each base_waypoint to adjust its linear verlocity x
-        for i, wp in enumerate(base_waypoints):
+        stop_idx = max(stop_idx - _STOP_CUSHION, 0)
+        # Loop through each base_waypoint to adjust its linear velocity x.
+        for i, wp in enumerate(sliced_base_waypoints):
             p = Waypoint()
-            # position of waypoint won't change
+            # Position of waypoint won't change.
             p.pose = wp.pose
 
-            # a = v/t -> t =v/a
-            # v = s/t -> v = s/(v/a) -> v^2 = s*a -> v = sqrt(s*a)
-            # use 2 times of MAX_DECEL to magnify the deceleration
-            dist = self.distance(base_waypoints, i, stop_idx)
-            vel = math.sqrt(2 * MAX_DECEL * dist)
+            # To decelerate from speed v to 0 in a distance of s:
+            # s = 1/2 * a * v^2  =>  v = sqrt(2 * a * s)
+            dist = WaypointUpdater.waypoint_distance(sliced_base_waypoints, i, stop_idx)
+            vel = math.sqrt(2 * _MAX_DECEL * dist)
             if vel < 1.:
                 vel = 0.
 
-            p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+            WaypointUpdater.set_waypoint_velocity(p, min(vel, WaypointUpdater.get_waypoint_velocity(wp)))
             decel_wp.append(p)
         return decel_wp
-
 
     def pose_callback(self, pose):
         """
@@ -191,28 +188,41 @@ class WaypointUpdater(object):
         """
         Traffic waypoints subscriber callback function.
         """
-        # TODO: Callback for /traffic_waypoint message. Implement
         self.traffic_light_wp_idx = data
 
     def obstacle_callback(self, data):
         """
         Obstacle waypoints subscriber callback function.
         """
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
         self.obstacle_wp_idx = data
 
-    def get_waypoint_velocity(self, waypoint):
+    @staticmethod
+    def get_waypoint_velocity(waypoint):
+        """
+        Get the longitudinal velocity from a waypoint.
+        """
         return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+    @staticmethod
+    def set_waypoint_velocity(waypoint, velocity):
+        """
+        Sets the longitudinal velocity on a waypoint.
+        """
+        waypoint.twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, wp1, wp2):
+    @staticmethod
+    def waypoint_distance(waypoints, wp1, wp2):
+        """
+        Gets piece-wise sum of the distances between adjacent waypoints.
+
+        :param waypoints: waypoint list
+        :param wp1: start index
+        :param wp2: end index
+        """
         dist = 0
         dl = lambda a, b: math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
-        for i in range(wp1, wp2 + 1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
+        for i in range(wp1, wp2 - 1):
+            dist += dl(waypoints[i].pose.pose.position, waypoints[i + 1].pose.pose.position)
         return dist
 
 
