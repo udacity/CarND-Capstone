@@ -5,5 +5,7 @@ devel
 
 profile.tmp
 
+data/traffic_light_bag_file
+
 venv
 .idea

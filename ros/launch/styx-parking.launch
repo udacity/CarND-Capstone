@@ -7,7 +7,7 @@
     <include file="$(find twist_controller)/launch/dbw_sim.launch"/>
 
     <!--Waypoint Loader -->
-    <include file="$(find waypoint_loader)/launch/waypoint_loader.launch"/>
+    <include file="$(find waypoint_loader)/launch/waypoint_loader_site.launch"/>
 
     <!--Waypoint Follower Node -->
     <include file="$(find waypoint_follower)/launch/pure_pursuit.launch"/>
