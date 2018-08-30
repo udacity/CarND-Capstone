@@ -8,6 +8,12 @@ worldsky86rough@gmail.com
 
 Project Contributions: one-shot SSD Traffic Light Detector
 
+### Tejas Pant
+
+tejaspant25@gmail.com
+
+Project Contributions: Image Processing based Traffic Light Detector
+
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### Native Installation
