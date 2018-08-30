@@ -2,6 +2,12 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 
 ## Team Members
 
+### Gabriela Mosquera
+
+gabymosqueradiaz@gmail.com
+
+Project Contributions: Team Lead. waypoint_updater code and tl_detector code to troubleshoot and save images. tl_classifier node implementation: use of classifier methods using different functions and first attempt at the use of frozen graphs.
+
 ### Xiaohong Deng
 
 worldsky86rough@gmail.com
