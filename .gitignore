@@ -4,3 +4,8 @@ build
 devel
 
 profile.tmp
+project_notes.md
+data/camera_images
+*.yml
+pip_requirements.txt
+conda_requirements.txt
