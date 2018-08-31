@@ -1,5 +1,38 @@
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
+## Team Members
+
+### Gabriela Mosquera
+
+gabymosqueradiaz@gmail.com
+
+Project Contributions: Team Lead. waypoint_updater code and tl_detector code to troubleshoot and save images. tl_classifier node implementation: use of classifier methods using different functions and first attempt at the use of frozen graphs.
+
+### Xiaohong Deng
+
+worldsky86rough@gmail.com
+
+Project Contributions: one-shot SSD Traffic Light Detector
+
+### Tejas Pant
+
+tejaspant25@gmail.com
+
+Project Contributions: Image Processing based Traffic Light Detector
+
+### Eric Jiang
+
+edj9@duke.edu
+
+Project Contributions: Debugging waypoint_updater, fixed car speed
+
+### Diego Domingos
+
+diego.pdomingos@gmail.com
+
+
+------
+
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### Native Installation
