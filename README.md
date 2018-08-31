@@ -26,6 +26,12 @@ edj9@duke.edu
 
 Project Contributions: Debugging waypoint_updater, fixed car speed
 
+### Diego Domingos
+
+diego.pdomingos@gmail.com
+
+
+
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### Native Installation
