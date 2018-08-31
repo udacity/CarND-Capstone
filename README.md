@@ -31,6 +31,7 @@ Project Contributions: Debugging waypoint_updater, fixed car speed
 diego.pdomingos@gmail.com
 
 
+------
 
 Please use **one** of the two installation options, either native **or** docker installation.
 
