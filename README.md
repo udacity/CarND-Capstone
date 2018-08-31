@@ -20,6 +20,12 @@ tejaspant25@gmail.com
 
 Project Contributions: Image Processing based Traffic Light Detector
 
+### Eric Jiang
+
+edj9@duke.edu
+
+Project Contributions: Debugging waypoint_updater, fixed car speed
+
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### Native Installation
