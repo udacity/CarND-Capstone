@@ -81,7 +81,7 @@ class Controller(object):
         current_velocity = self.low_pass_filter_velocity.filt(current_velocity)
 
         # get value of steering angle
-        steering = self.yaw_controller.get(linear_velocity, angular_velocity, current_velocity)
+        steering = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
 
         error_velocity = linear_velocity - current_velocity
         self.last_velocity = current_velocity
@@ -100,6 +100,6 @@ class Controller(object):
         elif throttle < 0.1 and error_velocity < 0:
             throttle = 0.
             decel = max(error_velocity, self.decel_limit)
-            brake = abs(decel) * self.vehicle_mass*self_wheel_radius
+            brake = abs(decel) * self.vehicle_mass * self.wheel_radius
 
-        return throttle, brake, steering    
+        return throttle, brake, steering
