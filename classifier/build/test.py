@@ -22,7 +22,7 @@ from utils import visualization_utils as vis_util
 
 MODEL_NAME = sys.argv[1]
 # Path to frozen detection graph. This is the actual model that is used for the object detection.
-PATH_TO_FROZEN_GRAPH = MODEL_NAME + '/frozen_inference_graph.pb'
+PATH_TO_FROZEN_GRAPH = os.path.join(MODEL_NAME, 'frozen_inference_graph.pb')
 # List of the strings that is used to add correct label for each box.
 PATH_TO_LABELS = os.path.join('../test', 'object-detection.pbtxt')
 NUM_CLASSES = 4
