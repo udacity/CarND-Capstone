@@ -2,7 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint
+from styx_msgs.msg import Lane, Waypoint, TrafficLightArray
 from std_msgs.msg import Int32
 
 import numpy as np
@@ -37,6 +37,9 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
+        # for simulator only, get the traffic lights data
+        # rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_lights_cb)
+
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint
         # below
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
@@ -47,10 +50,12 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
         self.pose = None
+        self.heading = None
         self.base_waypoints = None
         self.waypoints_2d = None
         self.waypoint_tree = None
         self.stopline_wp_idx = -1
+        self.traffic_light = None
 
         # rospy.spin()
         self.loop()
@@ -125,8 +130,11 @@ class WaypointUpdater(object):
 
     def pose_cb(self, msg):
         # TODO: Implement
+        if self.pose is not None:
+            dx = msg.pose.position.x - self.pose.pose.position.x
+            dy = msg.pose.position.y - self.pose.pose.position.y
+            self.heading = np.arctan2(dx, dy)
         self.pose = msg
-        pass
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
@@ -135,6 +143,31 @@ class WaypointUpdater(object):
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
         pass
+
+    def traffic_lights_cb(self, msg):
+        # filter by distance
+        if self.heading:
+            for light in msg.lights:
+                dx = light.pose.pose.position.x - self.pose.pose.position.x
+                dy = light.pose.pose.position.y - self.pose.pose.position.y
+                dd = (dx**2 + dy**2)**0.5
+                dheading = np.arctan2(dx, dy) - self.heading
+                while(dheading < 0): dheading += np.pi
+                while(dheading > np.pi): dheading -= np.pi
+
+                if dd < 100: # 100 m is when the light can be seen in the distance
+                    rospy.loginfo("Light Close {} {} {}".format(dd, dheading, light.state))
+                    if dheading < (np.pi/2):
+                        rospy.loginfo('Light Ahead')
+                        self.traffic_light = {
+                            "position": [light.pose.pose.position.x, light.pose.pose.position.y],
+                            "state": light.state
+                        }
+                        return # only deal with the first found traffic light
+                    else:
+                        self.traffic_light = None
+        # aim to stop at 30m from the lights
+
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
