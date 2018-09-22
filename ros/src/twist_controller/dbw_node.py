@@ -68,8 +68,8 @@ class DBWNode(object):
 
         # TODO: Subscribe to all the topics you need to
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
-        rospy.Subscriber('/current_velocity', TwistStamped, self.twist_cb)
-        rospy.Subscriber('/twist_cmd', TwistStamped, self.velocity_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
 
         self.dbw_enabled = False
         self.linear_vel = None
@@ -100,6 +100,7 @@ class DBWNode(object):
                                                                                    self.angular_vel,
                                                                                    self.current_vel,
                                                                                    self.dbw_enabled)
+                rospy.loginfo("lin vel {}, ang vel {}, cur vel {}, thro {}, brake {}, steer {}".format(self.linear_vel, self.angular_vel, self.current_vel, self.throttle, self.brake, self.steering))
             if self.dbw_enabled:
                 self.publish(self.throttle, self.brake, self.steering)
             rate.sleep()
