@@ -164,7 +164,7 @@ class WaypointUpdater(object):
                         idx = self.get_closest_waypoint_idx(light.pose.pose.position.x, light.pose.pose.position.y)
                         if light.state != 2:
                             rospy.loginfo("light red stopping")
-                            self.stopline_wp_idx = idx - 10
+                            self.stopline_wp_idx = idx - 30
                         return # only deal with the first found traffic light
 
         # aim to stop at 30m from the lights
