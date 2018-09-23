@@ -110,7 +110,6 @@ class WaypointUpdater(object):
         return lane
 
     def decelerate_waypoints(self, waypoints, closest_idx):
-        rospy.loginfo("decelerate_waypoints")
         temp = []
         for i, wp in enumerate(waypoints):
 
@@ -133,7 +132,9 @@ class WaypointUpdater(object):
         if self.pose is not None:
             dx = msg.pose.position.x - self.pose.pose.position.x
             dy = msg.pose.position.y - self.pose.pose.position.y
-            self.heading = np.arctan2(dx, dy)
+
+            if dx > 1e-6 and dy > 1e-6:
+                self.heading = np.arctan2(dx, dy)
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
@@ -146,26 +147,28 @@ class WaypointUpdater(object):
 
     def traffic_lights_cb(self, msg):
         # filter by distance
-        self.stopline_wp_idx = -1
-
         if self.heading:
+            stopline_idx = -1
             for light in msg.lights:
                 dx = light.pose.pose.position.x - self.pose.pose.position.x
                 dy = light.pose.pose.position.y - self.pose.pose.position.y
                 dd = (dx**2 + dy**2)**0.5
                 dheading = np.arctan2(dx, dy) - self.heading
-                while(dheading < 0): dheading += np.pi
-                while(dheading > np.pi): dheading -= np.pi
+                while(dheading < 0): dheading += 2*np.pi
+                while(dheading > 2*np.pi): dheading -= 2*np.pi
 
                 if dd < 100: # 100 m is when the light can be seen in the distance
                     rospy.loginfo("Light Close {} {} {}".format(dd, dheading, light.state))
-                    if dheading < (np.pi/2):
+                    if dheading < (np.pi/2) or dheading > (3*np.pi/2):
                         rospy.loginfo('Light Ahead')
-                        idx = self.get_closest_waypoint_idx(light.pose.pose.position.x, light.pose.pose.position.y)
                         if light.state != 2:
                             rospy.loginfo("light red stopping")
-                            self.stopline_wp_idx = idx - 30
-                        return # only deal with the first found traffic light
+                            idx = self.get_closest_waypoint_idx(light.pose.pose.position.x, light.pose.pose.position.y)
+                            stopline_idx = idx - 40
+                        break # only deal with the first found traffic light
+
+            # flip flag for waypoint generation routine
+            self.stopline_wp_idx = stopline_idx
 
         # aim to stop at 30m from the lights
 
