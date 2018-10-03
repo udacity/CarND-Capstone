@@ -72,3 +72,12 @@ cd CarND-Capstone/ros
 roslaunch launch/site.launch
 ```
 5. Confirm that traffic light detection works on real life images
+
+
+
+
+# Team Capstone project
+1 - *Team leader* Samy Tahar-Berrabah
+2 -
+3 -
+4 -
