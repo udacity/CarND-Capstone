@@ -77,7 +77,8 @@ roslaunch launch/site.launch
 
 
 # Team Capstone project
-1 - *Team leader* Samy Tahar-Berrabah
-2 -
-3 -
-4 -
+1. Samy Tahar-Berrabah - *Team leader*
+2. Paul Katsen
+3. Vianney Monestel
+4. Ahmed Mikkawi
+5. Prateek Medi 
