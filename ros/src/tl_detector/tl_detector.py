@@ -11,7 +11,9 @@ import tf
 import cv2
 import yaml
 from scipy.spatial import KDTree
-
+import numpy as np
+import time
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
@@ -118,6 +120,75 @@ class TLDetector(object):
         # KD tree based nearest neighbor
         return self.waypoint_tree.query([x, y], 1)[1]
 
+    def get_rotation_matrix_from_euler(self, theta):
+        R_x = np.array([[1, 0, 0 ],
+                        [0, math.cos(theta[0]), -math.sin(theta[0]) ],
+                        [0, math.sin(theta[0]), math.cos(theta[0]) ]])
+         
+        R_y = np.array([[math.cos(theta[1]), 0, math.sin(theta[1]) ],
+                        [0, 1, 0],
+                        [-math.sin(theta[1]), 0, math.cos(theta[1]) ]])
+                 
+        R_z = np.array([[math.cos(theta[2]), -math.sin(theta[2]), 0],
+                        [math.sin(theta[2]), math.cos(theta[2]), 0],
+                        [0, 0, 1] ])
+                     
+        R = np.dot(R_z, np.dot( R_y, R_x ))
+
+        return R
+    
+    def project_tl_on_image(self, light):
+        point_in_world = light.pose.pose.position
+
+        #fx = self.config['camera_info']['focal_length_x']
+        #fy = self.config['camera_info']['focal_length_y']
+        #img_wdt = self.config['camera_info']['image_width']
+        #img_hgt = self.config['camera_info']['image_height']
+
+        fx = 1345.200806
+        fy = 1353.838257
+        img_wdt = 800
+        img_hgt = 600
+
+        # magic numbers
+        f = 2300
+        x_offset = -30
+        y_offset = 340
+
+        trans = None
+        rot = None
+
+        try:
+            now = rospy.Time.now()
+            self.listener.waitForTransform("/base_link", "/world", now, rospy.Duration(1.0))
+            (trans, rot) = self.listener.lookupTransform("/base_link", "/world", now)
+
+        except (tf.Exception, tf.LookupException, tf.ConnectivityException):
+            rospy.logerr("Failed to find camera to map transform")
+
+        if trans == None or rot == None:
+            return -1, -1
+
+        if (trans and rot):
+            # get Euler from Quaternion
+            rpy = tf.transformations.euler_from_quaternion(rot)
+            # get rotation matrix from Euler angles
+            R = self.get_rotation_matrix_from_euler(rpy)
+            
+            (ptx, pty, ptz) = (point_in_world.x, point_in_world.y, point_in_world.z)
+            # project a world point onto the image coordinate
+            point_image = np.matmul(R, np.array([ptx, pty, ptz])) + trans
+            # project a point on the image coordinate onto the pixel coordinate
+            x1 = -point_image[1]/point_image[0]*f + img_wdt/2 + x_offset
+            y1 = -point_image[2]/point_image[0]*f + img_hgt/2 + y_offset
+            
+            x = int(x1)
+            y = int(y1)
+            
+            return x, y
+        else:
+            return -1, -1
+    
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
@@ -133,6 +204,29 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+        # figure out where in the pixel coordinates the traffic light
+        # is projected on
+        u, v = self.project_tl_on_image(light)
+
+        # if the light hasn't completely projected on the pixel coordinates
+        if (u is None) or (v is None) or (u < 0) or (u < 0) or (u >= cv_image.shape[1]) or (v >= cv_image.shape[0]):
+            return TrafficLight.UNKNOWN
+        
+        img = cv_image
+
+        crop_offset = 100
+        umin = u - crop_offset if (u - crop_offset) >= 0 else 0
+        vmin = v - crop_offset if (v - crop_offset) >= 0 else 0
+
+        umax = u + crop_offset if (u + crop_offset) <= img.shape[1]-1 else img.shape[1]-1
+        vmax = v + crop_offset if (v + crop_offset) <= img.shape[0]-1 else img.shape[0]-1
+
+        cropped_img = img[vmin:vmax, umin:umax]
+
+        #cv2.imshow("cropped_img", cv2.cvtColor(cropped_img, cv2.COLOR_BGR2RGB))
+        cv2.imshow("cropped_img", cropped_img)
+        cv2.waitKey(5)
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
