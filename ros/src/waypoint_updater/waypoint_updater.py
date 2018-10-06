@@ -1,4 +1,4 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
 
 import rospy
 from geometry_msgs.msg import PoseStamped
@@ -8,16 +8,12 @@ import math
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
-
 As mentioned in the doc, you should ideally first implement a version which does not care
 about traffic lights or obstacles.
-
 Once you have created dbw_node, you will update this node to use the status of traffic lights too.
-
 Please note that our simulator also provides the exact location of traffic lights and their
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
-
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
@@ -32,15 +28,6 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
-        # Not sure that the Int32 and PointCloud2 value are right
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-        rospy.Subscriber('/vehicle/obstacle_points', PointCloud2, self.obstacles_cb)
-
-        self.pose = None
-        self.base_waypoints = None
-        self.waypoints_2d = None
-        self.waypoints_tree = None
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
