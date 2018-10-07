@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import rospy
+from std_msgs.msg import Int32
+from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 
@@ -28,6 +30,8 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/vehicle/obstacle_points', PointCloud2, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -38,6 +42,7 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         # TODO: Implement
         pass
+
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
