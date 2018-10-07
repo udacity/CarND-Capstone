@@ -5,6 +5,8 @@ from std_msgs.msg import Int32
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from scipy.spatial import KDTree
+import numpy as np
 
 import math
 
@@ -19,7 +21,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 70 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -33,20 +35,81 @@ class WaypointUpdater(object):
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         rospy.Subscriber('/vehicle/obstacle_points', PointCloud2, self.obstacle_cb)
 
-        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=10)
 
         # TODO: Add other member variables you need below
+        self.pose = None
+        self.waypoints_2d = None
+        self.base_waypoints = None
+        self.waypoint_tree = None
 
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        rate = rospy.Rate(50)
+        while not rospy.is_shutdown():
+
+            if self.pose and self.base_waypoints:
+                closest_waypoint_idx = self.get_closest_waypoint_idx()
+                #rospy.loginfo("type waypoint_tree: %s", closest_waypoint_idx)
+                self.publish_waypoints(closest_waypoint_idx)
+
+                #for debug purpose display value X and Y from pose publisher by using the pose_cb Callback function
+                #rospy.loginfo("pose_cb message: x=%.2f,y=%.2f ", self.pose.pose.position.x,self.pose.pose.position.y)
+
+                #for waypoint in self.base_waypoints.waypoints:
+                #    rospy.loginfo("base_waypoints message: x=%.2f ", waypoint.pose.pose.position.x)
+            rate.sleep()
+
+    def get_closest_waypoint_idx(self):
+        x = self.pose.pose.position.x
+        y = self.pose.pose.position.y
+
+        closest_idx = None
+        #idx = None
+        if self.waypoint_tree is not None:
+            #rospy.loginfo("type waypoint_tree: %s", self.waypoint_tree.query([x,y],1)[1])
+            closest_idx = self.waypoint_tree.query([x,y],1)[1]
+
+
+            #Check if closest is ahead or behind vehicle
+            closest_coord = self.waypoints_2d[closest_idx]
+            prev_coord = self.waypoints_2d[closest_idx -1]
+
+            #Equation for hyperplane through closest_coords
+            cl_vect = np.array(closest_coord)
+            prev_vect = np.array(prev_coord)
+            pos_vect = np.array([x,y])
+
+            val = np.dot(cl_vect - prev_vect, pos_vect - cl_vect)
+
+            if val > 0:
+                closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
+
+        return closest_idx
+
+    def publish_waypoints(self, closest_idx):
+        if closest_idx is not None:
+            lane = Lane()
+            lane.header = self.base_waypoints.header
+            #if self.base_waypoints is not None:
+            lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
+            rospy.loginfo("lane %s", lane )
+            self.final_waypoints_pub.publish(lane)
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        self.pose = msg
 
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        self.base_waypoints = waypoints
+        if not self.waypoints_2d:
+            rospy.loginfo("inside waypoints_cb waypoints_2d")
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            rospy.loginfo("waypoints_2d: %s, %s",self.waypoints_2d[0],self.waypoints_2d[1])
+            self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
