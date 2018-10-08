@@ -45,8 +45,13 @@ class TLDetector(object):
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
+        #To get the is_sim variable and pass it to TLClassifier constructor. Carla or simulation ?
+        config_string = rospy.get_param("/traffic_light_config")
+        self.traffic_config = yaml.load(config_string)
+        self.is_sim = self.traffic_config["is_sim"]
+
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(self.is_sim)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
