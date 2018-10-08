@@ -21,7 +21,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 70 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 55 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -31,13 +31,13 @@ class WaypointUpdater(object):
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        #  Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         rospy.Subscriber('/vehicle/obstacle_points', PointCloud2, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('/final_waypoints', Lane, queue_size=10)
 
-        # TODO: Add other member variables you need below
+        # Add other member variables you need below
         self.pose = None
         self.waypoints_2d = None
         self.base_waypoints = None
@@ -66,7 +66,7 @@ class WaypointUpdater(object):
         y = self.pose.pose.position.y
 
         closest_idx = None
-        #idx = None
+
         if self.waypoint_tree is not None:
             #rospy.loginfo("type waypoint_tree: %s", self.waypoint_tree.query([x,y],1)[1])
             closest_idx = self.waypoint_tree.query([x,y],1)[1]
@@ -92,18 +92,17 @@ class WaypointUpdater(object):
         if closest_idx is not None:
             lane = Lane()
             lane.header = self.base_waypoints.header
-            #if self.base_waypoints is not None:
             lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
             rospy.loginfo("lane %s", lane )
             self.final_waypoints_pub.publish(lane)
 
     def pose_cb(self, msg):
-        # TODO: Implement
+        # use the msg from the /current_pose subscriber
         self.pose = msg
 
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
+        # TODO: add comment on how it is working
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
             rospy.loginfo("inside waypoints_cb waypoints_2d")
