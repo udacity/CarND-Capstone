@@ -22,7 +22,7 @@ Please use **one** of the two installation options, either native **or** docker 
 ### Docker Installation
 [Install Docker](https://docs.docker.com/engine/installation/)
 
-Build the docker container
+After cloning the repository, inside the respository directory, build the docker container
 ```bash
 docker build . -t capstone
 ```
