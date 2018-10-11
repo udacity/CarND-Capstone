@@ -42,6 +42,8 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.base_waypoints = None
         self.waypoint_tree = None
+        self.stopline_wp_idx = None
+        #self.closest_idx = None
 
         self.loop()
 
@@ -50,9 +52,9 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
 
             if self.pose and self.base_waypoints:
-                closest_waypoint_idx = self.get_closest_waypoint_idx()
+                #closest_waypoint_idx = self.get_closest_waypoint_idx()
                 #rospy.loginfo("type waypoint_tree: %s", closest_waypoint_idx)
-                self.publish_waypoints(closest_waypoint_idx)
+                self.publish_waypoints()
 
                 #for debug purpose display value X and Y from pose publisher by using the pose_cb Callback function
                 #rospy.loginfo("pose_cb message: x=%.2f,y=%.2f ", self.pose.pose.position.x,self.pose.pose.position.y)
@@ -65,7 +67,7 @@ class WaypointUpdater(object):
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
 
-        closest_idx = None
+        closest_idx = 0
 
         if self.waypoint_tree is not None:
             #rospy.loginfo("type waypoint_tree: %s", self.waypoint_tree.query([x,y],1)[1])
@@ -86,33 +88,91 @@ class WaypointUpdater(object):
             if val > 0:
                 closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
 
+
         return closest_idx
 
-    def publish_waypoints(self, closest_idx):
-        if closest_idx is not None:
-            lane = Lane()
-            lane.header = self.base_waypoints.header
-            lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
-            rospy.loginfo("lane %s", lane )
-            self.final_waypoints_pub.publish(lane)
+    def publish_waypoints(self):
+        final_lane = self.generate_lane()
+        self.final_waypoints_pub.publish(final_lane)
+
+    def generate_lane(self):
+        lane = Lane()
+
+        # lane.header = self.base_waypoints.header
+        #
+        closest_idx = self.get_closest_waypoint_idx()
+        farhest_idx = closest_idx + LOOKAHEAD_WPS
+
+        rospy.logerr('farhest_idx : %s',farhest_idx)
+        rospy.logerr('self.stopline_wp_idx : %s',self.stopline_wp_idx)
+        #base_lane_wp = self.base_waypoints.waypoints[closest_idx:farhest_idx]
+        base_lane_wp = self.base_waypoints.waypoints[closest_idx:farhest_idx]
+        #self.final_waypoints_pub.publish(lane)
+        #
+        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farhest_idx):
+            rospy.logwarn('traffic light detected => Don\'t stop')
+            lane.waypoints = base_lane_wp
+             #self.final_waypoints_pub.publish(lane)
+        else:
+            rospy.loginfo('traffic light detected => decelerate')
+            lane.waypoints = self.decelerate_waypoints(base_lane_wp, closest_idx)
+        return lane
+
+        # if closest_idx is not None:
+        #     lane = Lane()
+        #     #lane.header = self.base_waypoints.header
+        #     lane.waypoints = self.base_waypoints.waypoints[closest_idx:farhest_idx]
+        #     rospy.loginfo("lane %s", lane )
+        #     self.final_waypoints_pub.publish(lane)
+
+    def decelerate_waypoints(self, waypoints, closest_idx):
+        temp = []
+        MAX_DECEL = 1.0
+        ###//////////////////////
+        #self.stopline_wp_idx = 0
+        ###//////////////////////
+
+        for i, wp in enumerate(waypoints):
+            p = Waypoint()
+            p.pose = wp.pose
+
+            stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0)
+            dist = self.distance(waypoints, i, stop_idx)
+            vel = math.sqrt(2 * MAX_DECEL * dist)
+
+            if vel < 1.:
+                vel = 0.
+
+            p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+            temp.append(p)
+
+        return temp
+
+    # def publish_waypoints(self, closest_idx):
+    #     if closest_idx is not None:
+    #         lane = Lane()
+    #         lane.header = self.base_waypoints.header
+    #         lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
+    #         #rospy.loginfo("lane %s", lane )
+    #         self.final_waypoints_pub.publish(lane)
 
     def pose_cb(self, msg):
         # use the msg from the /current_pose subscriber
         self.pose = msg
 
-
     def waypoints_cb(self, waypoints):
         # TODO: add comment on how it is working
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
-            rospy.loginfo("inside waypoints_cb waypoints_2d")
+            #rospy.loginfo("inside waypoints_cb waypoints_2d")
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
-            rospy.loginfo("waypoints_2d: %s, %s",self.waypoints_2d[0],self.waypoints_2d[1])
+            #rospy.loginfo("waypoints_2d: %s, %s",self.waypoints_2d[0],self.waypoints_2d[1])
             self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self.stopline_wp_idx = msg.data
+        rospy.loginfo('stopline_wp_idx: %s',msg.data)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
