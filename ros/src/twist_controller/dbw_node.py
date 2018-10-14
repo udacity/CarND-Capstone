@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import rospy
 from std_msgs.msg import Bool
@@ -65,7 +65,6 @@ class DBWNode(object):
         self.curr_ang_vel = None
         self.angular_vel = None
         self.linear_vel = None
-        self.throttle = self.brake = self.steering = 0
         self.dbw = True
         self.twist = None
 
@@ -73,14 +72,18 @@ class DBWNode(object):
 
     def loop(self):
         rate = rospy.Rate(50)  # 50Hz
+        # print('RosPy:', rospy.is_shutdown())
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
+            # print('Status (VAL):', self.current_vel, self.angular_vel, self.linear_vel)
             if None not in (self.current_vel, self.angular_vel, self.linear_vel):
-                self.throttle, self.brake, self.steering = \
-                    self.controller.control(self.current_vel, self.angular_vel, self.linear_vel, self.dbw)
-            if self.dbw:
-                self.publish(self.throttle, self.brake, self.steering)
+
+                throttle, brake, steer = self.controller.control(self.current_vel, self.angular_vel,
+                                                                 self.linear_vel, self.dbw)
+                # print('Prediction (TBS):', throttle, brake, steer)
+                if self.dbw:
+                    self.publish(throttle, brake, steer)
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
