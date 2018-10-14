@@ -42,7 +42,7 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.base_waypoints = None
         self.waypoint_tree = None
-        self.stopline_wp_idx = None
+        self.stopline_wp_idx = -1
         #self.closest_idx = None
 
         self.loop()
@@ -101,15 +101,16 @@ class WaypointUpdater(object):
         # lane.header = self.base_waypoints.header
         #
         closest_idx = self.get_closest_waypoint_idx()
-        farhest_idx = closest_idx + LOOKAHEAD_WPS
+        farthest_idx = closest_idx + LOOKAHEAD_WPS
 
-        rospy.logerr('farhest_idx : %s',farhest_idx)
-        rospy.logerr('self.stopline_wp_idx : %s',self.stopline_wp_idx)
-        #base_lane_wp = self.base_waypoints.waypoints[closest_idx:farhest_idx]
-        base_lane_wp = self.base_waypoints.waypoints[closest_idx:farhest_idx]
+        rospy.logerr('farthest_idx : %s', farthest_idx)
+        rospy.logerr('closest_idx : %s', closest_idx)
+        rospy.logerr('self.stopline_wp_idx : %s', self.stopline_wp_idx)
+        #base_lane_wp = self.base_waypoints.waypoints[closest_idx:farthest_idx]
+        base_lane_wp = self.base_waypoints.waypoints[closest_idx:farthest_idx]
         #self.final_waypoints_pub.publish(lane)
         #
-        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farhest_idx):
+        if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
             rospy.logwarn('traffic light detected => Don\'t stop')
             lane.waypoints = base_lane_wp
              #self.final_waypoints_pub.publish(lane)
@@ -121,7 +122,7 @@ class WaypointUpdater(object):
         # if closest_idx is not None:
         #     lane = Lane()
         #     #lane.header = self.base_waypoints.header
-        #     lane.waypoints = self.base_waypoints.waypoints[closest_idx:farhest_idx]
+        #     lane.waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
         #     rospy.loginfo("lane %s", lane )
         #     self.final_waypoints_pub.publish(lane)
 
@@ -176,7 +177,7 @@ class WaypointUpdater(object):
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
-        pass
+        rospy.loginfo('obstacle_info: %s', msg.data)
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
