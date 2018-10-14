@@ -63,6 +63,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        line_wp_idx, state = self.process_traffic_lights()
 
 
         #rospy.spin()
@@ -113,8 +114,11 @@ class TLDetector(object):
         line_wp_idx, state = self.process_traffic_lights()
 
         if self.state != state:
-            self.state_count = 0
-            self.state = state
+            if (state == -1 or state == 4) and self.state == 0:
+                pass
+            else:
+                self.state_count = 0
+                self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
 
@@ -224,7 +228,6 @@ class TLDetector(object):
 
         if closest_light:
             state = self.get_light_state(closest_light)
-            rospy.loginfo('received state, %s', state.state)
             return line_wp_idx , state
 
         #self.waypoints = None
