@@ -53,7 +53,7 @@ class TLDetector(object):
             model_dir = "./light_classification/models/site"
         else:
             rospy.loginfo('Loading model for sim mode.')
-            model_dir = "./light_classification/models/site"
+            model_dir = "./light_classification/models/simulation"
 
         model_file = "%s/inference_graph.pb" % model_dir
         self.light_classifier = TLClassifier(model_file)
