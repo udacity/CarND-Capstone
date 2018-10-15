@@ -163,6 +163,12 @@ class WaypointUpdater(object):
         # use the msg from the /current_pose subscriber
         self.pose = msg
 
+    def traffic_cb(self, msg):
+        # TODO: Callback for /traffic_waypoint message. Implement
+        rospy.loginfo('i dunno whats happening')
+        self.stopline_wp_idx = msg.data
+        rospy.loginfo('stopline_wp_idx: %s', msg.data)
+
     def waypoints_cb(self, waypoints):
         # TODO: add comment on how it is working
         self.base_waypoints = waypoints
@@ -172,14 +178,9 @@ class WaypointUpdater(object):
             #rospy.loginfo("waypoints_2d: %s, %s",self.waypoints_2d[0],self.waypoints_2d[1])
             self.waypoint_tree = KDTree(self.waypoints_2d)
 
-    def traffic_cb(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        self.stopline_wp_idx = msg.data
-        rospy.loginfo('stopline_wp_idx: %s',msg.data)
-
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
-        rospy.loginfo('obstacle_info: %s', msg.data)
+        pass
 
     def get_waypoint_velocity(self, waypoint):
         return waypoint.twist.twist.linear.x
