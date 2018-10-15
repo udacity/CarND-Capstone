@@ -30,6 +30,7 @@ class TLDetector(object):
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -43,8 +44,6 @@ class TLDetector(object):
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
-
-        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
         model_dir = None
@@ -90,16 +89,13 @@ class TLDetector(object):
                     self.last_state = self.state
                     light_wp_idx = light_wp_idx if state == TrafficLight.RED else -1
                     self.last_wp = light_wp_idx
-                    self.upcoming_red_light_pub.publish(Int32(light_wp_idx))
-                    #self.upcoming_red_light_pub.publish(Int32(line_wp_idx))
                     rospy.loginfo("publishing new stats %s", Int32(line_wp_idx))
+                    self.upcoming_red_light_pub.publish(Int32(light_wp_idx))
                 else:
+                    rospy.loginfo("publishing other state %s", Int32(self.last_wp))
                     self.upcoming_red_light_pub.publish(Int32(self.last_wp))
-                    rospy.loginfo("publishing other state %s", self.last_wp)
-                    #self.upcoming_red_light_pub.publish(Int32(self.last_wp))
                 self.state_count += 1
                 rospy.loginfo("Classification duration=%.3f", rospy.get_time() - start_time)
-
             rate.sleep()
 
     def pose_cb(self, msg):
