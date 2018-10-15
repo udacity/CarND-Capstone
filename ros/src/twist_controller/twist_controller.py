@@ -43,7 +43,7 @@ class Controller(object):
 
         current_vel = self.vel_lpf.filt(current_vel)
 
-        steering = self.steer.get_steering(linear_vel, angular_vel, current_vel)
+        steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
 
         val_error = linear_vel - current_vel
         self.last_vel = current_vel
@@ -57,7 +57,7 @@ class Controller(object):
 
         if linear_vel == 0. and current_vel < 0.1:
             throttle = 0.
-            brake = 400  # N*m
+            brake = 700  # N*m
         elif throttle < 0.1 and val_error < 0:
             throttle = 0.
             decel = max(val_error, self.params['decel_limit'])
