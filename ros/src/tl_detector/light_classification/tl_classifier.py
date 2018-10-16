@@ -18,7 +18,7 @@ class TLClassifier(object):
         	self.light_map = [TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.GREEN, TrafficLight.UNKNOWN]
     	else:
 		pass
-    def get_classification(self, image, classify=False):
+    def get_classification(self, image, classify=True):
         """Determines the color of the traffic light in the image
 
         Args:
