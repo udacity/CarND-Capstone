@@ -112,7 +112,8 @@ class TLDetector(object):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
-            pose (Pose): position to match a waypoint to
+            x (X): X position to match a waypoint to
+            y (Y): Y position to match a waypoint to
 
         Returns:
             int: index of the closest waypoint in self.waypoints
@@ -121,7 +122,22 @@ class TLDetector(object):
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         return closest_idx
 
-    def get_light_state(self, light):
+    def get_light_classification(self):
+        """Determines the current color of the traffic light
+
+        Returns:
+            int: ID of traffic light color (specified in styx_msgs/TrafficLight)
+
+        """
+        if not self.has_image:
+            self.prev_light_loc = None
+            return False
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+        # Get classification
+        return self.light_classifier.get_classification(cv_image)
+
+    @staticmethod
+    def get_light_state(light):
         """Determines the current color of the traffic light
 
         Args:
@@ -131,13 +147,7 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        # return light.state
-        if not self.has_image:
-            self.prev_light_loc = None
-            return False
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
-        # Get classification
-        return self.light_classifier.get_classification(cv_image)
+        return light.state
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -163,7 +173,7 @@ class TLDetector(object):
                 temp_wp_idx = self.get_closest_waypoint(*line)
                 # find closest stop line waypoint index
                 d = temp_wp_idx - car_wp_idx
-                if d >= 0 and d < diff:
+                if 0 <= d < diff:
                     diff = d
                     closest_light = light
                     line_wp_idx = temp_wp_idx
