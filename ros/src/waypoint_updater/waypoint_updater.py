@@ -53,7 +53,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         rospy.Subscriber('/vehicle/obstacle_points', PointCloud2, self.obstacle_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
+        # TODO: Add a subscriber for and /obstacle_waypoint below
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -64,8 +64,9 @@ class WaypointUpdater(object):
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints and self.waypoint_tree:
-                closest_waypoint_idx = self.get_closest_waypoint_idx()
-                self.publish_waypoints(closest_waypoint_idx)
+                # closest_waypoint_idx = self.get_closest_waypoint_idx()
+                # self.publish_waypoints(closest_waypoint_idx)
+                self.publish_waypoints()
             rate.sleep()
 
     def get_closest_waypoint_idx(self):
@@ -171,35 +172,34 @@ class WaypointUpdater(object):
     #                 too_close = True
     #     return too_close
 
-    def publish_waypoints(self, closest_idx):
-        lane = Lane()
-        lane.header = self.base_waypoints.header
-        lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
-        self.final_waypoints_pub.publish(lane)
-
-    # def publish_waypoints(self):
-    #     if self.waypoint_tree:
-    #         final_lane = self.generate_lane()
-    #         self.final_waypoints_pub.publish(final_lane)
-
-    # def generate_lane(self):
+    # def publish_waypoints(self, closest_idx):
     #     lane = Lane()
-    #     closest_idx = self.get_closest_waypoint_idx()
-    #     farthest_idx = closest_idx + LOOKAHEAD_WPS
-    #     base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
-    #
-    #     stop_point = -1
-    #     if self.stopline_wp_idx == -1 or self.stopline_wp_idx >= farthest_idx:
-    #         lane.waypoints = base_waypoints
-    #     elif self.stopline_wp_idx != -1 and self.stopline_wp_idx < farthest_idx:
-    #         stop_point = self.stopline_wp_idx
-    #
-    #         # print('stop:'+str(self.stopline_wp_idx))
-    #     if stop_point != -1:
-    #         lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx, stop_point)
-    #     else:
-    #         lane.waypoints = base_waypoints
-    #     return lane
+    #     lane.header = self.base_waypoints.header
+    #     lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx + LOOKAHEAD_WPS]
+    #     self.final_waypoints_pub.publish(lane)
+
+    def publish_waypoints(self):
+        if self.waypoint_tree:
+            final_lane = self.generate_lane()
+            self.final_waypoints_pub.publish(final_lane)
+
+    def generate_lane(self):
+        lane = Lane()
+        closest_idx = self.get_closest_waypoint_idx()
+        farthest_idx = closest_idx + LOOKAHEAD_WPS
+        base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
+        stop_point = -1
+        if self.stopline_wp_idx == -1 or self.stopline_wp_idx >= farthest_idx:
+            lane.waypoints = base_waypoints
+        elif self.stopline_wp_idx != -1 and self.stopline_wp_idx < farthest_idx:
+            stop_point = self.stopline_wp_idx
+    
+        # print('stop:'+str(self.stopline_wp_idx))
+        if stop_point != -1:
+            lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx, stop_point)
+        else:
+            lane.waypoints = base_waypoints
+        return lane
 
     def decelerate_waypoints(self, waypoints, closest_idx, stop_point):
         temp = []

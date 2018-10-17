@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
+
 import rospy
 import tf
 import cv2
@@ -43,7 +44,8 @@ class TLPublisher(object):
 
         return light
 
-    def create_pose(self, x, y, z, yaw=0.):
+    @staticmethod
+    def create_pose(x, y, z, yaw=0.):
         pose = PoseStamped()
 
         pose.header = Header()
