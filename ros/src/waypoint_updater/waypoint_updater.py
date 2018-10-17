@@ -25,8 +25,8 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
-MAX_DECEL=.5
+LOOKAHEAD_WPS = 100  # Number of waypoints we will publish. You can change this number
+MAX_DECEL = 0.5
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -62,10 +62,12 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.loop()
     def loop(self):
-        rate=rospy.Rate(30)
+        rate = rospy.Rate(30)
+
         while not rospy.is_shutdown():
-            if self.pose and self.base_lane:
-                self.publish_waypoints()
+            if self.pose and self.base_waypoints and self.waypoint_tree:
+                closest_waypoint_idx = self.get_closest_waypoint_idx()
+                self.publish_waypoints(closest_waypoint_idx)
             rate.sleep()
     def get_closest_waypoint_idx(self):
         x=self.pose.pose.position.x
@@ -290,19 +292,11 @@ class WaypointUpdater(object):
         
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        print('waypoints_cb')
-        self.base_lane=waypoints
-        self.base_lane_left=copy.deepcopy(waypoints)
-        self.base_lane_righ=copy.deepcopy(waypoints)
-        for i in range(len(self.base_lane.waypoints)):
-            self.base_lane_left.waypoints[i]=self.getXY(i,2,self.base_lane.waypoints)
-            self.base_lane_righ.waypoints[i]=self.getXY(i,10,self.base_lane.waypoints)
-            if not self.waypoints_2d:
-                self.waypoints_2d=[[waypoint.pose.pose.position.x,waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
-                self.waypoint_tree=KDTree(self.waypoints_2d)
-        
-        
+        self.base_waypoints = waypoints
+        if not self.waypoints_2d:
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            self.waypoint_tree = KDTree(self.waypoints_2d)
+
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         if self.lasttraffic!=msg.data:
