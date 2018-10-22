@@ -49,7 +49,11 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier(sess, self.config["is_site"], classify=True)
+        if self.config["is_site"]:
+            model = "saved_real_model/frozen_inference_graph_ssd_inception_site.pb"
+        else:
+            model = "saved_model/frozen_inference_graph_ssd_inception_sim.pb"
+	self.light_classifier = TLClassifier(model)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -161,6 +165,8 @@ class TLDetector(object):
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
+        # rospy.loginfo("Traffic state:" + str(light.state))
+
 	# return light.state
 
     def process_traffic_lights(self):
