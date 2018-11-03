@@ -53,7 +53,6 @@ class WaypointUpdater(object):
             rate.sleep()
 
     def publish_waypoints(self, nearest_indx):
-        rospy.loginfo("WaypointUpdater publisher function")
         lane = Lane()
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[nearest_indx:nearest_indx + LOOKAHEAD_WPS]
@@ -69,12 +68,10 @@ class WaypointUpdater(object):
         self.pose = msg
 
     def waypoints_cb(self, lane):
-        rospy.loginfo("WaypointUpdater recieved base_waypoints")
         self.base_waypoints = lane
         if not self.waypoints_2d:
             self.waypoints_2d = [ [ waypoint.pose.pose.position.x, waypoint.pose.pose.position.y ] for waypoint in lane.waypoints ]
             self.waypoint_ktree = KDTree(self.waypoints_2d)
-            rospy.loginfo("WaypointUpdater created waypoint_ktree")
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
