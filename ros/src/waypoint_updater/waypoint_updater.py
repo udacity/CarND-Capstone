@@ -68,13 +68,13 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         self.pose = msg
 
-    def waypoints_cb(self, waypoints):
-        rospy.loginfo("WaypointUpdater recieved base_waypoints)
+    def waypoints_cb(self, lane):
+        rospy.loginfo("WaypointUpdater recieved base_waypoints")
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
-            self.waypoints_2d = [ [ waypoint.pose.pose.position.x, waypoint.pose.pose.position.y ] for waypoint in waypoints ]
+            self.waypoints_2d = [ [ waypoint.pose.pose.position.x, waypoint.pose.pose.position.y ] for waypoint in lane.waypoints ]
             self.waypoint_ktree = KDTree(self.waypoints_2d)
-            rospy.loginfo("WaypointUpdater created waypoint_ktree)
+            rospy.loginfo("WaypointUpdater created waypoint_ktree")
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
