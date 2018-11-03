@@ -44,12 +44,12 @@ class WaypointUpdater(object):
         self.freq = rate_hz
 
     def loop(self):
+        rate = rospy.Rate(self.freq)
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints:
                 nearest_wp_indx = self.get_nearest_wp_indx()
                 self.publish_waypoints(nearest_wp_indx)
-        rate = rospy.Rate(self.freq)
-        rate.sleep()
+            rate.sleep()
 
     def publish_waypoints(self, nearest_indx):
         lane = Lane()
