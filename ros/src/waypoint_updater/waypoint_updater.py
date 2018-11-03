@@ -42,16 +42,21 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.waypoint_ktree = None
         self.freq = rate_hz
+        self.loop()
+        rospy.loginfo("WaypointUpdater initialized")
 
     def loop(self):
+        rospy.loginfo("WaypointUpdater loop")
         rate = rospy.Rate(self.freq)
         while not rospy.is_shutdown():
+            rospy.loginfo("WaypointUpdater loop, not shutdown")
             if self.pose and self.base_waypoints:
                 nearest_wp_indx = self.get_nearest_wp_indx()
                 self.publish_waypoints(nearest_wp_indx)
             rate.sleep()
 
     def publish_waypoints(self, nearest_indx):
+        rospy.loginfo("WaypointUpdater publisher function")
         lane = Lane()
         lane.header = self.base_waypoints.header
         lane.waypoints = self.base_waypoints.waypoints[nearest_indx:nearest_indx + LOOKAHEAD_WPS]
