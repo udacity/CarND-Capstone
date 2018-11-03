@@ -35,21 +35,13 @@ class WaypointUpdater(object):
         
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-        def publish_waypoints(self):
-            self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         self.pose = None
         self.base_waypoints = None
         self.waypoints_2d = None
         self.waypoint_ktree = None
         self.freq = rate_hz
-
-    def get_nearest_wp_indx(self):
-        ptx = self.pose.pose.position.x
-        pty = self.pose.pose.position.y
-        nearest_indx = self.waypoint_ktree.query([ptx,pty])[1]
-
-        return nearest_indx
 
     def loop(self):
         while not rospy.is_shutdown():
@@ -58,6 +50,18 @@ class WaypointUpdater(object):
                 self.publish_waypoints(nearest_wp_indx)
         rate = rospy.Rate(self.freq)
         rate.sleep()
+
+    def publish_waypoints(self, nearest_indx):
+        lane = Lane()
+        lane.header = self.base_waypoints.header
+        lane.waypoints = self.base_waypoints.waypoints[nearest_indx:nearest_indx + LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publish(lane)
+
+    def get_nearest_wp_indx(self):
+        ptx = self.pose.pose.position.x
+        pty = self.pose.pose.position.y
+        nearest_indx = self.waypoint_ktree.query([ptx,pty])[1]
+        return nearest_indx
 
     def pose_cb(self, msg):
         self.pose = msg
