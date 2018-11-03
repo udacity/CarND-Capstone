@@ -43,13 +43,10 @@ class WaypointUpdater(object):
         self.waypoint_ktree = None
         self.freq = rate_hz
         self.loop()
-        rospy.loginfo("WaypointUpdater initialized")
 
     def loop(self):
-        rospy.loginfo("WaypointUpdater loop")
         rate = rospy.Rate(self.freq)
         while not rospy.is_shutdown():
-            rospy.loginfo("WaypointUpdater loop, not shutdown")
             if self.pose and self.base_waypoints and self.waypoint_ktree != None:
                 nearest_wp_indx = self.get_nearest_wp_indx()
                 self.publish_waypoints(nearest_wp_indx)
@@ -72,10 +69,12 @@ class WaypointUpdater(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
+        rospy.loginfo("WaypointUpdater recieved base_waypoints)
         self.base_waypoints = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [ [ waypoint.pose.pose.position.x, waypoint.pose.pose.position.y ] for waypoint in waypoints ]
             self.waypoint_ktree = KDTree(self.waypoints_2d)
+            rospy.loginfo("WaypointUpdater created waypoint_ktree)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
