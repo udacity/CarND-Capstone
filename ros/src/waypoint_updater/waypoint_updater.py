@@ -70,7 +70,7 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, lane):
         rospy.loginfo("WaypointUpdater recieved base_waypoints")
-        self.base_waypoints = lane.waypoints
+        self.base_waypoints = lane
         if not self.waypoints_2d:
             self.waypoints_2d = [ [ waypoint.pose.pose.position.x, waypoint.pose.pose.position.y ] for waypoint in lane.waypoints ]
             self.waypoint_ktree = KDTree(self.waypoints_2d)
