@@ -50,7 +50,6 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        self.waypoints_2d = None
         self.waypoint_ktree = None
 
         rospy.spin()
@@ -59,8 +58,8 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        self.waypoints_2d = waypoints
-        self.waypoint_ktree = KDTree(self.waypoints_2d)
+        self.waypoints = waypoints
+        self.waypoint_ktree = KDTree(self.waypoints)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
