@@ -107,7 +107,7 @@ class TLDetector(object):
         if self.waypoint_ktree == None:
             return 0
             
-        return self.waypoint_ktree.query(pose)[1]
+        return self.waypoint_ktree.query([pose],1)[1]
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
