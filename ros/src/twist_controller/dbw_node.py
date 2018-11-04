@@ -74,7 +74,6 @@ class DBWNode(object):
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velcity_cb)
-
         self.loop()
 
     def loop(self):
@@ -89,6 +88,15 @@ class DBWNode(object):
             if self.dbw_enabled:
                 self.publish(throttle, brake, steer)
             rate.sleep()
+    
+    def dbw_enabled_cb(self, dbw_en):
+        pass
+    
+    def twist_cb(self, twist):
+        pass
+    
+    def velcity_cb(self, vel):
+        pass
 
     def dbw_enabled_cb(self, dbw_en):
         self.dbw_enabled = dbw_en
