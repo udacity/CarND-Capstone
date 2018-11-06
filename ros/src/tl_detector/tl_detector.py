@@ -98,7 +98,7 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_waypoint(self, pose):
+    def get_closest_waypoint(self, position):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
@@ -111,7 +111,7 @@ class TLDetector(object):
         if self.waypoint_ktree == None:
             return 0
             
-        return self.waypoint_ktree.query([pose],1)[1]
+        return self.waypoint_ktree.query([position.x,position.y],1)[1]
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
