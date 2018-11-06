@@ -61,7 +61,20 @@ class WaypointUpdater(object):
     def get_nearest_wp_indx(self):
         ptx = self.pose.pose.position.x
         pty = self.pose.pose.position.y
-        nearest_indx = self.waypoint_ktree.query([ptx,pty])[1]
+        nearest_indx = self.waypoint_ktree.query([ptx,pty],1)[1]
+
+        nearest_coord = self.waypoints_2d[nearest_indx]
+        prev_coord = self.waypoints_2d[nearest_indx - 1]
+
+        neareset_vect = np.array(nearest_coord)
+        prev_vect = np.array(prev_coord)
+        positive_vect = np.array([ptx,pty])
+
+        val = np.dot(neareset_vect-prev_vect, positive_vect-neareset_vect)
+
+        if val > 0:
+            nearest_indx = (nearest_indx + 1) % len(self.waypoints_2d)
+
         return nearest_indx
 
     def pose_cb(self, msg):
