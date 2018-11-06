@@ -66,8 +66,8 @@ class WaypointUpdater(object):
         nearest_coord = self.waypoints_2d[nearest_indx]
         prev_coord = self.waypoints_2d[nearest_indx - 1]
 
-        neareset_vect = np.array([nearest_coord])
-        prev_vect = np.array([prev_coord])
+        neareset_vect = np.array(nearest_coord)
+        prev_vect = np.array(prev_coord)
         positive_vect = np.array([ptx,pty])
 
         val = np.dot(neareset_vect-prev_vect, positive_vect-neareset_vect)
