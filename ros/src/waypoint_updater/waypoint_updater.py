@@ -68,13 +68,13 @@ class WaypointUpdater(object):
 
         neareset_vect = np.array([nearest_coord])
         prev_vect = np.array([prev_coord])
-        positive_vect = np.array([x,y])
+        positive_vect = np.array([ptx,pty])
 
         val = np.dot(neareset_vect-prev_vect, positive_vect-neareset_vect)
 
         if val > 0:
             nearest_indx = (nearest_indx + 1) % len(self.waypoints_2d)
-            
+
         return nearest_indx
 
     def pose_cb(self, msg):
