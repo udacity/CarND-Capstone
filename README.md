@@ -3,9 +3,9 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 ### Team WRTC (Work-Round-The-Clock)
 1. Edwin Ng
 2. Harsh Nandan
-3. Kilian Mulken
-4. Martin Muhlmeier
-5.
+3. Kilian Muelken
+4. Kinji Sato
+5. Martin Muehlmeier
 
 
 Please use **one** of the two installation options, either native **or** docker installation.
