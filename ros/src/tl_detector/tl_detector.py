@@ -13,6 +13,7 @@ import yaml
 from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
+NO_WP = -1
 
 class TLDetector(object):
     def __init__(self):
@@ -47,7 +48,7 @@ class TLDetector(object):
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
+        self.last_wp = NO_WP
         self.state_count = 0
 
         self.waypoint_ktree = None
@@ -169,7 +170,7 @@ class TLDetector(object):
             state = self.get_light_state(closest_light)
             return light_wp, state
         self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+        return NO_WP TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
