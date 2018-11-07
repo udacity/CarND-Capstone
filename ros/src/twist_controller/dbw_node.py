@@ -88,15 +88,6 @@ class DBWNode(object):
             if self.dbw_enabled:
                 self.publish(throttle, brake, steer)
             rate.sleep()
-    
-    def dbw_enabled_cb(self, dbw_en):
-        pass
-    
-    def twist_cb(self, twist):
-        pass
-    
-    def velcity_cb(self, vel):
-        pass
 
     def dbw_enabled_cb(self, dbw_en):
         self.dbw_enabled = dbw_en
