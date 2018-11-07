@@ -170,7 +170,7 @@ class TLDetector(object):
             state = self.get_light_state(closest_light)
             return light_wp, state
         self.waypoints = None
-        return NO_WP TrafficLight.UNKNOWN
+        return NO_WP, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
