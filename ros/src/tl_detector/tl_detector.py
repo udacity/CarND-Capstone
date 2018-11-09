@@ -68,6 +68,8 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
+        rospy.loginfo("traffic_cb in tl_detector")
+        
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
