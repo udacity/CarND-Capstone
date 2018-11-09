@@ -70,9 +70,10 @@ class WaypointUpdater(object):
             lane.waypoints = base_wpts
         else:
             temp_wps = []
+            stop_idx = max(self.stop_wp - self.nearest_wp_idx - 2, 0)
             for i, wp in enumerate(base_wpts):
-                temp_wp = wp
-                stop_idx = max(self.stop_wp - self.nearest_wp_idx - 2, 0)
+                temp_wp = Waypoint()
+                temp_wp.pose = wp.pose
                 dist = self.distance(base_wpts, i, stop_idx)
                 vel = math.sqrt(2*DECEL_RATE*dist)
                 if vel < 1.:
