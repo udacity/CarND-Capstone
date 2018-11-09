@@ -112,7 +112,7 @@ class WaypointUpdater(object):
             self.waypoint_ktree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
-        # self.stop_wp = msg.data
+        self.stop_wp = msg.data
         pass
 
     def obstacle_cb(self, msg):
