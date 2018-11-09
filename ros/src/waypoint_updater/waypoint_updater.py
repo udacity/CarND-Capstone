@@ -54,10 +54,11 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints and self.waypoint_ktree != None:
                 self.nearest_wp_idx = self.get_nearest_wp_indx()
-                self.publish_waypoints(self.nearest_wp_idx)
+                rospy.loginfo("nearest_wp_idx = ",self.nearest_wp_idx )
+                self.publish_waypoints()
             rate.sleep()
 
-    def publish_waypoints(self, nearest_indx):
+    def publish_waypoints(self):
         lane = self.generate_lane()
         self.final_waypoints_pub.publish(lane)
 
@@ -67,10 +68,12 @@ class WaypointUpdater(object):
         look_ahead_wp_max = self.nearest_wp_idx + LOOKAHEAD_WPS
         base_wpts = self.base_waypoints.waypoints[self.nearest_wp_idx:look_ahead_wp_max]
         if self.stop_wp == NO_WP or (self.stop_wp >= look_ahead_wp_max):
+            rospy.loginfo("no stop_wp" )
             lane.waypoints = base_wpts
         else:
             temp_wps = []
             stop_idx = max(self.stop_wp - self.nearest_wp_idx - 2, 0)
+            rospy.loginfo("stop_wp @ ", stop_idx )
             for i, wp in enumerate(base_wpts):
                 temp_wp = Waypoint()
                 temp_wp.pose = wp.pose
