@@ -66,8 +66,8 @@ class WaypointUpdater(object):
         lane.header = self.base_waypoints.header
         look_ahead_wp_max = self.nearest_wp_idx + LOOKAHEAD_WPS
         base_wpts = self.base_waypoints.waypoints[self.nearest_wp_idx:look_ahead_wp_max]
-        if self.stop_wp == NO_WP or (self.stop_wp >= look_ahead_wp_max):
-            lane.waypoints = base_wpts
+        # if self.stop_wp == NO_WP or (self.stop_wp >= look_ahead_wp_max):
+        lane.waypoints = base_wpts
         # else:
         #     temp_wps = []
         #     stop_idx = max(self.stop_wp - self.nearest_wp_idx - 2, 0)
