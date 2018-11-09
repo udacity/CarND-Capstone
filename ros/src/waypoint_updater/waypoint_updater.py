@@ -54,7 +54,7 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints and self.waypoint_ktree != None:
                 self.nearest_wp_idx = self.get_nearest_wp_indx()
-                rospy.loginfo("nearest_wp_idx = %i",self.nearest_wp_idx )
+                # rospy.loginfo("nearest_wp_idx = %i",self.nearest_wp_idx )
                 self.publish_waypoints()
             rate.sleep()
 
@@ -68,7 +68,7 @@ class WaypointUpdater(object):
         look_ahead_wp_max = self.nearest_wp_idx + LOOKAHEAD_WPS
         base_wpts = self.base_waypoints.waypoints[self.nearest_wp_idx:look_ahead_wp_max]
         if self.stop_wp == NO_WP or (self.stop_wp >= look_ahead_wp_max):
-            rospy.loginfo("no stop_wp" )
+            # rospy.loginfo("no stop_wp" )
             lane.waypoints = base_wpts
         else:
             temp_wps = []
@@ -115,8 +115,8 @@ class WaypointUpdater(object):
             self.waypoint_ktree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
+        rospy.loginfo("traffic_cb")
         self.stop_wp = msg.data
-        pass
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
