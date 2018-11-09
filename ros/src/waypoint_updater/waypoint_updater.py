@@ -68,19 +68,19 @@ class WaypointUpdater(object):
         base_wpts = self.base_waypoints.waypoints[self.nearest_wp_idx:look_ahead_wp_max]
         if self.stop_wp == NO_WP or (self.stop_wp >= look_ahead_wp_max):
             lane.waypoints = base_wpts
-        else:
-            temp_wps = []
-            stop_idx = max(self.stop_wp - self.nearest_wp_idx - 2, 0)
-            for i, wp in enumerate(base_wpts):
-                temp_wp = Waypoint()
-                temp_wp.pose = wp.pose
-                dist = self.distance(base_wpts, i, stop_idx)
-                vel = math.sqrt(2*DECEL_RATE*dist)
-                if vel < 1.:
-                    vel = 0.
-                temp_wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
-                temp_wps.append(temp_wp)
-            lane.waypoints = temp_wps
+        # else:
+        #     temp_wps = []
+        #     stop_idx = max(self.stop_wp - self.nearest_wp_idx - 2, 0)
+        #     for i, wp in enumerate(base_wpts):
+        #         temp_wp = Waypoint()
+        #         temp_wp.pose = wp.pose
+        #         dist = self.distance(base_wpts, i, stop_idx)
+        #         vel = math.sqrt(2*DECEL_RATE*dist)
+        #         if vel < 1.:
+        #             vel = 0.
+        #         temp_wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+        #         temp_wps.append(temp_wp)
+        #     lane.waypoints = temp_wps
         return lane
 
     def get_nearest_wp_indx(self):
