@@ -71,7 +71,7 @@ class WaypointUpdater(object):
             lane.waypoints = base_wpts
         else:
             temp_wps = []
-            stop_idx = max(self.stop_wp + (self.nearest_wp_idx - 2), 0)
+            stop_idx = max(self.stop_wp - self.nearest_wp_idx - 2, 0)
             rospy.loginfo("stop_wp @ %i", stop_idx )
             for i, wp in enumerate(base_wpts):
                 temp_wp = Waypoint()
