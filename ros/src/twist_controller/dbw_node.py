@@ -100,6 +100,16 @@ class DBWNode(object):
     def velcity_cb(self, vel_msg):
         self.current_vel = vel_msg.twist.linear.x
 
+    def dbw_enabled_cb(self, dbw_en):
+        self.dbw_enabled = dbw_en
+
+    def twist_cb(self, twist_msg):
+        self.linear_vel = twist_msg.twist.linear.x
+        self.angular_vel = twist_msg.twist.angular.z
+
+    def velcity_cb(self, vel_msg):
+        self.current_vel = vel_msg.twist.linear.x
+
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
         tcmd.enable = True

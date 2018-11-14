@@ -16,6 +16,7 @@ class Controller(object):
                  max_lat_accel,
                  max_steer_angle):
 
+
         self.decel_limit = decel_limit
         self.vehicle_mass = vehicle_mass
         self.wheel_radius = wheel_radius

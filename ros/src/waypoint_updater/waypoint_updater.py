@@ -99,7 +99,7 @@ class WaypointUpdater(object):
         neareset_vect = np.array(nearest_coord)
         prev_vect = np.array(prev_coord)
         positive_vect = np.array([ptx,pty])
-
+        
         # check if the nearest_coord is infront or behind the car
         val = np.dot(neareset_vect-prev_vect, positive_vect-neareset_vect)
 
