@@ -20,14 +20,13 @@ Once you have created dbw_node, you will update this node to use the status of t
 Please note that our simulator also provides the exact location of traffic lights and their
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
-
-TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-UPDATE_RATE = 50 #hz
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+UPDATE_RATE = 30 #hz
 NO_WP = -1
-DECEL_RATE = 2.5 # m/s^2
+DECEL_RATE = 1.5 # m/s^2
+STOPLINE = 3 # waypoints behind stopline to stop
 
 class WaypointUpdater(object):
     def __init__(self, rate_hz=UPDATE_RATE):
@@ -56,6 +55,8 @@ class WaypointUpdater(object):
             if self.pose and self.base_waypoints and self.waypoint_ktree != None:
                 self.nearest_wp_idx = self.get_nearest_wp_indx()
                 self.publish_waypoints()
+                # don't update unless we get new positional data
+                self.pose = None
             rate.sleep()
 
     def publish_waypoints(self):
@@ -70,19 +71,21 @@ class WaypointUpdater(object):
         if self.stop_wp == NO_WP or (self.stop_wp >= look_ahead_wp_max):
             lane.waypoints = base_wpts
         else:
-            temp_wps = []
-            stop_idx = max(self.stop_wp - self.nearest_wp_idx - 2, 0)
-            rospy.loginfo("stop_wp @ %i", stop_idx )
+            temp_waypoints = []
+            stop_idx = max(self.stop_wp - self.nearest_wp_idx - STOPLINE, 0)
             for i, wp in enumerate(base_wpts):
                 temp_wp = Waypoint()
                 temp_wp.pose = wp.pose
-                dist = self.distance(base_wpts, i, stop_idx)
-                vel = math.sqrt(2*DECEL_RATE*dist)
-                if vel < 1.:
+                if stop_idx >= STOPLINE:
+                    dist = self.distance(base_wpts, i, stop_idx)
+                    vel = math.sqrt(DECEL_RATE*2*dist)
+                    if vel < 1.:
+                        vel = 0.
+                else:
                     vel = 0.
                 temp_wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
-                temp_wps.append(temp_wp)
-            lane.waypoints = temp_wps
+                temp_waypoints.append(temp_wp)
+            lane.waypoints = temp_waypoints
         return lane
 
     def get_nearest_wp_indx(self):
@@ -97,9 +100,11 @@ class WaypointUpdater(object):
         prev_vect = np.array(prev_coord)
         positive_vect = np.array([ptx,pty])
 
+        # check if the nearest_coord is infront or behind the car
         val = np.dot(neareset_vect-prev_vect, positive_vect-neareset_vect)
 
-        if val > 0:
+        if val > 0.0:
+            # works for waypoints that are in a loop
             nearest_indx = (nearest_indx + 1) % len(self.waypoints_2d)
 
         return nearest_indx
