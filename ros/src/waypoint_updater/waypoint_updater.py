@@ -25,7 +25,7 @@ as well as to verify your TL classifier.
 LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
 UPDATE_RATE = 30 #hz
 NO_WP = -1
-DECEL_RATE = 1.5 # m/s^2
+DECEL_RATE = 4.9 # m/s^2
 STOPLINE = 3 # waypoints behind stopline to stop
 
 class WaypointUpdater(object):
@@ -78,12 +78,15 @@ class WaypointUpdater(object):
                 temp_wp.pose = wp.pose
                 if stop_idx >= STOPLINE:
                     dist = self.distance(base_wpts, i, stop_idx)
-                    vel = math.sqrt(DECEL_RATE*2*dist)
-                    if vel < 1.:
-                        vel = 0.
+                    # v^2 = vo^2 + 2*a*(x-xo)
+                    # v^2 = 0 + 2*a*(dist)
+                    # v = sqrt(2*a*dist)
+                    vel = math.sqrt(2*DECEL_RATE*dist)
+                    if vel < 1.0:
+                        vel = 0.0
                 else:
-                    vel = 0.
-                temp_wp.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
+                    vel = 0.0
+                temp_wp.twist.twist.linear.x = min(vel, base_wpts[0].twist.twist.linear.x)
                 temp_waypoints.append(temp_wp)
             lane.waypoints = temp_waypoints
         return lane
