@@ -27,6 +27,7 @@ UPDATE_RATE = 30 #hz
 NO_WP = -1
 DECEL_RATE = 4.9 # m/s^2
 STOPLINE = 3 # waypoints behind stopline to stop
+DELAY = 20. # update difference between this node and twist_controller in hz
 
 class WaypointUpdater(object):
     def __init__(self, rate_hz=UPDATE_RATE):
@@ -36,8 +37,6 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         self.pose = None
@@ -54,6 +53,7 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints and self.waypoint_ktree != None:
                 self.nearest_wp_idx = self.get_nearest_wp_indx()
+                
                 self.publish_waypoints()
                 # don't update unless we get new positional data
                 self.pose = None
@@ -78,6 +78,10 @@ class WaypointUpdater(object):
                 temp_wp.pose = wp.pose
                 if stop_idx >= STOPLINE:
                     dist = self.distance(base_wpts, i, stop_idx)
+                    # account for system lag
+                    delay_s = 1./DELAY
+                    # x = xo + vot + .5at^2, xo = 0
+                    dist += self.get_waypoint_velocity(base_wpts[i])*delay_s+.5*DECEL_RATE*delay_s*delay_s
                     # v^2 = vo^2 + 2*a*(x-xo)
                     # v^2 = 0 + 2*a*(dist)
                     # v = sqrt(2*a*dist)
@@ -86,7 +90,7 @@ class WaypointUpdater(object):
                         vel = 0.0
                 else:
                     vel = 0.0
-                temp_wp.twist.twist.linear.x = min(vel, base_wpts[0].twist.twist.linear.x)
+                temp_wp.twist.twist.linear.x = min(vel, self.get_waypoint_velocity(base_wpts[0]))
                 temp_waypoints.append(temp_wp)
             lane.waypoints = temp_waypoints
         return lane
