@@ -23,7 +23,9 @@ class TLDetector(object):
         self.waypoints = None
         self.camera_image = None
         self.lights = []
-
+        self.waypoint_ktree = None
+        self.waypoints_2d = None
+        
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -50,9 +52,6 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = NO_WP
         self.state_count = 0
-
-        self.waypoint_ktree = None
-        self.waypoints_2d = None
 
         rospy.spin()
 
@@ -125,21 +124,21 @@ class TLDetector(object):
 
         """
 
-        return light.state
+#         return light.state
 
         #TODO Use classifier to return light state
 
-        # if(not self.has_image):
-        #     self.prev_light_loc = None
-        #     return False
+        if(not self.has_image):
+            self.prev_light_loc = None
+            return False
 
-        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        ## use rgb for detect
-        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
+        # use rgb for detect
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
-        # #Get classification
-        # return self.light_classifier.get_classification(cv_image)
+        #Get classification
+        return self.light_classifier.get_classification(cv_image)
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its

@@ -2,10 +2,18 @@ from styx_msgs.msg import TrafficLight
 import numpy as np
 import tensorflow as tf
 
+USE_SSD_INCEPTION = True
+USE_SIM_MODEL = True
+
 class TLClassifier(object):
     def __init__(self):
         
-        MODEL_PATH = '/floyd/home/TL/trained_models/ssdlite_mobilenet_v2_coco_2018_05_09_exported/frozen_inference_graph.pb'
+        if USE_SIM_MODEL:
+            MODEL_PATH = 'light_classification/frozen_models/simulator_model/frozen_inference_graph.pb'
+        elif USE_SSD_INCEPTION:
+            MODEL_PATH = 'light_classification/frozen_models/ssd_inception_v2/frozen_inference_graph.pb'
+#         else:
+#             MODEL_PATH = '/floyd/home/TL/trained_models/ssdlite_mobilenet_v2_coco_2018_05_09_exported/frozen_inference_graph.pb'
         
         # Load the graph
         self.detection_graph = tf.Graph()
