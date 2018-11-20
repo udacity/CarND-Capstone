@@ -7,6 +7,7 @@ from geometry_msgs.msg import TwistStamped
 import math
 
 from twist_controller import Controller
+import constants as const
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -77,10 +78,10 @@ class DBWNode(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50)  # 50Hz
+        rate = rospy.Rate(const.DBW_UPDATE_FREQ)
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
+            # Get predicted throttle, brake, and steering using `twist_controller`
+            # Only publish the control commands if dbw is enabled
             throttle, brake, steer = self.controller.control(self.current_vel,
                                                              self.dbw_enabled,
                                                              self.linear_vel,
@@ -88,15 +89,16 @@ class DBWNode(object):
             if self.dbw_enabled:
                 self.publish(throttle, brake, steer)
             rate.sleep()
-    
+
     def dbw_enabled_cb(self, dbw_en):
-        pass
-    
-    def twist_cb(self, twist):
-        pass
-    
-    def velcity_cb(self, vel):
-        pass
+        self.dbw_enabled = dbw_en
+
+    def twist_cb(self, twist_msg):
+        self.linear_vel = twist_msg.twist.linear.x
+        self.angular_vel = twist_msg.twist.angular.z
+
+    def velcity_cb(self, vel_msg):
+        self.current_vel = vel_msg.twist.linear.x
 
     def dbw_enabled_cb(self, dbw_en):
         self.dbw_enabled = dbw_en
