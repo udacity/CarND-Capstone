@@ -49,7 +49,6 @@ class Controller(object):
             self.throttle_controller.reset()
             return 0., 0., 0.
         current_vel = self.vel_lowPassFilter.filt(current_vel)
-        rospy.loginfo("current velocity = %s",current_vel)
         steer = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
 
         vel_error = linear_vel - current_vel
