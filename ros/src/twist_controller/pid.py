@@ -1,4 +1,3 @@
-
 MIN_NUM = float('-inf')
 MAX_NUM = float('inf')
 
@@ -18,10 +17,10 @@ class PID(object):
 
     def step(self, error, sample_time):
 
-        integral = self.int_val + error * sample_time;
-        derivative = (error - self.last_error) / sample_time;
+        integral = self.int_val + error * sample_time
+        derivative = (error - self.last_error) / sample_time
 
-        val = self.kp * error + self.ki * integral + self.kd * derivative;
+        val = self.kp * error + self.ki * integral + self.kd * derivative
 
         if val > self.max:
             val = self.max
