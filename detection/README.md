@@ -10,6 +10,8 @@
 ## Installation
 
 - ./install.sh
+- source setup.bash
+- ./test-env.sh
 
 ## Usage
 
