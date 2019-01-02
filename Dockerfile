@@ -28,6 +28,9 @@ RUN apt-get install -y ros-$ROS_DISTRO-image-proc
 # socket io
 RUN apt-get install -y netbase
 
+# Upgrade pillow
+RUN pip install pillow --upgrade
+
 RUN mkdir /capstone
 VOLUME ["/capstone"]
 VOLUME ["/root/.ros/log/"]
