@@ -16,6 +16,8 @@
 ## Usage
 
 - source setup.bash
+- ./prepare_data.sh
+- ./train_simulator.sh
 
 ## References:
 - [Tensorflow Object Detection Installation](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md)
