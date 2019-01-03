@@ -2,6 +2,7 @@
 WORKDIR=$PWD
 
 # Create virtualenv
+pip install virtualenv
 rm -Rf venv
 virtualenv --python=$(which python2) venv
 source venv/bin/activate
