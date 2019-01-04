@@ -4,12 +4,11 @@
 ## Requirements
 
 - python 2.7
-- protoc3
+- protoc2.6
 - a nvidia gpu that works with tensorflow
 
 ## Installation
 
-- Optionally: ./install-protobuf3.sh
 - ./install.sh
 - source setup.bash
 - ./test-env.sh
