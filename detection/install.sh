@@ -1,6 +1,9 @@
 #!/bin/bash
 WORKDIR=$PWD
 
+# install pre-requisites
+sudo apt-get install protobuf-compiler python-pil python-lxml
+
 # Create virtualenv
 pip install virtualenv
 rm -Rf venv
