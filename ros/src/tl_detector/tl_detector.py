@@ -5,15 +5,16 @@ from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
+from message_filters import ApproximateTimeSynchronizer, Subscriber
 from cv_bridge import CvBridge
 from scipy.spatial import KDTree
 from light_classification.tl_classifier import TLClassifier
-import tf
 import cv2
 import yaml
 import os
 
 STATE_COUNT_THRESHOLD = 3
+SYNC_QUEUE_SIZE = 10
 
 class TLDetector(object):
     def __init__(self):
@@ -34,8 +35,8 @@ class TLDetector(object):
         self.light_waypoint_idx = -1
         self.light_state_count = 0        
         self.bridge = CvBridge()
-        self.listener = tf.TransformListener()
         self.light_classifier = None
+
         # Check if we force the usage of the simulator light state, not available when on site
         if self.config['use_light_state'] and not self.is_site:
             rospy.logwarn('Classifier disabled, using simulator light state')
@@ -44,17 +45,44 @@ class TLDetector(object):
 
         # Subscribers
         self.base_waypoints_sub = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        rospy.Subscriber('/image_color', Image, self.image_cb)
+
+        self.synced_sub = ApproximateTimeSynchronizer([Subscriber("/vehicle/traffic_lights", TrafficLightArray),
+                                                       Subscriber("/current_pose", PoseStamped),
+                                                       Subscriber("/image_color", Image)], # TODO Check buff_size if it helps
+                                                       SYNC_QUEUE_SIZE, 0.1)
+
+        self.synced_sub.registerCallback(self.synced_data_cb)
 
         # Publisher
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
+        # TODO Check if a loop publishing at a low rate frequency is more appropriate
         rospy.spin()
 
-    def pose_cb(self, msg):
-        self.current_pose = msg.pose
+    def synced_data_cb(self, lights_msg, pose_msg, image_msg):
+        self.lights = lights_msg.lights
+        self.current_pose = pose_msg.pose
+        self.camera_image = image_msg
+
+        light_waypoint_idx, light_state = self.process_traffic_lights()
+
+        '''
+        Publish upcoming red lights at camera frequency.
+        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
+        of times till we start using it. Otherwise the previous stable state is
+        used.
+        '''
+        
+        if self.light_state != light_state:
+            self.light_state_count = 0
+            self.light_state = light_state
+        elif self.light_state_count >= STATE_COUNT_THRESHOLD:
+            light_waypoint_idx = light_waypoint_idx if light_state == TrafficLight.RED else -1
+            self.light_waypoint_idx = light_waypoint_idx
+            self.upcoming_red_light_pub.publish(Int32(light_waypoint_idx))
+        else:
+            self.upcoming_red_light_pub.publish(Int32(self.light_waypoint_idx))
+        self.light_state_count += 1
 
     def waypoints_cb(self, msg):
         self.waypoints = msg.waypoints
@@ -73,38 +101,6 @@ class TLDetector(object):
         self.base_waypoints_sub.unregister()
 
         rospy.loginfo("Base waypoints data processed, unsubscribed from /base_waypoints")
-
-    def traffic_cb(self, msg):
-        self.lights = msg.lights
-
-    def image_cb(self, msg):
-        """Identifies red lights in the incoming camera image and publishes the index
-            of the waypoint closest to the red light's stop line to /traffic_waypoint
-
-        Args:
-            msg (Image): image from car-mounted camera
-
-        """
-        self.camera_image = msg
-        # Image size (sim): 1440000
-        light_waypoint_idx, light_state = self.process_traffic_lights()
-
-        '''
-        Publish upcoming red lights at camera frequency.
-        Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
-        of times till we start using it. Otherwise the previous stable state is
-        used.
-        '''
-        if self.light_state != light_state:
-            self.light_state_count = 0
-            self.light_state = light_state
-        elif self.light_state_count >= STATE_COUNT_THRESHOLD:
-            light_waypoint_idx = light_waypoint_idx if light_state == TrafficLight.RED else -1
-            self.light_waypoint_idx = light_waypoint_idx
-            self.upcoming_red_light_pub.publish(Int32(light_waypoint_idx))
-        else:
-            self.upcoming_red_light_pub.publish(Int32(self.light_waypoint_idx))
-        self.light_state_count += 1
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
