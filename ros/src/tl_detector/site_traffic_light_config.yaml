@@ -6,3 +6,4 @@ camera_info:
 stop_line_positions:
     - [8.0, 16.2]
 is_site: True
+use_light_state: False
