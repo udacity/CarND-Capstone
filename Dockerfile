@@ -27,6 +27,7 @@ RUN apt-get install -y ros-$ROS_DISTRO-image-proc
 
 # socket io
 RUN apt-get install -y netbase
+RUN pip install --upgrade pillow==5.4.0
 
 RUN mkdir /capstone
 VOLUME ["/capstone"]
