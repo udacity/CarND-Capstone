@@ -18,7 +18,7 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 def is_downloaded(file, md5sum):
-    return md5(file) == md5sum
+    return os.path.isfile(file) and md5(file) == md5sum
 
 def download(url, output_path, file_name):
     print("Downloading: {} to {}/{}".format(url, output_path, file_name))
