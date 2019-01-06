@@ -7,6 +7,7 @@ import hashlib
 flags = tf.app.flags
 flags.DEFINE_string('model_name', 'faster_rcnn_resnet101_coco_11_06_2017', 'Model name')
 flags.DEFINE_string('output_path', 'data', 'Output path')
+flags.DEFINE_string('download_path', '/tmp', 'Output path')
 flags.DEFINE_string('download_base', 'http://download.tensorflow.org/models/object_detection/', 'Download base URL')
 FLAGS = flags.FLAGS
 
@@ -20,18 +21,18 @@ def md5(fname):
 def is_downloaded(file, md5sum):
     return os.path.isfile(file) and md5(file) == md5sum
 
-def download(url, output_path, file_name):
-    print("Downloading: {} to {}/{}".format(url, output_path, file_name))
+def download(url, download_path, output_path, file_name):
+    print("Downloading: {} to {}/{}".format(url, download_path, file_name))
     opener = urllib.request.URLopener()
-    opener.retrieve(url, os.path.join(output_path, file_name))
-    tar_file = tarfile.open(os.path.join(output_path, file_name))
+    opener.retrieve(url, os.path.join(download_path, file_name))
+    tar_file = tarfile.open(os.path.join(download_path, file_name))
     tar_file.extractall(output_path)
 
 def main(args):
     url = FLAGS.download_base + FLAGS.model_name + ".tar.gz"
     file_name = FLAGS.model_name + ".tar.gz"
-    if not is_downloaded(os.path.join(FLAGS.output_path, file_name), "ddbcc7dbe423f4249bde10a32d6a7fc9"):
-        download(url, FLAGS.output_path, file_name)
+    if not is_downloaded(os.path.join(FLAGS.download_path, file_name), "ddbcc7dbe423f4249bde10a32d6a7fc9"):
+        download(url, FLAGS.download_path, FLAGS.output_path, file_name)
     else:
         print("Already downloaded: {}".format(file_name))
 
