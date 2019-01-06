@@ -30,7 +30,7 @@ Once you have the proposed throttle, brake, and steer values, publish it on the 
 that we have created in the `__init__` function.
 
 '''
-
+#Making a class of Vehicle parameters
 class EgoParams(object):
     def __init__(self):
         self.vehicle_mass = None

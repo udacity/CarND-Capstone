@@ -20,7 +20,7 @@ class Controller(object):
         min_speed=0.1,
         max_lat_accel= EgoParam.max_lat_accel,
         max_steer_angle= EgoParam.max_steer_angle)
-
+        
         self.EgoParam=EgoParam
 
 
