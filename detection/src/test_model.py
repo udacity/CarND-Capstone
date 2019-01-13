@@ -15,7 +15,7 @@ from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
 flags = tf.app.flags
-flags.DEFINE_string('model', 'export.pb/frozen_inference_graph.pb', 'Frozen model file')
+flags.DEFINE_string('model', 'out/sim_model_export/frozen_inference_graph.pb', 'Frozen model file')
 flags.DEFINE_string('labels', 'models/labelmap.pbtxt', 'Labels file')
 flags.DEFINE_string('image_path', 'test/sim', 'Test images path')
 flags.DEFINE_string('output_path', 'out/test/sim', 'Test images output path')

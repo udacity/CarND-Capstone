@@ -50,6 +50,8 @@ On some machines, you need to make sure you have the right kernel modules are lo
 - source setup.bash
 - ./prepare_data.sh
 - ./train_simulator.sh
+- ./export_graph_simulator.sh
+- ./test_simulator.sh
 
 ## References:
 - [Tensorflow Object Detection](https://github.com/tensorflow/models/tree/0375c800c767db2ef070cee1529d8a50f42d1042/object_detection)

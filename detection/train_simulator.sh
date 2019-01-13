@@ -2,8 +2,8 @@
 
 echo "Training for simulator"
 
-PIPELINE_CONFIG_PATH=models/faster_rcnn_resnet101_coco.config
-MODEL_DIR=out
+PIPELINE_CONFIG_PATH=models/faster_rcnn_resnet101_coco_simulator.config
+MODEL_DIR=out/model
 
 python deps/tensorflow-models/object_detection/train.py \
     --logtostderr \
