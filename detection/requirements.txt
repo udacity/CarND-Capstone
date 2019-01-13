@@ -7,3 +7,4 @@ lxml
 jupyter
 matplotlib
 pyyaml
+opencv-python
