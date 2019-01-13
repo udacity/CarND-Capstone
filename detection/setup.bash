@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#source venv/bin/activate
+source venv/bin/activate
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 

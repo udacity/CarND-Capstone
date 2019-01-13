@@ -5,13 +5,13 @@ WORKDIR=$PWD
 sudo apt-get install protobuf-compiler python-pil python-lxml
 
 # Create virtualenv
-#pip install virtualenv
-#rm -Rf venv
-#virtualenv --python=$(which python2) venv
-#source venv/bin/activate
+pip install virtualenv
+rm -Rf venv
+virtualenv --python=$(which python2) venv
+source venv/bin/activate
 
 # Get dependencies
-git submodule update --init
+git submodule update -f --init
 pip install -r requirements.txt
 
 # Make the cocoapi and install
