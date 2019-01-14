@@ -50,6 +50,19 @@ def load_graph(model_file):
     return detection_graph
 
 
+def class_to_color(class_name):
+    class_name = class_name.lower()
+
+    if class_name == 'red':
+        return (0 ,0, 255)
+    elif class_name=='green':
+        return (0, 255, 0)
+    elif class_name == 'yellow':
+        return (0, 255, 255)
+    else:
+        return (255, 255, 255)
+
+
 def process_images(detection_graph, test_images, category_index, output_path):
     print("Starting detection")
     with detection_graph.as_default():
@@ -103,7 +116,8 @@ def process_images(detection_graph, test_images, category_index, output_path):
                         pt2 = (int(boxes[i][1] * width), int(boxes[i][0] * height))
                         pt1 = (int(boxes[i][3] * width), int(boxes[i][2] * height))
 
-                        output_image = cv2.rectangle(output_image, pt1, pt2, (0,255,0), 5)
+                        color = class_to_color(class_name)
+                        output_image = cv2.rectangle(output_image, pt1, pt2, color, 5)
 
                 print("Writing to {}".format(output_image_file))
                 cv2.imwrite(output_image_file, output_image)
