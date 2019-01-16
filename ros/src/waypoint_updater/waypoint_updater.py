@@ -24,7 +24,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50  # was: 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 75  # was: 200 # Number of waypoints we will publish. You can change this number
 MAX_DECEL = .5
 
 class WaypointUpdater(object):
@@ -45,10 +45,15 @@ class WaypointUpdater(object):
         self.waypoint_tree = None
         self.stopline_wp_idx = -1
 
+	# for optimization
+        self.prev_pose_x = None
+        self.prev_pose_y = None
+        self.prev_lane = None
+
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(25) # was: 50
+        rate = rospy.Rate(30) # was: 50
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoints and self.waypoint_tree:
                 self.publish_waypoints()
@@ -81,6 +86,13 @@ class WaypointUpdater(object):
     def generate_lane(self):
         lane = Lane()
 
+        eps = 1E-4 # position precision is up to 2 digits after comma   
+	# part of optimization. no need to recalculate waypoints if position didn't change
+        if self.prev_pose_x is not None and self.prev_pose_y is not None:
+                if np.fabs(self.prev_pose_x - self.pose.pose.position.x) < eps and np.fabs(self.prev_pose_y - self.pose.pose.position.y) < eps:
+                        # rospy.logerr("this s*** happens often")
+                        return self.prev_lane 
+
         closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
@@ -91,6 +103,9 @@ class WaypointUpdater(object):
             lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
 
         lane.header = self.base_waypoints.header
+        self.prev_lane = lane
+        self.prev_pose_x = self.pose.pose.position.x
+        self.prev_pose_y = self.pose.pose.position.y
 
         return lane
 
