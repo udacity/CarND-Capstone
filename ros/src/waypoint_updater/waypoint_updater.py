@@ -3,9 +3,10 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-
+from scipy.spatial import KDTree
 import math
-
+import numpy as np
+import ipdb
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
 
@@ -37,16 +38,75 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.pose = None
+        self.base_waypoints = None
+        self.waypoints_2d = None
+        self.waypoints_tree = None
 
-        rospy.spin()
+        self.loop()
+
+    def loop(self):
+        """ https://wiki.ros.org/rospy/Overview/Initialization%20and%20Shutdown
+            The most common usage patterns for testing for shutdown in rospy are:
+
+            while not rospy.is_shutdown():
+            do some work
+
+            and
+
+            ... setup callbacks
+            rospy.spin()
+        """
+        #rospy.spin()
+        rate = rospy.Rate(50)  # Hz 
+        while not rospy.is_shutdown():
+            if self.pose and self.base_waypoints:
+                closest_waypoint_idx = self.get_closest_waypoint_idx()
+                self.publish_waypoints(closest_waypoint_idx)
+            
+            rate.sleep()
+
+    def publish_waypoints(self, closest_idx):
+        lane = Lane()
+        lane.header = self.base_waypoints.header
+        # should there be a wrap around?
+        lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx+LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publish(lane)
+        rospy.loginfo("publish_waypoints %d", closest_idx)
+
+
+    def get_closest_waypoint_idx(self):
+        x = self.pose.pose.position.x
+        y = self.pose.pose.position.y
+        closest_idx = self.waypoints_tree.query([x, y], 1)[1]
+        rospy.loginfo("closest_idx = %d", closest_idx)
+
+        closest_coord = self.waypoints_2d[closest_idx]
+        prev_coord = self.waypoints_2d[closest_idx-1]
+
+        cl_vect = np.array(closest_coord)
+        prev_vect = np.array(prev_coord)
+        pos_vect = np.array([x, y])
+
+        if np.dot(cl_vect-prev_vect, pos_vect-cl_vect) > 0:
+            closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
+        return closest_idx
+        
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        # msg.pose 
+        self.pose = msg
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        rospy.loginfo("waypoints_cb")
+
+        self.base_waypoints = waypoints
+        if self.waypoints_2d is None:
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            self.waypoints_tree = KDTree(self.waypoints_2d)
+            rospy.loginfo("waypoints tree set")
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
