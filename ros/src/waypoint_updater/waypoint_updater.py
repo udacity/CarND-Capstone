@@ -72,8 +72,7 @@ class WaypointUpdater(object):
         # should there be a wrap around?
         lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx+LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(lane)
-        rospy.loginfo("publish_waypoints %d", closest_idx)
-
+        rospy.loginfo("publish_waypoints %d:%d", closest_idx, closest_idx+LOOKAHEAD_WPS)
 
     def get_closest_waypoint_idx(self):
         x = self.pose.pose.position.x
