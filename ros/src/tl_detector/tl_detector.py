@@ -19,7 +19,7 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
-        self.ground_truth = True
+        self.ground_truth = False
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -141,6 +141,7 @@ class TLDetector(object):
             return False
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        cv2.imwrite("/home/udacity/Pictures/image.jpg", cv_image)
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
