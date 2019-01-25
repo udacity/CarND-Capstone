@@ -31,6 +31,8 @@ that we have created in the `__init__` function.
 
 '''
 
+UPDATE_FREQUENCY = 10 # 10 HZ
+
 class DBWNode(object):
     def __init__(self):
         rospy.init_node('dbw_node')
@@ -53,28 +55,43 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        # Create `Controller` object
+        self.controller = Controller(vehicle_mass, fuel_capacity, brake_deadband, decel_limit,
+                                     accel_limit, wheel_radius, wheel_base, steer_ratio, max_lat_accel,
+                                     max_steer_angle)
 
-        # TODO: Subscribe to all the topics you need to
+        # Subscribe to the topics
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+
+        # Initialize variables
+        self.current_velocity = None
+        self.current_angular_velocity = None
+        self.dbw_enabled = None
+        self.linear_velocity = None
+        self.angular_velocity = None
+        self.throttle = 0
+        self.steering = 0
+        self.brake = 0
 
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(50) # 50Hz
+        rate = rospy.Rate(UPDATE_FREQUENCY)
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
-            # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+            # Get predicted throttle, brake, and steering using `twist_controller`
+            # Only publish the control commands if dbw is enabled
+            throttle, brake, steering = self.controller.control(self.linear_velocity,
+                                                                self.angular_velocity,
+                                                                self.current_velocity,
+                                                                self.current_angular_velocity,
+                                                                self.dbw_enabled)
+            if self.dbw_enabled:
+                self.publish(throttle, brake, steering)
             rate.sleep()
 
-    def publish(self, throttle, brake, steer):
+    def publish(self, throttle, brake, steering):
         tcmd = ThrottleCmd()
         tcmd.enable = True
         tcmd.pedal_cmd_type = ThrottleCmd.CMD_PERCENT
@@ -83,7 +100,7 @@ class DBWNode(object):
 
         scmd = SteeringCmd()
         scmd.enable = True
-        scmd.steering_wheel_angle_cmd = steer
+        scmd.steering_wheel_angle_cmd = steering
         self.steer_pub.publish(scmd)
 
         bcmd = BrakeCmd()
@@ -92,6 +109,19 @@ class DBWNode(object):
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
+    # Receive the message about the current velocity and angular velocity
+    def velocity_cb(self, msg):
+        self.current_velocity = msg.twist.linear.x
+        self.current_angular_velocity = msg.twist.angular.z
+
+    # Receive the message about the proposed velocity and angular velocity
+    def twist_cb(self, msg):
+        self.linear_velocity = msg.twist.linear.x
+        self.angular_velocity = msg.twist.angular.z
+
+    # Receive the message about the dbw status
+    def dbw_enabled_cb(self, msg):
+        self.dbw_enabled = msg
 
 if __name__ == '__main__':
     DBWNode()
