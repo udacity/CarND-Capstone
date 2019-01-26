@@ -49,7 +49,7 @@ class Controller(object):
             return 0., 0., 0.
 
         # filter the velocity noise
-        current_velocity = self.velocity_lpf.filter(current_velocity)
+        current_velocity = self.velocity_lpf.filt(current_velocity)
 
         # Find out steering
         steering = self.yaw_controller.get_steering(linear_velocity, angular_velocity, current_velocity)
@@ -58,7 +58,7 @@ class Controller(object):
         velocity_error = linear_velocity - current_velocity
 
         current_time = rospy.get_time()
-        sample_time = current_velocity - self.last_time
+        sample_time = current_time - self.last_time
         self.last_time = current_time
 
         throttle = self.throttle_controller.step(velocity_error, sample_time)
