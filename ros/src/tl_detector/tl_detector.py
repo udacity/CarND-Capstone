@@ -20,7 +20,7 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
-        self.data_collection = True
+        self.data_collection = False
         self.ground_truth = True
         self.pose = None
         self.waypoints = None
@@ -58,7 +58,7 @@ class TLDetector(object):
         self.waypoints_tree = None
 
         if self.data_collection:
-            root_path = '/home/udacity-ros/data/images/'
+            root_path = '/home/udacity-ros/data/udacity-simulator-data/images/'
             self.img_counter = {}
             folders = ['0', '1', '2', '4']
             for folder in folders:
