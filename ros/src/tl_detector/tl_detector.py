@@ -98,19 +98,17 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_waypoint(self, pose):
+    def get_closest_waypoint(self, x, y):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
-            pose (Pose): position to match a waypoint to
+            x: position x to match a waypoint to
+            y: position y to match a waypoint to
 
         Returns:
             int: index of the closest waypoint in self.waypoints
 
         """
-        x = pose.x
-        y = pose.y
-
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
 
         return closest_idx
@@ -153,18 +151,16 @@ class TLDetector(object):
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
             # Find the closest waypoint near the car
-            car_wp_idx = self.get_closest_waypoint(self.pose.pose)
+            car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
 
             # Find the closest visible traffic light (if one exists)
             # Loop through all the stopline position to
             # find the one nearest to the car
             closest_tl_wp_diff = len(self.waypoints_2d)
             for i in range(len(stop_line_positions)):
-                stop_line_pose = Pose()
-                stop_line_pose.x = stop_line_positions[i][0]
-                stop_line_pose.y = stop_line_positions[i][1]
+                stop_line_pose = stop_line_positions[i]
                 # Find the waypoint closest to the stop line
-                light_wp_idx = self.get_closest_waypoint(stop_line_pose)
+                light_wp_idx = self.get_closest_waypoint(stop_line_pose[0], stop_line_pose[1])
                 diff = light_wp_idx - car_wp_idx
                 # If the light is ahead of the car, and nearer to the car
                 if (diff >= 0) and (diff < closest_tl_wp_diff):
