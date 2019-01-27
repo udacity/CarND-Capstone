@@ -20,7 +20,7 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
-        self.data_collection = False
+        self.data_collection = True
         self.ground_truth = True
         self.pose = None
         self.waypoints = None
@@ -58,15 +58,16 @@ class TLDetector(object):
         self.waypoints_tree = None
 
         if self.data_collection:
-            root_path = '/home/udacity-ros/data/udacity-simulator-data/images/'
+            self.images_path = '/home/udacity-ros/data/udacity-simulator-data/simulator-images-val/'
             self.img_counter = {}
             folders = ['0', '1', '2', '4']
             for folder in folders:
-                folder_path = os.path.join(root_path, folder)
+                folder_path = os.path.join(self.images_path, folder)
                 try:
                     last_image_name = sorted(os.listdir(folder_path), reverse=True)[0]
                     last_idx = int(last_image_name.split('.')[0][3:]) # get number XXXXX from 'imgXXXXX.jpg' file name
                     self.img_counter[folder] = last_idx + 1
+                    print(folder+' image counter - %d' % self.img_counter[folder])
                 except:
                     if not os.path.exists(folder_path):
                         os.mkdir(folder_path)
@@ -115,10 +116,10 @@ class TLDetector(object):
 
             label = str(label)
             img_name = label+'/img%05d.jpg' % self.img_counter[label]
-            save_path = "/home/udacity-ros/data/images/" + img_name
+            save_path = self.images_path + img_name
             cv2.imwrite(save_path, cv_image)
             self.img_counter[label] += 1
-            rospy.loginfo("[tl_detector]current wp = %d, next red light = %d w state %d" % (car_wp_idx, light_wp, state)) 
+            rospy.loginfo("[tl_detector]current wp = %d, next red light = %d w state %d. saved as %d" % (car_wp_idx, light_wp, state, self.img_counter[label])) 
             
         '''
         Publish upcoming red lights at camera frequency.
