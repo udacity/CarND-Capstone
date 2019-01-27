@@ -132,6 +132,7 @@ class TLDetector(object):
 
         """
         light = None
+        light_wp = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
@@ -140,7 +141,7 @@ class TLDetector(object):
 
         #TODO find the closest visible traffic light (if one exists)
 
-        if light:
+        if light and light_wp:
             state = self.get_light_state(light)
             return light_wp, state
         self.waypoints = None
