@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
@@ -19,10 +20,12 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
-        self.ground_truth = False
+        self.data_collection = True
+        self.ground_truth = True
         self.pose = None
         self.waypoints = None
         self.camera_image = None
+        self.has_image = False
         self.lights = []
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -54,6 +57,22 @@ class TLDetector(object):
         self.waypoints_2d = None
         self.waypoints_tree = None
 
+        if self.data_collection:
+            self.images_path = '/home/udacity-ros/data/udacity-simulator-data/simulator-images-val/'
+            self.img_counter = {}
+            folders = ['0', '1', '2', '4']
+            for folder in folders:
+                folder_path = os.path.join(self.images_path, folder)
+                try:
+                    last_image_name = sorted(os.listdir(folder_path), reverse=True)[0]
+                    last_idx = int(last_image_name.split('.')[0][3:]) # get number XXXXX from 'imgXXXXX.jpg' file name
+                    self.img_counter[folder] = last_idx + 1
+                    print(folder+' image counter - %d' % self.img_counter[folder])
+                except:
+                    if not os.path.exists(folder_path):
+                        os.mkdir(folder_path)
+                    self.img_counter[folder] = 0
+        
         rospy.spin()
 
     def pose_cb(self, msg):
@@ -68,12 +87,10 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
-
         #D = {0: "RED", 1: "YELLOW", 2: "GREEN", 4: "UNKNOWN"}
-        #rospy.loginfo("traffic_cb light status")
-        if self.ground_truth:
+        if self.ground_truth and not self.has_image:
             light_wp, state = self.process_traffic_lights()
-            rospy.loginfo("state=%d, red=%d", state, TrafficLight.RED)
+            # rospy.loginfo("state=%d, red=%d", state, TrafficLight.RED)
             light_wp = light_wp if state == TrafficLight.RED else -1
             self.upcoming_red_light_pub.publish(Int32(light_wp))
 
@@ -90,24 +107,39 @@ class TLDetector(object):
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
 
+        if self.data_collection and self.ground_truth:
+            car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
+            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+            label = state
+            if light_wp - car_wp_idx > 200:
+                label = 4
+
+            label = str(label)
+            img_name = label+'/img%05d.jpg' % self.img_counter[label]
+            save_path = self.images_path + img_name
+            cv2.imwrite(save_path, cv_image)
+            self.img_counter[label] += 1
+            rospy.loginfo("[tl_detector]current wp = %d, next red light = %d w state %d. saved as %d" % (car_wp_idx, light_wp, state, self.img_counter[label])) 
+            
         '''
         Publish upcoming red lights at camera frequency.
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+
         if self.state != state:
             self.state_count = 0
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
             light_wp = light_wp if state == TrafficLight.RED else -1
-            self.last_wp = light_wp
+            self.last_wp = light_wp           
             self.upcoming_red_light_pub.publish(Int32(light_wp))
-        else:
-            rospy.loginfo("tl_detector, publish red light = %d", self.last_wp)            
+        else:          
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
+        # rospy.loginfo("tl_detector, current location = %d next red light = %d w state %d" % (self.last_wp, light_wp, self.state)) 
 
     def get_closest_waypoint(self, x, y):
         """Identifies the closest path waypoint to the given position
@@ -140,8 +172,8 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
 
+        
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        cv2.imwrite("/home/udacity/Pictures/image.jpg", cv_image)
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -176,7 +208,7 @@ class TLDetector(object):
                     line_wp_idx = temp_wp_idx
 
         if closest_light:
-            rospy.loginfo("tl_detector, traffic light index = %d", line_wp_idx)
+            # rospy.loginfo("tl_detector, traffic light index = %d", line_wp_idx)
             state = self.get_light_state(closest_light)
             return line_wp_idx, state
 
