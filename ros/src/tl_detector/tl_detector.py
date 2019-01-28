@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import rospy
+from scipy.spatial.ckdtree import cKDTree
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
 from styx_msgs.msg import TrafficLightArray, TrafficLight
@@ -19,6 +20,8 @@ class TLDetector(object):
 
         self.pose = None
         self.waypoints = None
+        self.waypoints_2d = None
+        self.waypoint_tree = None
         self.camera_image = None
         self.lights = []
 
@@ -56,6 +59,12 @@ class TLDetector(object):
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
+
+        # setup k-d tree in order to find the closest path waypoint to the given position [get_closest_waypoint(pose)]
+        # the code is copied from waypoints_cb(pose) in ros/src/waypoint_updater/waypoint_updater.py written by https://github.com/ysonggit
+        if not self.waypoints_2d:
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            self.waypoint_tree = cKDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -100,8 +109,9 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
-        return 0
+        position = [pose.position.x, pose.position.y]
+        # cKDTree.query() returns (distance, index), but only index is needed
+        return self.waypoint_tree.query(position)[1]
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
