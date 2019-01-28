@@ -141,20 +141,33 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        light = None
-        light_wp = None
+        closest_light = None
+        closest_light_waypoint_idx = None
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
+        if self.pose:
+            car_waypoint_idx = self.get_closest_waypoint(self.pose.pose)
 
-        #TODO find the closest visible traffic light (if one exists)
+            # find the closest visible traffic light (if one exists)
+            min_stop_line_dist = len(self.waypoints.waypoints)
+            for idx, light in enumerate(self.lights):
+                current_stop_line_position = stop_line_positions[idx]
+                current_stop_line_waypoint_idx = self.get_closest_waypoint([current_stop_line_position[0], current_stop_line_position[1]])
 
-        if light and light_wp:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
+                # number of waypoints between selected stop_line and the car
+                current_stop_line_dist = current_stop_line_waypoint_idx - car_waypoint_idx
+
+                # check if stop line is in front of the car (current_stop_line_dist > 0) and is closest
+                if 0.0 <= current_stop_line_dist < min_stop_line_dist:
+                    min_stop_line_dist = current_stop_line_dist
+                    closest_light = light
+                    closest_light_waypoint_idx = current_stop_line_waypoint_idx
+
+        if closest_light and closest_light_waypoint_idx:
+            state = self.get_light_state(closest_light)
+            return closest_light_waypoint_idx, state
+        self.waypoints = None  # TODO check why self.waypoints are reset
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
