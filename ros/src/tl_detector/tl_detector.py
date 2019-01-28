@@ -80,6 +80,7 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
+        rospy.logwarn("Closest light waypoint= {0}, light state= {1}".format(light_wp, state))
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -123,14 +124,16 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        if(not self.has_image):
-            self.prev_light_loc = None
-            return False
+        # if(not self.has_image):
+        #     self.prev_light_loc = None
+        #     return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        #Get classification
-        return self.light_classifier.get_classification(cv_image)
+        # #Get classification
+        # return self.light_classifier.get_classification(cv_image)
+
+        return light.state  # TODO implement real classification, this are true values just for testing
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
