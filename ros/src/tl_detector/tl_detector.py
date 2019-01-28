@@ -20,13 +20,15 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
-        self.data_collection = True
-        self.ground_truth = True
+        self.data_collection = False
+        self.ground_truth = False
         self.pose = None
         self.waypoints = None
         self.camera_image = None
         self.has_image = False
         self.lights = []
+        self.waypoints_2d = None
+        self.waypoints_tree = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -54,11 +56,9 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-        self.waypoints_2d = None
-        self.waypoints_tree = None
 
         if self.data_collection:
-            self.images_path = '/home/udacity-ros/data/udacity-simulator-data/simulator-images-val/'
+            self.images_path = '/home/udacity-ros/data/udacity-simulator-data/simulator-images/'
             self.img_counter = {}
             folders = ['0', '1', '2', '4']
             for folder in folders:
