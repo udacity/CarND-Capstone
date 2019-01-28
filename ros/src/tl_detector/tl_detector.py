@@ -60,7 +60,7 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
 
-        # setup k-d tree in order to find the closest path waypoint to the given position [get_closest_waypoint(pose)]
+        # setup k-d tree in order to find the closest path waypoint to the given position [get_closest_waypoint(position)]
         # the code is copied from waypoints_cb(pose) in ros/src/waypoint_updater/waypoint_updater.py written by https://github.com/ysonggit
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
@@ -100,17 +100,16 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_waypoint(self, pose):
+    def get_closest_waypoint(self, position):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
-            pose (Pose): position to match a waypoint to
+            position [x, y]: position to match a waypoint to
 
         Returns:
             int: index of the closest waypoint in self.waypoints
 
         """
-        position = [pose.position.x, pose.position.y]
         # cKDTree.query() returns (distance, index), but only index is needed
         return self.waypoint_tree.query(position)[1]
 
@@ -150,7 +149,7 @@ class TLDetector(object):
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
         if self.pose:
-            car_waypoint_idx = self.get_closest_waypoint(self.pose.pose)
+            car_waypoint_idx = self.get_closest_waypoint([self.pose.pose.position.x, self.pose.pose.position.y])
 
             # find the closest visible traffic light (if one exists)
             min_stop_line_dist = len(self.waypoints.waypoints)
