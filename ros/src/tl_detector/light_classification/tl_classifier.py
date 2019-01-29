@@ -1,3 +1,4 @@
+import os
 import keras
 import rospy
 import cv2
@@ -16,7 +17,8 @@ GRAPH = tf.get_default_graph()
 class TLClassifier(object):
     def __init__(self):
         self.model = self.simple_conv_net()
-        self.load_checkpoint = '/home/udacity-ros/CarND-Capstone/ros/src/model_files/simulator_model_weights.08-0.03.hdf5'
+        self.load_checkpoint = '../../src/model_files/simulator_model_weights.08-0.03.hdf5'
+        
         if self.load_checkpoint is not None:
             self.model.load_weights(self.load_checkpoint)
         
