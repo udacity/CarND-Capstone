@@ -1,26 +1,56 @@
+import os
 import keras
 import rospy
 import cv2
+from PIL import Image
+import cv2
+import tensorflow as tf
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten, MaxPool2D
 from keras.preprocessing.image import ImageDataGenerator
-import tensorflow as tf
+import keras.backend as K
 # from styx_msgs.msg import TrafficLight
 from tensorflow.python.platform import app, flags
+from yolo.yolo import YOLO
+from yolo.yolo3.utils import letterbox_image
+import ipdb
+
 flags.DEFINE_bool('train_mode', False, 'run the script in training mode or not')
 flags.DEFINE_integer('epochs', 50, 'number of ephocs for the training')
 FLAGS = flags.FLAGS
+
+
+if 'session' in locals() and session is not None:
+    print('Close interactive session')
+    session.close()
+
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True
+config.gpu_options.per_process_gpu_memory_fraction = 0.8
+# K.get_session().close()
+sess = tf.Session(config=config)
+K.set_session(sess)
 GRAPH = tf.get_default_graph()
 
 class TLClassifier(object):
-    def __init__(self):
-        self.model = self.simple_conv_net()
-        self.load_checkpoint = '/home/udacity-ros/CarND-Capstone/ros/src/model_files/simulator_model_weights.08-0.03.hdf5'
-        if self.load_checkpoint is not None:
-            self.model.load_weights(self.load_checkpoint)
+    def __init__(self, load_checkpoint=True):
+        self.img_counter = 0 # for debug
+        self.is_carla = True
+        # ipdb.set_trace()
+        if not self.is_carla:
+            self.model = self.simple_conv_net()
+            # TODO - make a general path that work on other stations
+            self.checkpoint = '/home/udacity-ros/CarND-Capstone/ros/src/model_files/simulator_model_weights.08-0.03.hdf5'
+            if load_checkpoint:
+                self.model.load_weights(self.checkpoint)
+            self.model._make_predict_function()
         
-        self.model._make_predict_function()
+        else:
+            self.yolo = YOLO()
+            self.model = self.real_traffic_light_net()
+            # TODO - add trained real traffic light net that will work on carla
+            self.checkpoint = None
     
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -32,19 +62,30 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) / 255.
-        image = np.reshape(image, (1,)+image.shape)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if not self.is_carla:  
+            image = image / 255.          
+            image = np.expand_dims(image, 0)  # Add batch dimension.
+            with GRAPH.as_default():
+                pred = self.model.predict(image)
+            pred = np.argmax(pred)
+            if pred == 3:
+                pred = 4
+            rospy.loginfo("[tl_classifier] current traffic light classification: %d" % (pred)) 
+            return pred
 
-        with GRAPH.as_default():
-            pred = self.model.predict(image)
-        pred = np.argmax(pred)
-        if pred == 3:
-            pred = 4
-        rospy.loginfo("[tl_classifier] current traffic light classification: %d" % (pred)) 
-        return pred
-
-
-        # return TrafficLight.UNKNOWN
+        else:
+            with GRAPH.as_default():
+                cropped_image = self.get_traffic_lights_crop_with_YOLO(image)
+            if cropped_image is None:
+                return 4
+            # with GRAPH.as_default():
+            #     pred = self.model.predict(image)
+            # pred = np.argmax(pred)
+            # if pred == 3:
+            #     pred = 4
+            # return pred
+            return 4
 
     def simple_conv_net(self):
         model = Sequential()
@@ -65,6 +106,10 @@ class TLClassifier(object):
 
         return model
     
+    def real_traffic_light_net(self):
+        # TODO - add the model that was trained on cropped images of real traffic lights
+        pass
+
     def train(self, epoch_num=FLAGS.epochs):
         
         train_data_folder = '/home/udacity-ros/data/udacity-simulator-data/simulator-images/'
@@ -88,6 +133,46 @@ class TLClassifier(object):
         self.model.fit_generator(train_generator, steps_per_epoch=720, validation_data=val_generator, validation_steps=175,
                                  epochs=epoch_num, callbacks=[model_checkpoint, lr_reduce])
 
+    def get_traffic_lights_crop_with_YOLO(self, img):
+        '''
+        gets rgb image
+        returns the bounding box coordinates of a traffic light (left, top, right, bottom)S
+        '''
+        
+        img = img[200:800,:, :]  # reduce the analysis area
+        image = Image.fromarray(img)
+        boxed_image = letterbox_image(image, tuple(reversed(self.yolo.model_image_size)))
+        image_data = np.array(boxed_image, dtype='float32')
+        image_data = image_data / 255.
+        image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
+
+        out_boxes, out_classes = self.yolo.sess.run(
+            [self.yolo.boxes, self.yolo.classes],
+            feed_dict={
+                self.yolo.yolo_model.input: image_data,
+                self.yolo.input_image_shape: [image.size[1], image.size[0]],
+                K.learning_phase(): 0
+            })
+
+        for i, c in reversed(list(enumerate(out_classes))):
+            if c == 9:
+                box = out_boxes[i]
+                top, left, bottom, right = box
+                top = max(0, np.floor(top + 0.5).astype('int32'))
+                left = max(0, np.floor(left + 0.5).astype('int32'))
+                bottom = min(image.size[1], np.floor(bottom + 0.5).astype('int32'))
+                right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
+                cropped_image = img[top:bottom, left:right, :]
+                rospy.loginfo("[tl_classifier] YOLO FOUND SOMETHING!!!!") 
+                # for debug: save cropped images
+                # temp_folder = '/home/udacity-ros/data/test/'
+                # img_name = 'img%05d.jpg' % self.img_counter
+                # self.img_counter += 1
+                # save_path = temp_folder + img_name
+                # cv2.imwrite(save_path, cv2.cvtColor(cropped_image, cv2.COLOR_RGB2BGR))
+                # return cropped_image
+        rospy.loginfo("[tl_classifier] YOLO DIDNT FIND NOTHING!!!!") 
+        return None
 
 # def main(argv=None):
 if FLAGS.train_mode:

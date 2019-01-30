@@ -194,7 +194,6 @@ class TLDetector(object):
         if(self.pose):
             car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
 
-            #TODO find the closest visible traffic light (if one exists)
             diff = len(self.waypoints.waypoints)
             for i, light in enumerate(self.lights):
                 #rospy.loginfo("%d : state %d", i, light.state)
