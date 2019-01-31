@@ -71,25 +71,10 @@ class WaypointUpdater(object):
                 self.publish_waypoints()
             rate.sleep()
 
-        # while not rospy.is_shutdown():
-        #     if self.pose and self.base_waypoints:
-        #         closest_waypoint_idx = self.get_closest_waypoint_idx()
-        #         self.publish_waypoints(closest_waypoint_idx)
-            
-        #     rate.sleep()
-
     def traffic_cb(self, msg):
         self.stopline_wp_idx = msg.data
         rospy.loginfo("traffic_cb %s", self.stopline_wp_idx)
         
-
-    # def publish_waypoints(self, closest_idx):
-    #     lane = Lane()
-    #     lane.header = self.base_waypoints.header
-    #     # should there be a wrap around?
-    #     lane.waypoints = self.base_waypoints.waypoints[closest_idx:closest_idx+LOOKAHEAD_WPS]
-    #     self.final_waypoints_pub.publish(lane)
-    #     rospy.loginfo("publish_waypoints %d:%d", closest_idx, closest_idx+LOOKAHEAD_WPS)
 
     def publish_waypoints(self):
         final_lane = self.generate_lane()
@@ -102,8 +87,8 @@ class WaypointUpdater(object):
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
 
-        rospy.loginfo("stopline_wp_idx=%d", self.stopline_wp_idx)
-        rospy.loginfo("farthest_idx=%d", farthest_idx)
+        # rospy.loginfo("stopline_wp_idx=%d", self.stopline_wp_idx)
+        # rospy.loginfo("farthest_idx=%d", farthest_idx)
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
             lane.waypoints = base_waypoints
         else:
@@ -150,14 +135,10 @@ class WaypointUpdater(object):
         
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        # msg.pose 
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
         rospy.loginfo("waypoints_cb")
-
         # self.base_waypoints = waypoints
         rospy.loginfo("set base_lane")
         self.base_lane = waypoints

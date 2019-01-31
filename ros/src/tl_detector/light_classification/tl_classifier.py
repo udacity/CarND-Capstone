@@ -164,6 +164,7 @@ class TLClassifier(object):
                 right = min(image.size[0], np.floor(right + 0.5).astype('int32'))
                 cropped_image = img[top:bottom, left:right, :]
                 rospy.loginfo("[tl_classifier] YOLO FOUND SOMETHING!!!!") 
+                
                 # for debug: save cropped images
                 # temp_folder = '/home/udacity-ros/data/test/'
                 # img_name = 'img%05d.jpg' % self.img_counter
@@ -171,7 +172,8 @@ class TLClassifier(object):
                 # save_path = temp_folder + img_name
                 # cv2.imwrite(save_path, cv2.cvtColor(cropped_image, cv2.COLOR_RGB2BGR))
                 # return cropped_image
-        rospy.loginfo("[tl_classifier] YOLO DIDNT FIND NOTHING!!!!") 
+        
+        rospy.loginfo("[tl_classifier] YOLO FOUND NOTHING!!!!") 
         return None
 
 # def main(argv=None):
