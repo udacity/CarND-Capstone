@@ -7,7 +7,7 @@ from geometry_msgs.msg import TwistStamped
 from styx_msgs.msg import Lane
 import math
 
-from twist_controller import TwistController
+from twist_controller import Controller
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
