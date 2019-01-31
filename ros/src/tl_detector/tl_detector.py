@@ -13,7 +13,6 @@ import cv2
 import yaml
 from scipy.spatial import KDTree
 
-
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
@@ -31,7 +30,7 @@ class TLDetector(object):
         self.waypoints_tree = None
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=2)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -41,7 +40,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1, buff_size=2*52428800)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -139,7 +138,6 @@ class TLDetector(object):
         else:          
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-        # rospy.loginfo("tl_detector, current location = %d next red light = %d w state %d" % (self.last_wp, light_wp, self.state)) 
 
     def get_closest_waypoint(self, x, y):
         """Identifies the closest path waypoint to the given position
@@ -151,7 +149,6 @@ class TLDetector(object):
             int: index of the closest waypoint in self.waypoints
 
         """
-        #TODO implement
         closest_idx = self.waypoints_tree.query([x, y], 1)[1]
         return closest_idx
 
@@ -193,26 +190,25 @@ class TLDetector(object):
         stop_line_positions = self.config['stop_line_positions']
         if(self.pose):
             car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
+            if self.waypoints is not None:
+                diff = len(self.waypoints.waypoints)
+                for i, light in enumerate(self.lights):
+                    # rospy.loginfo("%d : state %d", i, light.state)
+                    x, y = stop_line_positions[i]
+                    temp_wp_idx = self.get_closest_waypoint(x, y)
+                    d = temp_wp_idx - car_wp_idx
+                    if 0 <= d < diff and d < 150:
+                        diff = d
+                        closest_light = light
+                        line_wp_idx = temp_wp_idx
 
-            #TODO find the closest visible traffic light (if one exists)
-            diff = len(self.waypoints.waypoints)
-            for i, light in enumerate(self.lights):
-                #rospy.loginfo("%d : state %d", i, light.state)
-                x, y = stop_line_positions[i]
-                temp_wp_idx = self.get_closest_waypoint(x, y)
-                d = temp_wp_idx - car_wp_idx
-                #if 0 <= d < diff:
-                if 0 <= d and d < diff:
-                    diff = d
-                    closest_light = light
-                    line_wp_idx = temp_wp_idx
-
-        if closest_light:
-            # rospy.loginfo("tl_detector, traffic light index = %d", line_wp_idx)
+        if closest_light is not None:
             state = self.get_light_state(closest_light)
             return line_wp_idx, state
+        else:
+            rospy.loginfo("[tl_detector], No traffic light expected nearby")
 
-        self.waypoints = None
+        # self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
