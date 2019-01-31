@@ -33,10 +33,11 @@ K.set_session(sess)
 GRAPH = tf.get_default_graph()
 
 class TLClassifier(object):
-    def __init__(self, load_checkpoint=True):
-        self.img_counter = 0 # for debug
-        self.is_carla = False
-        if not self.is_carla:
+    def __init__(self, load_checkpoint=True, is_site=False):
+        self.img_counter = 0 # for yolo debug
+        self.is_site = is_site
+        if not is_site:
+            rospy.loginfo("[tl_classifier] Loading simulator classification model") 
             self.model = self.simple_conv_net()
             checkpoint = '../../src/model_files/simulator_model_weights.08-0.03.hdf5'
             if load_checkpoint:
@@ -46,6 +47,7 @@ class TLClassifier(object):
         else:
             self.yolo = YOLO()
             self.model = self.real_traffic_light_net()
+            rospy.loginfo("[tl_classifier] Loading real life classification model") 
             # TODO - add trained real traffic light net that will work on carla
             checkpoint = None
     
@@ -60,7 +62,7 @@ class TLClassifier(object):
 
         """
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        if not self.is_carla:  
+        if not self.is_site:  
             image = image / 255.          
             image = np.expand_dims(image, 0)  # Add batch dimension.
             with GRAPH.as_default():

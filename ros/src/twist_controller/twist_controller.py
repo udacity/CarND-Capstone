@@ -10,7 +10,6 @@ ONE_MPH = 0.44704
 
 class Controller(object):
     def __init__(self, *args, **kwargs):
-        # TODO: Implement
         wheel_base = kwargs["wheel_base"]
         steer_ratio = kwargs["steer_ratio"]
         min_speed = kwargs["min_speed"]
@@ -42,7 +41,6 @@ class Controller(object):
         
         
     def control(self, *args, **kwargs):
-        # TODO: Change the arg, kwarg list to suit your needs
         # Return throttle, brake, steer
         # self.throttle, self.brake, self.steering
         throttle = 0
