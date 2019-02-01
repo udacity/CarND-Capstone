@@ -22,7 +22,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. 200 are too many, car lost itself in the middle...
 
 
 class WaypointUpdater(object):
@@ -76,7 +76,7 @@ class WaypointUpdater(object):
 
     def publish_waypoints(self, closest_idx):
         lane = Lane()
-        lane.header = self.base_waypoints.header
+        #lane.header = self.base_waypoints.header
         lane.waypoints= self.base_waypoints.waypoints[closest_idx:closest_idx+LOOKAHEAD_WPS]
         self.final_waypoints_pub.publish(lane)
 
