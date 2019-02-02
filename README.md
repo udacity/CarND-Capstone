@@ -4,6 +4,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 * Feng Wang -- fwa785@gmail.com
 * Maria Cristina An -- jingle1216@yahoo.com
 * Carlos Barredo -- ccbaes@yahoo.es
+* Stavros Dimopoulos -- sdim@sdim.gr
 
 Please use **one** of the two installation options, either native **or** docker installation.
 
