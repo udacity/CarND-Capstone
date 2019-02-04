@@ -17,7 +17,7 @@ class Controller(object):
 
         kp = 0.3
         ki = 0.1
-        kd = 0.0
+        kd = 1
         mn = 0.0  # Minimum throttle value
         mx = 0.2  # Maximum throttle value
         self.throttle_controller = PID(kp, ki, kd, mn, mx)
@@ -41,7 +41,7 @@ class Controller(object):
         if not dbw_enabled:
             self.throttle_controller.reset()
             return 0.0, 0.0, 0.0
-
+        
         current_vel = self.vel_lpf.filt(current_vel)
 
         steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
@@ -66,7 +66,7 @@ class Controller(object):
 
         if (current_time - self.log_time) > LOGGING_THROTTLE_FACTOR:
             self.log_time = current_time
-            rospy.logwarn("current_vel={}, linear_vel={}, vel_error={}".format(current_vel, linear_vel,vel_error))
-            rospy.logwarn("throttle={}, brake={}, steering={}".format(throttle, brake, steering))
+            #rospy.logwarn("current_vel={}, linear_vel={}, vel_error={}".format(current_vel, linear_vel,vel_error))
+            #rospy.logwarn("throttle={}, brake={}, steering={}".format(throttle, brake, steering))
 
         return throttle, brake, steering
