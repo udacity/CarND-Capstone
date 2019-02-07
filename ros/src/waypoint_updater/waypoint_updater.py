@@ -133,7 +133,7 @@ class WaypointUpdater(object):
                 vel = 0
             else:
                 dist = self.distance(wp.pose.pose.position, last.pose.pose.position)
-                dist = max(0, dist - STOP_DIST)                
+                dist = max(0, dist - STOP_DISTANCE)
                 vel  = math.sqrt(2 * MAX_DECEL * dist) 
                 if vel < 1.:
                     vel = 0.
