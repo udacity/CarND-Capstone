@@ -84,41 +84,41 @@ class WaypointUpdater(object):
         return closest_idx
 
     def publish_waypoints(self, closest_idx):
-        lane = self.generate_lane()
-        self.final_waypoints_pub.publish(lane)
+        final_lane = self.generate_lane()                   
+        self.final_waypoints_pub.publish(final_lane)
 
     def generate_lane(self):
         lane = Lane()
 
         closest_idx = self.get_closest_waypoint_idx()
         farthest_idx = closest_idx + LOOKAHEAD_WPS
-        waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
+        base_waypoints = self.base_waypoints.waypoints[closest_idx:farthest_idx]
 
-        lane.header = self.base_waypoints.header
+        # lane.header = self.base_waypoints.header
         if (self.traffic_wp == -1) or (self.traffic_wp >= farthest_idx):
-            lane.waypoints = waypoints
+            lane.waypoints = base_waypoints
         else:
-            lane.waypoints = self.decelerate_waypoints(waypoints, closest_idx)
+            lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
 
-        self.final_waypoints_pub.publish(lane)
+#        self.final_waypoints_pub.publish(lane)
 
         return lane
 
     def decelerate_waypoints(self, waypoints, closest_idx):
         temp = []
-        for i in range(len(waypoints)):
+        for i in range(len(waypoints)): # we could also use: for i, wp in enumerate(waypoints)
             wp = waypoints[i]
 
             p = Waypoint()
             p.pose = wp.pose
 
-            stop_idx = max(self.traffic_wp - closest_idx - 8, 0)
+            stop_idx = max(self.traffic_wp - closest_idx - 3, 0) # the first waypoint is in the middle of the car. We compensate subtract the number of points from the middle to the front of the car to compensate that distance
             dist = self.distance(waypoints, i, stop_idx)
             velocity = math.sqrt(2 * MAX_DECEL * dist)
             if velocity < 1:
                 velocity = 0
 
-            p.twist.twist.linear.x = min(velocity, wp.twist.twist.linear.x)
+            p.twist.twist.linear.x = min(velocity, wp.twist.twist.linear.x) # Keep the speed limit
             temp.append(p)
 
         return temp
