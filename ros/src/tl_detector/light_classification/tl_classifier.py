@@ -9,8 +9,8 @@ FROZEN_SITE_INFERENCE_GRAPH = os.getcwd() + "/site_traffic_light_graph.pb"
 SCORE_THRESHOLD = 0.5
 MAX_BOXES = 3
 
-class TLClassifier(object, is_site=False):
-    def __init__(self):
+class TLClassifier(object):
+    def __init__(self, is_site):
         if (is_site):
             graph_loc = FROZEN_SITE_INFERENCE_GRAPH
         else:
@@ -72,7 +72,7 @@ class TLClassifier(object, is_site=False):
                         state = TrafficLight.RED
                     elif (classes[i] == 3):
                         state = TrafficLight.YELLOW
-                    elif:
+                    else:
                         state = TrafficLight.UNKNOWN
                     max_score = scores[i]
             # end for
