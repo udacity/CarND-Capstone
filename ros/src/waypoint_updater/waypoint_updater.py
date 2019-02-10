@@ -31,11 +31,12 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+
+        # Add a subscriber for /traffic_waypoint
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        # TODO: Add a subscriber for /obstacle_waypoint below
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
-
+        # Create publisher for the final waypoints
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # Initialize the variables
