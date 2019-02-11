@@ -13,7 +13,6 @@ import cv2
 import yaml
 
 STATE_COUNT_THRESHOLD = 3
-IMAGE_CB_THRESHOLD = 5
 
 class TLDetector(object):
     def __init__(self):
@@ -52,7 +51,6 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-        self.image_counter = 0
 
         rospy.spin()
 
@@ -79,11 +77,6 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        if self.image_counter < IMAGE_CB_THRESHOLD:
-            self.image_counter += 1
-            return
-        else:
-            self.image_counter = 0
 
         self.has_image = True
         self.camera_image = msg
