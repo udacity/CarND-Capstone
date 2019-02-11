@@ -67,7 +67,7 @@ class DBWNode(object):
                                      max_steer_angle=max_steer_angle)
         self.current_vel = None
         self.curr_ang_vel = None
-        self.dbw_enabled = None
+        self.dbw_enabled = False
         self.linear_vel = None
         self.angular_vel = None
         self.trottle = self.steering = self.brake = 0
@@ -93,7 +93,7 @@ class DBWNode(object):
             rate.sleep()
 
     def dbw_enabled_cb(self, msg):
-        self.dbw_enabled = msg
+        self.dbw_enabled = msg.data
 
     def twist_cb(self, msg):
         self.linear_vel = msg.twist.linear.x
