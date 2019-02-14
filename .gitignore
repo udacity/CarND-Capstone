@@ -4,3 +4,10 @@ build
 devel
 
 profile.tmp
+
+data/dbw_test.rosbag.bag
+data/dbw_test.rosbag.bag.zip
+
+ros/src/twist_controller/brakes.csv
+ros/src/twist_controller/steers.csv
+ros/src/twist_controller/throttles.csv
