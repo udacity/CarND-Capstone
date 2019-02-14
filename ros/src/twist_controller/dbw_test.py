@@ -26,7 +26,7 @@ performing on various commands.
 
 class DBWTestNode(object):
     def __init__(self):
-        rospy.init_node('dbw_test_node')
+        rospy.init_node('dbw_test_node', disable_signals=True)
 
         rospy.Subscriber('/vehicle/steering_cmd', SteeringCmd, self.steer_cb)
         rospy.Subscriber('/vehicle/throttle_cmd', ThrottleCmd, self.throttle_cb)
@@ -51,7 +51,16 @@ class DBWTestNode(object):
         self.throttlefile = os.path.join(base_path, 'throttles.csv')
         self.brakefile = os.path.join(base_path, 'brakes.csv')
 
+        # limits the max number of gathered samples
+        # use None to not use the limit
+        self.max_samples_steering = 1000
+        self.max_samples_throttle = None
+        self.max_samples_brake = None
+
         self.loop()
+
+    def shutdown(self, reason):
+        rospy.signal_shutdown(reason)
 
     def loop(self):
         rate = rospy.Rate(10) # 10Hz
@@ -87,18 +96,30 @@ class DBWTestNode(object):
         self.brake = msg.pedal_cmd
 
     def actual_steer_cb(self, msg):
+        if self.max_samples_steering and len(self.steer_data) >= self.max_samples_steering:
+            self.shutdown("Number of steering samples exceeds max_samples_steering=%d" % self.max_samples_steering)
+            return
+
         if self.dbw_enabled and self.steer is not None:
             self.steer_data.append({'actual': msg.steering_wheel_angle_cmd,
                                     'proposed': self.steer})
             self.steer = None
 
     def actual_throttle_cb(self, msg):
+        if self.max_samples_throttle and len(self.throttle_data) >= self.max_samples_throttle:
+            self.shutdown("Number of throttle samples exceeds max_samples_throttle=%d" % self.max_samples_throttle)
+            return
+
         if self.dbw_enabled and self.throttle is not None:
             self.throttle_data.append({'actual': msg.pedal_cmd,
                                        'proposed': self.throttle})
             self.throttle = None
 
     def actual_brake_cb(self, msg):
+        if self.max_samples_brake and len(self.brake_data) >= self.max_samples_brake:
+            self.shutdown("Number of brake samples exceeds max_samples_brake=%d" % self.max_samples_brake)
+            return
+
         if self.dbw_enabled and self.brake is not None:
             self.brake_data.append({'actual': msg.pedal_cmd,
                                     'proposed': self.brake})
