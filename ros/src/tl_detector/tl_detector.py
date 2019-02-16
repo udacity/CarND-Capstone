@@ -35,7 +35,7 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
-        config_string = rospy.get_param("/sim_traffic_light_config.yaml")
+        config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
@@ -106,8 +106,8 @@ class TLDetector(object):
         for i in range(len(stop_line_positions)):   
             x = stop_line_positions[i][0]
             y = stop_line_positions[i][1]
-            car_x = pose.orientation.x
-            car_y = pose.orientation.y
+            car_x = pose.position.x
+            car_y = pose.position.y
 
             # Get the yaw rate from the cars orientation
             quaternion = ( pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
