@@ -35,7 +35,7 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
-        config_string = rospy.get_param("/traffic_light_config")
+        config_string = rospy.get_param("/sim_traffic_light_config.yaml")
         self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
@@ -98,10 +98,38 @@ class TLDetector(object):
 
         Returns:
             int: index of the closest waypoint in self.waypoints
-
         """
-        #TODO implement
-        return 0
+        stop_line_positions = self.config['stop_line_positions']
+        
+        minDist = sys.float_info.max
+        minIndex = -1
+        for i in range(len(stop_line_positions)):   
+            x = stop_line_positions[i][0]
+            y = stop_line_positions[i][1]
+            car_x = pose.orientation.x
+            car_y = pose.orientation.y
+
+            # Get the yaw rate from the cars orientation
+            quaternion = ( pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
+            euler = tf.transformations.euler_from_quaternion(quaternion)            
+            yaw = euler[2]
+
+            # Shift the waypoint to be in the cars frame 
+            shiftX = x - car_x
+            shiftY = y - car_y
+            
+            newX = shiftX * math.cos(0 - yaw) - shiftY * math.sin(0 - yaw)
+            newY = shiftX * math.sin(0 - yaw) - shiftY * math.cos(0 - yaw)
+
+            if(newX >= 0): #Point is in front of car
+                dist = math.sqrt( (x - car_x)**2 + (y - car_y)**2 ) # Find the distance to the point
+                
+                if(dist < minDist):                    
+                    minDist = dist
+                    minIndex = i
+
+        rospy.logdebug('min_distance_i={} min_distance={}\n'.format(minIndex, minDist))
+        return minIndex
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
