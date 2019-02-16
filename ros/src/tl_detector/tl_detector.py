@@ -10,13 +10,14 @@ from light_classification.tl_classifier import TLClassifier
 import tf
 import cv2
 import yaml
+import math
 
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
-
+	
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -53,6 +54,12 @@ class TLDetector(object):
 
     def pose_cb(self, msg):
         self.pose = msg
+	light_state = 4 #Default to UNKNOWN
+	line_index = self.get_closest_waypoint(self.pose.pose)
+	if(len(self.lights) >= 1):
+		light_state = self.lights[line_index].state
+	if(light_state == 0): # If red light send topic of index
+		self.upcoming_red_light_pub.publish(Int32(line_index))
 
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
@@ -68,6 +75,7 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+	#print("recieved image")
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
@@ -101,7 +109,7 @@ class TLDetector(object):
         """
         stop_line_positions = self.config['stop_line_positions']
         
-        minDist = sys.float_info.max
+        minDist = 9999999
         minIndex = -1
         for i in range(len(stop_line_positions)):   
             x = stop_line_positions[i][0]
@@ -128,7 +136,7 @@ class TLDetector(object):
                     minDist = dist
                     minIndex = i
 
-        rospy.logdebug('min_distance_i={} min_distance={}\n'.format(minIndex, minDist))
+        #print('min_distance_i={} min_distance={}'.format(minIndex, minDist))
         return minIndex
 
     def get_light_state(self, light):
@@ -149,7 +157,7 @@ class TLDetector(object):
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
-
+	'''
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -173,7 +181,7 @@ class TLDetector(object):
             return light_wp, state
         self.waypoints = None
         return -1, TrafficLight.UNKNOWN
-
+'''
 if __name__ == '__main__':
     try:
         TLDetector()
