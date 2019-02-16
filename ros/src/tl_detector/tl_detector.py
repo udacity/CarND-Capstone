@@ -24,15 +24,7 @@ class TLDetector(object):
         self.lights = []
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
-        '''
-        /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
-        helps you acquire an accurate ground truth data source for the traffic light
-        classifier by sending the current color state of all traffic lights in the
-        simulator. When testing on the vehicle, the color state will not be available. You'll need to
-        rely on the position of the light and the camera image to predict it.
-        '''
+        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)       
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
@@ -54,6 +46,7 @@ class TLDetector(object):
 
     def pose_cb(self, msg):
         self.pose = msg
+        '''
 	light_state = 4 #Default to UNKNOWN
 	line_index = self.get_closest_waypoint(self.pose.pose)
 	if(len(self.lights) >= 1):
@@ -62,6 +55,7 @@ class TLDetector(object):
 		self.upcoming_red_light_pub.publish(Int32(line_index))
 	else: #If the light is not red
             self.upcoming_red_light_pub.publish(Int32(-1))
+        '''
             
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
@@ -81,13 +75,18 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-
+        print('index = {} state = {}'.format(light_wp, state))
+        if(light_state == 0): # If red light send topic of index
+		self.upcoming_red_light_pub.publish(Int32(line_index))
+	else: #If the light is not red
+            self.upcoming_red_light_pub.publish(Int32(-1))
+        
         '''
         Publish upcoming red lights at camera frequency.
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
         of times till we start using it. Otherwise the previous stable state is
         used.
-        '''
+        
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -99,7 +98,7 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-
+        '''
     def get_closest_waypoint(self, pose):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -151,6 +150,12 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        simulation = true
+        if(simulation):
+            return light.state
+        else:
+            return 4
+        '''
         if(not self.has_image):
             self.prev_light_loc = None
             return False
@@ -163,26 +168,21 @@ class TLDetector(object):
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
-
         Returns:
             int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
-
         """
-        light = None
-
-        # List of positions that correspond to the line to stop in front of for a given intersection
-        stop_line_positions = self.config['stop_line_positions']
-        if(self.pose):
-            car_position = self.get_closest_waypoint(self.pose.pose)
-
-        #TODO find the closest visible traffic light (if one exists)
-
-        if light:
-            state = self.get_light_state(light)
-            return light_wp, state
-        self.waypoints = None
-        return -1, TrafficLight.UNKNOWN
+        
+        line_index = self.get_closest_waypoint(self.pose.pose)
+        light_state = 4
+	if(len(self.lights) >= 1):
+		light_state = get_light_state(self, self.lights[line_index])#.state
+	return line_index, light_state
+    
+	#if(light_state == 0): # If red light send topic of index                
+	#	self.upcoming_red_light_pub.publish(Int32(line_index))
+	#else: #If the light is not red
+        #   self.upcoming_red_light_pub.publish(Int32(-1))
 '''
 if __name__ == '__main__':
     try:
