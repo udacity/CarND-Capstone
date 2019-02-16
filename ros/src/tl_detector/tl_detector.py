@@ -60,7 +60,9 @@ class TLDetector(object):
 		light_state = self.lights[line_index].state
 	if(light_state == 0): # If red light send topic of index
 		self.upcoming_red_light_pub.publish(Int32(line_index))
-
+	else: #If the light is not red
+            self.upcoming_red_light_pub.publish(Int32(-1))
+            
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
 
