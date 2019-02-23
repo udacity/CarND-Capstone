@@ -22,10 +22,17 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
 LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+REFRESH_RATE = 30 # Refresh final waypoints at a rate of 30 Hz
 
 
 class WaypointUpdater(object):
     def __init__(self):
+        # logging
+        self.debug = True
+        self.logger_filename = '/home/workspace/CarND-Capstone/logger_waypoint_updater.txt'
+        self.clear_log()
+
+        self.log("Entered WaypointUpdater")
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -33,26 +40,40 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.current_pose = None
+        self.base_waypoints = None
 
-        rospy.spin()
+        self.loop()
+        
+        
+    def loop(self):
+        rate = rospy.Rate(REFRESH_RATE)
+        while not rospy.is_shutdown():
+            if self.current_pose and self.base_waypoints:
+                pass
+            rate.sleep()
+            
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.log("Entered pose_cb")
+        self.current_pose = msg.pose
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.log("Entered waypoints_cb")
+        if not self.base_waypoints:
+          self.base_waypoints = waypoints
+          self.log("waypoints = " + str(waypoints))
 
     def traffic_cb(self, msg):
+        self.log("Entered traffic_cb")
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
 
     def obstacle_cb(self, msg):
+        self.log("Entered obstacle_cb")
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
@@ -69,6 +90,17 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+        
+    def clear_log(self):
+        self.log_line = 0
+        open(self.logger_filename, 'w').close()
+        self.log("Entered clear_log")
+
+    def log(self, msg):
+        if self.debug:
+          with open(self.logger_filename, 'a') as logfile:
+              logfile.write(str(self.log_line) + " " + msg + '\n')
+              self.log_line += 1
 
 
 if __name__ == '__main__':
