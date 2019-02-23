@@ -46,18 +46,18 @@ class WaypointUpdater(object):
         rate = rospy.Rate(REFRESH_RATE)
         while not rospy.is_shutdown():
             if self.current_pose and self.base_waypoints:
-                closest_waypoint_idx = self.get_closest_waypoint_idx()
+                closest_waypoint_idx = self.find_closest_waypoint_idx()
                 final_waypoints = self.construct_final_waypoints(closest_waypoint_idx)
                 self.final_waypoints_pub.publish(final_waypoints)
             rate.sleep()
             
-    def get_closest_waypoint_idx(self):
+    def find_closest_waypoint_idx(self):
         # find the index of the base waypoint which is closest to the vehicle
         x, y = (self.current_pose.position.x, self.current_pose.position.y)
         closest_waypoint_idx = None
         closest_distance = None
         for i in range(self.base_waypoint_count):
-            (wx, wy) = self.waypoint_coords(self.base_waypoints.waypoints[i])
+            (wx, wy) = self.unzip_waypoint_coords(self.base_waypoints.waypoints[i])
             distance = math.sqrt(pow((x-wx), 2) + pow((y-wy), 2))
             if distance < closest_distance or not closest_distance:
                 closest_distance = distance
@@ -65,15 +65,15 @@ class WaypointUpdater(object):
         
         # verify that the vehicle is behind the detected nearest waypoint
         vehicle_coords = (x,y)
-        waypoint_coords = self.waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx])
-        previous_waypoint_coords = self.waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx-1])
+        waypoint_coords = self.unzip_waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx])
+        previous_waypoint_coords = self.unzip_waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx-1])
         if not self.is_behind(vehicle_coords, waypoint_coords, previous_waypoint_coords):
             # detected waypoint is behind vehicle, therefore select next waypoint
             closest_waypoint_idx = (closest_waypoint_idx + 1) % len(self.base_waypoints.waypoints)
             
         return closest_waypoint_idx
         
-    def waypoint_coords(self, waypoint):
+    def unzip_waypoint_coords(self, waypoint):
         return (waypoint.pose.pose.position.x, waypoint.pose.pose.position.y)
         
     def is_behind(self, ref_point_coords, waypoint_coords, previous_waypoint_coords):
