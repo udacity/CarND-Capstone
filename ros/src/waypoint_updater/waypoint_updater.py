@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
+import math
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-
-import math
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -27,12 +26,6 @@ REFRESH_RATE = 30 # Refresh final waypoints at a rate of 30 Hz
 
 class WaypointUpdater(object):
     def __init__(self):
-        # logging
-        self.debug = True
-        self.logger_filename = '/home/workspace/CarND-Capstone/logger_waypoint_updater.txt'
-        self.clear_log()
-
-        self.log("Entered WaypointUpdater")
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -45,6 +38,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.current_pose = None
         self.base_waypoints = None
+        self.base_waypoint_count = None
 
         self.loop()
         
@@ -58,26 +52,25 @@ class WaypointUpdater(object):
             rate.sleep()
             
     def get_closest_waypoint_idx(self):
-        self.log("Entered get_closest_waypoint_idx")
-        (x, y) = (self.current_pose.position.x, self.current_pose.position.y)
+        # find the index of the base waypoint which is closest to the vehicle
+        x, y = (self.current_pose.position.x, self.current_pose.position.y)
         closest_waypoint_idx = None
         closest_distance = None
-        for i in range(len(self.base_waypoints.waypoints)):
-            waypoint = self.base_waypoints.waypoints[i]
-            (wx, wy) = self.waypoint_coords(waypoint)
+        for i in range(self.base_waypoint_count):
+            (wx, wy) = self.waypoint_coords(self.base_waypoints.waypoints[i])
             distance = math.sqrt(pow((x-wx), 2) + pow((y-wy), 2))
-            if not closest_distance or distance < closest_distance:
+            if distance < closest_distance or not closest_distance:
                 closest_distance = distance
                 closest_waypoint_idx = i
-        self.log("(x, y) = " + str((x,y)))
-        self.log("closest_distance = " + str(closest_distance))
         
+        # verify that the vehicle is behind the detected nearest waypoint
         vehicle_coords = (x,y)
         waypoint_coords = self.waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx])
         previous_waypoint_coords = self.waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx-1])
         if not self.is_behind(vehicle_coords, waypoint_coords, previous_waypoint_coords):
+            # detected waypoint is behind vehicle, therefore select next waypoint
             closest_waypoint_idx = (closest_waypoint_idx + 1) % len(self.base_waypoints.waypoints)
-        
+            
         return closest_waypoint_idx
         
     def waypoint_coords(self, waypoint):
@@ -89,37 +82,32 @@ class WaypointUpdater(object):
         (wx, wy) = waypoint_coords
         (wprev_x, wprev_y) = previous_waypoint_coords
         
+        # evaluate dot product defining plane perpendicular to road
         (v1x, v1y) = (wx - wprev_x, wy - wprev_y)
         (v2x, v2y) = (x - wx, y - wy)
         normal = v1x * v2x + v1y * v2y
         return normal < 0
             
     def construct_final_waypoints(self, start_idx):
-        self.log("Entered construct_final_waypoints")
         end_idx = start_idx + LOOKAHEAD_WPS
-        self.log("waypoint range: " + str(start_idx) + ":" + str(end_idx))
         final_waypoints = Lane()
         final_waypoints.header = self.base_waypoints.header
         final_waypoints.waypoints = self.base_waypoints.waypoints[start_idx:end_idx]
         return final_waypoints
         
     def pose_cb(self, msg):
-        self.log("Entered pose_cb")
         self.current_pose = msg.pose
 
     def waypoints_cb(self, waypoints):
-        self.log("Entered waypoints_cb")
         if not self.base_waypoints:
           self.base_waypoints = waypoints
-          #self.log("waypoints = " + str(waypoints))
+          self.base_waypoint_count = len(waypoints.waypoints)
 
     def traffic_cb(self, msg):
-        self.log("Entered traffic_cb")
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
 
     def obstacle_cb(self, msg):
-        self.log("Entered obstacle_cb")
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
@@ -136,17 +124,6 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
-        
-    def clear_log(self):
-        self.log_line = 0
-        open(self.logger_filename, 'w').close()
-        self.log("Entered clear_log")
-
-    def log(self, msg):
-        if self.debug:
-          with open(self.logger_filename, 'a') as logfile:
-              logfile.write(str(self.log_line) + " " + msg + '\n')
-              self.log_line += 1
 
 if __name__ == '__main__':
     try:
