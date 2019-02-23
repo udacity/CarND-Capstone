@@ -52,10 +52,47 @@ class WaypointUpdater(object):
         rate = rospy.Rate(REFRESH_RATE)
         while not rospy.is_shutdown():
             if self.current_pose and self.base_waypoints:
-                closest_waypoint_idx = 0#self.get_closest_waypoint_idx()
+                closest_waypoint_idx = self.get_closest_waypoint_idx()
                 final_waypoints = self.construct_final_waypoints(closest_waypoint_idx)
                 self.final_waypoints_pub.publish(final_waypoints)
             rate.sleep()
+            
+    def get_closest_waypoint_idx(self):
+        self.log("Entered get_closest_waypoint_idx")
+        (x, y) = (self.current_pose.position.x, self.current_pose.position.y)
+        closest_waypoint_idx = None
+        closest_distance = None
+        for i in range(len(self.base_waypoints.waypoints)):
+            waypoint = self.base_waypoints.waypoints[i]
+            (wx, wy) = self.waypoint_coords(waypoint)
+            distance = math.sqrt(pow((x-wx), 2) + pow((y-wy), 2))
+            if not closest_distance or distance < closest_distance:
+                closest_distance = distance
+                closest_waypoint_idx = i
+        self.log("(x, y) = " + str((x,y)))
+        self.log("closest_distance = " + str(closest_distance))
+        
+        vehicle_coords = (x,y)
+        waypoint_coords = self.waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx])
+        previous_waypoint_coords = self.waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx-1])
+        if not self.is_behind(vehicle_coords, waypoint_coords, previous_waypoint_coords):
+            closest_waypoint_idx = (closest_waypoint_idx + 1) % len(self.base_waypoints.waypoints)
+        
+        return closest_waypoint_idx
+        
+    def waypoint_coords(self, waypoint):
+        return (waypoint.pose.pose.position.x, waypoint.pose.pose.position.y)
+        
+    def is_behind(self, ref_point_coords, waypoint_coords, previous_waypoint_coords):
+        # is reference point behind waypoint?
+        (x, y) = ref_point_coords
+        (wx, wy) = waypoint_coords
+        (wprev_x, wprev_y) = previous_waypoint_coords
+        
+        (v1x, v1y) = (wx - wprev_x, wy - wprev_y)
+        (v2x, v2y) = (x - wx, y - wy)
+        normal = v1x * v2x + v1y * v2y
+        return normal < 0
             
     def construct_final_waypoints(self, start_idx):
         self.log("Entered construct_final_waypoints")
