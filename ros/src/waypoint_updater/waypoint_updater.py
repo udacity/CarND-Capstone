@@ -48,15 +48,24 @@ class WaypointUpdater(object):
 
         self.loop()
         
-        
     def loop(self):
         rate = rospy.Rate(REFRESH_RATE)
         while not rospy.is_shutdown():
             if self.current_pose and self.base_waypoints:
-                pass
+                closest_waypoint_idx = 0#self.get_closest_waypoint_idx()
+                final_waypoints = self.construct_final_waypoints(closest_waypoint_idx)
+                self.final_waypoints_pub.publish(final_waypoints)
             rate.sleep()
             
-
+    def construct_final_waypoints(self, start_idx):
+        self.log("Entered construct_final_waypoints")
+        end_idx = start_idx + LOOKAHEAD_WPS
+        self.log("waypoint range: " + str(start_idx) + ":" + str(end_idx))
+        final_waypoints = Lane()
+        final_waypoints.header = self.base_waypoints.header
+        final_waypoints.waypoints = self.base_waypoints.waypoints[start_idx:end_idx]
+        return final_waypoints
+        
     def pose_cb(self, msg):
         self.log("Entered pose_cb")
         self.current_pose = msg.pose
@@ -65,7 +74,7 @@ class WaypointUpdater(object):
         self.log("Entered waypoints_cb")
         if not self.base_waypoints:
           self.base_waypoints = waypoints
-          self.log("waypoints = " + str(waypoints))
+          #self.log("waypoints = " + str(waypoints))
 
     def traffic_cb(self, msg):
         self.log("Entered traffic_cb")
@@ -101,7 +110,6 @@ class WaypointUpdater(object):
           with open(self.logger_filename, 'a') as logfile:
               logfile.write(str(self.log_line) + " " + msg + '\n')
               self.log_line += 1
-
 
 if __name__ == '__main__':
     try:
