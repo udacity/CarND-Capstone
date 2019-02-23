@@ -1,0 +1,27 @@
+Use VMware 190217_StAn_Linux_Ubuntu
+
+Installation:
+# cd ~/Temp/TH_CarND-Capstone
+# sudo apt install docker.io
+# sudo usermod -a -G docker $USER
+# <reboot!>
+# cd ~/Temp/TH_CarND-Capstone
+# docker build . -t capstone
+# docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
+# cd ~/Temp/TH_CarND-Capstone
+# pip install -r requirements.txt
+# cd ~/Temp/TH_CarND-Capstone/ros
+# find . -type f -print0 | xargs -0 dos2unix
+# cd ~/Temp/TH_CarND-Capstone/ros/src
+# rm CMakeLists.txt
+# ln -s <content of deleted CMakeLists.txt> CMakeLists.txt
+# cd ~/Temp/TH_CarND-Capstone/ros
+# catkin_make
+
+Running:
+# cd ~/Temp/TH_CarND-Capstone/ros
+# source devel/setup.sh
+# roslaunch launch/styx.launch
+# <start simulator!>
+
+pip install pillow --upgrade
