@@ -25,6 +25,8 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
 
+        self.tlstate = { TrafficLight.RED : "RED", TrafficLight.YELLOW : "YELLOW", TrafficLight.GREEN : "GREEN", TrafficLight.UNKNOWN : "UNKNOWN"}
+
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -36,7 +38,8 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1, buff_size=2**24)
+        #sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -77,6 +80,7 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
+        #rospy.logwarn("Closet light wp: {0} \n And light state: {1}".format(light_wp, state))
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -162,6 +166,7 @@ class TLDetector(object):
 
         if closet_light:
             state = self.get_light_state(closet_light)
+            rospy.loginfo(self.tlstate[state])
             return line_wp_idx, state
 
         return -1, TrafficLight.UNKNOWN
