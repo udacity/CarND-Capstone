@@ -121,7 +121,7 @@ class TLDetector(object):
 
         """
         # While Testing return simulator light state
-        return light.state
+        #return light.state
 
         if(not self.has_image):
             self.prev_light_loc = None
