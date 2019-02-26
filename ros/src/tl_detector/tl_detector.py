@@ -97,18 +97,42 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-    def get_closest_waypoint(self, x,y):
+    def dist_to_point(self, pose, wp_pose):
+        x_sq = pow((pose.position.x - wp_pose.position.x), 2)
+        y_sq = pow((pose.position.y - wp_pose.position.y), 2)
+        dist = math.sqrt(x_sq + y_sq)
+        return dist
+
+    def get_closest_waypoint(self, pose, waypoints):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
             pose (Pose): position to match a waypoint to
+            waypoints: points where to look for
 
         Returns:
             int: index of the closest waypoint in self.waypoints
 
         """
         #TODO implement
-        return self.waypoint_tree.query([x, y], 1)[1]
+
+        if self.waypoints is None:
+            return
+        min_disc = 999999
+        closest_wp_idx = -1
+        
+        if not waipoints:
+            rospy.logwarn("[TL_DETECTOR] No waypoints given.")
+        else:
+        # check all the waypoints to see which one is the closest to our current position
+
+            for i, wp in enumerate(waypoints):
+                dist = self.dist_to_point(pose, wp.pose.pose)
+                if (disc < min_disc):  
+                    closest_wp_idx = i
+                    min_dist = dist
+                    
+            return closest_wp_idx 
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
