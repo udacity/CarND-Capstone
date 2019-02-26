@@ -4,6 +4,7 @@ import math
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from scipy.spatial import KDTree
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -39,6 +40,7 @@ class WaypointUpdater(object):
         self.current_pose = None
         self.base_waypoints = None
         self.base_waypoint_count = None
+        self.waypoints_tree = None
 
         self.loop()
         
@@ -53,27 +55,19 @@ class WaypointUpdater(object):
             
     def find_closest_waypoint_idx(self):
         # find the index of the base waypoint which is closest to the vehicle
-        x, y = (self.current_pose.position.x, self.current_pose.position.y)
-        closest_waypoint_idx = None
-        closest_distance = None
-        for i in range(self.base_waypoint_count):
-            (wx, wy) = self.unzip_waypoint_coords(self.base_waypoints.waypoints[i])
-            distance = math.sqrt(pow((x-wx), 2) + pow((y-wy), 2))
-            if distance < closest_distance or not closest_distance:
-                closest_distance = distance
-                closest_waypoint_idx = i
+        vehicle_coords = (self.current_pose.position.x, self.current_pose.position.y)
+        closest_waypoint_idx = self.waypoints_tree.query(vehicle_coords, 1)[1]
         
         # verify that the vehicle is behind the detected nearest waypoint
-        vehicle_coords = (x,y)
-        waypoint_coords = self.unzip_waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx])
-        previous_waypoint_coords = self.unzip_waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx-1])
+        waypoint_coords = self.unpack_waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx])
+        previous_waypoint_coords = self.unpack_waypoint_coords(self.base_waypoints.waypoints[closest_waypoint_idx-1])
         if not self.is_behind(vehicle_coords, waypoint_coords, previous_waypoint_coords):
             # detected waypoint is behind vehicle, therefore select next waypoint
             closest_waypoint_idx = (closest_waypoint_idx + 1) % len(self.base_waypoints.waypoints)
             
         return closest_waypoint_idx
         
-    def unzip_waypoint_coords(self, waypoint):
+    def unpack_waypoint_coords(self, waypoint):
         return (waypoint.pose.pose.position.x, waypoint.pose.pose.position.y)
         
     def is_behind(self, ref_point_coords, waypoint_coords, previous_waypoint_coords):
@@ -102,6 +96,8 @@ class WaypointUpdater(object):
         if not self.base_waypoints:
           self.base_waypoints = waypoints
           self.base_waypoint_count = len(waypoints.waypoints)
+          waypoints_xy = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+          self.waypoints_tree = KDTree(waypoints_xy)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
