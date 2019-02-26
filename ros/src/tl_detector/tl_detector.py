@@ -116,14 +116,13 @@ class TLDetector(object):
         """
         #TODO implement
 
-        if self.waypoints is None:
-            return
         min_disc = 999999
         closest_wp_idx = -1
         
-        if not waipoints:
+        if not waypoints:
             rospy.logwarn("[TL_DETECTOR] No waypoints given.")
         else:
+            
         # check all the waypoints to see which one is the closest to our current position
 
             for i, wp in enumerate(waypoints):
