@@ -13,7 +13,8 @@ import yaml
 import math
 from scipy.spatial import KDTree
 
-STATE_COUNT_THRESHOLD = 3
+LIGHT_PROCESS_THRESHOLD = 4
+STATE_COUNT_THRESHOLD = 3 / LIGHT_PROCESS_THRESHOLD # if we skip images we cannot wait until we see the same light state as often
 
 class TLDetector(object):
     def __init__(self):
@@ -37,7 +38,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -52,6 +53,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+        self.traffic_count = 0
 
         rospy.spin()
 
@@ -78,7 +80,15 @@ class TLDetector(object):
         #rospy.logwarn("Image callback :")
         self.has_image = True
         self.camera_image = msg
-        light_wp, state = self.process_traffic_lights()
+        if ((self.traffic_count % LIGHT_PROCESS_THRESHOLD) == 0):
+		    # traffic light must be processed
+            #rospy.logwarn("Processing traffic light image")
+            light_wp, state = self.process_traffic_lights()
+        else:
+            rospy.loginfo("Skipping processing traffic light image.")
+            light_wp = self.last_wp # use previous value
+            state = self.last_state # use previous value
+        self.traffic_count += 1
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -89,9 +99,10 @@ class TLDetector(object):
         if self.state != state:
             self.state_count = 0
             self.state = state
-        elif self.state_count >= STATE_COUNT_THRESHOLD:
+		
+        if self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+            light_wp = light_wp if ((state == TrafficLight.RED) or (state == TrafficLight.YELLOW)) else -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
@@ -146,7 +157,7 @@ class TLDetector(object):
 
         if(not self.has_image):
             self.prev_light_loc = None
-            return False
+            return TrafficLight.UNKNOWN
 
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
@@ -186,11 +197,11 @@ class TLDetector(object):
                     line_wp_idx = temp_wp_idx
 
         if closest_light:
-            rospy.loginfo( "car_wp_idx: " + str(car_wp_idx) + "  stop_line_position idx: " + str(line_wp_idx))
+            rospy.loginfo("car_wp_idx: " + str(car_wp_idx) + " stop line position idx: " + str(line_wp_idx))
             state = self.get_light_state(closest_light)
-            rospy.logwarn("Light State : {0}".format(state))
+            rospy.loginfo("Correct light state    : {0}".format(closest_light.state))
+            rospy.loginfo("Detected light state   : {0}".format(state))
             return line_wp_idx, state
-
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':

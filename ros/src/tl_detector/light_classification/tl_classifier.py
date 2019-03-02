@@ -31,7 +31,7 @@ class TLClassifier(object):
         image_np = self.load_image_into_numpy_array(image)
         # Actual detection.
         output_dict = self.run_inference_for_single_image(image_np, self.detection_graph)
-        rospy.logwarn("Light State : {0} with properbility {1}".format(output_dict['detection_classes'][0],output_dict['detection_scores'][0]))
+        rospy.loginfo("Classified light state : {0} with probability {1}".format(output_dict['detection_classes'][0],output_dict['detection_scores'][0]))
         #print(output_dict['detection_boxes'][0]) # if we go for the 2 step approach
         if (output_dict['detection_scores'][0] > 0.5):
             if (output_dict['detection_classes'][0] == 3 ):
