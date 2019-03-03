@@ -19,7 +19,7 @@ bDEBUG = True
 
 class TLDetector(object):
     def __init__(self):
-        rospy.init_node('tl_detector')
+        rospy.init_node('tl_detector', log_level=rospy.DEBUG)
 
         self.pose = None
         self.waypoints = None
@@ -165,6 +165,17 @@ class TLDetector(object):
         #Get classification
         return self.light_classifier.get_classification(cv_image)
 
+    def state_to_string(self, str, state):
+        """Returns the color light associated with the state"""
+        if (state == 2 ):
+            rospy.logdebug(str + ": GREEN")
+        elif (state == 1 ):
+            rospy.logwarn(str + " : YELLOW")
+        elif (state == 0 ):
+            rospy.logerr(str + ": RED")
+        else:
+            rospy.loginfo(str + " : UNKNOWN")
+    
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -200,12 +211,12 @@ class TLDetector(object):
         if closest_light:
             if bDEBUG:
                 rospy.logwarn("----------------------------------------------------------------------")
-            state = self.get_light_state(closest_light)
+            classified_state = self.get_light_state(closest_light)
             if bDEBUG:
-                rospy.logwarn("Correct light state    : {0}".format(closest_light.state))
-                rospy.logwarn("Detected light state   : {0}".format(state))
+                correct_state_str = self.state_to_string("Correct light state    ", closest_light.state)
+                detected_state_str = self.state_to_string("Detected light state   ", classified_state)
                 rospy.logwarn("car_wp_idx: " + str(car_wp_idx) + " stop line position idx: " + str(line_wp_idx))
-            return line_wp_idx, state
+            return line_wp_idx, classified_state
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
