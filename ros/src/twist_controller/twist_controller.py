@@ -5,7 +5,7 @@ from lowpass import LowPassFilter
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
-
+DEBUG_THRESHOLD = 50
 
 class Controller(object):
     def __init__(self, vehicle_mass, fuel_capacity, brake_deadband, decel_limit, accel_limit, wheel_radius, wheel_base, steer_ratio, max_lat_accel, max_steer_angle):
@@ -17,7 +17,7 @@ class Controller(object):
         ki = 0.001
         kd = 0.6
         mn = 0.
-        mx = 0.2
+        mx = 0.3
         self.throttle_controller = PID(kp, ki, kd, mn, mx)
 
         tau = 0.5
@@ -32,6 +32,8 @@ class Controller(object):
         self.wheel_radius = wheel_radius
 
         self.last_time = rospy.get_time()
+        
+        self.iteration_count = 0
 
     def control(self, current_vel, dbw_enabled, linear_vel, angular_vel):
         # TODO: Change the arg, kwarg list to suit your needs
@@ -40,11 +42,7 @@ class Controller(object):
         if not dbw_enabled:
             self.throttle_controller.reset()
             return 0., 0., 0.
-
-        #rospy.logwarn("Target angular vel: {0}".format(angular_vel))
-        #rospy.logwarn("Target linear vel: {0}".format(linear_vel))
-        #rospy.logwarn("Current vel: {0}".format(current_vel))
-
+        
         current_vel = self.vel_lpf.filt(current_vel)
         
         steering = self.yaw_controller.get_steering(
@@ -69,4 +67,13 @@ class Controller(object):
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius
 
+        if ((self.iteration_count % DEBUG_THRESHOLD) == 0):
+            rospy.logwarn("----------------------------------------------------------------------")
+            #rospy.logwarn("Target angular vel: {0}".format(angular_vel))
+            rospy.logwarn("Target velocity  : {0}".format(linear_vel))
+            rospy.logwarn("Current velocity : {0}".format(current_vel))
+            rospy.logwarn("Throttle         : {0}".format(throttle))
+            rospy.logwarn("Braking          : {0}".format(brake))
+        self.iteration_count += 1
+		
         return throttle, brake, steering
