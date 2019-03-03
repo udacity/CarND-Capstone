@@ -15,6 +15,7 @@ from scipy.spatial import KDTree
 
 LIGHT_PROCESS_THRESHOLD = 4
 STATE_COUNT_THRESHOLD = 3 / LIGHT_PROCESS_THRESHOLD # if we skip images we cannot wait until we see the same light state as often
+bDEBUG = True
 
 class TLDetector(object):
     def __init__(self):
@@ -197,11 +198,13 @@ class TLDetector(object):
                     line_wp_idx = temp_wp_idx
 
         if closest_light:
-            rospy.logwarn("----------------------------------------------------------------------")
+            if bDEBUG:
+                rospy.logwarn("----------------------------------------------------------------------")
             state = self.get_light_state(closest_light)
-            rospy.logwarn("Correct light state    : {0}".format(closest_light.state))
-            rospy.logwarn("Detected light state   : {0}".format(state))
-            rospy.logwarn("car_wp_idx: " + str(car_wp_idx) + " stop line position idx: " + str(line_wp_idx))
+            if bDEBUG:
+                rospy.logwarn("Correct light state    : {0}".format(closest_light.state))
+                rospy.logwarn("Detected light state   : {0}".format(state))
+                rospy.logwarn("car_wp_idx: " + str(car_wp_idx) + " stop line position idx: " + str(line_wp_idx))
             return line_wp_idx, state
         return -1, TrafficLight.UNKNOWN
 
