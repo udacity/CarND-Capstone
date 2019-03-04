@@ -1,6 +1,0 @@
-bin
-include
-object_detection
-training/models
-training/fine_tuned_model
-*.records
