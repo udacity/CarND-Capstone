@@ -1,0 +1,3 @@
+[submodule "Traffic_Light_Detection"]
+	path = Traffic_Light_Detection
+	url = https://github.com/ilopezfr/Traffic_Light_Detection
