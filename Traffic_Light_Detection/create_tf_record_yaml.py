@@ -13,18 +13,7 @@ FLAGS = flags.FLAGS
 LABEL_DICT =  {
     "Green" : 1,
     "Red" : 2,
-    "GreenLeft" : 3,
-    "GreenRight" : 4,
-    "RedLeft" : 5,
-    "RedRight" : 6,
-    "Yellow" : 7,
-    "off" : 8,
-    "RedStraight" : 9,
-    "GreenStraight" : 10,
-    "GreenStraightLeft" : 11,
-    "GreenStraightRight" : 12,
-    "RedStraightLeft" : 13,
-    "RedStraightRight" : 14
+    "Yellow" : 3,
     }
 
 def create_tf_example(example):
@@ -53,13 +42,19 @@ def create_tf_example(example):
     for box in example['boxes']:
         #if box['occluded'] is False:
         #print("adding box")
-        xmins.append(float(box['x_min'] / width))
-        xmaxs.append(float(box['x_max'] / width))
-        ymins.append(float(box['y_min'] / height))
-        ymaxs.append(float(box['y_max'] / height))
-        classes_text.append(box['label'].encode())
-        classes.append(int(LABEL_DICT[box['label']]))
-
+        if(box['label'] != 'off'):
+            xmins.append(float(box['x_min'] / width))
+            xmaxs.append(float(box['x_max'] / width))
+            ymins.append(float(box['y_min'] / height))
+            ymaxs.append(float(box['y_max'] / height))
+            # we only care about red,green and yellow
+            lightColor = ""
+            if "Green" in box['label']:
+                lightColor = "Green"
+            if "Red" in box['label']:
+                lightColor = "Red"
+            classes_text.append(lightColor.encode())
+            classes.append(int(LABEL_DICT[lightColor]))
 
     tf_example = tf.train.Example(features=tf.train.Features(feature={
         'image/height': dataset_util.int64_feature(height),
