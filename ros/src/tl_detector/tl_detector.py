@@ -166,9 +166,7 @@ class TLDetector(object):
         return self.light_classifier.get_classification(cv_image)
 
     def state_to_string(self, str, state):
-        # Returns the color light associated with the state
-        """
-        # Base model assignments
+        """ Returns the color light associated with the state """
         if (state == 2 ):
             rospy.logdebug(str + ": GREEN")
         elif (state == 1 ):
@@ -177,17 +175,7 @@ class TLDetector(object):
             rospy.logerr(str + ": RED")
         else:
             rospy.loginfo(str + " : UNKNOWN")
-        """
-        # New model assignments
-        if (state == 1 ):
-            rospy.logdebug(str + ": GREEN")
-        elif (state == 2 ):
-            rospy.logwarn(str + " : YELLOW")
-        elif (state == 3 ):
-            rospy.logerr(str + ": RED")
-        else:
-            rospy.loginfo(str + " : UNKNOWN")
-    
+        
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
