@@ -1,7 +1,7 @@
 # Traffic Light Detection model training
 
-To drive the car we need to be able to detect traffic lights color, for this we train an object detector using tensor flow.
-The model will predict the bounding box of the traffic light, and it will have 3 classes Red, Yellow, Green.
+To drive the car we need to be able to detect and classify traffic lights. To do so, we trained an object detector using TensorFlow.
+The final model performs in a single stage both the traffic light detection (and draws a bounding box around it) and the light color classification (between 3 classes: Red, Yellow, Green).
 
 ## Preparing the training data
 We will train using the following datasets
@@ -35,7 +35,7 @@ To start with clone these 2 repos and download the dataset. if you place the fol
 Not all dataset need to be used, and it is possible to just run the following commands for the datasets you wish to use.
 
 ### Udacity
-In the first iteration of this project, we ended up combining the three first datasets: carla_training, carla_testing, simulator. The combination of these three datasets adds up to a total of 2,613 images. We called this collection **Mixed** dataset. The results overall were good enough that, we didn't see a priority investing extra time and computation in retraining the model with the other public datasets, given the time constraints we had in delivering the first version of this project. We will consider retraining the model on these datasets on the second iteration of this project.   
+In the first iteration of this project, we ended up combining the three first datasets: carla_training, carla_testing, simulator. The combination of these three datasets adds up to a total of 2,613 images. We called this collection **Mixed** dataset. The results of the model sufficiently met our needs, achieving a good balance between accuracy and fast running time. Because of this, we didn't see a priority investing extra time and computation in retraining the model with the other public datasets, given the time constraints we had in delivering the first version of this project. We will consider retraining the model on these datasets on the second iteration of this project.   
 
 In order to train the model using the TensorFlow Object Detection API, the images supplied needed to be converted into [TensorFlow Record file format](https://www.tensorflow.org/guide/extend/formats). We've supplied the utility file `create_tf_record.py` that converts the annotated images into a TensorFlow Record, optionally splitting the dataset into train and validation.
 
@@ -84,9 +84,18 @@ The bosch dataset has annotations in YAML format, and the `create_tf_record_yaml
 
 ```console
 # repeat for as many dayClip's as you want there are 13
-$ python3 Traffic_Light_Detection/generate_tfrecords_csv.py --output_path CarND-Capstone/Traffic_Light_Detection/training/data/train_lisa1.record --csv_input dataset/LISA/Annotations/dayTrain/dayClip1/frameAnnotationsBOX.csv --path_to_images dataset/LISA/dayTrain/dayClip1/frames/
-$ python3 Traffic_Light_Detection/generate_tfrecords_csv.py --output_path CarND-Capstone/Traffic_Light_Detection/training/data/test_lisa1.record --csv_input dataset/LISA/Annotations/dayTrain/daySequence1/frameAnnotationsBOX.csv --path_to_images dataset/LISA/dayTrain/daySequence1/frames/
-$ python3 Traffic_Light_Detection/generate_tfrecords_csv.py --output_path CarND-Capstone/Traffic_Light_Detection/training/data/test_lisa2.record --csv_input dataset/LISA/Annotations/dayTrain/daySequence2/frameAnnotationsBOX.csv --path_to_images dataset/LISA/dayTrain/daySequence2/frames/
+$ python3 Traffic_Light_Detection/generate_tfrecords_csv.py 
+        --output_path CarND-Capstone/Traffic_Light_Detection/training/data/train_lisa1.record 
+        --csv_input dataset/LISA/Annotations/dayTrain/dayClip1/frameAnnotationsBOX.csv 
+        --path_to_images dataset/LISA/dayTrain/dayClip1/frames/
+$ python3 Traffic_Light_Detection/generate_tfrecords_csv.py 
+        --output_path CarND-Capstone/Traffic_Light_Detection/training/data/test_lisa1.record 
+        --csv_input dataset/LISA/Annotations/dayTrain/daySequence1/frameAnnotationsBOX.csv 
+        --path_to_images dataset/LISA/dayTrain/daySequence1/frames/
+$ python3 Traffic_Light_Detection/generate_tfrecords_csv.py 
+        --output_path CarND-Capstone/Traffic_Light_Detection/training/data/test_lisa2.record 
+        --csv_input dataset/LISA/Annotations/dayTrain/daySequence2/frameAnnotationsBOX.csv 
+        --path_to_images dataset/LISA/dayTrain/daySequence2/frames/
 ```
 
 ## Training 
@@ -102,8 +111,8 @@ We followed the instructions for [Configuring Object Detection Training Pipeline
 
 Taking the template config file provided by Tensorflow, we simply made the following adjustments:
 - Added the input_path to the train and validation tfrecord files.
-- EDITED the label_map_path to config/labels_map.pbtxt
-- num_classes: 3 (for this model we have 3 classes only: red, green, yellow)
+- Edited the label_map_path to config/labels_map.pbtxt
+- Updated num_classes: 3 (for this model we have 3 classes only: red, green, yellow)
 - The num_examples in the evaluation section that correspond to the number of samples in the evaluation record
 - The ssd_anchor_generator section, updating the scales and removing unused aspect ratios (the traffic lights are ~ 0.33)
 - Reduced the number of detections from 100 to 10 in max_detections_per_class and max_total_detections
@@ -209,3 +218,21 @@ Thanks for creating the LISA Traffic Light Dataset :-)
 Jensen MB, Philipsen MP, Møgelmose A, Moeslund TB, Trivedi [MM. Vision for Looking at Traffic Lights: Issues, Survey, and Perspectives](https://ieeexplore.ieee.org/document/7398055/). I E E E Transactions on Intelligent Transportation Systems. 2016 Feb 3;17(7):1800-1815. Available from, DOI: 10.1109/TITS.2015.2509509
 
 Philipsen, M. P., Jensen, M. B., Møgelmose, A., Moeslund, T. B., & Trivedi, M. M. (2015, September). [Traffic light detection: A learning algorithm and evaluations on challenging dataset](https://ieeexplore.ieee.org/document/7313470). In intelligent transportation systems (ITSC), 2015 IEEE 18th international conference on (pp. 2341-2345). IEEE.
+
+
+
+[//]: # (Image References)
+
+[image1]: ./test_images/sim_r.jpg "Sim R"
+[image2]: ./test_images_result/sim_r_result.png "Sim R result"
+[image3]: ./test_images_result/sim_u_result.png  "Sim U result"
+[image4]: ./test_images_result/sim_y_result.png "sample 4"
+[image5]: ./test_images_result/uda_lights_g_result.png "sample-5"
+[image6]: ./test_images_result/uda_lights_y_result.png "sample 6"
+[image7]: ./test_images_result/uda_loop_g_result.png "sample 7"
+[image8]: ./test_images_result/uda_loop_r_result.png "sample 8"
+[image9]: ./test_images_result/uda_loop_u_2_result.png "sample 9"
+[image10]: ./test_images_result/uda_loop_u_result.png  "sample 10"
+[image11]: ./test_images_result/uda_training_g_result.png "sample 11"
+[image12]: ./test_images_result/uda_training_r_result.png  "sample-12"
+[image13]: ./test_images_result/uda_training_y_result.png  "sample-13"
