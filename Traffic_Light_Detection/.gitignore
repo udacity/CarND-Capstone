@@ -3,3 +3,12 @@ include
 object_detection
 training
 *.record
+
+# Custom
+data/
+notebooks/TrafficLightDetection-Inference.ipynb
+notebooks/object_detection
+optimize_graph.py
+
+# exception to the rule
+!object_detection/utils/
