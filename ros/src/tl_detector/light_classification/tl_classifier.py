@@ -39,11 +39,21 @@ class TLClassifier(object):
         rospy.logwarn(text_string.format(output_dict['detection_classes'][0],output_dict['detection_scores'][0]))
         #print(output_dict['detection_boxes'][0]) # if we go for the 2 step approach
         if (output_dict['detection_scores'][0] > 0.5):
+            """
+            # Base model assignment
             if (output_dict['detection_classes'][0] == 3 ):
                 return TrafficLight.GREEN
             if (output_dict['detection_classes'][0] == 2 ):
                 return TrafficLight.YELLOW
             if (output_dict['detection_classes'][0] == 1 ):
+                return TrafficLight.RED
+            """
+            # New model assignment
+            if (output_dict['detection_classes'][0] == 1 ):
+                return TrafficLight.GREEN
+            if (output_dict['detection_classes'][0] == 2 ):
+                return TrafficLight.YELLOW
+            if (output_dict['detection_classes'][0] == 3 ):
                 return TrafficLight.RED
 
         return TrafficLight.UNKNOWN
