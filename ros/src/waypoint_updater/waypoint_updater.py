@@ -40,7 +40,12 @@ class WaypointUpdater(object):
         self.current_pose = None
         self.base_waypoints = None
 
-        rospy.spin()
+        # publishing loop
+        rate = rospy.Rate(10) # 10hz
+        while not rospy.is_shutdown():
+            if self.base_waypoints is not None:
+                self.final_waypoints_pub.publish(self.base_waypoints)
+            rate.sleep()
 
     def pose_cb(self, msg):
         ## called at 50 hz
