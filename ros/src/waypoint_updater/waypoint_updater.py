@@ -38,6 +38,7 @@ class WaypointUpdater(object):
 
         # TODO: Add other member variables you need below
         self.current_pose = None
+        self.base_waypoints = None
 
         rospy.spin()
 
@@ -47,9 +48,9 @@ class WaypointUpdater(object):
         # save current [x,y] position
         self.current_pose = [msg.pose.position.x, msg.pose.position.y]
 
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+    def waypoints_cb(self, lane):
+        # called once on startup
+        self.base_waypoints = lane
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
