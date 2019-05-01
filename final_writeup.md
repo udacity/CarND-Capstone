@@ -13,10 +13,12 @@ Note that we'd like a minimum team size of 4
 # components
 ## traffic light detection
 source: ros/src/tl_detector/
-|subscribed to|publish to|
-|/image_color||
-|/current_pose|
-|/base_waypoints|
+
+|   source     | subscribed to | publish to |
+| :-----------: |:-------------:| :-----:|
+| tl_detector | /image_color | |
+| | /current_pose |
+| | /base_waypoints |
 
 
 ## control
