@@ -17,6 +17,7 @@ package source: ros/src/tl_detector/
 /base_waypoints topic: provides a complete list of waypoints the car will be following.
 tl_classfier.py: tl_detector/light_classification_model/tl_classfier.py
 tl_detector.py : tl_detector/tl_detector.py
+
 |   node     | subscribed to | publish to |
 | :-----------: |:-------------:| :-----:|
 | tl_detector.py | /image_color | /traffic_waypoint |
