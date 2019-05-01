@@ -12,13 +12,19 @@ the simulator displays vehicle velocity in units of mph. However, all values use
 Note that we'd like a minimum team size of 4
 # components
 ## traffic light detection
-source: ros/src/tl_detector/
-
-|   source     | subscribed to | publish to |
+package source: ros/src/tl_detector/
+/current_pose topic : provides the vehicle's current position
+/base_waypoints topic: provides a complete list of waypoints the car will be following.
+tl_classfier.py: tl_detector/light_classification_model/tl_classfier.py
+tl_detector.py : tl_detector/tl_detector.py
+|   node     | subscribed to | publish to |
 | :-----------: |:-------------:| :-----:|
-| tl_detector | /image_color | |
+| tl_detector.py | /image_color | /traffic_waypoint |
 | | /current_pose |
 | | /base_waypoints |
+| tl_classfier.py | |  |
+| :-----------: |:-------------:| :-----:|
+
 
 
 ## control
