@@ -13,9 +13,13 @@ Note that we'd like a minimum team size of 4
 # components
 ## traffic light detection
 package source: ros/src/tl_detector/
+
 /current_pose topic : provides the vehicle's current position
+
 /base_waypoints topic: provides a complete list of waypoints the car will be following.
+
 tl_classfier.py: tl_detector/light_classification_model/tl_classfier.py
+
 tl_detector.py : tl_detector/tl_detector.py
 
 |   node     | subscribed to | publish to |
@@ -24,12 +28,11 @@ tl_detector.py : tl_detector/tl_detector.py
 | | /current_pose | |
 | | /base_waypoints | |
 | tl_classfier.py | |  |
-| :-----------: |:-------------:| :-----:|
 | tl_classfier.py | |  |
-
-
-
 
 
 ## control
 ## waypoint following
+package source: ros/src/waypoint_updater/
+
+purpose: to update the target velocity property of each waypoint based on traffic light and obstacle detection data
