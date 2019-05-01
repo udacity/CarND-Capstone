@@ -24,7 +24,10 @@ Note that we'd like a minimum team size of 4
 | | /current_pose | |
 | | /base_waypoints | |
 | tl_classfier.py | |  |
-| tl_classfier.py | |  |
+| waypoint_updater.py | /current_pose | /final_waypoints |
+| | /base_waypoints | |
+| | /obstacle_waypoint | |
+| | /traffic_waypoint | |
 
 
 ## control
