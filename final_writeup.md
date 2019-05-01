@@ -20,8 +20,8 @@ tl_detector.py : tl_detector/tl_detector.py
 |   node     | subscribed to | publish to |
 | :-----------: |:-------------:| :-----:|
 | tl_detector.py | /image_color | /traffic_waypoint |
-| | /current_pose |
-| | /base_waypoints |
+| | /current_pose | |
+| | /base_waypoints | |
 | tl_classfier.py | |  |
 
 
