@@ -28,9 +28,15 @@ Note that we'd like a minimum team size of 4
 | | /base_waypoints | |
 | | /obstacle_waypoint | |
 | | /traffic_waypoint | |
+| dbw_node.py | /current_velocity | /vehicle/throttle_cmd |
+| | /twist_cmd | /vehicle/brake_cmd |
+| | /vehicle/dbw_enabled | /vehicle/steering_cmd |
+| twist_controller.py | |  |
+
 
 
 ## control
-## waypoint following
+## waypoint updater
 * package source: ros/src/waypoint_updater/
 * purpose: to update the target velocity property of each waypoint based on traffic light and obstacle detection data
+## twist_controller
