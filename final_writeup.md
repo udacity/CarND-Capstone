@@ -23,8 +23,6 @@ tl_detector.py : tl_detector/tl_detector.py
 | | /current_pose |
 | | /base_waypoints |
 | tl_classfier.py | |  |
-| :-----------: |:-------------:| :-----:|
-| tl_classfier.py | |  |
 
 
 
