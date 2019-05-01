@@ -24,6 +24,8 @@ tl_detector.py : tl_detector/tl_detector.py
 | | /base_waypoints |
 | tl_classfier.py | |  |
 | :-----------: |:-------------:| :-----:|
+| tl_classfier.py | |  |
+
 
 
 
