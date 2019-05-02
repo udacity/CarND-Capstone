@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from scipy.spatial import KDTree
 
 import math
 
@@ -26,6 +27,11 @@ LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this n
 
 class WaypointUpdater(object):
     def __init__(self):
+        self.waypoints_2D = None
+        self.waypoints_tree = None
+        self.base_waypoints = None
+        self.current_position = None
+        self.total_waypoints_count = 0
         rospy.init_node('waypoint_updater')
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -38,16 +44,19 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
-
-        rospy.spin()
+        # rospy.spin()
+        rospy.loop()
 
     def pose_cb(self, msg):
-        # TODO: Implement
+        self.current_position = msg
         pass
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
+        self.base_waypoints = waypoints
+        if not self.waypoints_2D:
+            self.waypoints_2D=[[waypoint.pose.pose.position.x,waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            self.waypoints_tree=KDTree(self.waypoints_2D)
+            self.total_waypoints_count = len(self.waypoints_2D)
         pass
 
     def traffic_cb(self, msg):
@@ -71,6 +80,32 @@ class WaypointUpdater(object):
             dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
             wp1 = i
         return dist
+
+    def loop(self):
+        rate=rospy.Rate(50)
+        while not rospy.is_shutdown():
+            if self.car_position and self.base_waypoints:
+                self.publish_finaly_waypoints()
+            rate.sleep()
+
+    def publish_finaly_waypoints(self):
+        lane = Lane()
+        car_x=self.car_position.pose.position.x
+        car_y=self.car_position.pose.position.y
+        closest_indx=self.waypoints_tree.query([car_x,car_y],1)[1]
+        closest_cord=self.waypoints_2D[closest_indx]
+        previous_cord=self.waypoints_2D[(closest_indx-1)%total_waypoints_count]
+
+        cl_vect=np.array(closest_indx)
+        prev_vect=np.array(closest_indx-1)
+        pos_vect=np.array([car_x,car_y])
+        val=np.dot(cl_vect-prev_vect,pos_vect-cl_vect)
+
+        if val.all()>0:
+            closest_indx=(closest_indx+1) % total_waypoints_count
+        lane.header=self.base_waypoints.header
+        lane.waypoints=self.base_waypoints.waypoints[closest_waypoint_index:closest_waypoint_index+LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publish(lane)
 
 
 if __name__ == '__main__':
