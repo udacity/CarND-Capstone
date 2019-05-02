@@ -1,3 +1,8 @@
+# progress
+Finished waypoint_updater.py, validate by seeing green dots representing waypoints:
+![alt text](./imgs/results/waypoints_updater.png "closest waypoints")
+
+
 # simulator has two test tracks:
 
 A highway test track with traffic lights
@@ -99,4 +104,4 @@ cd ros
 catkin_make
 source devel/setup.sh
 roslaunch launch/styx.launch
-``
+```
