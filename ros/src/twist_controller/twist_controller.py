@@ -8,7 +8,7 @@ ONE_MPH = 0.44704
 
 
 class Controller(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         # TODO: Implement
         self.yaw_controller = YawController(..)
         self.throttle_pid = PID(kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM)
