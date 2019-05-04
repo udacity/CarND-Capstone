@@ -1,6 +1,7 @@
 # progress
-Finished waypoint_updater.py, validate by seeing green dots representing waypoints:
+1. Finished waypoint_updater.py, validate by seeing green dots representing waypoints:
 ![alt text](./imgs/results/waypoints_updater.png "closest waypoints")
+2. Finished twist_controller, car is able to follow waypoints in autonomous mode. But still wandering out of lane sometimes
 
 
 # simulator has two test tracks:
@@ -101,7 +102,6 @@ pip install --upgrade catkin_pkg
 ERROR: Unable to communicate with master!
 ```
 cd ros
-catkin_make
-source devel/setup.sh
-roslaunch launch/styx.launch
+catkin_make; source devel/setup.sh; roslaunch launch/styx.launch
+
 ```
