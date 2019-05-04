@@ -1,7 +1,11 @@
-# progress
+# Progress
 1. Finished waypoint_updater.py, validate by seeing green dots representing waypoints:
 ![alt text](./imgs/results/waypoints_updater.png "closest waypoints")
-2. Finished twist_controller, car is able to follow waypoints in autonomous mode. But still wandering out of lane sometimes
+2. Finished twist_controller, car is able to follow waypoints in autonomous mode.
+##TOOD
+1. But still wandering out of lane sometimes
+2. how to use dbw_test.py?
+3. Car is running in lane if camera off, but way out of lane if camera on?
 
 
 # simulator has two test tracks:
