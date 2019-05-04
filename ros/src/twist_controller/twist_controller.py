@@ -44,8 +44,8 @@ class Controller(object):
         current_vel=self.vel_lpf.filt(current_vel)
 
         steer = self.yaw_controller.get_steering(target_linear_vel, target_angular_vel, current_vel)
-        vel_error = target_linear_vel - current_vel
-        throttle = self.throttle_pid.step(vel_error, sample_time)
+        velocity_error = target_linear_vel - current_vel
+        throttle = self.throttle_pid.step(velocity_error, sample_time)
 
         brake = 0
 
