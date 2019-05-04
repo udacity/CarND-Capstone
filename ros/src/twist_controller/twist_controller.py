@@ -11,12 +11,13 @@ ONE_MPH = 0.44704
 class Controller(object):
     def __init__(self, vehicle_mass,fuel_capacity,brake_deadband,decel_limit,accel_limit,wheel_radius,wheel_base,steer_ratio,max_lat_accel,max_steer_angle):
         self.yaw_controller = YawController(wheel_base,steer_ratio,0.1,max_lat_accel,max_steer_angle)
-        self.throttle_pid = PID(kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM)
         kp=0.3
         kd=0.
         ki=0.1
         mn=0. # min throttle value
         mx=0.2 # max throttle value
+        self.throttle_pid = PID(kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM)
+
         self.throttle_controller=PID(kp,ki,kd,mn,mx)
         tau=0.5 # cut off frequency
         ts=.02 # sample time
