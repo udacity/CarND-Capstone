@@ -58,7 +58,17 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        self.controller = Controller()
+        self.controller = Controller(vehicle_mass,
+            fuel_capacity,
+            brake_deadband,
+            decel_limit,
+            accel_limit,
+            wheel_radius,
+            wheel_base,
+            steer_ratio,
+            max_lat_accel,
+            max_steer_angle
+            )
 
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb)
