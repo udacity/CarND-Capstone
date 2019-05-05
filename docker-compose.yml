@@ -1,0 +1,12 @@
+version: '3'
+services:
+
+  ros-service:
+    build: .
+
+    volumes:
+      - ./:/capstone
+      - /tmp/log:/root/.ros/
+
+    ports:
+      - 4567:4567
