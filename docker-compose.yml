@@ -3,7 +3,7 @@ services:
 
   ros-service:
     build: .
-    runtime: nvidia
+    # runtime: nvidia
 
     volumes:
       - ./:/capstone
@@ -14,7 +14,7 @@ services:
 
   capstone:
     build: .
-    runtime: nvidia
+    # runtime: nvidia
 
     volumes:
       - ./:/capstone
