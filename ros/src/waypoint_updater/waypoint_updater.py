@@ -22,7 +22,7 @@ as well as to verify your TL classifier.
 
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
-
+# Values up to 100 are working so far
 LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
 
 

@@ -255,9 +255,12 @@ geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocit
   // bool following_flag = verifyFollowing();
   //static double prev_angular_velocity = 0;
 
+  // Update every step to overcome "lane-wandering"
   geometry_msgs::Twist twist;
   twist.linear.x = cmd_velocity;
   twist.angular.z = current_velocity_.twist.linear.x * curvature;
+
+  // Origial Udacity Code -->
   // if (!following_flag)
   // {
   //   //ROS_ERROR_STREAM("Not following");
