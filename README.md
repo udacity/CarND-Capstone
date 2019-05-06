@@ -88,3 +88,20 @@ Specific to these libraries, the simulator grader and Carla use the following:
 | OpenMP | N/A | N/A |
 
 We are working on a fix to line up the OpenCV versions between the two.
+
+If you're seeing the following error message during `catkin_make`
+```
+CMake Warning at /opt/ros/kinetic/share/catkin/cmake/catkinConfig.cmake:76 (find_package):
+  Could not find a package configuration file provided by "dbw_mkz_msgs" with
+  any of the following names:
+
+    dbw_mkz_msgsConfig.cmake
+    dbw_mkz_msgs-config.cmake
+
+```
+
+Install the following package
+
+```
+sudo apt-get install -y ros-kinetic-dbw-mkz-msgs
+```
