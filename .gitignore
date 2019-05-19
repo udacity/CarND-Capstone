@@ -2,7 +2,37 @@
 
 build
 devel
+ros/src/tl_detector/dataset
+ros/bag
+
 
 profile.tmp
 .vscode/settings.json
+ros/rl
+ros/rs
 .gitignore
+ros/src/tl_detector/assets/faster-rcnn.png
+ros/src/tl_detector/00000012_tl0.jpg
+ros/src/tl_detector/00000012_tl1.jpg
+ros/src/tl_detector/00000012_tl2.jpg
+ros/src/tl_detector/test.png
+ros/src/tl_detector/assets/clip.gif
+ros/src/tl_detector/assets/depthwise_conv.png
+ros/src/tl_detector/assets/pointwise_conv.png
+ros/src/tl_detector/assets/sample1.jpg
+ros/src/tl_detector/assets/ssd_architecture.png
+ros/src/tl_detector/assets/ssd_feature_maps.png
+ros/src/tl_detector/assets/standard_conv.png
+ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb
+ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/graph.pbtxt
+ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/model.ckpt.data-00000-of-00001
+ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/model.ckpt.index
+ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/model.ckpt.meta
+ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/checkpoint
+ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/frozen_inference_graph.pb
+ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/model.ckpt.data-00000-of-00001
+ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/model.ckpt.index
+ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/model.ckpt.meta
+ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/pipeline.config
+ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/saved_model/saved_model.pb
+ros/src/tl_detector/result

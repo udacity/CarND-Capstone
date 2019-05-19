@@ -7,10 +7,11 @@ import time
 import cv2
 
 
+
 if __name__ == '__main__':
     light_classifier = TLClassifier()
     while True:
-        filename = raw_input("Filename:")
+        filename = input("Filename:")
         if filename == 'q':
             sys.exit(0)
         start = time.time()

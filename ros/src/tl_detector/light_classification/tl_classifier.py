@@ -1,4 +1,4 @@
-from styx_msgs.msg import TrafficLight
+#from styx_msgs.msg import TrafficLight
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -7,6 +7,8 @@ from PIL import ImageColor
 import time
 from scipy.stats import norm
 import cv2
+import tensorflow as tf
+import rospy
 
 GRAPH_FILE = 'ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
 
@@ -22,7 +24,7 @@ class TLClassifier(object):
 
         #TODO load classifier
         self.detection_graph = tf.Graph()
-        with graph.as_default():
+        with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
             with tf.gfile.GFile(self.graph_file, 'rb') as fid:
                 serialized_graph = fid.read()
@@ -34,8 +36,11 @@ class TLClassifier(object):
         self.detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
 
+        self.frame_count = 0
+
     
     def detect_traffic_lights(self, img, confidence_level=0.2, detect_class_id=[10]):
+        #rospy.loginfo("Detection start: %s", time.time())
         image = Image.fromarray(cv2.cvtColor(img,cv2.COLOR_BGR2RGB))  
         image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
         width, height = image.size
@@ -50,13 +55,12 @@ class TLClassifier(object):
         scores = np.squeeze(scores)
         classes = np.squeeze(classes)
 
-        
         # Filter boxes with a confidence score less than `confidence_cutoff`
-        boxes, scores,classes = filter_boxes(confidence_level, boxes, scores, classes, detect_class_id)
+        boxes, scores, classes = self.filter_boxes(confidence_level, boxes, scores, classes, detect_class_id)
 
-        box_coords = to_image_coords(boxes, height, width)
+        box_coords = self.to_image_coords(boxes, height, width)
         self.traffic_light_list = []
-        print(box_coords)
+        #print(box_coords)
         for box in box_coords:
             top,left,bottom,right = box
             traffic_light = image.crop(
@@ -69,9 +73,23 @@ class TLClassifier(object):
             )
             self.traffic_light_list.append(traffic_light)
         
-        draw_boxes(image, box_coords, classes)
+        self.draw_boxes(image, box_coords, classes)
+        cv2_output_img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)  
+        
+        #cv2.imshow("Image window", cv2_output_img)
+        #cv2.waitKey(3)
 
-        return image
+        #pic_filename = "./result/%08d.png"%self.frame_count
+        #image.save(pic_filename)
+        #self.frame_count += 1
+        if len(scores) < 1:
+            rospy.loginfo("No traffic light!")
+        else:
+            rospy.loginfo("Traffic light ahead!")
+        for i in range(min(3,len(scores))):
+            rospy.loginfo("Top prob #%d: %.4f", i, scores[i])
+
+        return cv2_output_img
         
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -84,11 +102,12 @@ class TLClassifier(object):
 
         """
         #TODO implement light color prediction
-        return TrafficLight.UNKNOWN
+        #return TrafficLight.UNKNOWN
+        pass
 
 
     
-    def filter_boxes(min_score, boxes, scores, classes, filter_classes):
+    def filter_boxes(self, min_score, boxes, scores, classes, filter_classes):
         """Return boxes with a confidence >= `min_score`"""
         n = len(classes)
         idxs = []
@@ -102,7 +121,7 @@ class TLClassifier(object):
         return filtered_boxes, filtered_scores, filtered_classes
 
 
-    def to_image_coords(boxes, height, width):
+    def to_image_coords(self, boxes, height, width):
         """
         The original box coordinate output is normalized, i.e [0, 1].
         
@@ -117,7 +136,7 @@ class TLClassifier(object):
         
         return box_coords
 
-    def draw_boxes(image, boxes, classes, thickness=4):
+    def draw_boxes(self, image, boxes, classes, thickness=4):
         """Draw bounding boxes on the image"""
         draw = ImageDraw.Draw(image)
         for i in range(len(boxes)):
