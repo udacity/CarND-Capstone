@@ -34,6 +34,16 @@ class TLDetector(object):
 
         self.frame_count = 0
 
+
+        self.bridge = CvBridge()
+        self.light_classifier = TLClassifier()
+        self.listener = tf.TransformListener()
+
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -53,14 +63,6 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
         self.detection_traffic_light_pub = rospy.Publisher('/tl_detection', Image, queue_size=1)
 
-        self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
 
 
         rospy.spin()
@@ -79,22 +81,22 @@ class TLDetector(object):
 
 
     def detect_tl(self):
-        rospy.loginfo("Detection start")
+        #rospy.loginfo("Detection start")
         start = time.time()
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         box_cv_image = self.light_classifier.detect_traffic_lights(cv_image)
         
         end = time.time()
 
-        '''
+        rospy.loginfo("Detection Time:%f s", end - start)
+
+        ''''''
         try:
             image_message = self.bridge.cv2_to_imgmsg(box_cv_image, encoding="bgr8")
         except CvBridgeError as e:
             print(e)
 
         self.detection_traffic_light_pub.publish(image_message)
-        '''
-        rospy.loginfo("Detection Time:%f s", end - start)
 
         self.thread_working = False
 

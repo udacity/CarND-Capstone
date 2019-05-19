@@ -1,4 +1,4 @@
-#from styx_msgs.msg import TrafficLight
+from styx_msgs.msg import TrafficLight
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -71,9 +71,14 @@ class TLClassifier(object):
                     bottom
                 )
             )
+            traffic_light = traffic_light.copy()
+            traffic_light = traffic_light.resize((32, 32))
+
+            
             self.traffic_light_list.append(traffic_light)
-        
+
         self.draw_boxes(image, box_coords, classes)
+
         cv2_output_img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)  
         
         #cv2.imshow("Image window", cv2_output_img)
@@ -87,7 +92,7 @@ class TLClassifier(object):
         else:
             rospy.loginfo("Traffic light ahead!")
         for i in range(min(3,len(scores))):
-            rospy.loginfo("Top prob #%d: %.4f", i, scores[i])
+            rospy.loginfo("Top prob #%d: %.4f %s", i, scores[i], self.get_classification(self.traffic_light_list[i]))
 
         return cv2_output_img
         
@@ -102,9 +107,12 @@ class TLClassifier(object):
 
         """
         #TODO implement light color prediction
+        
         #return TrafficLight.UNKNOWN
-        pass
-
+        result = self.red_green_yellow(image)
+        
+        return result
+        
 
     
     def filter_boxes(self, min_score, boxes, scores, classes, filter_classes):
@@ -144,4 +152,90 @@ class TLClassifier(object):
             class_id = int(classes[i])
             color = self.COLOR_LIST[class_id]
             draw.line([(left, top), (left, bot), (right, bot), (right, top), (left, top)], width=thickness, fill=color)
-            
+
+    def findNoneZero(self, rgb_image):
+        rows,cols,_ = rgb_image.shape
+        counter = 0
+        for row in range(rows):
+            for col in range(cols):
+                pixels = rgb_image[row,col]
+                if sum(pixels)!=0:
+                    counter = counter+1
+        return counter
+
+    def red_green_yellow(self,rgb_image,display=False):
+        '''
+        Determines the red , green and yellow content in each image using HSV and experimentally
+        determined thresholds. Returns a Classification based on the values
+        '''
+
+        #image = cv2.imread(img_file)
+        #image = cv2.resize(image,(32,32))
+
+        #rgb_image = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
+
+        #rgb_image = Image.open(img_file)  
+        #rospy.loginfo("Detection Result:%f", rgb_image[1])
+        rgb_image.save('./test.jpg')
+        rgb_image = np.asarray(rgb_image)
+
+        hsv = cv2.cvtColor(rgb_image,cv2.COLOR_RGB2HSV)
+
+        sum_saturation = np.sum(hsv[:,:,1])# Sum the brightness values
+        area = 32*32
+        avg_saturation = sum_saturation / area #find average
+        
+        sat_low = int(avg_saturation*1) 
+        sat_low_red = int(avg_saturation*1) 
+        sat_low_yellow = int(avg_saturation) 
+        val_low = 140
+        
+        #print(sat_low, val_low)
+
+
+        #Green
+        lower_green = np.array([40,sat_low,val_low])
+        upper_green = np.array([100,255,255])
+        green_mask = cv2.inRange(hsv,lower_green,upper_green)
+        green_result = cv2.bitwise_and(rgb_image,rgb_image,mask = green_mask)
+        #Yellow
+        lower_yellow = np.array([10,sat_low_yellow,val_low])
+        upper_yellow = np.array([60,255,255])
+        yellow_mask = cv2.inRange(hsv,lower_yellow,upper_yellow)
+        yellow_result = cv2.bitwise_and(rgb_image,rgb_image,mask=yellow_mask)
+        
+        # Red 
+        lower_red = np.array([150,sat_low_red,val_low])
+        upper_red = np.array([180,255,255])
+        red_mask1 = cv2.inRange(hsv,lower_red,upper_red)
+
+        lower_red2 = np.array([0,sat_low_red,val_low])
+        upper_red2 = np.array([30,255,255])
+        red_mask2 = cv2.inRange(hsv,lower_red2,upper_red2)
+
+        red_mask = np.bitwise_or(red_mask1, red_mask2)
+
+
+        red_result = cv2.bitwise_and(rgb_image,rgb_image,mask = red_mask)
+        if display==True:
+            _,ax = plt.subplots(1,5,figsize=(20,10))
+            ax[0].set_title('rgb image')
+            ax[0].imshow(rgb_image)
+            ax[1].set_title('red result')
+            ax[1].imshow(red_result)
+            ax[2].set_title('yellow result')
+            ax[2].imshow(yellow_result)
+            ax[3].set_title('green result')
+            ax[3].imshow(green_result)
+            ax[4].set_title('hsv image')
+            ax[4].imshow(hsv)
+            plt.show()
+        sum_green = self.findNoneZero(green_result)
+        sum_red = self.findNoneZero(red_result)
+        sum_yellow = self.findNoneZero(yellow_result)
+        #print(sum_red, sum_yellow, sum_green)
+        if sum_red >= 1.5*sum_yellow and sum_red>=sum_green:
+            return "Red"
+        if sum_yellow>=sum_green:
+            return "Yellow"
+        return "Green"
