@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageColor
+from sensor_msgs.msg import Image as ImageMsg
 import time
 from scipy.stats import norm
 import cv2
@@ -16,6 +17,7 @@ class TLClassifier(object):
     def __init__(self):
 
         self.traffic_light_list = []
+        self.traffic_light_scores = []
         self.graph_file = GRAPH_FILE
         
         cmap = ImageColor.colormap
@@ -76,11 +78,22 @@ class TLClassifier(object):
 
             
             self.traffic_light_list.append(traffic_light)
+        self.traffic_light_scores = scores
 
+        #Debug code start
+        '''
         self.draw_boxes(image, box_coords, classes)
-
         cv2_output_img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)  
-        
+
+        try:
+            image_message = self.bridge.cv2_to_imgmsg(cv2_output_img, encoding="bgr8")
+        except CvBridgeError as e:
+            print(e)
+
+        self.detection_traffic_light_pub.publish(image_message)
+        '''
+        #Debug code end
+
         #cv2.imshow("Image window", cv2_output_img)
         #cv2.waitKey(3)
 
@@ -90,13 +103,11 @@ class TLClassifier(object):
         if len(scores) < 1:
             rospy.loginfo("No traffic light!")
         else:
-            rospy.loginfo("Traffic light ahead!")
-        for i in range(min(3,len(scores))):
-            rospy.loginfo("Top prob #%d: %.4f %s", i, scores[i], self.get_classification(self.traffic_light_list[i]))
+            rospy.loginfo("%d Traffic light(s) detected!", len(scores))
 
-        return cv2_output_img
+        return len(scores)
         
-    def get_classification(self, image):
+    def get_classification(self):
         """Determines the color of the traffic light in the image
 
         Args:
@@ -109,9 +120,20 @@ class TLClassifier(object):
         #TODO implement light color prediction
         
         #return TrafficLight.UNKNOWN
-        result = self.red_green_yellow(image)
+        color_scores = [0.0, 0.0, 0.0]
+        for i in range(min(3,len(self.traffic_light_scores))):
+            result = self.red_green_yellow(self.traffic_light_list[i])
+            rospy.loginfo("Top prob #%d: %.4f %s", i, self.traffic_light_scores[i], result)
+            color_scores[result] += self.traffic_light_scores[i]
+
+        if color_scores[0] > 2 * (color_scores[1] + color_scores[2]):
+            return TrafficLight.RED
+        elif color_scores[1] > 2 * (color_scores[0] + color_scores[2]):
+            return TrafficLight.YELLOW
+        elif color_scores[2] > 2 * (color_scores[0] + color_scores[1]):
+            return TrafficLight.GREEN
         
-        return result
+        return TrafficLight.UNKNOWN
         
 
     
@@ -176,7 +198,8 @@ class TLClassifier(object):
 
         #rgb_image = Image.open(img_file)  
         #rospy.loginfo("Detection Result:%f", rgb_image[1])
-        rgb_image.save('./test.jpg')
+        
+        #rgb_image.save('./test.jpg')
         rgb_image = np.asarray(rgb_image)
 
         hsv = cv2.cvtColor(rgb_image,cv2.COLOR_RGB2HSV)
@@ -235,7 +258,7 @@ class TLClassifier(object):
         sum_yellow = self.findNoneZero(yellow_result)
         #print(sum_red, sum_yellow, sum_green)
         if sum_red >= 1.5*sum_yellow and sum_red>=sum_green:
-            return "Red"
+            return 0
         if sum_yellow>=sum_green:
-            return "Yellow"
-        return "Green"
+            return 1
+        return 2
