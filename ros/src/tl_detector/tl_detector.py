@@ -109,6 +109,8 @@ class TLDetector(object):
 
         """
         #rospy.loginfo("Image_cb")
+        self.has_image = True
+
         if not self.thread_working:
             self.thread_working = True
             
@@ -127,14 +129,15 @@ class TLDetector(object):
             
             #self.upcoming_red_light_pub.publish(Image(image_message))
 
-            #light_wp, state = self.process_traffic_lights()
+            light_wp, state = self.process_traffic_lights()
 
             '''
             Publish upcoming red lights at camera frequency.
             Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
             of times till we start using it. Otherwise the previous stable state is
             used.
-            
+            '''
+
             if self.state != state:
                 self.state_count = 0
                 self.state = state
@@ -146,7 +149,7 @@ class TLDetector(object):
             else:
                 self.upcoming_red_light_pub.publish(Int32(self.last_wp))
             self.state_count += 1
-            '''
+            
             
 
     def get_closest_waypoint(self, x, y):
@@ -175,15 +178,14 @@ class TLDetector(object):
         """
 
         #For test in simulator
-        #return light.state
-
+        
         ''''''
 
         if(not self.has_image):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        #cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
 
 
