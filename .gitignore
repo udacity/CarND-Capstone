@@ -23,11 +23,6 @@ ros/src/tl_detector/assets/sample1.jpg
 ros/src/tl_detector/assets/ssd_architecture.png
 ros/src/tl_detector/assets/ssd_feature_maps.png
 ros/src/tl_detector/assets/standard_conv.png
-ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb
-ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/graph.pbtxt
-ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/model.ckpt.data-00000-of-00001
-ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/model.ckpt.index
-ros/src/tl_detector/ssd_mobilenet_v1_coco_11_06_2017/model.ckpt.meta
 ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/checkpoint
 ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/frozen_inference_graph.pb
 ros/src/tl_detector/ssd_mobilenet_v1_coco_2018_01_28/model.ckpt.data-00000-of-00001
