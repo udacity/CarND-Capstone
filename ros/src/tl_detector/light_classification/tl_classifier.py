@@ -10,11 +10,13 @@ from scipy.stats import norm
 import cv2
 import tensorflow as tf
 import rospy
+from cv_bridge import CvBridge, CvBridgeError
 
-GRAPH_FILE = 'ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb'
+GRAPH_FILE="ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb"
 
 class TLClassifier(object):
     def __init__(self):
+        #rospy.init_node('tl_classifier', log_level=rospy.DEBUG)
 
         self.traffic_light_list = []
         self.traffic_light_scores = []
@@ -46,10 +48,13 @@ class TLClassifier(object):
         image = Image.fromarray(cv2.cvtColor(img,cv2.COLOR_BGR2RGB))  
         image_np = np.expand_dims(np.asarray(image, dtype=np.uint8), 0)
         width, height = image.size
+        rospy.logdebug("detect_traffic_lights, img.shape=%s", img.shape)
 
         with tf.Session(graph=self.detection_graph) as sess:                
             # Actual detection.
-            (boxes, scores, classes) = sess.run([self.detection_boxes, self.detection_scores, self.detection_classes], 
+            (boxes, scores, classes) = sess.run([self.detection_boxes, 
+                                                    self.detection_scores, 
+                                                    self.detection_classes], 
                                                 feed_dict={self.image_tensor: image_np})
 
         # Remove unnecessary dimensions
@@ -59,25 +64,24 @@ class TLClassifier(object):
 
         # Filter boxes with a confidence score less than `confidence_cutoff`
         boxes, scores, classes = self.filter_boxes(confidence_level, boxes, scores, classes, detect_class_id)
+        rospy.logdebug("scores.shape=%s, classes.shape=%s, boxes.shape=%s", 
+                    scores.shape, classes.shape, boxes.shape)
+        rospy.logdebug("scores=%s, classes=%s", scores, classes)
+        rospy.logdebug(" boxes=%s", boxes)
 
         box_coords = self.to_image_coords(boxes, height, width)
+        rospy.logdebug(" box_coords.shape=%s, box_coords=%s", box_coords.shape, box_coords)
+        rospy.logdebug(" box_coords=%s", box_coords)
         self.traffic_light_list = []
-        #print(box_coords)
         for box in box_coords:
             top,left,bottom,right = box
-            traffic_light = image.crop(
-                (
-                left,
-                    top,
-                    right,
-                    bottom
-                )
-            )
+            traffic_light = image.crop((left,top,
+                                        right, bottom ) )
             traffic_light = traffic_light.copy()
             traffic_light = traffic_light.resize((32, 32))
-
             
             self.traffic_light_list.append(traffic_light)
+            
         self.traffic_light_scores = scores
 
         #Debug code start
@@ -85,25 +89,29 @@ class TLClassifier(object):
         self.draw_boxes(image, box_coords, classes)
         cv2_output_img = cv2.cvtColor(np.asarray(image),cv2.COLOR_RGB2BGR)  
 
+        """
         try:
             image_message = self.bridge.cv2_to_imgmsg(cv2_output_img, encoding="bgr8")
         except CvBridgeError as e:
             print(e)
-
         self.detection_traffic_light_pub.publish(image_message)
+        """
+        cv2.imshow("Image window", cv2_output_img)
+        cv2.waitKey(3)
         '''
         #Debug code end
 
-        #cv2.imshow("Image window", cv2_output_img)
-        #cv2.waitKey(3)
 
         #pic_filename = "./result/%08d.png"%self.frame_count
         #image.save(pic_filename)
-        #self.frame_count += 1
+        self.frame_count += 1
+        
         if len(scores) < 1:
-            rospy.loginfo("No traffic light!")
+            rospy.logdebug("No traffic light!")
         else:
-            rospy.loginfo("%d Traffic light(s) detected!", len(scores))
+            rospy.logdebug("%d Traffic light(s) detected!, .shape=%s",
+                len(scores), scores.shape)
+            rospy.logdebug("%d traffic_light_scores=%s", len(scores), scores)
 
         return len(scores)
         
@@ -123,9 +131,11 @@ class TLClassifier(object):
         color_scores = [0.0, 0.0, 0.0]
         for i in range(min(3,len(self.traffic_light_scores))):
             result = self.red_green_yellow(self.traffic_light_list[i])
-            rospy.loginfo("Top prob #%d: %.4f %s", i, self.traffic_light_scores[i], result)
+            rospy.logdebug("Top prob #%d: %.4f %s", i, self.traffic_light_scores[i], result)
             color_scores[result] += self.traffic_light_scores[i]
 
+        rospy.logdebug("color_scores.len=%s, color_scores=%s", len(color_scores), color_scores)
+        
         if color_scores[0] > 2 * (color_scores[1] + color_scores[2]):
             return TrafficLight.RED
         elif color_scores[1] > 2 * (color_scores[0] + color_scores[2]):
@@ -185,7 +195,7 @@ class TLClassifier(object):
                     counter = counter+1
         return counter
 
-    def red_green_yellow(self,rgb_image,display=False):
+    def red_green_yellow(self, rgb_image, display=False):
         '''
         Determines the red , green and yellow content in each image using HSV and experimentally
         determined thresholds. Returns a Classification based on the values
@@ -221,6 +231,7 @@ class TLClassifier(object):
         upper_green = np.array([100,255,255])
         green_mask = cv2.inRange(hsv,lower_green,upper_green)
         green_result = cv2.bitwise_and(rgb_image,rgb_image,mask = green_mask)
+        
         #Yellow
         lower_yellow = np.array([10,sat_low_yellow,val_low])
         upper_yellow = np.array([60,255,255])
@@ -253,10 +264,12 @@ class TLClassifier(object):
             ax[4].set_title('hsv image')
             ax[4].imshow(hsv)
             plt.show()
+            
         sum_green = self.findNoneZero(green_result)
         sum_red = self.findNoneZero(red_result)
         sum_yellow = self.findNoneZero(yellow_result)
         #print(sum_red, sum_yellow, sum_green)
+        
         if sum_red >= 1.5*sum_yellow and sum_red>=sum_green:
             return 0
         if sum_yellow>=sum_green:
