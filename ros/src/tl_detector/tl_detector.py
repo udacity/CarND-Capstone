@@ -116,10 +116,11 @@ class TLDetector(object):
         mode = "unet"
         #mode = "mobilenet"    
         if mode == "mobilenet":
+            # mobilenet model
             sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
             rospy.spin()
         else:
-            #
+            # u-net model
             sub6 = rospy.Subscriber('/image_color', Image, self.image_unet_cb)
             
             detector_rate = 6
