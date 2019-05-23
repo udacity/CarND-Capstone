@@ -64,14 +64,13 @@ class TLClassifier(object):
 
         # Filter boxes with a confidence score less than `confidence_cutoff`
         boxes, scores, classes = self.filter_boxes(confidence_level, boxes, scores, classes, detect_class_id)
-        rospy.logdebug("scores.shape=%s, classes.shape=%s, boxes.shape=%s", 
-                    scores.shape, classes.shape, boxes.shape)
-        rospy.logdebug("scores=%s, classes=%s", scores, classes)
-        rospy.logdebug(" boxes=%s", boxes)
+        #rospy.logdebug("scores.shape=%s, classes.shape=%s, boxes.shape=%s", scores.shape, classes.shape, boxes.shape)
+        #rospy.logdebug("scores=%s, classes=%s", scores, classes)
+        #rospy.logdebug(" boxes=%s", boxes)
 
         box_coords = self.to_image_coords(boxes, height, width)
-        rospy.logdebug(" box_coords.shape=%s, box_coords=%s", box_coords.shape, box_coords)
-        rospy.logdebug(" box_coords=%s", box_coords)
+        #rospy.logdebug(" box_coords.shape=%s, box_coords=%s", box_coords.shape, box_coords)
+        #rospy.logdebug(" box_coords=%s", box_coords)
         self.traffic_light_list = []
         for box in box_coords:
             top,left,bottom,right = box
@@ -109,8 +108,7 @@ class TLClassifier(object):
         if len(scores) < 1:
             rospy.logdebug("No traffic light!")
         else:
-            rospy.logdebug("%d Traffic light(s) detected!, .shape=%s",
-                len(scores), scores.shape)
+            #rospy.logdebug("%d Traffic light(s) detected!, .shape=%s",len(scores), scores.shape)
             rospy.logdebug("%d traffic_light_scores=%s", len(scores), scores)
 
         return len(scores)
