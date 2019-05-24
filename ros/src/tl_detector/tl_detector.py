@@ -485,7 +485,7 @@ class TLDetector(object):
             tl_idx = self.get_closest_wp_idx(self.pose.pose, self.lights)
             if tl_idx >= 0: 
                 # Convert stop_line to pseudo pose object for easier handling
-                stop_line = self.config['stop_line_positions'][tl_idx]
+                stop_line = self.stop_line_positions[tl_idx]
                 stop_line_pose = Pose()
                 stop_line_pose.position.x = stop_line[0]
                 stop_line_pose.position.y = stop_line[1]
@@ -544,23 +544,21 @@ class TLDetector(object):
                                     closest_stop_line_wp_idx = stop_wp_idx
 
                             rospy.loginfo("Closest stop line waypoint is %s:\n", closest_stop_line_wp_idx)                    
-                            return closest_stop_line_wp_idx, state   
-                            
+                            return closest_stop_line_wp_idx, state                               
                         #"""                      
                       
                     else:
-                        rospy.logwarn("[Mobilenet] No trafic light found!")
-                        #return -1, TrafficLight.UNKNOWN                  
+                        rospy.logwarn("[Mobilenet] No trafic light found!")                 
                 else:
                     rospy.logdebug("[Mobilenet] Next TL too far yet. car_stop_dist=%s", car_stop_dist)
                     state = TrafficLight.UNKNOWN
                         
             else:
                 rospy.logwarn("[Mobilenet] No trafic stop line found!")
-                #return -1, TrafficLight.UNKNOWN
         else:
             rospy.logwarn("[Mobilenet] No EGO position available!")
-            #return -1, TrafficLight.UNKNOWN
+
+        return -1, TrafficLight.UNKNOWNs
 
         #Simulation code start
         '''
@@ -582,7 +580,6 @@ class TLDetector(object):
                     line_wp_idx = temp_wp_idx
         '''
         #Simulation code end
-        return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
     try:
