@@ -37,6 +37,7 @@ class TLDetector(object):
         # Subscribe Current pose and base waypoints 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.logdebug("Start TL Detector")
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -103,7 +104,6 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-        print "light: ", light_wp, "state: ", state
         '''
         Publish upcoming red lights at camera frequency.
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number

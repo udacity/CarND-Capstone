@@ -99,7 +99,7 @@ class Bridge(object):
 
     def create_steer(self, val):
         st = SteeringReport()
-        st.steering_wheel_angle = val * math.pi/180.
+        st.steering_wheel_angle_cmd = val * math.pi/180.
         st.enabled = True
         st.speed = self.vel
         return st
@@ -178,7 +178,6 @@ class Bridge(object):
         imgString = data["image"]
         image = PIL_Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
-
         image_message = self.bridge.cv2_to_imgmsg(image_array, encoding="rgb8")
         self.publishers['image'].publish(image_message)
 
