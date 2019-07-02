@@ -35,9 +35,9 @@ class TLDetector(object):
         self.lights = []
 
         # Subscribe Current pose and base waypoints 
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.logdebug("Start TL Detector")
+        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=2)
+        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=8)
+        rospy.logwarn("Start TL Detector")
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -46,8 +46,8 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub4 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb, queue_size=2)
+        sub4 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
         
         # darknet_ros message
         # sub5 = rospy.Subscriber('/darknet_ros/bounding_boxes', BoundingBoxes, self.detected_bb_cb)
@@ -62,12 +62,12 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         # WARNING! Only use during testing in site mode (for diagnostics)
-        if int(self.simulator_mode) == 0:
-            self.cropped_tl_bb_pub = rospy.Publisher('/cropped_bb', Image, queue_size=1)
+        # if int(self.simulator_mode) == 0:
+        #     self.cropped_tl_bb_pub = rospy.Publisher('/cropped_bb', Image, queue_size=1)
 
-        self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
-        self.listener = tf.TransformListener()
+        # self.bridge = CvBridge()
+        # self.light_classifier = TLClassifier()
+        # self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
@@ -175,6 +175,7 @@ class TLDetector(object):
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
         """
+        rospy.logwarn("light %s", light)
         # WARNING!! Use only while testing
         return light.state
 
@@ -200,7 +201,7 @@ class TLDetector(object):
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']
 
-        if(self.pose):
+        if(self.pose and self.waypoint_tree):
             # waypoint closest to current car pose
             car_wp_idx = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
             # total number of waypoints

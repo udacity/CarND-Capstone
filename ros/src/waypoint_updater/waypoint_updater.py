@@ -23,19 +23,19 @@ as well as to verify your TL classifier.
 
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
-PUBLISHING_RATE = 25
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
-
+PUBLISHING_RATE = 20
+LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
+MAX_DECEL = 0.5
 
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=2)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=8)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb, queue_size=1)
 
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
@@ -44,19 +44,18 @@ class WaypointUpdater(object):
         self.pose = None
         self.waypoints_2d = None
         self.waypoint_tree = None
+        self.stopline_wp_idx = -1
 
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(PUBLISHING_RATE)
         while not rospy.is_shutdown():
-            rospy.logdebug("publish waipoints")
-            if self.pose and self.base_lane:
+            if self.pose and self.base_lane and self.waypoint_tree:
                 self.publish_waypoints()
             rate.sleep()
 
     def pose_cb(self, msg):
-        # TODO: Implement
         self.pose = msg
 
     def get_closest_waypoint_idx(self):
@@ -124,6 +123,8 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, waypoints):
         self.base_lane = waypoints
+        rospy.logwarn("init waypoints")
+
         # Setup the Kd Tree which has log(n) complexity
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
