@@ -1,19 +1,15 @@
 #!/usr/bin/env python
 import rospy
-from std_msgs.msg import Int32
-from geometry_msgs.msg import PoseStamped, Pose
-from styx_msgs.msg import TrafficLightArray, TrafficLight
-from styx_msgs.msg import Lane
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-from light_classification.tl_classifier import TLClassifier
-import tf
-import cv2
 import yaml
-
+from cv_bridge import CvBridge
+from geometry_msgs.msg import PoseStamped
 from scipy.spatial import KDTree
-import math
-import numpy as np
+from sensor_msgs.msg import Image
+from std_msgs.msg import Int32
+from styx_msgs.msg import Lane
+from styx_msgs.msg import TrafficLightArray, TrafficLight
+
+from light_classification.tl_classifier import TLClassifier
 
 # from darknet_ros_msgs.msg import BoundingBox
 # from darknet_ros_msgs.msg import BoundingBoxes
@@ -33,6 +29,17 @@ class TLDetector(object):
 
         self.camera_image = None
         self.lights = []
+        self.TEST_MODE = False
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+
+        self.bridge = CvBridge()
+        self.light_classifier = TLClassifier("frozen_inference_graph.pb")
+
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
 
         # Subscribe Current pose and base waypoints 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=2)
@@ -48,33 +55,12 @@ class TLDetector(object):
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb, queue_size=2)
         sub4 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
-        
-        # darknet_ros message
-        # sub5 = rospy.Subscriber('/darknet_ros/bounding_boxes', BoundingBoxes, self.detected_bb_cb)
-
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
 
         # Get simulator_mode parameter (1== ON, 0==OFF)
         self.simulator_mode = rospy.get_param("/sim_mode")
 
         # Publish the index of the waypoint where we have to stop
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
-
-        # WARNING! Only use during testing in site mode (for diagnostics)
-        # if int(self.simulator_mode) == 0:
-        #     self.cropped_tl_bb_pub = rospy.Publisher('/cropped_bb', Image, queue_size=1)
-
-        # self.bridge = CvBridge()
-        # self.light_classifier = TLClassifier()
-        # self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
-
-        self.TL_BB_list = None
 
         rospy.spin()
 
@@ -110,6 +96,7 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+        rospy.logwarn("light: %s", state)
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -122,51 +109,10 @@ class TLDetector(object):
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
 
-
-    # # Important function
-    # def detected_bb_cb(self, msg):
-    #     # Clear the list
-    #     self.TL_BB_list = []
-    #     # Parameters: Diagnonal size thresholds
-    #     simulator_bb_size_threshold = 85 #px
-    #     site_bb_size_threshold = 40 #px
-    #     # min probability of detection
-    #     simulator_bb_probability = 0.85
-    #     site_bb_probability = 0.25
-
-    #     if int(self.simulator_mode) == 1:
-    #         prob_thresh = simulator_bb_probability
-    #         size_thresh = simulator_bb_size_threshold
-    #     else:
-    #         prob_thresh = site_bb_probability
-    #         size_thresh = site_bb_size_threshold
-
-    #     for bb in msg.bounding_boxes:
-    #         # Simulator mode: Bounding Box class should be 'traffic light' with probability >= 85%
-    #         # Site Mode: Bounding Box class should be 'traffic light' with probability >= 25%
-    #         if str(bb.Class) == 'traffic light' and bb.probability >= prob_thresh:
-    #             # Simulator mode: If diagonal size of bounding box is more than 85px
-    #             # Site mode: If diagonal size of bounding box is more than 80px
-    #             if math.sqrt((bb.xmin - bb.xmax)**2 + (bb.ymin - bb.ymax)**2) >= size_thresh:
-    #                 self.TL_BB_list.append(bb)
-
-    #                 # if running in site mode/ROS bag mode
-    #                 if int(self.simulator_mode) == 0:
-    #                     '''The ROS bag version only has video data. Hence no waypoints are loaded and get light function is not called.
-    #                         So to check detection in ROS bag video, we do TL state classification here itself.
-    #                     '''
-    #                     # Get the camera image
-    #                     cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-    #                     # Crop image
-    #                     bb_image = cv_image[bb.ymin:bb.ymax, bb.xmin:bb.xmax]
-    #                     self.light_classifier.detect_light_state(bb_image)
-
-
     # Similar to function in waypoint_update.py
     def get_closest_waypoint(self, x, y):
         closest_idx = self.waypoint_tree.query([x,y], 1)[1]
         return closest_idx
-
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -175,16 +121,14 @@ class TLDetector(object):
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
         """
-        rospy.logwarn("light %s", light)
-        # WARNING!! Use only while testing
-        return light.state
+        if self.TEST_MODE:
+            return light.state
 
-        # if(not self.has_image):
-        #     self.prev_light_loc = None
-        #     return False
-        # cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        # #Get classification
-        # return self.light_classifier.get_classification(cv_image, self.TL_BB_list, self.simulator_mode)
+        if (not self.has_image):
+            self.prev_light_loc = None
+            return False
+        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        return self.light_classifier.get_classification(cv_image)
 
         
     # Important function

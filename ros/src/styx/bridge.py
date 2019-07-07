@@ -1,24 +1,21 @@
-
-import rospy
-
-import tf
-from geometry_msgs.msg import PoseStamped, Quaternion, TwistStamped
-from dbw_mkz_msgs.msg import SteeringReport, ThrottleCmd, BrakeCmd, SteeringCmd
-from std_msgs.msg import Float32 as Float
-from std_msgs.msg import Bool
-from sensor_msgs.msg import PointCloud2
-from sensor_msgs.msg import Image
-import sensor_msgs.point_cloud2 as pcl2
-from std_msgs.msg import Header
-from cv_bridge import CvBridge, CvBridgeError
-
-from styx_msgs.msg import TrafficLight, TrafficLightArray, Lane
-import numpy as np
-from PIL import Image as PIL_Image
-from io import BytesIO
 import base64
-
 import math
+from io import BytesIO
+
+import numpy as np
+import rospy
+import sensor_msgs.point_cloud2 as pcl2
+import tf
+from PIL import Image as PIL_Image
+from cv_bridge import CvBridge
+from dbw_mkz_msgs.msg import SteeringReport, ThrottleCmd, BrakeCmd, SteeringCmd
+from geometry_msgs.msg import PoseStamped, Quaternion, TwistStamped
+from sensor_msgs.msg import Image
+from sensor_msgs.msg import PointCloud2
+from std_msgs.msg import Bool
+from std_msgs.msg import Float32 as Float
+from std_msgs.msg import Header
+from styx_msgs.msg import TrafficLight, TrafficLightArray, Lane
 
 TYPE = {
     'bool': Bool,
@@ -177,7 +174,8 @@ class Bridge(object):
 
     def publish_camera(self, data):
         self.image_count += 1
-        if (self.image_count % 2) == 0:
+        rospy.logwarn("image_count: %s", self.image_count)
+        if (self.image_count % 1) == 0:
             imgString = data["image"]
             image = PIL_Image.open(BytesIO(base64.b64decode(imgString)))
             image_array = np.asarray(image)
