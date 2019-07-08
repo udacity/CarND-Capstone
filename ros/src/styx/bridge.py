@@ -61,7 +61,6 @@ class Bridge(object):
     def create_light(self, x, y, z, yaw, state):
         light = TrafficLight()
 
-        light.header = Header()
         light.header.stamp = rospy.Time.now()
         light.header.frame_id = '/world'
 
@@ -73,7 +72,6 @@ class Bridge(object):
     def create_pose(self, x, y, z, yaw=0.):
         pose = PoseStamped()
 
-        pose.header = Header()
         pose.header.stamp = rospy.Time.now()
         pose.header.frame_id = '/world'
 
@@ -165,9 +163,8 @@ class Bridge(object):
         status = data['light_state']
 
         lights = TrafficLightArray()
-        header = Header()
-        header.stamp = rospy.Time.now()
-        header.frame_id = '/world'
+        lights.header.stamp = rospy.Time.now()
+        lights.header.frame_id = '/world'
         lights.lights = [self.create_light(*e) for e in zip(x, y, z, yaw, status)]
         self.publishers['trafficlights'].publish(lights)
 
@@ -175,11 +172,13 @@ class Bridge(object):
         self.publishers['dbw_status'].publish(Bool(data))
 
     def publish_camera(self, data):
+        now = rospy.Time.now()
         imgString = data["image"]
         image = PIL_Image.open(BytesIO(base64.b64decode(imgString)))
         image_array = np.asarray(image)
 
         image_message = self.bridge.cv2_to_imgmsg(image_array, encoding="rgb8")
+        image_message.header.stamp = now
         self.publishers['image'].publish(image_message)
 
     def callback_steering(self, data):
