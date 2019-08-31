@@ -70,6 +70,7 @@ class DBWNode(object):
 
         # TODO: Create `Controller` object
         # Create `TwistController` object
+        # read variables
         self.controller = Controller(vehicle_mass = vehicle_mass,
                                     fuel_capacity = fuel_capacity,
                                     brake_deadband = brake_deadband,
