@@ -58,19 +58,6 @@ class DBWNode(object):
 
 
 
-        # define the dictionary to restore the parameters
-        config = {
-            'vehicle_mass': vehicle_mass,
-            'fuel_capacity': fuel_capacity,
-            'brake_deadband': brake_deadband,
-            'decel_limit': decel_limit,
-            'accel_limit': accel_limit,
-            'wheel_radius': wheel_radius,
-            'wheel_base': wheel_base,
-            'steer_ratio': steer_ratio,
-            'max_lat_accel': max_lat_accel,
-            'max_steer_angle': max_steer_angle
-        }
 
 
         # Subscribe to all the topics you need to
@@ -83,8 +70,16 @@ class DBWNode(object):
 
         # TODO: Create `Controller` object
         # Create `TwistController` object
-        self.controller = Controller(**config)
-
+        self.controller = Controller(vehicle_mass = vehicle_mass,
+                                    fuel_capacity = fuel_capacity,
+                                    brake_deadband = brake_deadband,
+                                    decel_limit = decel_limit,
+                                    accel_limit = accel_limit,
+                                    wheel_radius = wheel_radius,
+                                    wheel_base = wheel_base,
+                                    steer_ratio = steer_ratio,
+                                    max_lat_accel = max_lat_accel,
+                                    max_steer_angle = max_steer_angle)
         self.dbw_enabled = False
         self.current_vel = None
         self.target_vel = None
@@ -103,7 +98,7 @@ class DBWNode(object):
         while not rospy.is_shutdown():
             # Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            if not None in (self.current_vel, self.target_vel, self.final_waypoints):
+            if not None in (self.current_vel, self.target_vel, self.target_ang, self.final_waypoints):
 
                 # duration calculation
                 current_timestamp = rospy.get_rostime()
@@ -111,11 +106,11 @@ class DBWNode(object):
                 duration = diff_duration.secs + (1e-9 * diff_duration.nsecs)
                 self.previous_stamp = current_timestamp
                 # current velocity calculation
-                current_linear_velocity = self.current_vel.twist.linear.x
+                current_linear_velocity = self.current_vel
                 # target velocity calculation
-                target_linear_velocity = self.target_vel.twist.linear.x
+                target_linear_velocity = self.target_vel
                 # target angle velocity calculation
-                target_angle_velocity = self.target_vel.twist.angular.z
+                target_angle_velocity = self.target_ang
                 # cross_track_error calculation
                 ct_error = cte_calculator.get_cross_track_error(self.final_waypoints, self.current_pose)
 
@@ -149,11 +144,12 @@ class DBWNode(object):
 
     def twist_msg_cb(self, message):
 
-        self.target_vel = message
+        self.target_vel = message.twist.linear.x
+        self.target_ang = message.twist.angular.z
 
     def current_msg_cb(self, message):
 
-        self.current_vel = message
+        self.current_vel = message.twist.linear.x
 
 
     def dbw_enabled_cb(self, message):
