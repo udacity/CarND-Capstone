@@ -85,8 +85,6 @@ class DBWNode(object):
         # Create `TwistController` object
         self.controller = Controller(**config)
 
-
-
         self.dbw_enabled = False
         self.current_vel = None
         self.target_vel = None
