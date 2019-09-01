@@ -26,20 +26,20 @@ class Controller(object):
 		
         
         # from pid import as PID to calculate PID control
-		kp=0.8
-		ki=0
-		kd=0.05
-		mn=self.decel_limit
-		mx=0.5
+        kp = 0.8
+        ki = 0
+        kd=0.05
+        mn=self.decel_limit
+        mx=0.5
         self.throttle_controller = PID(kp, ki, kd, mn, mx * self.accel_limit)
 
         self.yaw_controller = YawController(self.wheel_base, self.steer_ratio, min_speed, self.max_lat_accel, self.max_steer_angle)
 
-		kp_s=0.15
-		ki_s=0.001
-		kd_s=0.1
-		mn_s=-self.max_steer_angle
-		mx_s=self.max_steer_angle
+        kp_s=0.15
+        ki_s=0.001
+        kd_s=0.1
+        mn_s=-self.max_steer_angle
+        mx_s=self.max_steer_angle
         self.steering_pid = PID(kp_s, ki_s, kd_s, mn_s, mx_s)
         
     def reset(self):
@@ -69,7 +69,7 @@ class Controller(object):
             brake = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * self.wheel_radius * deceleration
             throttle = 0
         
-        elif((target_linear_velocity==0.0) && (current_linear_velocity<0.1)):
+        elif((target_linear_velocity==0.0) and (current_linear_velocity<0.1)):
             throttle = 0
             brake = 700  # torque required to hold the car in place when stopped at traffic light etc
 
