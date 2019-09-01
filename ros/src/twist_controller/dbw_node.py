@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
+import cte_calculator
+from geometry_msgs.msg import PoseStamped
 import rospy
 from std_msgs.msg import Bool
+from styx_msgs.msg import Lane
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
@@ -21,7 +24,7 @@ not be the case. This may cause your PID controller to accumulate error because 
 temporarily be driven by a human instead of your controller.
 
 We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
-wheel_base) etc should not be altered in these files.
+wheel_base) etc should not be altered in tbhese files.
 
 We have also provided some reference implementations for PID controller and other utility classes.
 You are free to use them or build your own.
@@ -53,7 +56,20 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+
+
+
+
+        # Subscribe to all the topics you need to
+        # rospy.Subscriber('/subscriber message name', variable type, callback function, queue_size=1)
+        self.twist_sub = rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_msg_cb, queue_size=1)
+        self.velocity_sub = rospy.Subscriber('/current_vel', TwistStamped, self.current_msg_cb, queue_size=1)
+        self.dbw_sub = rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
+        self.final_wp_sub = rospy.Subscriber('final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
+        self.pose_sub = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb, queue_size=1)
+
         # TODO: Create `Controller` object
+
         self.controller = Controller(vehicle_mass=vehicle_mass,
                                      fuel_capacity = fuel_capacity,
                                      brake_deadband = brake_deadband,
@@ -77,13 +93,15 @@ class DBWNode(object):
         self.angular_vel = None
         self.throttle = self.steering = self.brake = 0
 
+
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
+            # Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
+
             # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
             #                                                     <proposed angular velocity>,
             #                                                     <current linear velocity>,
@@ -99,6 +117,7 @@ class DBWNode(object):
                                                         self.angular_vel)
             if self.dbw_enabled:
                 self.publish(self.throttle, self.brake, self.steering)
+
             rate.sleep()
 
     def dbw_enabled_cb(self, msg):
@@ -127,6 +146,28 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
+    def twist_msg_cb(self, message):
+
+        self.target_vel = message.twist.linear.x
+        self.target_ang = message.twist.angular.z
+
+    def current_msg_cb(self, message):
+
+        self.current_vel = message.twist.linear.x
+
+
+    def dbw_enabled_cb(self, message):
+ 
+        #rospy.logwarn("DBW_ENABLED %s" % message)
+        self.dbw_enabled = message.data
+
+    def final_waypoints_cb(self, message):
+        self.final_waypoints = message.waypoints
+
+    def current_pose_cb(self, message):
+        self.current_pose = message
+
 
 
 if __name__ == '__main__':
