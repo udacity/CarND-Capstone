@@ -6,11 +6,13 @@ import numpy as np
 import tensorflow as tf
 from styx_msgs.msg import TrafficLight
 
+
 class TLClassifier(object):
     def __init__(self):
+        pwd = os.getcwd()
 
-        self.PATH_TO_CKPT='./src/tl_detector/light_classification/frozen_inference_graph.pb'
-        self.PATH_TO_LABELS='udacity_label_map.pbtxt'
+        self.PATH_TO_CKPT=os.path.join(pwd,'light_classification/frozen_inference_graph.pb')
+        #self.PATH_TO_LABELS=os.path.join(pwd,'light_classification/udacity_label_map.pbtxt')
         self.NUM_CLASSES = 4
 
         #label_map = label_map_util.load_labelmap(self.PATH_TO_LABELS)
@@ -27,14 +29,17 @@ class TLClassifier(object):
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
 
-        self.sess = tf.Session(graph = self.detection_graph)
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+
+        self.sess = tf.Session(graph = self.detection_graph,config=config)
 
         self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
         self.boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
         self.scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
         self.classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
         self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
-        self.traffic_light = "UNKNOWN"
+        self.traffic_light = TrafficLight.UNKNOWN
 
 
     def get_classification(self, image):
@@ -61,12 +66,13 @@ class TLClassifier(object):
         for i in range(boxes.shape[0]):
             if scores is None or scores[i]>0.5:
                 class_name = self.category_index[classes[i]]['name']
-            if class_name == 'Red':
-                self.traffic_light = "RED"
-            elif class_name == 'Yellow':
-                self.traffic_light = "YELLOW"
-            elif class_name == 'Green':
-                self.traffic_light = "GREEN"
-            else:
-                self.traffic_light = "UNKNOWN"
+                if class_name == 'Red':
+                    self.traffic_light = TrafficLight.RED
+                elif class_name == 'Yellow':
+                    self.traffic_light = TrafficLight.YELLOW
+                elif class_name == 'Green':
+                    self.traffic_light = TrafficLight.GREEN
+                else:
+                    self.traffic_light = TrafficLight.UNKNOWN
+        rospy.loginfo('Traffic Light is {}'.format(self.traffic_light))
         return self.traffic_light
