@@ -47,8 +47,42 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
+
+
+
+
+        # Subscribe to all the topics you need to
+        # rospy.Subscriber('/subscriber message name', variable type, callback function, queue_size=1)
+        self.twist_sub = rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_msg_cb, queue_size=1)
+        self.velocity_sub = rospy.Subscriber('/current_vel', TwistStamped, self.current_msg_cb, queue_size=1)
+        self.dbw_sub = rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
+        self.final_wp_sub = rospy.Subscriber('final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
+        self.pose_sub = rospy.Subscriber('/current_pose', PoseStamped, self.current_pose_cb, queue_size=1)
+
         # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        # Create `TwistController` object
+        # read variables
+        self.controller = Controller(vehicle_mass = vehicle_mass,
+                                    fuel_capacity = fuel_capacity,
+                                    brake_deadband = brake_deadband,
+                                    decel_limit = decel_limit,
+                                    accel_limit = accel_limit,
+                                    wheel_radius = wheel_radius,
+                                    wheel_base = wheel_base,
+                                    steer_ratio = steer_ratio,
+                                    max_lat_accel = max_lat_accel,
+                                    max_steer_angle = max_steer_angle)
+        self.dbw_enabled = False
+        self.current_vel = None
+        self.target_vel = None
+        self.target_ang = None
+        self.final_waypoints = None
+        self.current_pose = None
+        self.previous_stamp = rospy.get_rostime()
+
+
+        
+
 
         # TODO: Subscribe to all the topics you need to
 
@@ -59,13 +93,32 @@ class DBWNode(object):
         while not rospy.is_shutdown():
             # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
-            # throttle, brake, steering = self.controller.control(<proposed linear velocity>,
-            #                                                     <proposed angular velocity>,
-            #                                                     <current linear velocity>,
-            #                                                     <dbw status>,
-            #                                                     <any other argument you need>)
-            # if <dbw is enabled>:
-            #   self.publish(throttle, brake, steer)
+
+            if not None in (self.current_vel, self.target_vel, self.target_ang, self.final_waypoints):
+
+                # duration calculation
+                current_timestamp = rospy.get_rostime()
+                diff_duration = current_timestamp - self.previous_stamp
+                duration = diff_duration.secs + (1e-9 * diff_duration.nsecs)
+                self.previous_stamp = current_timestamp
+                # current velocity calculation
+                current_linear_velocity = self.current_vel
+                # target velocity calculation
+                target_linear_velocity = self.target_vel
+                # target angle velocity calculation
+                target_angle_velocity = self.target_ang
+                # cross_track_error calculation
+                ct_error = cte_calculator.get_cross_track_error(self.final_waypoints, self.current_pose)
+
+                self.throttle, self.brake, self.steering = self.controller.control(target_linear_velocity,
+                                                                    target_angle_velocity,
+                                                                    current_linear_velocity, 
+                                                                    ct_error, 
+                                                                    duration)
+
+                if self.dbw_enabled:
+                    self.publish(self.throttle, self.brake, self.steering)
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -85,6 +138,30 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
+
+    def twist_msg_cb(self, message):
+
+        self.target_vel = message.twist.linear.x
+        self.target_ang = message.twist.angular.z
+
+    def current_msg_cb(self, message):
+
+        self.current_vel = message.twist.linear.x
+
+
+    def dbw_enabled_cb(self, message):
+ 
+        #rospy.logwarn("DBW_ENABLED %s" % message)
+        self.dbw_enabled = message.data
+
+    def final_waypoints_cb(self, message):
+        self.final_waypoints = message.waypoints
+
+    def current_pose_cb(self, message):
+        self.current_pose = message
+
+
 
 
 if __name__ == '__main__':
