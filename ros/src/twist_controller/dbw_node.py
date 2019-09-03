@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
-import cte_calculator
-from geometry_msgs.msg import PoseStamped
 import rospy
 from std_msgs.msg import Bool
-from styx_msgs.msg import Lane
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 from geometry_msgs.msg import TwistStamped
 import math
@@ -13,25 +10,19 @@ from twist_controller import Controller
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
-
 You will subscribe to `/twist_cmd` message which provides the proposed linear and angular velocities.
 You can subscribe to any other message that you find important or refer to the document for list
 of messages subscribed to by the reference implementation of this node.
-
 One thing to keep in mind while building this node and the `twist_controller` class is the status
 of `dbw_enabled`. While in the simulator, its enabled all the time, in the real car, that will
 not be the case. This may cause your PID controller to accumulate error because the car could
 temporarily be driven by a human instead of your controller.
-
 We have provided two launch files with this node. Vehicle specific values (like vehicle_mass,
-wheel_base) etc should not be altered in tbhese files.
-
+wheel_base) etc should not be altered in these files.
 We have also provided some reference implementations for PID controller and other utility classes.
 You are free to use them or build your own.
-
 Once you have the proposed throttle, brake, and steer values, publish it on the various publishers
 that we have created in the `__init__` function.
-
 '''
 
 class DBWNode(object):
@@ -93,13 +84,16 @@ class DBWNode(object):
         
 
 
+        # TODO: Subscribe to all the topics you need to
+
         self.loop()
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            # Get predicted throttle, brake, and steering using `twist_controller`
+            # TODO: Get predicted throttle, brake, and steering using `twist_controller`
             # You should only publish the control commands if dbw is enabled
+
             if not None in (self.current_vel, self.target_vel, self.target_ang, self.final_waypoints):
 
                 # duration calculation
@@ -124,6 +118,7 @@ class DBWNode(object):
 
                 if self.dbw_enabled:
                     self.publish(self.throttle, self.brake, self.steering)
+
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
@@ -143,6 +138,7 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
+
 
     def twist_msg_cb(self, message):
 
@@ -164,6 +160,7 @@ class DBWNode(object):
 
     def current_pose_cb(self, message):
         self.current_pose = message
+
 
 
 
