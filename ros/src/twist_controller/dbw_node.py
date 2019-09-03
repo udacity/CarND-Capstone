@@ -84,6 +84,7 @@ class DBWNode(object):
         self.dbw_enabled = False
         self.current_vel = None
         self.target_vel = None
+        self.target_ang = None
         self.final_waypoints = None
         self.current_pose = None
         self.previous_stamp = rospy.get_rostime()
