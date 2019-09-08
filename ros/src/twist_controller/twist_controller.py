@@ -1,7 +1,9 @@
-#!/usr/bin/env python
 from pid import PID
+
+from lowpass import LowPassFilter
 from yaw_controller import YawController
-import math
+import rospy
+
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
@@ -9,68 +11,54 @@ ONE_MPH = 0.44704
 
 class Controller(object):
 
-	
+    def __init__(self, vehicle_mass, fuel_capacity, brake_deadband,decel_limit,
+        accel_limit, wheel_radius, wheel_base,steer_ratio, max_lat_accel,max_steer_angle):
+        # TODO: Implement
+        self.yaw_controller = YawController(wheel_base, steer_ratio, 0.1, max_lat_accel,max_steer_angle)
 
-    def __init__(self, vehicle_mass, fuel_capacity, brake_deadband, decel_limit, accel_limit, wheel_radius, wheel_base, steer_ratio, max_lat_accel, max_steer_angle):
+        kp = 0.3
+        ki = 0.1
+        kd = 0.
+        mn = 0.
+        mx = 0.2
+        self.throttle_controller = PID(kp, ki, kd, mn, mx)
 
-        min_speed = 0
+        tau = 0.5 #1/(2pi*tau) = cutoff frequency
+        ts = .02  #Sample time
+
+        self.vel_lpf = LowPassFilter(tau, ts)
+
         self.vehicle_mass = vehicle_mass
         self.fuel_capacity = fuel_capacity
         self.brake_deadband = brake_deadband
         self.decel_limit = decel_limit
         self.accel_limit = accel_limit
         self.wheel_radius = wheel_radius
-        self.wheel_base = wheel_base
-        self.steer_ratio = steer_ratio
-        self.max_lat_accel = max_lat_accel
-        self.max_steer_angle = max_steer_angle
-        
-        # from pid import as PID to calculate PID control
-        kp=0.8
-        ki=0
-        kd=0.05
-        mn=self.decel_limit
-        mx=0.5
-        self.throttle_control_PID = PID(kp, ki, kd, mn, mx * self.accel_limit)
 
-        self.yaw_control_PID = YawController(self.wheel_base, self.steer_ratio, min_speed, self.max_lat_accel, self.max_steer_angle)
+        self.last_time = rospy.get_time()
 
-        kp_s=0.15
-        ki_s=0.001
-        kd_s=0.1
-        mn_s=-self.max_steer_angle
-        mx_s=self.max_steer_angle
-        self.steering_control_PID = PID(kp_s, ki_s, kd_s, mn_s, mx_s)
-        
-    def reset(self):
-        self.throttle_control_PID.reset()
-        self.steering_control_PID.reset()
-        
-    def control(self, target_linear_velocity, target_angle_velocity, current_linear_velocity, CT_error, duration):
-        
-        # updating velocity links to throttle
-        # calculate linear velocity error between proposed velocity and current velocity
-        diff_velocity_error = target_linear_velocity - current_linear_velocity
-        throttle = self.throttle_control_PID.step(diff_velocity_error, duration)
+    def control(self,current_vel, dbw_enabled, linear_vel, angular_vel):
+        # TODO: Change the arg, kwarg list to suit your needs
+        # Return throttle, brake, steer
+        if not dbw_enabled:
+            self.throttle_controller.reset()
+            return 0., 0., 0.
+        current_vel = self.vel_lpf.filt(current_vel)
+        steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
+        vel_error = linear_vel - current_vel
+        self.last_vel = current_vel
+
+        current_time = rospy.get_time()
+        sample_time = current_time - self.last_time
+        self.last_time = current_time
+
+        throttle = self.throttle_controller.step(vel_error, sample_time)
         brake = 0
-
-        
-        # methode is same as privious throttle calculation
-        # calculate the steering value
-        predictive_steering = self.yaw_control_PID.get_steering(target_linear_velocity, target_angle_velocity, current_linear_velocity)
-        corrective_steering = self.steering_control_PID.step(CT_error, duration)
-        steering = predictive_steering + corrective_steering
-
-
-        # if velocity is less than 0 means need to decceleration
-        # using throttle to calculate the brake value
-        if(throttle < 0):
-            deceleration = abs(throttle)
-            brake = (self.vehicle_mass + self.fuel_capacity * GAS_DENSITY) * self.wheel_radius * deceleration
+        if linear_vel ==0. and current_vel <0.1:
             throttle = 0
-        
-        elif((target_linear_velocity==0.0) and (current_linear_velocity<0.1)):
+            brake = 400 #N*m to hold the car in place if we are stopped at a light,Acceleration - 1m/s^2
+        elif throttle<.1 and vel_error<0:
             throttle = 0
-            brake = 700  # torque required to hold the car in place when stopped at traffic light etc
-
+            decel = max(vel_error, self.decel_limit)
+            brake = abs(decel)*self.vehicle_mass*self.wheel_radius#Torque N*m
         return throttle, brake, steering
