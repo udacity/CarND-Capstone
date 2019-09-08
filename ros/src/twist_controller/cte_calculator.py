@@ -13,10 +13,13 @@ def get_cross_track_error(final_waypoints, current_pose):
     '''
     The final waypoints are used to fit a polynomial which represents the trajectory
     that the car is expected to take
+
          (1) The expected y value at the current x value of the car is evaluated by using the curve
+
          (2) This is compared with the current y value obtained from the car pose
     
     The difference between 1 and 2 is the CTE(Cross Track Error)
+
     We will transform world coordinates to car coordinates so that all x values are in the
     direction of the car and all y values represent lateral movement
     '''
