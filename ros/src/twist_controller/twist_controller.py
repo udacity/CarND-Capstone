@@ -23,8 +23,10 @@ class Controller(object):
         mx = 0.2
         self.throttle_controller = PID(kp, ki, kd, mn, mx)
 
+
         tau = 0.5 #1/(2pi*tau) = cutoff frequency
         ts = .02  #Sample time
+
 
         self.vel_lpf = LowPassFilter(tau, ts)
 
@@ -34,6 +36,7 @@ class Controller(object):
         self.decel_limit = decel_limit
         self.accel_limit = accel_limit
         self.wheel_radius = wheel_radius
+
 
         self.last_time = rospy.get_time()
 
@@ -56,8 +59,10 @@ class Controller(object):
         brake = 0
         if linear_vel ==0. and current_vel <0.1:
             throttle = 0
+
             brake = 400 #N*m to hold the car in place if we are stopped at a light,Acceleration - 1m/s^2
         elif throttle<.1 and vel_error<0:
+
             throttle = 0
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius#Torque N*m
