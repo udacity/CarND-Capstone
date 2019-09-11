@@ -45,7 +45,7 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
         # Subscribe to all the topics you need to
         # rospy.Subscriber('/subscriber message name', variable type, callback function, queue_size=1)
-        self.twist_sub = rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_msg_cb, queue_size=1)
+        self.twist_sub = rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb, queue_size=1)
         self.velocity_sub = rospy.Subscriber('/current_vel', TwistStamped, self.current_msg_cb, queue_size=1)
         self.dbw_sub = rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
         self.final_wp_sub = rospy.Subscriber('final_waypoints', Lane, self.final_waypoints_cb, queue_size=1)
@@ -116,9 +116,7 @@ class DBWNode(object):
         bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
-    def twist_msg_cb(self, message):
-        self.target_vel = message.twist.linear.x
-        self.target_ang = message.twist.angular.z
+        
     def current_msg_cb(self, message):
         self.current_vel = message.twist.linear.x
  
