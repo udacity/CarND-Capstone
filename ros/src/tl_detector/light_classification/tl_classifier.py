@@ -5,13 +5,21 @@ import rospy
 import numpy as np
 import tensorflow as tf
 from styx_msgs.msg import TrafficLight
-
+import yaml
 
 class TLClassifier(object):
     def __init__(self):
         pwd = os.getcwd()
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.safe_load(config_string)
+        self.is_site = self.config['is_site']
 
-        self.PATH_TO_CKPT=os.path.join(pwd,'light_classification/frozen_inference_graph.pb')
+        if self.is_site:
+            self.PATH_TO_CKPT=os.path.join(pwd,'light_classification/frozen_inference_graph_real.pb')
+
+        else:
+            self.PATH_TO_CKPT=os.path.join(pwd,'light_classification/frozen_inference_graph.pb')
+
         #self.PATH_TO_LABELS=os.path.join(pwd,'light_classification/udacity_label_map.pbtxt')
         self.NUM_CLASSES = 4
 
