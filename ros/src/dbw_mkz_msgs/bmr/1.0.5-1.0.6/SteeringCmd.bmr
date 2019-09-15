@@ -1,0 +1,55 @@
+class update_dbw_mkz_msgs_SteeringCmd_042926cddf5be8099d43692732201784(MessageUpdateRule):
+	old_type = "dbw_mkz_msgs/SteeringCmd"
+	old_full_text = """
+# Steering Wheel
+float32 steering_wheel_angle_cmd        # rad, range -8.2 to 8.2
+float32 steering_wheel_angle_velocity   # rad/s, range 0 to 8.7, 0 = maximum
+
+# Enable
+bool enable
+
+# Ignore driver overrides
+bool ignore
+
+# Disable the driver override audible warning
+bool quiet
+
+# Watchdog counter (optional)
+uint8 count
+"""
+
+	new_type = "dbw_mkz_msgs/SteeringCmd"
+	new_full_text = """
+# Steering Wheel
+float32 steering_wheel_angle_cmd        # rad, range -8.2 to 8.2
+float32 steering_wheel_angle_velocity   # rad/s, range 0 to 8.7, 0 = maximum
+
+# Enable
+bool enable
+
+# Clear driver overrides
+bool clear
+
+# Ignore driver overrides
+bool ignore
+
+# Disable the driver override audible warning
+bool quiet
+
+# Watchdog counter (optional)
+uint8 count
+"""
+
+	order = 1
+	migrated_types = []
+
+	valid = True
+
+	def update(self, old_msg, new_msg):
+		new_msg.steering_wheel_angle_cmd = old_msg.steering_wheel_angle_cmd
+		new_msg.steering_wheel_angle_velocity = old_msg.steering_wheel_angle_velocity
+		new_msg.enable = old_msg.enable
+		new_msg.clear = False
+		new_msg.ignore = old_msg.ignore
+		new_msg.quiet = old_msg.quiet
+		new_msg.count = old_msg.count

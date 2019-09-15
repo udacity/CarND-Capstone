@@ -1,0 +1,181 @@
+class update_dbw_mkz_msgs_BrakeReport_a306c167d365176ae6159e3c4e3f3197(MessageUpdateRule):
+	old_type = "dbw_mkz_msgs/BrakeReport"
+	old_full_text = """
+Header header
+
+# Brake pedal
+# Unitless, range 0.15 to 0.50
+float32 pedal_input
+float32 pedal_cmd
+float32 pedal_output
+
+# Braking torque (Nm)
+float32 torque_input
+float32 torque_cmd
+float32 torque_output
+
+# Brake On Off (BOO), brake lights
+bool boo_input
+bool boo_cmd
+bool boo_output
+
+# Status
+bool enabled  # Enabled
+bool override # Driver override
+bool driver   # Driver activity
+
+# Watchdog Counter
+WatchdogCounter watchdog_counter
+bool watchdog_braking
+bool fault_wdc
+
+# Faults
+bool fault_ch1
+bool fault_ch2
+bool fault_boo
+bool fault_connector # This fault can be ignored
+
+================================================================================
+MSG: std_msgs/Header
+# Standard metadata for higher-level stamped data types.
+# This is generally used to communicate timestamped data 
+# in a particular coordinate frame.
+# 
+# sequence ID: consecutively increasing ID 
+uint32 seq
+#Two-integer timestamp that is expressed as:
+# * stamp.sec: seconds (stamp_secs) since epoch (in Python the variable is called 'secs')
+# * stamp.nsec: nanoseconds since stamp_secs (in Python the variable is called 'nsecs')
+# time-handling sugar is provided by the client library
+time stamp
+#Frame this data is associated with
+# 0: no frame
+# 1: global frame
+string frame_id
+
+================================================================================
+MSG: dbw_mkz_msgs/WatchdogCounter
+uint8 source
+
+uint8 NONE=0               # No source for watchdog counter fault
+uint8 OTHER_BRAKE=1        # Fault determined by brake controller
+uint8 OTHER_THROTTLE=2     # Fault determined by throttle controller
+uint8 OTHER_STEERING=3     # Fault determined by steering controller
+uint8 BRAKE_COUNTER=4      # Brake command counter failed to increment
+uint8 BRAKE_DISABLED=5     # Brake transition to disabled while in gear or moving
+uint8 BRAKE_COMMAND=6      # Brake command timeout after 100ms
+uint8 BRAKE_REPORT=7       # Brake report timeout after 100ms
+uint8 THROTTLE_COUNTER=8   # Throttle command counter failed to increment
+uint8 THROTTLE_DISABLED=9  # Throttle transition to disabled while in gear or moving
+uint8 THROTTLE_COMMAND=10  # Throttle command timeout after 100ms
+uint8 THROTTLE_REPORT=11   # Throttle report timeout after 100ms
+uint8 STEERING_COUNTER=12  # Steering command counter failed to increment
+uint8 STEERING_DISABLED=13 # Steering transition to disabled while in gear or moving
+uint8 STEERING_COMMAND=14  # Steering command timeout after 100ms
+uint8 STEERING_REPORT=15   # Steering report timeout after 100ms
+"""
+
+	new_type = "dbw_mkz_msgs/BrakeReport"
+	new_full_text = """
+Header header
+
+# Brake pedal
+# Unitless, range 0.15 to 0.50
+float32 pedal_input
+float32 pedal_cmd
+float32 pedal_output
+
+# Braking torque (Nm)
+float32 torque_input
+float32 torque_cmd
+float32 torque_output
+
+# Brake On Off (BOO), brake lights
+bool boo_input
+bool boo_cmd
+bool boo_output
+
+# Status
+bool enabled  # Enabled
+bool override # Driver override
+bool driver   # Driver activity
+bool timeout  # Command timeout
+
+# Watchdog Counter
+WatchdogCounter watchdog_counter
+bool watchdog_braking
+bool fault_wdc
+
+# Faults
+bool fault_ch1
+bool fault_ch2
+bool fault_boo
+
+================================================================================
+MSG: std_msgs/Header
+# Standard metadata for higher-level stamped data types.
+# This is generally used to communicate timestamped data 
+# in a particular coordinate frame.
+# 
+# sequence ID: consecutively increasing ID 
+uint32 seq
+#Two-integer timestamp that is expressed as:
+# * stamp.sec: seconds (stamp_secs) since epoch (in Python the variable is called 'secs')
+# * stamp.nsec: nanoseconds since stamp_secs (in Python the variable is called 'nsecs')
+# time-handling sugar is provided by the client library
+time stamp
+#Frame this data is associated with
+# 0: no frame
+# 1: global frame
+string frame_id
+
+================================================================================
+MSG: dbw_mkz_msgs/WatchdogCounter
+uint8 source
+
+uint8 NONE=0               # No source for watchdog counter fault
+uint8 OTHER_BRAKE=1        # Fault determined by brake controller
+uint8 OTHER_THROTTLE=2     # Fault determined by throttle controller
+uint8 OTHER_STEERING=3     # Fault determined by steering controller
+uint8 BRAKE_COUNTER=4      # Brake command counter failed to increment
+uint8 BRAKE_DISABLED=5     # Brake transition to disabled while in gear or moving
+uint8 BRAKE_COMMAND=6      # Brake command timeout after 100ms
+uint8 BRAKE_REPORT=7       # Brake report timeout after 100ms
+uint8 THROTTLE_COUNTER=8   # Throttle command counter failed to increment
+uint8 THROTTLE_DISABLED=9  # Throttle transition to disabled while in gear or moving
+uint8 THROTTLE_COMMAND=10  # Throttle command timeout after 100ms
+uint8 THROTTLE_REPORT=11   # Throttle report timeout after 100ms
+uint8 STEERING_COUNTER=12  # Steering command counter failed to increment
+uint8 STEERING_DISABLED=13 # Steering transition to disabled while in gear or moving
+uint8 STEERING_COMMAND=14  # Steering command timeout after 100ms
+uint8 STEERING_REPORT=15   # Steering report timeout after 100ms
+"""
+
+	order = 2
+	migrated_types = [
+		("Header","Header"),
+		("WatchdogCounter","WatchdogCounter"),]
+
+	valid = True
+
+	def update(self, old_msg, new_msg):
+		self.migrate(old_msg.header, new_msg.header)
+		new_msg.pedal_input = old_msg.pedal_input
+		new_msg.pedal_cmd = old_msg.pedal_cmd
+		new_msg.pedal_output = old_msg.pedal_output
+		new_msg.torque_input = old_msg.torque_input
+		new_msg.torque_cmd = old_msg.torque_cmd
+		new_msg.torque_output = old_msg.torque_output
+		new_msg.boo_input = old_msg.boo_input
+		new_msg.boo_cmd = old_msg.boo_cmd
+		new_msg.boo_output = old_msg.boo_output
+		new_msg.enabled = old_msg.enabled
+		new_msg.override = old_msg.override
+		new_msg.driver = old_msg.driver
+		new_msg.timeout = False
+		self.migrate(old_msg.watchdog_counter, new_msg.watchdog_counter)
+		new_msg.watchdog_braking = old_msg.watchdog_braking
+		new_msg.fault_wdc = old_msg.fault_wdc
+		new_msg.fault_ch1 = old_msg.fault_ch1
+		new_msg.fault_ch2 = old_msg.fault_ch2
+		new_msg.fault_boo = old_msg.fault_boo
