@@ -23,14 +23,28 @@ Please use **one** of the two installation options, either native **or** docker 
 [Install Docker](https://docs.docker.com/engine/installation/)
 
 Build the docker container
-```bash
-docker build . -t capstone
+
+```
+make build
 ```
 
 Run the docker file
-```bash
-docker run -p 4567:4567 -v $PWD:/capstone -v /tmp/log:/root/.ros/ --rm -it capstone
+
 ```
+make run
+```
+
+This set-up port forwarding and mounts the current local directory as the ```capstone``` directory inside the docker container. Once inside the docker you can continue working as usual i.e. 
+
+```cd capstone/ros```.  
+```catkin_make``` 
+
+etc...
+
+
+To exit the docker container type 
+
+```exit```
 
 ### Port Forwarding
 To set up port forwarding, please refer to the "uWebSocketIO Starter Guide" found in the classroom (see Extended Kalman Filter Project lesson).

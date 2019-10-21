@@ -28,7 +28,10 @@ RUN apt-get install -y ros-$ROS_DISTRO-image-proc
 # socket io
 RUN apt-get install -y netbase
 
-RUN mkdir /capstone
-VOLUME ["/capstone"]
-VOLUME ["/root/.ros/log/"]
-WORKDIR /capstone/ros
+# fixes problem with recieving images from simulator 
+RUN pip install pillow --upgrade
+
+# RUN mkdir /capstone
+# VOLUME ["/capstone"]
+# VOLUME ["/root/.ros/log/"]
+# WORKDIR /capstone/ros
