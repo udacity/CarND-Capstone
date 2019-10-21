@@ -34,15 +34,14 @@ Run the docker file
 make run
 ```
 
-This set-up port forwarding and mounts the current local directory as the ```capstone``` directory inside the docker container. Once inside the docker you can continue working as usual i.e. 
+This sets up port forwarding and mounts the current local directory as the ```capstone``` directory inside the docker container. Once inside the docker you can continue working as usual i.e. 
 
-```cd capstone/ros```.  
+```cd capstone/ros```    
 ```catkin_make``` 
 
 etc...
 
-
-To exit the docker container type 
+To exit type:
 
 ```exit```
 
