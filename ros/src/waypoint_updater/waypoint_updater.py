@@ -1,7 +1,10 @@
 #!/usr/bin/env python
-
+import sys
+import os
+import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
+from scipy.spatial.kdtree import KDTree
 from styx_msgs.msg import Lane, Waypoint
 
 import math
@@ -32,21 +35,58 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        self.pose = None
+        self.base_waypoint = None
+        self.waypoints_tree = None
+        self.spin_rate = 50
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.spin()
 
-        rospy.spin()
+    def spin(self):
+        rate = rospy.Rate(self.spin_rate)
+        while not rospy.is_shutdown():
+            if self.pose and self.base_waypoint:
+                next_way_point_idx = self.get_next_waypoint()
+                self.publish_waypoint(next_way_point_idx)
+            rate.sleep()
+
+    def get_next_waypoint(self):
+        pose_x = self.pose.pose.position.x
+        pose_y = self.pose.pose.position.y
+
+        closest_ids = self.waypoints_tree.query([pose_x, pose_y], 1)[1]
+
+        closest_coords = self.waypoints_tree.data[closest_ids]
+        prev_coords = self.waypoints_tree.data[closest_ids - 1]
+
+        cl_vect = np.array(closest_coords)
+        prev_vect = np.array(prev_coords)
+        pose_vect = np.array([pose_x, pose_y])
+
+        val = np.dot(cl_vect - prev_vect, pose_vect - cl_vect)
+        if val > 0:
+            closest_ids = (closest_ids + 1) % len(self.waypoints_tree.data)
+        return closest_ids
+
+
+
+    def publish_waypoints(self, closest_idx):
+        lane = Lane()
+        lane.header = self.base_waypoint.header
+        lane.waypoints = self.base_waypoint.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publish(lane)
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+        self.base_waypoint = waypoints
+        if not self.waypoints_tree:
+            waypoint_coord = [[waypoint.pose.pose.position.x, waypoints.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            self.waypoints_tree = KDTree(waypoint_coord)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -72,7 +112,9 @@ class WaypointUpdater(object):
 
 
 if __name__ == '__main__':
-    try:
-        WaypointUpdater()
-    except rospy.ROSInterruptException:
-        rospy.logerr('Could not start waypoint updater node.')
+    import sys
+    print sys.path
+    # try:
+    #     WaypointUpdater()
+    # except rospy.ROSInterruptException:
+    #     rospy.logerr('Could not start waypoint updater node.')
