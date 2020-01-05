@@ -4,3 +4,8 @@ build
 devel
 
 profile.tmp
+.idea/
+linux_sys_int/
+ros/test
+test
+

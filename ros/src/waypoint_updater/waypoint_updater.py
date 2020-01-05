@@ -50,7 +50,7 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.base_waypoint:
                 next_way_point_idx = self.get_next_waypoint()
-                self.publish_waypoint(next_way_point_idx)
+                self.publish_waypoints(next_way_point_idx)
             rate.sleep()
 
     def get_next_waypoint(self):
@@ -77,6 +77,7 @@ class WaypointUpdater(object):
         lane = Lane()
         lane.header = self.base_waypoint.header
         lane.waypoints = self.base_waypoint.waypoints[closest_idx: closest_idx + LOOKAHEAD_WPS]
+        print ("publishing waypoint...")
         self.final_waypoints_pub.publish(lane)
 
     def pose_cb(self, msg):
@@ -85,7 +86,7 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
         self.base_waypoint = waypoints
         if not self.waypoints_tree:
-            waypoint_coord = [[waypoint.pose.pose.position.x, waypoints.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            waypoint_coord = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
             self.waypoints_tree = KDTree(waypoint_coord)
 
     def traffic_cb(self, msg):
@@ -112,9 +113,7 @@ class WaypointUpdater(object):
 
 
 if __name__ == '__main__':
-    import sys
-    print sys.path
-    # try:
-    #     WaypointUpdater()
-    # except rospy.ROSInterruptException:
-    #     rospy.logerr('Could not start waypoint updater node.')
+    try:
+        WaypointUpdater()
+    except rospy.ROSInterruptException:
+        rospy.logerr('Could not start waypoint updater node.')
