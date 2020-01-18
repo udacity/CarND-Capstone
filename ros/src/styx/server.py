@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 
-import eventlet
-eventlet.monkey_patch(socket=True, select=True, time=True)
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
 
-import eventlet.wsgi
 import socketio
 import time
-from flask import Flask, render_template
 
 from bridge import Bridge
 from conf import conf
 
-sio = socketio.Server()
-app = Flask(__name__)
+sio = socketio.Server(async_mode='gevent')
 msgs = []
 
 dbw_enable = False
@@ -61,8 +58,8 @@ def image(sid, data):
 
 if __name__ == '__main__':
 
-    # wrap Flask application with engineio's middleware
-    app = socketio.Middleware(sio, app)
+    # Create socketio WSGI application
+    app = socketio.WSGIApp(sio)
 
-    # deploy as an eventlet WSGI server
-    eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
+    # deploy as an gevent WSGI server
+    pywsgi.WSGIServer(('', 4567), app, handler_class=WebSocketHandler).serve_forever()
