@@ -179,7 +179,7 @@ class Bridge(object):
 
     def publish_camera(self, data):
         imgString = data["image"]
-        image = PIL_Image.open(BytesIO(base64.b64decode(imgString)))
+        image = PIL_Image.open(BytesIO(base64.b64decode(imgString))).convert('RGB')
         image_array = np.asarray(image)
 
         image_message = self.bridge.cv2_to_imgmsg(image_array, encoding="rgb8")
