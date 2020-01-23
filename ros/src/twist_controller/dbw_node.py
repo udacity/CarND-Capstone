@@ -122,8 +122,19 @@ class DBWNode(object):
                                                                 self.current_lin_vel,
                                                                 self.dbw_is_enabled)
             
+            #if (self.dbw_is_enabled == True):
+            #  self.publish(throttle, brake, steer)
+            output_speed = 0.0
+            if (self.proposed_lin_vel < 1.0):
+              output_speed = 0.0
+              brake = 1
+            else:
+              output_speed = self.proposed_lin_vel
+              brake = 0
+              
+            throttle = output_speed
             if (self.dbw_is_enabled == True):
-              self.publish(throttle, brake, steer)
+              self.publish(throttle, brake, steering)
             
             rate.sleep()
 
