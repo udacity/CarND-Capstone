@@ -55,10 +55,54 @@ class DBWNode(object):
 
         # TODO: Create `Controller` object
         # self.controller = Controller(<Arguments you wish to provide>)
+        #rospy.logwarn("[WARNING 1]\n")
+        #rospy.logerr("[ERROR 1]\n")
+        self.controller = Controller()
 
         # TODO: Subscribe to all the topics you need to
+        self.proposed_lin_vel = 0.0
+        self.proposed_ang_vel = 0.0
+        self.current_lin_vel  = 0.0
+        self.counter = 0
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_lin_vel_cb)
+        
+        self.dbw_is_enabled = False
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
 
         self.loop()
+
+    # DBW essage callback
+    def dbw_enabled_cb(self, msg):
+      # Get message and update dbw state
+      self.dbw_is_enabled = msg.data
+      rospy.logwarn("[ LOG ] : Got a DBW state message = %s/n", self.dbw_is_enabled)
+      
+    # TwistStamped message callback on "/twist_cmd" topic
+    # Get a TwistCmd message with fields:
+    #   (*) <geometry_msgs/Twist> twist (http://docs.ros.org/api/geometry_msgs/html/Twist.html)
+    #       This expresses velocity in free space broken down in linear and angular.
+    #       (*) <Vector3> linear
+    #           (*) <float64> x,y,z
+    #       (*) <Vector3>  angular
+    #           (*) <float64> x,y,z
+    #   (*) <float32> accel_limit # m/s^2 where 0 is no limit
+    #   (*) <float32> decel_limit # m/s^2 where 0 is no limit
+    def twist_cmd_cb(self, msg):
+      self.proposed_lin_vel = msg.twist.linear.x
+      self.proposed_ang_vel = msg.twist.angular.z
+      #rospy.logwarn("[ LOG ] : Got a twist_cmd message with lin_vel = %s, ang_vel = %s/n", 
+      #              self.proposed_lin_vel, self.proposed_ang_vel)
+                    
+    # Callback on current speed message "/current_velocity" topic, message type TwistStamped, as <twist_cmd_cb()>
+    def current_lin_vel_cb(self, msg):
+      self.current_lin_vel = msg.twist.linear.x
+      if self.counter < 100:
+        self.counter += 1
+      else:
+        self.counter = 0
+        rospy.logwarn("[ LOG ] : Got a current_lin_vel message with lin_vel = %s/n", 
+                      self.current_lin_vel)
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
@@ -72,6 +116,15 @@ class DBWNode(object):
             #                                                     <any other argument you need>)
             # if <dbw is enabled>:
             #   self.publish(throttle, brake, steer)
+            
+            throttle, brake, steering = self.controller.control(self.proposed_lin_vel,
+                                                                self.proposed_ang_vel,
+                                                                self.current_lin_vel,
+                                                                self.dbw_is_enabled)
+            
+            if (self.dbw_is_enabled == True):
+              self.publish(throttle, brake, steer)
+            
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
