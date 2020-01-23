@@ -133,6 +133,7 @@ class DBWNode(object):
               brake = 0
               
             throttle = output_speed
+            steering = self.proposed_ang_vel
             if (self.dbw_is_enabled == True):
               self.publish(throttle, brake, steering)
             
