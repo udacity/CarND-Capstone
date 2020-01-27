@@ -74,7 +74,7 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        if (self.timer == 0):
+        if (self.timer == 0 and self.waypoint_tree is not None):
             self.has_image = True
             self.camera_image = msg
             light_wp, state = self.process_traffic_lights()
