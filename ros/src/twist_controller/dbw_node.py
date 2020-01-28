@@ -3,7 +3,7 @@
 import rospy
 from std_msgs.msg import Bool
 from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import TwistStamped, PoseStamped
 import math
 
 from twist_controller import Controller
@@ -64,19 +64,31 @@ class DBWNode(object):
         self.proposed_ang_vel = 0.0
         self.current_lin_vel  = 0.0
         self.counter = 0
+        
+        # Subscribe to current velocity and intended linear/angular velocities
         rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb)
         rospy.Subscriber('/current_velocity', TwistStamped, self.current_lin_vel_cb)
         
+        # Subscribe to drive-by-wire
         self.dbw_is_enabled = False
         rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+        
+        # Subscribe to current pose for current angle
+        self.pose = None
+        self.pose_z = 0
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
 
         self.loop()
 
-    # DBW essage callback
+    # Pose message callback to get angle for steering controller
+    def pose_cb(self, msg):
+        self.pose = msg
+        self.pose_z = self.pose.pose.orientation.z
+        
+    # DBW message callback
     def dbw_enabled_cb(self, msg):
       # Get message and update dbw state
       self.dbw_is_enabled = msg.data
-      rospy.logwarn("[ LOG ] : Got a DBW state message = %s/n", self.dbw_is_enabled)
       
     # TwistStamped message callback on "/twist_cmd" topic
     # Get a TwistCmd message with fields:
@@ -91,18 +103,10 @@ class DBWNode(object):
     def twist_cmd_cb(self, msg):
       self.proposed_lin_vel = msg.twist.linear.x
       self.proposed_ang_vel = msg.twist.angular.z
-      #rospy.logwarn("[ LOG ] : Got a twist_cmd message with lin_vel = %s, ang_vel = %s/n", 
-      #              self.proposed_lin_vel, self.proposed_ang_vel)
                     
     # Callback on current speed message "/current_velocity" topic, message type TwistStamped, as <twist_cmd_cb()>
     def current_lin_vel_cb(self, msg):
       self.current_lin_vel = msg.twist.linear.x
-      if self.counter < 100:
-        self.counter += 1
-      else:
-        self.counter = 0
-        rospy.logwarn("[ LOG ] : Got a current_lin_vel message with lin_vel = %s/n", 
-                      self.current_lin_vel)
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
@@ -120,20 +124,9 @@ class DBWNode(object):
             throttle, brake, steering = self.controller.control(self.proposed_lin_vel,
                                                                 self.proposed_ang_vel,
                                                                 self.current_lin_vel,
-                                                                self.dbw_is_enabled)
+                                                                self.dbw_is_enabled,
+                                                                self.pose_z)
             
-            #if (self.dbw_is_enabled == True):
-            #  self.publish(throttle, brake, steer)
-            output_speed = 0.0
-            if (self.proposed_lin_vel < 1.0):
-              output_speed = 0.0
-              brake = 1
-            else:
-              output_speed = self.proposed_lin_vel
-              brake = 0
-              
-            throttle = output_speed
-            steering = self.proposed_ang_vel
             if (self.dbw_is_enabled == True):
               self.publish(throttle, brake, steering)
             
