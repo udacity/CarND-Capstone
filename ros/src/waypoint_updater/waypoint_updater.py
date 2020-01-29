@@ -49,6 +49,23 @@ class WaypointUpdater(object):
         self.state_changed = True
         self.current_stop_waypoint = -1
 
+
+        # Used to debug final waypoint speed
+        self.myFile = open("/home/student/ros_log/log.txt", "w")
+
+        self.waypoint_debug = True
+
+        if self.waypoint_debug == True:
+            str = "      "
+            self.myFile.write(str)
+
+            for i in range(1000):
+                str = "%5d "%i
+                self.myFile.write(str)
+
+            self.myFile.write("\n")
+            self.myFile.close()
+
         self.loop()
 
     def loop(self):
@@ -93,6 +110,8 @@ class WaypointUpdater(object):
                 if state_changed == True:
                     state_changed = False
 
+                    rospy.logwarn('%s, %d, %d', self.car_state, self.current_stop_waypoint, closest_waypoint_idx)
+
                     if self.car_state == "Accelerating":
                         for i in range(int(break_distance)):
                             self.base_waypoints.waypoints[closest_waypoint_idx + i].twist.twist.linear.x = speed * i / break_distance
@@ -108,16 +127,18 @@ class WaypointUpdater(object):
                             self.base_waypoints.waypoints[closest_waypoint_idx + i].twist.twist.linear.x = 0
 
 
-                    self.myFile = open("/home/student/ros_log/log.txt", "a")
-                    for i in range(1000):
-                        str = "%.2f "%self.base_waypoints.waypoints[i].twist.twist.linear.x
+                    if self.waypoint_debug == True:
+                        self.myFile = open("/home/student/ros_log/log.txt", "a")
+
+                        str = "%5d "%closest_waypoint_idx
                         self.myFile.write(str)
 
-                        if i % 50 == 49:
-                            self.myFile.write("\n")
+                        for i in range(1000):
+                            str = "%5.2f "%self.base_waypoints.waypoints[i].twist.twist.linear.x
+                            self.myFile.write(str)
 
-                    self.myFile.write("\n")
-                    self.myFile.close()
+                        self.myFile.write("\n")
+                        self.myFile.close()
 
                 self.publish_waypoints(closest_waypoint_idx)
 
