@@ -57,7 +57,11 @@ class DBWNode(object):
         # self.controller = Controller(<Arguments you wish to provide>)
         #rospy.logwarn("[WARNING 1]\n")
         #rospy.logerr("[ERROR 1]\n")
-        self.controller = Controller()
+        self.controller = Controller(vehicle_mass = vehicle_mass, fuel_capacity = fuel_capacity, 
+        				brake_deadband = brake_deadband, decel_limit = decel_limit, 
+        				accel_limit = accel_limit, wheel_radius = wheel_radius, 
+        				wheel_base = wheel_base, steer_ratio = steer_ratio, 
+        				max_lat_accel = max_lat_accel, max_steer_angle = max_steer_angle)
 
         # TODO: Subscribe to all the topics you need to
         self.proposed_lin_vel = 0.0
@@ -89,7 +93,8 @@ class DBWNode(object):
     def dbw_enabled_cb(self, msg):
       # Get message and update dbw state
       self.dbw_is_enabled = msg.data
-      
+
+      #rospy.logwarn("[ LOG ] : Got a DBW state message = %s/n", self.dbw_is_enabled)
     # TwistStamped message callback on "/twist_cmd" topic
     # Get a TwistCmd message with fields:
     #   (*) <geometry_msgs/Twist> twist (http://docs.ros.org/api/geometry_msgs/html/Twist.html)
@@ -100,6 +105,7 @@ class DBWNode(object):
     #           (*) <float64> x,y,z
     #   (*) <float32> accel_limit # m/s^2 where 0 is no limit
     #   (*) <float32> decel_limit # m/s^2 where 0 is no limit
+    
     def twist_cmd_cb(self, msg):
       self.proposed_lin_vel = msg.twist.linear.x
       self.proposed_ang_vel = msg.twist.angular.z
@@ -124,12 +130,24 @@ class DBWNode(object):
             throttle, brake, steering = self.controller.control(self.proposed_lin_vel,
                                                                 self.proposed_ang_vel,
                                                                 self.current_lin_vel,
-                                                                self.dbw_is_enabled,
-                                                                self.pose_z)
-            
+                                                                self.dbw_is_enabled)
+
             if (self.dbw_is_enabled == True):
-              self.publish(throttle, brake, steering)
-            
+            	self.publish(throttle, brake, steering)
+            '''
+            output_speed = 0.0
+            if (self.proposed_lin_vel < 1.0):
+              output_speed = 0.0
+              brake = 1l
+            else:
+              output_speed = self.proposed_lin_vel
+              brake = 0
+              
+            throttle = output_speed
+            steering = self.proposed_ang_vel
+            if (self.dbw_is_enabled == True):
+              self.publish(throttle, brake, steering)l
+            '''
             rate.sleep()
 
     def publish(self, throttle, brake, steer):
