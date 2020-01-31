@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import TwistStamped, PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from scipy.spatial import KDTree
 import numpy as np
@@ -38,6 +38,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_lin_vel_cb)
 
         # TODO: Add other member variables you need below
         self.pose = None
@@ -48,12 +49,13 @@ class WaypointUpdater(object):
         self.car_state = "Accelerating"
         self.state_changed = True
         self.current_stop_waypoint = -1
+        self.current_lin_vel = 0.0
 
 
         # Used to debug final waypoint speed
         self.myFile = open("/home/student/ros_log/log.txt", "w")
 
-        self.waypoint_debug = True
+        self.waypoint_debug = False
 
         if self.waypoint_debug == True:
             str = "      "
@@ -75,8 +77,8 @@ class WaypointUpdater(object):
                 # Get closest waypoint
                 closest_waypoint_idx = self.get_closest_waypoint_idx()
                 state_changed = False
-                break_distance = 5.0
-                stop_distance = 20.0
+                break_distance = 10.0
+                stop_distance = 13.0
                 speed = 11.0
 
                 # Make sure consider the immediate stop waypoint
@@ -90,7 +92,8 @@ class WaypointUpdater(object):
                 else:
                     self.current_stop_waypoint = -1
 
-
+                if self.current_lin_vel > 5.0:
+                    break_distance = break_distance * self.current_lin_vel / 2.0
                 # Decide on next action
                 if self.current_stop_waypoint == -1:
                     if self.car_state != "Accelerating":
@@ -188,6 +191,10 @@ class WaypointUpdater(object):
         self.stop_idx = msg.data
 
         pass
+
+    def current_lin_vel_cb(self, msg):
+        self.current_lin_vel = msg.twist.linear.x
+        #rospy.logwarn("vel = %f", self.current_lin_vel)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
