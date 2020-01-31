@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import TwistStamped, PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from scipy.spatial import KDTree
 import numpy as np
+from std_msgs.msg import Int32
 
 import math
 
@@ -34,15 +35,38 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.current_lin_vel_cb)
 
         # TODO: Add other member variables you need below
         self.pose = None
         self.base_waypoints = None
         self.waypoints_2d = None
         self.waypoint_tree = None
+
+        self.car_state = "Accelerating"
+        self.state_changed = True
+        self.current_stop_waypoint = -1
+        self.current_lin_vel = 0.0
+
+
+        # Used to debug final waypoint speed
+        self.myFile = open("/home/student/ros_log/log.txt", "w")
+
+        self.waypoint_debug = False
+
+        if self.waypoint_debug == True:
+            str = "      "
+            self.myFile.write(str)
+
+            for i in range(1000):
+                str = "%5d "%i
+                self.myFile.write(str)
+
+            self.myFile.write("\n")
+            self.myFile.close()
 
         self.loop()
 
@@ -52,7 +76,75 @@ class WaypointUpdater(object):
             if self.pose and self.waypoint_tree:
                 # Get closest waypoint
                 closest_waypoint_idx = self.get_closest_waypoint_idx()
+                state_changed = False
+                break_distance = 10.0
+                stop_distance = 13.0
+                speed = 11.0
+
+                # Make sure consider the immediate stop waypoint
+                stop_waypoint = self.stop_idx
+                if stop_waypoint != -1:
+                    if self.current_stop_waypoint == -1:
+                        self.current_stop_waypoint = stop_waypoint
+                    else:
+                        if closest_waypoint_idx > self.current_stop_waypoint:
+                            self.current_stop_waypoint = stop_waypoint
+                else:
+                    self.current_stop_waypoint = -1
+
+                if self.current_lin_vel > 5.0:
+                    break_distance = break_distance * self.current_lin_vel / 2.0
+                # Decide on next action
+                if self.current_stop_waypoint == -1:
+                    if self.car_state != "Accelerating":
+                        self.car_state = "Accelerating"
+                        state_changed = True
+                else:
+                    if self.current_stop_waypoint - closest_waypoint_idx < break_distance + stop_distance and self.car_state == "Accelerating":
+                        self.car_state = "Decelerating"
+                        state_changed = True
+
+                    #if self.current_stop_waypoint - closest_waypoint_idx < 20 and self.car_state == "Accelerating":
+                    #    self.car_state = "Decelerating"
+                    #    state_changed = True
+
+                #rospy.logwarn('%s, %d, %d', self.car_state, self.current_stop_waypoint, closest_waypoint_idx)
+
+                if state_changed == True:
+                    state_changed = False
+
+                    rospy.logwarn('%s, %d, %d', self.car_state, self.current_stop_waypoint, closest_waypoint_idx)
+
+                    if self.car_state == "Accelerating":
+                        for i in range(int(break_distance)):
+                            self.base_waypoints.waypoints[closest_waypoint_idx + i - 1].twist.twist.linear.x = speed * i / break_distance
+
+                        for i in range(int(break_distance), int(break_distance + stop_distance)):
+                            self.base_waypoints.waypoints[closest_waypoint_idx + i- 1].twist.twist.linear.x = speed
+
+                    if self.car_state == "Decelerating":
+                        for i in range(int(break_distance)):
+                            self.base_waypoints.waypoints[closest_waypoint_idx + i].twist.twist.linear.x = speed - speed * i / break_distance
+
+                        for i in range(int(break_distance), int(break_distance + stop_distance)):
+                            self.base_waypoints.waypoints[closest_waypoint_idx + i].twist.twist.linear.x = 0
+
+
+                    if self.waypoint_debug == True:
+                        self.myFile = open("/home/student/ros_log/log.txt", "a")
+
+                        str = "%5d "%closest_waypoint_idx
+                        self.myFile.write(str)
+
+                        for i in range(1000):
+                            str = "%5.2f "%self.base_waypoints.waypoints[i].twist.twist.linear.x
+                            self.myFile.write(str)
+
+                        self.myFile.write("\n")
+                        self.myFile.close()
+
                 self.publish_waypoints(closest_waypoint_idx)
+
             rate.sleep()
 
     def get_closest_waypoint_idx(self):
@@ -96,7 +188,13 @@ class WaypointUpdater(object):
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
+        self.stop_idx = msg.data
+
         pass
+
+    def current_lin_vel_cb(self, msg):
+        self.current_lin_vel = msg.twist.linear.x
+        #rospy.logwarn("vel = %f", self.current_lin_vel)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
