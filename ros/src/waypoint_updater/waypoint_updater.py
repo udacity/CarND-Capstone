@@ -53,11 +53,11 @@ class WaypointUpdater(object):
 
 
         # Used to debug final waypoint speed
-        self.myFile = open("/home/student/ros_log/log.txt", "w")
-
         self.waypoint_debug = False
 
         if self.waypoint_debug == True:
+            self.myFile = open("/home/student/ros_log/log.txt", "w")
+
             str = "      "
             self.myFile.write(str)
 
