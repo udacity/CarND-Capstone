@@ -57,7 +57,7 @@ class TLDetector(object):
     def loop(self):
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            if (self.pose is not None and self.waypoints is not None and self.camera_image is not None and self.waypoint_tree is not None):
+            if (self.pose is not None and self.waypoints is not None and self.camera_image is not None):
                 light_wp, state = self.process_traffic_lights()
                 '''
                 Publish upcoming red lights at camera frequency.
