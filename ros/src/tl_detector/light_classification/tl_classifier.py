@@ -12,7 +12,7 @@ class TLClassifier(object):
             path_to_graph = r'light_classification/model/ssd_sim/frozen_inference_graph.pb'
         
         self.graph = tf.Graph()
-        self.threshold = .5
+        self.threshold = .4
         
         with self.graph.as_default():
             od_graph_def = tf.GraphDef()
