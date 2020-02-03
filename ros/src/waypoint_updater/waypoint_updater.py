@@ -93,7 +93,7 @@ class WaypointUpdater(object):
                     self.current_stop_waypoint = -1
 
                 # Adjust brake distance at higher speeds
-                break_distance = break_distance + self.current_lin_vel * 2.4
+                break_distance = break_distance + self.current_lin_vel * 2.5
                 
                 # Decide on next action
                 if self.current_stop_waypoint == -1:
