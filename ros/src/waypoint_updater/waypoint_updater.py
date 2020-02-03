@@ -50,7 +50,7 @@ class WaypointUpdater(object):
         self.state_changed = True
         self.current_stop_waypoint = -1
         self.current_lin_vel = 0.0
-
+        self.stop_idx = -1
 
         # Used to debug final waypoint speed
         self.waypoint_debug = False
