@@ -24,7 +24,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 60 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -78,7 +78,7 @@ class WaypointUpdater(object):
                 closest_waypoint_idx = self.get_closest_waypoint_idx()
                 state_changed = False
                 break_distance = 10.0
-                stop_distance = 13.0
+                stop_distance = 10.0
                 speed = 11.0
 
                 # Make sure consider the immediate stop waypoint
@@ -92,8 +92,9 @@ class WaypointUpdater(object):
                 else:
                     self.current_stop_waypoint = -1
 
-                if self.current_lin_vel > 5.0:
-                    break_distance = break_distance * self.current_lin_vel / 2.0
+                # Adjust brake distance at higher speeds
+                break_distance = break_distance + self.current_lin_vel * 2.4
+                
                 # Decide on next action
                 if self.current_stop_waypoint == -1:
                     if self.car_state != "Accelerating":
@@ -113,18 +114,18 @@ class WaypointUpdater(object):
                 if state_changed == True:
                     state_changed = False
 
-                    rospy.logwarn('%s, %d, %d', self.car_state, self.current_stop_waypoint, closest_waypoint_idx)
+                    #rospy.logwarn('%s, %d, %d', self.car_state, self.current_stop_waypoint, closest_waypoint_idx)
 
                     if self.car_state == "Accelerating":
                         for i in range(int(break_distance)):
-                            self.base_waypoints.waypoints[closest_waypoint_idx + i - 1].twist.twist.linear.x = speed * i / break_distance
+                            self.base_waypoints.waypoints[closest_waypoint_idx + i - 1].twist.twist.linear.x = speed #* i / break_distance
 
-                        for i in range(int(break_distance), int(break_distance + stop_distance)):
+                        for i in range(int(break_distance), int(break_distance + stop_distance + 20)):
                             self.base_waypoints.waypoints[closest_waypoint_idx + i- 1].twist.twist.linear.x = speed
 
                     if self.car_state == "Decelerating":
                         for i in range(int(break_distance)):
-                            self.base_waypoints.waypoints[closest_waypoint_idx + i].twist.twist.linear.x = speed - speed * i / break_distance
+                            self.base_waypoints.waypoints[closest_waypoint_idx + i].twist.twist.linear.x = 0#speed - speed * i / break_distance
 
                         for i in range(int(break_distance), int(break_distance + stop_distance)):
                             self.base_waypoints.waypoints[closest_waypoint_idx + i].twist.twist.linear.x = 0

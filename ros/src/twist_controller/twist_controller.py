@@ -7,10 +7,10 @@ GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
 
-from pid import PID
-from lowpass import LowPassFilter
-from yaw_controller import YawController
-import rospy
+#from pid import PID
+#from lowpass import LowPassFilter
+#from yaw_controller import YawController
+#import rospy
 
 class Controller(object):
     def __init__(self, vehicle_mass, fuel_capacity, brake_deadband, decel_limit, accel_limit, wheel_radius, wheel_base, steer_ratio, max_lat_accel, max_steer_angle):
@@ -50,6 +50,7 @@ class Controller(object):
         
         steering = self.yaw_controller.get_steering(linear_vel, angular_vel, current_vel)
         #rospy.logwarn("[ LOG ] : linear_vel = %s    angular_vel = %s    current_vel = %s/    steering = %sn", linear_vel, angular_vel, current_vel, steering)
+        #rospy.logwarn("proposed_speed = %s", linear_vel)
         
      	vel_error = linear_vel - current_vel
      	
@@ -62,13 +63,35 @@ class Controller(object):
      	throttle = self.throttle_controller.step(vel_error, sample_time)
      	brake = 0
      	
-     	if linear_vel == 0.0 and current_vel < 0.1:
-     		throttle = 0
-     		brake = 700 # value  of torque in N*m  
-     	elif throttle < 0.1 and vel_error < 0:
-     		throttle = 0
-     		decel = max(vel_error, self.decel_limit)
-     		brake = abs(decel) * self.vehicle_mass * self.wheel_radius
+     	#if linear_vel == 0.0 and current_vel < 0.1:
+     	#	throttle = 0
+     	#	brake = 700 # value  of torque in N*m  
+     	#elif throttle < 0.1 and vel_error < 0:
+     	#	throttle = 0
+     	#	decel = max(vel_error, self.decel_limit)
+     	#	brake = abs(decel) * self.vehicle_mass * self.wheel_radius
+        
+        # Measures against small throttle while breaking (real car would not like that, strain on the brakes)
+        if (throttle < 0.00001):
+            brake = 100
+            throttle = 0
+        
+        # Disengage brake when accelerating
+        if (vel_error > 0):
+            brake = 0
+        
+        # If deceleration intended use adaptive brake taking into account current speed / intended speed difference
+        if (-vel_error > 0):
+            if (current_vel > 0.5):
+                if (linear_vel < current_vel / 1.5):
+                    brake = 100 * (((current_vel / (linear_vel + 0.000001))) * 5.0)
+                    if (brake > 4000):
+                        brake = 4000
+            else:
+                brake = 100
+        
+        if (brake > 0):
+            throttle = 0
         
         return throttle, brake, steering
 
