@@ -98,3 +98,74 @@ Specific to these libraries, the simulator grader and Carla use the following:
 | OpenMP | N/A | N/A |
 
 We are working on a fix to line up the OpenCV versions between the two.
+
+------------------------------------------------------------------------------------------
+HanDev Branch
+
+### How to pull camera data from the simulator<br>
+
+1. Set up simulator as usual<br>
+
+``` bash
+cd /home/workspace
+cd CarND-Capstone
+pip install -r requirements.txt
+cd ros
+catkin_make
+source devel/setup.sh
+roslaunch launch/styx.launch
+```
+
+2. Open another terminal<br>
+
+Source `setup.sh` in this new terminal.
+
+3. Detremine which topic contains the camera data<br>
+
+<img src = 'examples/Topic_Image_color.png'>
+
+From above, we know that the image data is inside the **/image_color** topic.
+
+4. Look into the message inside the **/image_color** topic.
+
+Input the following in the second terminal:<br>
+
+``` bash
+rostopic info /image_color
+```
+
+We then get:<br>
+
+<img src = 'examples/Get_type.png'>
+
+Now, we should look into the message, as **sensor_msgs/Image**.<br>
+
+Input the following:
+
+```bash
+rosmsg show sensor_msgs/Image
+```
+
+We then can get the following info:<br>
+
+<img src = 'examples/Msg_info.png'>
+
+The image data is likely to be stored in **data** as uint8[].
+
+5. Pull the **data**<br> from the topic.
+
+We first should start the simulator, then manually drive the car to whatever location we like (e.g. Infront of the traffic light). Notice that we have to turn on the **Camera** to get message in the topic. Then input the following:<br>
+
+```bash
+rostopic echo -n1 /image_color/data > output.txt
+```
+
+Where **-n1** means we just pull down 1 set of data, **output.txt** is the file where you save the data into.<br>
+
+If you need another set of image data, just input the bash command again, but **output.txt** will be overwritten.<br>
+
+6. Download the **output.txt** into local, preprocess this data.
+
+Use the [**getcapture.py**](Helper_tool/getcapture.py) inside the Helper_tool file to preprocess the data as follow. Notice the raw image data is stored as uint8[]. That's one-dimension vector, we have to preprocess it whenever we want to use this data.<br>
+
+<img src = 'examples/Camara_data_capture.png'>
