@@ -152,7 +152,7 @@ We then can get the following info:<br>
 
 The image data is likely to be stored in **data** as uint8[].
 
-5. Pull the **data**<br> from the topic.
+5. Pull the **data** from the topic.<br>
 
 We first should start the simulator, then manually drive the car to whatever location we like (e.g. Infront of the traffic light). Notice that we have to turn on the **Camera** to get message in the topic. Then input the following:<br>
 
