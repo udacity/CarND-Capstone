@@ -20,6 +20,12 @@ class TLClassifier(object):
                 od_graph_def.ParseFromString(serialized_graph)
                 tf.import_graph_def(od_graph_def, name='')
 
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+
+        self.sess = tf.Session(graph=self.detection_graph, config=config)
+
         # The input placeholder for the image.
         # `get_tensor_by_name` returns the Tensor with the associated name in the Graph.
         self.image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
@@ -35,6 +41,8 @@ class TLClassifier(object):
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
 
 
+
+
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -47,35 +55,36 @@ class TLClassifier(object):
         """
         image_rgb=cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
         image_np=np.expand_dims(np.asarray(image_rgb, dtype=np.uint8), 0)
-        with tf.Session(graph=self.detection_graph) as sess:
+        #with tf.Session(graph=self.detection_graph) as sess:
             # Actual detection.
-            (boxes, scores, classes) = sess.run([self.detection_boxes, self.detection_scores, self.detection_classes],
+        with self.detection_graph.as_default():
+            (boxes, scores, classes) = self.sess.run([self.detection_boxes, self.detection_scores, self.detection_classes],
                                                 feed_dict={self.image_tensor: image_np})
 
             # Remove unnecessary dimensions
-            boxes = np.squeeze(boxes)
-            scores = np.squeeze(scores)
-            classes = np.squeeze(classes)
+        boxes = np.squeeze(boxes)
+        scores = np.squeeze(scores)
+        classes = np.squeeze(classes)
 
-            confidence_cutoff = 0.8
-            # Filter boxes with a confidence score less than `confidence_cutoff`
-            boxes, scores, classes = self.filter_boxes(confidence_cutoff, boxes, scores, classes)
-            count_red = 0
-            count_yellow = 0
-            count_green = 0
-            for n in classes:
-                if int(n) == 1:
-                    count_red+=1
-                elif int(n) == 2:
-                    count_green+=1
-                else:
-                    count_yellow+=1
-                if count_red>0:
-                    return TrafficLight.RED
-                elif count_yellow>0:
-                    return TrafficLight.YELLOW
-                else:
-                    return TrafficLight.GREEN
+        confidence_cutoff = 0.6
+        # Filter boxes with a confidence score less than `confidence_cutoff`
+        boxes, scores, classes = self.filter_boxes(confidence_cutoff, boxes, scores, classes)
+        count_red = 0
+        count_yellow = 0
+        count_green = 0
+        for n in classes:
+            if int(n) == 1:
+                count_red+=1
+            elif int(n) == 2:
+                count_green+=1
+            else:
+                count_yellow+=1
+            if count_red>0:
+                return TrafficLight.RED
+            elif count_yellow>0:
+                return TrafficLight.YELLOW
+            else:
+                return TrafficLight.GREEN
         return TrafficLight.UNKNOWN
 
     def filter_boxes(self, min_score, boxes, scores, classes):
