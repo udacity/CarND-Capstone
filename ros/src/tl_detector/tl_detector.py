@@ -12,7 +12,8 @@ import cv2
 import yaml
 from scipy.spatial import KDTree
 import math
-
+GRAPH_FILE_SIM='/frozen_inference_graph_sim.pb'
+GRAPH_FILE_SITE='/frozen_inference_graph_site.pb'
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
@@ -33,7 +34,12 @@ class TLDetector(object):
         self.waypoints_2d=None
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
+        if self.config['is_site']:
+            self.light_classifier = TLClassifier(GRAPH_FILE_SITE)
+        else:
+            self.light_classifier = TLClassifier(GRAPH_FILE_SIM)
         self.listener = tf.TransformListener()
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -48,9 +54,6 @@ class TLDetector(object):
         '''
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
-
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
@@ -138,7 +141,7 @@ class TLDetector(object):
         #Get classification
         print self.light_classifier.get_classification(cv_image)
         return self.light_classifier.get_classification(cv_image)
-        
+
 
 
     def process_traffic_lights(self):

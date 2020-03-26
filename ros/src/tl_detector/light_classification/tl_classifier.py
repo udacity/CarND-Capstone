@@ -3,11 +3,11 @@ import tensorflow as tf
 import cv2
 import numpy as np
 import os
-GRAPH_FILE='/frozen_inference_graph.pb'
+#GRAPH_FILE='/frozen_inference_graph_sim.pb'
 
 
 class TLClassifier(object):
-    def __init__(self):
+    def __init__(self,GRAPH_FILE):
         cwd=os.path.dirname(os.path.realpath(__file__))
         print cwd
         self.graph_path = cwd + GRAPH_FILE
