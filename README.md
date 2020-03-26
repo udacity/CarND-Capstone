@@ -1,12 +1,13 @@
 Team Name: (any suggestions?)
 
 Team Members: 
-- Tianji Li
-- Xiao Chen
-- Bhavesh Parkhe
-- Hanyu Wu
-
-Team Lead: Arnab Dutta
+| Name        | email           |
+| :------------- |:-------------|
+| Hanyu Wu       	|     wuh199410@gmail.com|
+| Xiao Chen	      |     xiao.chen@student.kit.edu|
+| Arnab Dutta	    |     arnab.dutta@daimler.com|
+| Tianji Li      	|     ltjsun@126.com|
+| Bhavesh Parkhe	 |     bparkhe@umass,edu|
 
 * The training set (jpeg images) pulled from the simulation can be found [here](https://drive.google.com/open?id=1OajN03fs00AGz1NKt8yxAjEOAAHekL0y).
 
