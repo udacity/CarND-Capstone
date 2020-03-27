@@ -31,7 +31,7 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
   * tl_classifier: Take the **BGR Image** as input, output the **ID of traffic light color** (specified in `styx_msgs/TrafficLight`) <br>We used the [Object Detection Lab]( https://github.com/udacity/CarND-Object-Detection-Lab) and replaced the pb-file with our self-trained model file (Training Process will be described below) [frozen_inference_graph_sim.pb](/src/ros/tl_detector/light_classification/frozen_inference_graph_sim.pb) 
 
 ### Results
-* **Test video of Simulation**<br>[![ScreenShot](/imgs/test_sim.png)](https://www.youtube.com/watch?v=m2vrWBcxkZs&feature=youtu.be)
+* **Test video of Simulation**, click the figure below<br>[![ScreenShot](/imgs/test_sim.png)](https://www.youtube.com/watch?v=m2vrWBcxkZs&feature=youtu.be)
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### Native Installation
