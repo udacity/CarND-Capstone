@@ -1,19 +1,40 @@
 Team Name: (any suggestions?)
 
 Team Members: 
-| Name        | email           |
-| :------------- |:-------------|
-| Hanyu Wu       	|     wuh199410@gmail.com|
-| Xiao Chen	      |     xiao.chen@student.kit.edu|
-| Arnab Dutta	    |     arnab.dutta@daimler.com|
-| Tianji Li      	|     ltjsun@126.com|
-| Bhavesh Parkhe	 |     bparkhe@umass,edu|
+| Name        | email           |Task|
+| :-------------: |:-------------:|:-------------:|
+|Tianji Li      	|     ltjsun@126.com|Implement waypoint updater|
+| Xiao Chen	      |     xiao.chen@student.kit.edu|Integrate the model in the ros code/ Readme|
+| Bhavesh Parkhe	 |     bparkhe@umass.edu|debug and test code|
+| Hanyu Wu       	|     wuh199410@gmail.com|Labeling and Train the Object detection model|
+| Arnab Dutta	    |     arnab.dutta@daimler.com|Implement waypoint updater and dbw_node/ manage Github|
+
+Team Lead: Arnab Dutta
 
 * The training set (jpeg images) pulled from the simulation can be found [here](https://drive.google.com/open?id=1OajN03fs00AGz1NKt8yxAjEOAAHekL0y).
 
 
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
+### Implementation
+* Code Structure
+![ros_structure](/imgs/ros_structure.png)
+* TODO Lists:
+  * waypoint_updater: This node will publish waypoints from the car's current position to some 'x' distance ahead
+  * dbw_node: **drive-by-wire node**, which will subscribe to **twist_cmd** and use various controllers to provide appropriate throttle, brake, and steering commands. These commands can then be published to the following topics:
+    * `/vehicle/throttle_cmd`
+    * `/vehicle/brake_cmd`
+    * `/vehicle/steering_cmd`
+  * twist_controller: contains the **Controller** class. The **control** methode can take **twist data** as input and return **trottle**, **control**, and **steering values**
+  * tl_detector: **The traffic light detection node**
+    * Use the vehicle's location and the (x, y) coordinates for traffic lights to find the nearest visible traffic light ahead of the vehicle. We can use ground truth to test the other parts without detection: in methode **get_light_state**, `return light.state`
+    
+    * Use the camera image data to classify the color of the traffic light.
+    
+  * tl_classifier: Take the **BGR Image** as input, output the **ID of traffic light color** (specified in `styx_msgs/TrafficLight`) <br>We used the [Object Detection Lab]( https://github.com/udacity/CarND-Object-Detection-Lab) and replaced the pb-file with our self-trained model file (Training Process will be described below) [frozen_inference_graph_sim.pb](/src/ros/tl_detector/light_classification/frozen_inference_graph_sim.pb) 
+
+### Results
+* **Test video of Simulation**, click the figure below<br>[![ScreenShot](/imgs/test_sim.png)](https://www.youtube.com/watch?v=m2vrWBcxkZs&feature=youtu.be)
 Please use **one** of the two installation options, either native **or** docker installation.
 
 ### Native Installation
