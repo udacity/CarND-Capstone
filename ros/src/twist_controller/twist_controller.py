@@ -18,7 +18,7 @@ class Controller(object):
         ki = 0.1
         kd = 0.
         mn = 0.
-        mx = 0.2
+        mx = 0.1
         self.throttle_controller = PID(kp, ki, kd, mn, mx)
         
         tau = 0.5
@@ -56,21 +56,21 @@ class Controller(object):
         self.last_time = current_time
         
         throttle = self.throttle_controller.step(vel_error, sample_time)
-        brake = 0
+        brake = 0.0
         
         if linear_vel == 0. and current_vel < 0.1:
             throttle = 0.
             brake = 700 # to hold the car in place if we are stopped
         elif throttle < .1 and vel_error < 0:
-            throttle = 0
+            throttle = 0.
             decel = max(vel_error, self.decel_limit)
             brake = abs(decel)*self.vehicle_mass*self.wheel_radius # formula of Torque N*m
 
         if (current_time - self.log_time) > LOGGING_THROTTLE_FACTOR:
             self.log_time = current_time
-            rospy.logwarn("POSE: current_vel={:.2f}, linear_vel={:.2f}, vel_error={:.2f}".format(current_vel,
+            rospy.logwarn("POSE: current_vel={:.2f}, linear_vel={:.2f}, vel_error={:.2f}, angular_vel={:.2f}".format(current_vel,
                                                                                                  linear_vel,
-                                                                                                 vel_error))
+                                                                                                 vel_error, angular_vel))
             rospy.logwarn("POSE: throttle={:.2f}, brake={:.2f}, steering={:.2f}".format(throttle, brake, steering))
 
         return throttle, brake, steering
