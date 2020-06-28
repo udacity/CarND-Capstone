@@ -1,4 +1,5 @@
 import os
+import requests
 
 import cv2
 import numpy as np
@@ -9,10 +10,15 @@ from styx_msgs.msg import TrafficLight
 class TLClassifier(object):
     def __init__(self):
         self.current_light = TrafficLight.UNKNOWN
-        #model = 'frozen_inference_graph.pb'
         model = 'frozen_inference_graph_sim_tf_v1.4.pb'
         model_path = 'light_classification/ssd_mobilenet_v1_coco_11_06_2017/' + model
-        print(os.getcwd())
+        #model = 'frozen_inference_graph.pb'
+        if not os.path(model_path+model):
+            url = 'https://drive.google.com/u/0/uc?export=download&confirm=Yw4B&id=1vacU4j3ewoLEpIQ-I8wcyx9H3aJFHBOl'
+            r = requests.get(url)
+            with open(model_path+model, 'wb') as f:
+                f.write(r.content)
+
         self.graph = tf.Graph()
         with self.graph.as_default():
             od_graph_def = tf.GraphDef()
