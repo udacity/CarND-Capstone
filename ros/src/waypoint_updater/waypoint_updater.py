@@ -24,12 +24,10 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50  # Number of waypoints we will publish.
-CONSTANT_DECEL = 1 / LOOKAHEAD_WPS  # Deceleration constant for smoother braking
-PUBLISHING_RATE = 20  # Rate (Hz) of waypoint publishing
-STOP_LINE_MARGIN = 4  # Distance in waypoints to pad in front of the stop line
+LOOKAHEAD_WPS = 50
+RATE = 20
 MAX_DECEL = 0.5
-LOGGING_THROTTLE_FACTOR = PUBLISHING_RATE * 2  # Only log at this rate (1 / Hz)
+PUBLISHING_RATE = 50
 
 
 class WaypointUpdater(object):
@@ -63,7 +61,6 @@ class WaypointUpdater(object):
         y = self.pose.pose.position.y
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
 
-        # Check if closest is ahead or behind vehicle
         closest_coord = self.waypoints_2d[closest_idx]
         prev_coord = self.waypoints_2d[closest_idx - 1]
 
@@ -76,7 +73,7 @@ class WaypointUpdater(object):
 
         if val > 0:
             closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
-        # rospy.logwarn("closest_idx={}".format(closest_idx))
+            
         return closest_idx
 
     def publish_waypoints(self):
@@ -105,21 +102,15 @@ class WaypointUpdater(object):
             p.pose = wp.pose
 
             # Distance includes a number of waypoints back so front of car stops at line
-            stop_idx = max(self.stopline_wp_idx - closest_idx - STOP_LINE_MARGIN, 0)
+            stop_idx = max(self.stopline_wp_idx - closest_idx - 4, 0)
             dist = self.distance(waypoints, i, stop_idx)
-            vel = math.sqrt(2 * MAX_DECEL * dist) + (i * CONSTANT_DECEL)
+            vel = math.sqrt(2 * MAX_DECEL * dist)
             if vel < 1.0:
                 vel = 0.0
 
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
             temp.append(p)
 
-        self.decelerate_count += 1
-        if (self.decelerate_count % LOGGING_THROTTLE_FACTOR) == 0:
-            size = len(waypoints) - 1
-            vel_start = temp[0].twist.twist.linear.x
-            vel_end = temp[size].twist.twist.linear.x
-            rospy.logwarn("DECEL: vel[0]={:.2f}, vel[{}]={:.2f}".format(vel_start, size, vel_end))
         return temp
 
     def pose_cb(self, msg):
