@@ -9,8 +9,9 @@ from styx_msgs.msg import TrafficLight
 class TLClassifier(object):
     def __init__(self):
         self.current_light = TrafficLight.UNKNOWN
-        model = 'frozen_inference_graph_sim_tf_v1.4.pb'
-        model_path = 'light_classification/ssd_mobilenet_v1_coco_11_06_2017/' + model
+        
+        model = 'frozen_inference_graph_real.pb'
+        model_path = 'light_classification/real_model/' + model
 
         self.graph = tf.Graph()
         with self.graph.as_default():
@@ -20,8 +21,8 @@ class TLClassifier(object):
                od_graph_def.ParseFromString(serialized_graph)
                tf.import_graph_def(od_graph_def, name='')
             
-        self.category_index = {1: {'id': 1, 'name': 'Green'}, 2: {'id': 2, 'name': 'Red'},
-                               3: {'id': 3, 'name': 'Yellow'}, 4: {'id': 4, 'name': 'off'}}
+        self.category_index = {1: {'id': 1, 'name': 'Green'}, 2: {'id': 2, 'name': 'Yellow'},
+                               3: {'id': 3, 'name': 'Red'}, 4: {'id': 4, 'name': 'off'}}
 
         # create tensorflow session for detection
         config = tf.ConfigProto()
