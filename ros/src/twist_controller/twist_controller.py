@@ -18,7 +18,7 @@ class Controller(object):
         ki = 0.1
         kd = 0.
         mn = 0.
-        mx = 0.2
+        mx = 0.5
         self.throttle_controller = PID(kp, ki, kd, mn, mx)
         
         tau = 0.5
@@ -68,9 +68,9 @@ class Controller(object):
 
         if (current_time - self.log_time) > LOGGING_THROTTLE_FACTOR:
             self.log_time = current_time
-            rospy.logwarn("POSE: current_vel={:.2f}, linear_vel={:.2f}, vel_error={:.2f}, angular_vel={:.2f}".format(current_vel,
-                                                                                                 linear_vel,
-                                                                                                 vel_error, angular_vel))
-            rospy.logwarn("POSE: throttle={:.2f}, brake={:.2f}, steering={:.2f}".format(throttle, brake, steering))
+            #rospy.logwarn("POSE: current_vel={:.2f}, linear_vel={:.2f}, vel_error={:.2f}, angular_vel={:.2f}".format(current_vel,
+            #                                                                                     linear_vel,
+            #                                                                                     vel_error, angular_vel))
+            #rospy.logwarn("POSE: throttle={:.2f}, brake={:.2f}, steering={:.2f}".format(throttle, brake, steering))
 
         return throttle, brake, steering
