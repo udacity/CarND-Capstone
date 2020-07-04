@@ -26,9 +26,9 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 50  # Number of waypoints we will publish.
 CONSTANT_DECEL = 10 / LOOKAHEAD_WPS  # Deceleration constant for smoother braking
-PUBLISHING_RATE = 20  # Rate (Hz) of waypoint publishing
+PUBLISHING_RATE = 50  # Rate (Hz) of waypoint publishing
 STOP_LINE_MARGIN = 4  # Distance in waypoints to pad in front of the stop line
-MAX_DECEL = 0.5
+MAX_DECEL = 0.2
 LOGGING_THROTTLE_FACTOR = PUBLISHING_RATE * 2  # Only log at this rate (1 / Hz)
 
 class WaypointUpdater(object):
@@ -89,7 +89,7 @@ class WaypointUpdater(object):
         farthest_idx = closest_idx + LOOKAHEAD_WPS
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
 
-        if (self.stopline_wp_idx == -1) or (self.stopline_wp_idx >= farthest_idx-20):
+        if (self.stopline_wp_idx == -1) or (self.stopline_wp_idx >= farthest_idx-18):
             lane.waypoints = base_waypoints
         else:
             lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
