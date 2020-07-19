@@ -30,7 +30,7 @@ RUN apt-get install -y ros-$ROS_DISTRO-image-proc
 RUN apt-get install -y netbase
 
 # for matplotlib.pyplot.imshow
-RUN apt-get install python-tk
+RUN apt-get install -y python-tk
 
 RUN mkdir /capstone
 VOLUME ["/capstone"]
