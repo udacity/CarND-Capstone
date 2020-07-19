@@ -11,3 +11,5 @@ setuptools==41.0.0
 tensorflow==1.15
 ujson==1.35
 wsaccel==0.6.2
+matplotlib==2.2.5
+wget==3.2
