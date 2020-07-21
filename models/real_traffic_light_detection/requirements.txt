@@ -1,6 +1,0 @@
-wget==3.2
-numpy==1.16.6
-Pillow==6.2.2
-setuptools==41.0.0
-tensorflow==1.15
-matplotlib=2.2.5
