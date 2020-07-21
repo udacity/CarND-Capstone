@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 from keras import __version__ as keras_version
 import tensorflow as tf
+import cv2
 
 class TLClassifier(object):
     def __init__(self,model_fn):
@@ -30,6 +31,8 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        dsize = (200, 150)
+        image = cv2.resize(image, dsize)
 
         image_array = np.asarray(image)
 

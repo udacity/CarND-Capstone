@@ -61,7 +61,9 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
+
         self.light_classifier = TLClassifier('./light_classification/sim_model.h5')
+
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -204,7 +206,7 @@ class TLDetector(object):
                 line_wp_idx = temp_wp_idx
 
         # if found a closest light and is 300 waypoints in front of us
-        if closest_light and diff < 300:
+        if closest_light and diff < 200:
             # get state of traffic light
             state = self.get_light_state(closest_light)
             rospy.loginfo("Next light is state %d at %d waypoints ahead" % (state,diff))
@@ -223,7 +225,7 @@ class TLDetector(object):
 
         else:
             # no upcoming traffic light was found
-            rospy.loginfo("No light in next 300 waypoint")
+            rospy.loginfo("No light in next 200 waypoint")
 
             if SAVE_TRAINING_IMAGE and not stop_line_immediate_behind:
                 state_truth = 3 # new class 3 'no traffic ligh present
@@ -260,8 +262,10 @@ class TLDetector(object):
                         if state_truth == 1:
                             #yellow is too rare - use less cooldown
                             self.image_saver_cooldown = 1
+                        elif state_truth == 2:
+                            self.image_saver_cooldown = 1
                         else:
-                            self.image_saver_cooldown = 5   
+                            self.image_saver_cooldown = 5
                                 
                         csv_file_name = SAVE_LOCATION+"sim_images.csv"
 
