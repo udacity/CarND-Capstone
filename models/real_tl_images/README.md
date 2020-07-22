@@ -1,3 +1,11 @@
+# Data
+
+images.tgz
+
+images/{Red,Yellow,Green,None}/${UNIQ_ID}_${BBOX_ID}_${CLASS_ID}.jpg
+
+CLASS_ID: Red(1), Yellow(2 or 3), Green(4), None(0)
+
 # Data sources
 
 I collected real traffic light images from two sources.
