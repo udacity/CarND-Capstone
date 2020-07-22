@@ -241,7 +241,9 @@ bool PurePursuit::verifyFollowing() const
   if (displacement < displacement_threshold_ && relative_angle < relative_angle_threshold_)
   {
     // ROS_INFO("Following : True");
-    return true;
+    // changed to false to always follow the waypoints
+    // instead of only follow when the car gets away from them
+    return false;
   }
   else
   {
