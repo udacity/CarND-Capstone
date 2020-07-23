@@ -17,6 +17,7 @@ import os
 
 
 STATE_COUNT_THRESHOLD = 3
+IMAGE_COUNT_THRESHOLD = 10
 
 # configuration for saving training data from simulator
 SAVE_TRAINING_IMAGE = False
@@ -59,13 +60,17 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        # Define traffic light classifier with location of detection model
+        self.light_classifier = TLClassifier('./light_classification/tl_detection')
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+
+        self.img_count = IMAGE_COUNT_THRESHOLD
+        self.last_detected_state = TrafficLight.UNKNOWN
         
         if SAVE_TRAINING_IMAGE:
             if not os.path.exists(SAVE_LOCATION):
@@ -136,28 +141,57 @@ class TLDetector(object):
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         return closest_idx
 
-    def get_light_state(self, light):
+    def get_light_state(self, light, diff):
         """Determines the current color of the traffic light
 
         Args:
             light (TrafficLight): light to classify
+            diff: distance in waypoints to next traffic light
 
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        #just for testing
-        return light.state
-        '''
+
         if(not self.has_image):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        # Pass through the model 1 image every IMAGE_COUNT_THRESHOLD images
+        if self.img_count >= IMAGE_COUNT_THRESHOLD:
 
-        Get classification
-        return self.light_classifier.get_classification(cv_image)#
-        '''
+            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+            # Crop relevant portion of image depending on distance to traffic light
+            height = cv_image.shape[0]
+            if diff > 100:
+                cv_image = cv_image[int(height*.75):height]
+            elif diff > 40:
+                cv_image = cv_image[int(height*.5):height]
+
+            # Check if detects traffic lights
+            detected = self.light_classifier.get_classification(cv_image)
+
+            # Reset image counter
+            self.img_count = 0
+
+            # If traffic light detected return state
+            if detected:
+                #rospy.loginfo("Traffic light detected. State: ")
+                #rospy.loginfo(light.state)
+                self.last_detected_state = light.state
+                return light.state
+            else:
+                return TrafficLight.UNKNOWN
+
+        # Return last detected state if not reached IMAGE_COUNT_THRESHOLD
+        else:
+            self.img_count += 1
+            return self.last_detected_state
+
+        # Get classification
+        #return self.light_classifier.get_classification(cv_image)
+
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -205,7 +239,7 @@ class TLDetector(object):
         # if found a closest light and is 300 waypoints in front of us
         if closest_light and diff < 300:
             # get state of traffic light
-            state = self.get_light_state(closest_light)
+            state = self.get_light_state(closest_light, diff)
             # return line waypoint index & traffic light state
             
             if SAVE_TRAINING_IMAGE and not stop_line_immediate_behind:
