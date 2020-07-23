@@ -11,9 +11,19 @@ import tf
 import cv2
 import yaml
 from scipy.spatial import KDTree
+import csv
+from datetime import datetime
+import os
+
 
 STATE_COUNT_THRESHOLD = 3
 IMAGE_COUNT_THRESHOLD = 10
+
+# configuration for saving training data from simulator
+SAVE_TRAINING_IMAGE = False
+SLOW_MOTION_AT_LIGHT = True
+MAX_NUM_IMG_SAVE = 10
+SAVE_LOCATION = "./light_classification/sim_img/"
 
 class TLDetector(object):
     def __init__(self):
@@ -25,6 +35,10 @@ class TLDetector(object):
         self.waypoint_tree = None
         self.camera_image = None
         self.lights = []
+        
+        # for saving images
+        self.num_image_saved = [0] * 4; # keep track of number of image stored for each light state (current run)
+        self.image_saver_cooldown = 0;
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -57,7 +71,11 @@ class TLDetector(object):
 
         self.img_count = IMAGE_COUNT_THRESHOLD
         self.last_detected_state = TrafficLight.UNKNOWN
-
+        
+        if SAVE_TRAINING_IMAGE:
+            if not os.path.exists(SAVE_LOCATION):
+                os.makedirs(SAVE_LOCATION)
+        
         self.loop()
 
     def loop(self):
@@ -196,6 +214,8 @@ class TLDetector(object):
         diff = len(self.waypoints.waypoints)
 
         # Loop through traffic light positions
+        stop_line_immediate_behind = False # flag if just past stop line - the previous light may still be in sight!
+        
         for i, light in enumerate(self.lights):
             # Get stop line waypoint index
             line = stop_line_positions[i]
@@ -203,6 +223,14 @@ class TLDetector(object):
 
             # Find closest line
             d = temp_wp_idx - car_position
+            
+            if d < 0 and d > -25:
+                # This flag is only used during training data collecting
+                # Often when car crosses stop line, closest_light jumps to next light far ahead
+                # But the stopline of the light we just passed several waypoints ago is still within the sight of the camera
+                # An example of conflict: ground truth says there is no light present (within 300 waypoints ahead) but camera still sees a greenlight that we just passed
+                stop_line_immediate_behind = True
+            
             if d >= 0 and d < diff:
                 diff = d
                 closest_light = light
@@ -213,11 +241,79 @@ class TLDetector(object):
             # get state of traffic light
             state = self.get_light_state(closest_light, diff)
             # return line waypoint index & traffic light state
+            
+            if SAVE_TRAINING_IMAGE and not stop_line_immediate_behind:
+                state_truth = closest_light.state # make sure use ground truth
+                self.save_training_img(state_truth,diff)
+                
+                if SLOW_MOTION_AT_LIGHT:
+                    # Trick the car to slow down when obtaining training data by broadcasting a imaginary red light stop line ahead
+                    return (car_position + 10), 0
+            
             return line_wp_idx, state
 
-        # else, no upcoming traffic light was found
-        return -1, TrafficLight.UNKNOWN
+        else:
+            # no upcoming traffic light was found
+            if SAVE_TRAINING_IMAGE and not stop_line_immediate_behind:
+                state_truth = 3 # new class 3 'no traffic ligh present
+                self.save_training_img(state_truth,diff)
+            
+            return -1, TrafficLight.UNKNOWN
 
+    def save_training_img(self,state_truth,dist_next_light):
+        """
+        call this function when a valid camera image with ground truth is available for saving
+        This has an internal cool-down to prevent dumping same image too often
+        """
+        if self.num_image_saved == [MAX_NUM_IMG_SAVE]*4 :
+            rospy.loginfo("Max amount of training image (%d)for all class achieved." % MAX_NUM_IMG_SAVE)
+            return
+        
+        if self.image_saver_cooldown == 0:
+            # save image at 5 loop interval and up to X total for each state
+            if self.num_image_saved[state_truth] < MAX_NUM_IMG_SAVE :
+                if(self.has_image):
+                    try:
+                        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+                    except CvBridgeError, e:
+                        rospy.loginfo(e)
+                    else:
+                        (dt, micro) = datetime.utcnow().strftime('%Y%m%d%H%M%S.%f').split('.')
+                        dt = "%s%03d" % (dt, int(micro) / 1000) 
+                                                                
+                        fname = "_state_%d_image_%s.jpeg" % (state_truth,dt)
+                                
+                        cv2.imwrite(SAVE_LOCATION+fname, cv_image)
+                        self.num_image_saved[state_truth] += 1
+                        
+                        if state_truth == 1:
+                            #yellow is too rare - use less cooldown
+                            self.image_saver_cooldown = 1
+                        else:
+                            self.image_saver_cooldown = 5   
+                                
+                        csv_file_name = SAVE_LOCATION+"sim_images.csv"
+
+                        with open(csv_file_name,'a') as csvfile:
+                            csv_writer = csv.writer(csvfile)
+                            csv_writer.writerow([fname , state_truth, dist_next_light])
+                        
+                        if state_truth == 3:
+                            rospy.loginfo("New image saved: Traffic light state 3. Next light is %d waypoints ahead"
+                                  % (dist_next_light))
+                        else:
+                            rospy.loginfo("New image saved: Traffic light state %d at %d waypoints ahead" %
+                                  (state_truth,dist_next_light))    
+                        
+                        rospy.loginfo("Total [%d,%d,%d,%d] saved this run" 
+                              % (self.num_image_saved[0],self.num_image_saved[1],
+                                 self.num_image_saved[2],self.num_image_saved[3]))
+                        
+        else:
+            self.image_saver_cooldown -= 1
+            self.image_saver_cooldown = max(0,self.image_saver_cooldown)
+        
+    
 if __name__ == '__main__':
     try:
         TLDetector()
