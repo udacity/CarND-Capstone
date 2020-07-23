@@ -17,11 +17,14 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        # Detect bounding boxes
         box_coords, _ = self.tld.predict(image)
 
+        # Return true if traffic lights detected
         if len(box_coords):
             return True
         else:
             return False
+
         #TODO implement light color prediction
         #return TrafficLight.UNKNOWN

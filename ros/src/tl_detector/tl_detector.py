@@ -13,6 +13,7 @@ import yaml
 from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
+IMAGE_COUNT_THRESHOLD = 10
 
 class TLDetector(object):
     def __init__(self):
@@ -45,7 +46,8 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier('./light_classification/tl_detection/ssd_inception_v2_coco_2017_11_17/saved_model')
+        # Define traffic light classifier with location of detection model
+        self.light_classifier = TLClassifier('./light_classification/tl_detection')
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -53,9 +55,8 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        # for creating training set
-        self.img_count = 0
-        self.str_state = 'unknown'
+        self.img_count = IMAGE_COUNT_THRESHOLD
+        self.last_detected_state = TrafficLight.UNKNOWN
 
         self.loop()
 
@@ -122,50 +123,53 @@ class TLDetector(object):
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         return closest_idx
 
-    def get_light_state(self, light):
+    def get_light_state(self, light, diff):
         """Determines the current color of the traffic light
 
         Args:
             light (TrafficLight): light to classify
+            diff: distance in waypoints to next traffic light
 
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
 
-        '''
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-
-        if(self.state == 0):
-            self.str_state = 'red'
-        elif(self.state == 1):
-            self.str_state = 'yellow'
-        elif(self.state == 2):
-            self.str_state = 'green'
-
-        cv2.imwrite('./light_classification/data/'+self.str_state+'/'+str(self.img_count)+'.jpg', cv_image)
-
-        self.img_count += 1
-        '''
-
-        #just for testing
-        #return light.state
-
         if(not self.has_image):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+        # Pass through the model 1 image every IMAGE_COUNT_THRESHOLD images
+        if self.img_count >= IMAGE_COUNT_THRESHOLD:
 
-        # check if detects traffic lights
-        detected = self.light_classifier.get_classification(cv_image)
+            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
-        if detected:
-            rospy.loginfo("Traffic light detected. State: ")
-            rospy.loginfo(light.state)
-            return light.state
+            # Crop relevant portion of image depending on distance to traffic light
+            height = cv_image.shape[0]
+            if diff > 100:
+                cv_image = cv_image[int(height*.75):height]
+            elif diff > 40:
+                cv_image = cv_image[int(height*.5):height]
+
+            # Check if detects traffic lights
+            detected = self.light_classifier.get_classification(cv_image)
+
+            # Reset image counter
+            self.img_count = 0
+
+            # If traffic light detected return state
+            if detected:
+                #rospy.loginfo("Traffic light detected. State: ")
+                #rospy.loginfo(light.state)
+                self.last_detected_state = light.state
+                return light.state
+            else:
+                return TrafficLight.UNKNOWN
+
+        # Return last detected state if not reached IMAGE_COUNT_THRESHOLD
         else:
-            return TrafficLight.UNKNOWN
+            self.img_count += 1
+            return self.last_detected_state
 
         # Get classification
         #return self.light_classifier.get_classification(cv_image)
@@ -207,7 +211,7 @@ class TLDetector(object):
         # if found a closest light and is 300 waypoints in front of us
         if closest_light and diff < 300:
             # get state of traffic light
-            state = self.get_light_state(closest_light)
+            state = self.get_light_state(closest_light, diff)
             # return line waypoint index & traffic light state
             return line_wp_idx, state
 
