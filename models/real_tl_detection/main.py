@@ -7,7 +7,7 @@ from PIL import Image
 import util
 
 class traffic_light_detector(object):
-    def __init__(self, model="ssd_inception_v2_coco_2017_11_17"):
+    def __init__(self, model="ssd_mobilenet_v1_coco_2017_11_17"):
         util.prepare_tensorflow_object_detection_api(model=model)
         self.predictor_fn = tf.contrib.predictor.from_saved_model(
             export_dir=os.path.join(model, "saved_model"),
