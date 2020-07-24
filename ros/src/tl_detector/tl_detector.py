@@ -15,8 +15,8 @@ import csv
 from datetime import datetime
 import os
 
-
-STATE_COUNT_THRESHOLD = 5
+STATE_COUNT_THRESHOLD = 3
+IMAGE_COUNT_THRESHOLD = 0
 
 # configuration for saving training data from simulator
 SAVE_TRAINING_IMAGE = False
@@ -24,7 +24,7 @@ SLOW_MOTION_AT_LIGHT = True
 MAX_NUM_IMG_SAVE = 10
 SAVE_LOCATION = "./light_classification/sim_img/"
 # choose whether to use classifier or ground truth for testing
-TEST_WITH_GROUND_TRUTH = False
+TEST_WITH_GROUND_TRUTH = True
 
 class TLDetector(object):
     def __init__(self):
@@ -62,7 +62,10 @@ class TLDetector(object):
 
         self.bridge = CvBridge()
 
-        self.light_classifier = TLClassifier('sim_raw.h5')
+        #self.light_classifier = TLClassifier('sim_raw.h5')
+
+        # Define traffic light classifier with location of detection model
+        self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_sim_extracted.h5')
 
         self.listener = tf.TransformListener()
 
@@ -70,6 +73,9 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
+
+        self.img_count = IMAGE_COUNT_THRESHOLD
+        self.last_detected_state = TrafficLight.UNKNOWN
         
         if SAVE_TRAINING_IMAGE:
             if not os.path.exists(SAVE_LOCATION):
@@ -140,28 +146,53 @@ class TLDetector(object):
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         return closest_idx
 
-    def get_light_state(self, light):
+    def get_light_state(self, light, diff):
         """Determines the current color of the traffic light
 
         Args:
             light (TrafficLight): light to classify
+            diff: distance in waypoints to next traffic light
 
         Returns:
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
-        """
-        
+        """       
         if TEST_WITH_GROUND_TRUTH:
-            return light.state
+            result = light.state
         
         if(not self.has_image):
             self.prev_light_loc = None
             return False
 
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+      #  cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
         
-        return self.light_classifier.get_classification(cv_image)
-        
+      #  return self.light_classifier.get_classification(cv_image)
+
+        # Pass through the model 1 image every IMAGE_COUNT_THRESHOLD images
+        if self.img_count >= IMAGE_COUNT_THRESHOLD:
+
+            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+
+            # Crop relevant portion of image depending on distance to traffic light
+            height = cv_image.shape[0]
+            if diff > 100:
+                cv_image = cv_image[int(height*.75):height]
+            elif diff > 40:
+                cv_image = cv_image[int(height*.5):height]
+
+            # Check if detects traffic lights
+            result = self.light_classifier.get_classification(cv_image)
+
+            # Reset image counter
+            self.img_count = 0
+
+        # Return last detected state if not reached IMAGE_COUNT_THRESHOLD
+        else:
+            self.img_count += 1
+            result = self.last_detected_state
+
+        return result
+
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
             location and color
@@ -208,7 +239,8 @@ class TLDetector(object):
         # if found a closest light and is 300 waypoints in front of us
         if closest_light and diff < 300:
             # get state of traffic light
-            state = self.get_light_state(closest_light)
+
+            state = self.get_light_state(closest_light, diff)
             rospy.loginfo("Next light is state %d at %d waypoints ahead" % (state,diff))
 
             # return line waypoint index & traffic light state
@@ -225,7 +257,7 @@ class TLDetector(object):
 
         else:
             # no upcoming traffic light was found
-            rospy.loginfo("No light in next 300 waypoint")
+            #rospy.loginfo("No light in next 300 waypoint")
 
             if SAVE_TRAINING_IMAGE and not stop_line_immediate_behind:
                 state_truth = 3 # new class 3 'no traffic ligh present
