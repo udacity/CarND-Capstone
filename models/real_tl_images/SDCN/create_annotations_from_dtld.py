@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys
 import os
+import yaml
 
 import numpy as np
 from dtld_parsing.calibration import CalibrationData
@@ -60,50 +61,59 @@ def main(args):
     # logging.info("Rectification Matrix:\n\n{}\n".format(rectification_left))
     # logging.info("Distortion Matrix:\n\n{}\n".format(distortion_left))
 
-    sub_dir_names = ["Red", "Green", "Yellow", "None"]
-    for sub_dir in sub_dir_names:
-        dir_name = "{}/{}".format("images", sub_dir)
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
+    output_dir = "DTLD_images"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
+    out = []
     for idx_d, driveu_img in enumerate(database.images):
+        prefix = driveu_img.file_path.split('/')[-1].split('.')[0]
         status, img = driveu_img.get_image()
         image = Image.fromarray(img)
+
+        annotations = []
         for i, o in enumerate(driveu_img.objects):
             area = o.width * o.height
 
-            if area > 250:
-                class_id = int(str(o.class_id)[-2])
-                unique_id = o.unique_id
-                bbox = get_bbox(o.x, o.y, o.width, o.height, image)
-                crop_image = image.crop(bbox)
-                dir_name = get_dir_name(class_id)
-                crop_image.save("{}/{}_{}_{}.jpg".format(
-                    dir_name, unique_id, i, class_id), quality=100)
-    
-        if idx_d > 100:
+            class_name = get_class_name(int(str(o.class_id)[-2]))
+
+            bbox = {
+                "class": class_name,
+                "x_width": o.width,
+                "y_height": o.height,
+                "xmin": o.x,
+                "ymin": o.y,
+            }
+
+            annotations.append(bbox)
+
+        # if there is no annotation, break;
+        if len(annotations) == 0:
             break
 
-def get_dir_name(class_id):
-    dir_name = "images/"
-    if class_id == 1:
-        dir_name += "Red"
-    elif class_id == 2 or class_id == 3:
-        dir_name += "Yellow"
-    elif class_id == 4:
-        dir_name += "Green"
-    else:
-        dir_name += "None"
-    return dir_name
+        output_path = "{}/{}.jpeg".format(output_dir, prefix)
+        image.save(output_path)
+        entry = {
+            "annotations": annotations,
+            "class": "image",
+            "filename": output_path,
+        }
+        out.append(entry)
 
-def get_bbox(x, y, width, height, image):
-    x_buffer = width // 10
-    y_buffer = height // 10
-    l = max(0, x - x_buffer)
-    t = max(0, y - y_buffer)
-    r = min(image.size[0], x + width + x_buffer)
-    b = min(image.size[1], y + height + y_buffer)
-    return (l, t, r, b)
+    with open('real_data_annotations_3.yaml', 'a') as outfile:
+        yaml.dump(out, outfile, default_flow_style=False)
+
+def get_class_name(class_id):
+    class_name = "None"
+
+    if class_id == 1:
+        class_name = "Red"
+    elif class_id == 2 or class_id == 3:
+        class_name = "Yellow"
+    elif class_id == 4:
+        class_name = "Green"
+
+    return class_name
 
 if __name__ == "__main__":
     main(parse_args())
