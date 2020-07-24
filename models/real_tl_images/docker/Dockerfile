@@ -12,6 +12,7 @@ RUN apt-get update \
     && apt-get install -y python3-tk \
     && apt-get install -y python3-pip \
     && apt-get install -y libsm6 libxext6 libxrender-dev \
+    && apt-get install -y unzip wget \
     && pip3 install --upgrade pip \
     && pip3 install -r requirements.txt
 
