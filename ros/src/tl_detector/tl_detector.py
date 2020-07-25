@@ -16,7 +16,7 @@ from datetime import datetime
 import os
 
 STATE_COUNT_THRESHOLD = 3
-IMAGE_COUNT_THRESHOLD = 0
+IMAGE_COUNT_THRESHOLD = 1
 
 # configuration for saving training data from simulator
 SAVE_TRAINING_IMAGE = False
@@ -29,6 +29,8 @@ TEST_WITH_GROUND_TRUTH = True
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
+
+        self.img_count = IMAGE_COUNT_THRESHOLD
 
         self.pose = None
         self.waypoints = None
@@ -56,6 +58,10 @@ class TLDetector(object):
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
+        
+        self.is_site = self.config["is_site"]
+        print("This site or not")
+        print(self.is_site)
 
         # Publisher for red light waypoint position
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
@@ -65,8 +71,11 @@ class TLDetector(object):
         #self.light_classifier = TLClassifier('sim_raw.h5')
 
         # Define traffic light classifier with location of detection model
-        self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_sim_extracted.h5')
-
+        if self.is_site:
+            self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_real_extracted.h5')
+        else:
+            self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_sim_extracted.h5')
+                     
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -74,7 +83,6 @@ class TLDetector(object):
         self.last_wp = -1
         self.state_count = 0
 
-        self.img_count = IMAGE_COUNT_THRESHOLD
         self.last_detected_state = TrafficLight.UNKNOWN
         
         if SAVE_TRAINING_IMAGE:
@@ -121,7 +129,9 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
-        if self.state != state:
+        if state == TrafficLight.UNKNOWN:
+            pass
+        elif self.state != state:
             self.state_count = 0
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
@@ -174,15 +184,16 @@ class TLDetector(object):
             cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
             # Crop relevant portion of image depending on distance to traffic light
+            '''
             height = cv_image.shape[0]
             if diff > 100:
                 cv_image = cv_image[int(height*.75):height]
             elif diff > 40:
                 cv_image = cv_image[int(height*.5):height]
-
+            '''
             # Check if detects traffic lights
             result = self.light_classifier.get_classification(cv_image)
-
+            self.last_detected_state = result
             # Reset image counter
             self.img_count = 0
 

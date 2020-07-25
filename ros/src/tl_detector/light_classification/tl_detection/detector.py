@@ -1,14 +1,14 @@
 import os
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from PIL import Image
 
 import util
 
 class traffic_light_detector(object):
-    def __init__(self, path, model="ssd_mobilenet_v1_coco_2017_11_17"):
-        util.prepare_tensorflow_object_detection_api(path, model)
+    def __init__(self, path, model="ssd_inception_v2_coco_2017_11_17"):
+        #util.prepare_tensorflow_object_detection_api(path, model)
         self.predictor_fn = tf.contrib.predictor.from_saved_model(
             export_dir=os.path.join(path, model, "saved_model"),
             signature_def_key="serving_default")
