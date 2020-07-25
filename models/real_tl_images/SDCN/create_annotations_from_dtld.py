@@ -104,7 +104,7 @@ def main(args):
         yaml.dump(out, outfile, default_flow_style=False)
 
 def get_class_name(class_id):
-    class_name = "None"
+    class_name = "Unknown"
 
     if class_id == 1:
         class_name = "Red"

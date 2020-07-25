@@ -40,7 +40,7 @@ def get_entry(json_file):
     return entry
 
 def get_class_name(class_id):
-    class_name = None
+    class_name = "Unknown"
     if class_id == 1:
         class_name = "Red"
     elif class_id == 2:
@@ -50,7 +50,14 @@ def get_class_name(class_id):
     return class_name
 
 def main():
-    out = [get_entry(filename) for filename in glob.glob("new_samples/*.json")]
+    out = []
+
+    for filename in glob.glob("new_samples/*.json"):
+        try:
+            Image.open(filename.replace(".json", ".jpg"))
+            out.append(get_entry(filename))
+        except OSError:
+            continue
 
     with open('real_data_annotations_2.yaml', 'w') as outfile:
         yaml.dump(out, outfile, default_flow_style=False)
