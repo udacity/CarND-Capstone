@@ -4,7 +4,7 @@ import wget
 from PIL import ImageDraw
 
 def prepare_tensorflow_object_detection_api(path,
-    model="ssd_mobilenet_v2_coco_2018_03_29"):
+    model="ssd_inception_v2_coco_2017_11_17"):
 
      dl_root = "http://download.tensorflow.org/models/object_detection"
      dl_name = "{}.tar.gz".format(model)
