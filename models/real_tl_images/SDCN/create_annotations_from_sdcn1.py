@@ -5,6 +5,7 @@ import yaml
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_yaml", default="")
+    parser.add_argument("--output_yaml", default="")
     return parser.parse_args()
 
 
@@ -22,7 +23,7 @@ def main(args):
 
     out = [convert(example, parent_dir) for example in examples]
 
-    with open('real_data_annotations_1.yaml', 'w') as outfile:
+    with open(args.output_yaml, 'w') as outfile:
         yaml.dump(out, outfile, default_flow_style=False)
 
 
