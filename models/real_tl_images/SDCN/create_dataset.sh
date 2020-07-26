@@ -50,8 +50,9 @@ python3 ${ROOT_DIR}/create_classification_dataset.py \
 if [ ! -e ${ROOT_DIR}/models ]; then
     git clone https://github.com/tensorflow/models.git
     cd models && git checkout 1f34fcafc1454e0d31ab4a6cc022102a54ac0f5b
-    protoc ${ROOT_DIR}/models/research/object_detection/protos/*.proto \
-        --python_out=${ROOT_DIR}/models/research
+    pushd ${ROOT_DIR}/models/research
+    protoc object_detection/protos/*.proto --python_out=.
+    popd
 fi
 
 # Install object_detection_api

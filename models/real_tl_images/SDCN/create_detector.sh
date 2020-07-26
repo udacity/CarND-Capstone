@@ -17,10 +17,6 @@ if [ ! -e ${ROOT_DIR}/pretrained_models/${MODEL_NAME} ]; then
     && mv ${ROOT_DIR}/${MODEL_NAME} ${ROOT_DIR}/pretrained_models/
 fi
 
-pushd ${ROOT_DIR}/models/research
-protoc object_detection/protos/*.proto --python_out=.
-popd
-
 # Start training
 python3 ${ROOT_DIR}/models/research/object_detection/train.py \
     --logtostderr \
