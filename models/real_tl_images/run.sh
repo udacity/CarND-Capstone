@@ -1,16 +1,7 @@
 #!/bin/bash
 
-python3 extract_traffic_light_dtld.py \
-  --label_file DTLD/Bochum_all.yml \
-  --calib_dir dtld_parsing/calibration \
-  --data_base_dir DTLD
+ROOT_DIR="$(cd "$(dirname "$0")"; pwd -P)"
 
-python3 extract_traffic_light_dtld.py \
-  --label_file DTLD/Bremen_all.yml \
-  --calib_dir dtld_parsing/calibration \
-  --data_base_dir DTLD
+./SDCN/create_dataset.sh
 
-python3 extract_traffic_light_sdcn.py \
-  --input_yaml SDCN/real_training_data/real_data_annotations.yaml
-
-tar -zcvf images.tgz images && rm -rf images
+./SDCN/create_detector.sh
