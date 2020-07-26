@@ -29,6 +29,7 @@ fi
 #     --eval_dir=${ROOT_DIR}/detector_evaluation \
 #     --pipeline_config_path ${ROOT_DIR}/pipeline_config/${MODEL_NAME}.config
 
+# https://github.com/tensorflow/tensorflow/issues/16268
 python3 ${ROOT_DIR}/models/research/object_detection/export_inference_graph.py \
     --input_type image_tensor \
     --pipeline_config_path ${ROOT_DIR}/pipeline_config/${MODEL_NAME}.config \
