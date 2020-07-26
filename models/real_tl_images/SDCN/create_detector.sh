@@ -10,9 +10,9 @@ python3 ${ROOT_DIR}/models/research/object_detection/builders/model_builder_test
 # Download pretrained model
 MODEL_NAME="ssd_inception_v2_coco_2017_11_17"
 if [ ! -e ${ROOT_DIR}/pretrained_models/${MODEL_NAME} ]; then
-    wget http://download.tensorflow.org/models/object_detection/${MODEL_NAME}.tar.gz \
+    wget -P ${ROOT_DIR} http://download.tensorflow.org/models/object_detection/${MODEL_NAME}.tar.gz \
     && mkdir -p ${ROOT_DIR}/pretrained_models/ \
-    && tar -zxf ${ROOT_DIR}/${MODEL_NAME}.tar.gz \
+    && tar -zxf ${ROOT_DIR}/${MODEL_NAME}.tar.gz -C ${ROOT_DIR}/ \
     && rm ${ROOT_DIR}/${MODEL_NAME}.tar.gz \
     && mv ${ROOT_DIR}/${MODEL_NAME} ${ROOT_DIR}/pretrained_models/
 fi
