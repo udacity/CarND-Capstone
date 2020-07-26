@@ -66,8 +66,7 @@ class TLClassifier(object):
             num_detected[predict] += 1
         
         predict = num_detected.index(max(num_detected))
-        rospy.loginfo('%d boxes detected. '%(len(box_coords))
-                      +'Each light detected (%d,%d,%d) times. '%(num_detected[0],num_detected[1],num_detected[2])
-                      +'Return prediction is %d.'%predict)
+        rospy.loginfo('Each light detected (%d,%d,%d) times. '%(num_detected[0],num_detected[1],num_detected[2]))
+        rospy.loginfo('Predicted state: %d.'%predict)
 
         return predict
