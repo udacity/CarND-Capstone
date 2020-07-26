@@ -61,8 +61,6 @@ class TLDetector(object):
         self.config = yaml.load(config_string)
         
         self.is_site = self.config["is_site"]
-        print("This site or not")
-        print(self.is_site)
 
         # Publisher for red light waypoint position
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
@@ -72,11 +70,13 @@ class TLDetector(object):
         #self.light_classifier = TLClassifier('sim_raw.h5')
 
         # Define traffic light classifier with location of detection model
-
-        if self.is_site:
-            self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_real_extracted.h5')
-        else:
-            self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_sim_extracted.h5')
+        
+        self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_mixed_extracted.h5')
+        
+        #if self.is_site:
+        #    self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_real_extracted.h5')
+        #else:
+        #    self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_sim_extracted.h5')
 
         self.listener = tf.TransformListener()
 
@@ -176,10 +176,6 @@ class TLDetector(object):
             self.prev_light_loc = None
             return False
 
-      #  cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
-        
-      #  return self.light_classifier.get_classification(cv_image)
-
         # Pass through the model 1 image every IMAGE_COUNT_THRESHOLD images
         if self.img_count >= IMAGE_COUNT_THRESHOLD:
 
@@ -197,7 +193,7 @@ class TLDetector(object):
             result = self.light_classifier.get_classification(cv_image)
 
             self.last_detected_state = result
-            
+
             # Reset image counter
             self.img_count = 0
 
