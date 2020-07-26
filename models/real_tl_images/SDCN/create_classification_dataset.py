@@ -12,16 +12,16 @@ from PIL import Image
 
 
 def parse_args():
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_yaml", default="")
+    parser.add_argument("--output_dir", default="")
     return parser.parse_args()
 
 def main(args):
 
     sub_dir_names = ["Red", "Green", "Yellow", "None"]
     for sub_dir in sub_dir_names:
-        dir_name = "{}/{}".format("images", sub_dir)
+        dir_name = "{}/{}".format(args.output_dir, sub_dir)
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
 
@@ -58,7 +58,7 @@ def main(args):
             crop_image = image.crop(bbox)
 
             class_name = annotation['class']
-            dir_name = "images/{}".format(class_name)
+            dir_name = "{}/{}".format(args.output_dir, class_name)
             unique_id = file_name.split('/')[-1].split('.')[0]
             class_id = get_class_id(class_name)
             output_path = "{}/{}_{}_{}.jpg".format(dir_name, unique_id, i, class_id)

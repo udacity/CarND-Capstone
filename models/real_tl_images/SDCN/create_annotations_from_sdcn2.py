@@ -1,3 +1,4 @@
+import argparse
 import os
 import base64
 import glob
@@ -28,6 +29,14 @@ def get_entry(json_file):
     class_name = get_class_name(label)
     filename = "{}/{}".format(parent_dir, image_path)
 
+    if x_width < 0:
+        x_min = x_min + x_width
+        x_width = -1 * x_width
+
+    if y_height < 0:
+        y_min = y_min + y_height
+        y_height = -1 * y_height
+        
     bbox = {
         "class": class_name,
         "x_width": x_width,
