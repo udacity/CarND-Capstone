@@ -1,13 +1,12 @@
 import os
 import numpy as np
 import tensorflow as tf
-#import matplotlib.pyplot as plt
 from PIL import Image
 
 import util
 
 class traffic_light_detector(object):
-    def __init__(self, path, model="ssd_inception_v2_coco_2017_11_17"):
+    def __init__(self, path, model="ssd_inception_v2_retrained_2806"):
         #util.prepare_tensorflow_object_detection_api(path, model)
         self.predictor_fn = tf.contrib.predictor.from_saved_model(
             export_dir=os.path.join(path, model, "saved_model"),
@@ -18,8 +17,8 @@ class traffic_light_detector(object):
         n = len(classes)
         idxs = []
         for i in range(n):
-         # the class id of traffic lights is 10
-         if scores[i] >= min_score and classes[i] == 10:
+         # the class id of traffic lights is 1
+         if scores[i] >= min_score and classes[i] == 1:
              idxs.append(i)
 
         filtered_boxes = boxes[idxs, ...]

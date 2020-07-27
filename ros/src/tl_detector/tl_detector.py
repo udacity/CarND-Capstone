@@ -25,7 +25,7 @@ SLOW_MOTION_AT_LIGHT = True
 MAX_NUM_IMG_SAVE = 10
 SAVE_LOCATION = "./light_classification/sim_img/"
 # choose whether to use classifier or ground truth for testing
-TEST_WITH_GROUND_TRUTH = True
+TEST_WITH_GROUND_TRUTH = False
 
 class TLDetector(object):
     def __init__(self):
@@ -69,7 +69,7 @@ class TLDetector(object):
 
         #self.light_classifier = TLClassifier('sim_raw.h5')
 
-        # Define traffic light classifier with location of detection model
+        # Define traffic light classifier with location of detection & classifier model
         
         self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_mixed_extracted.h5')
         
@@ -132,7 +132,8 @@ class TLDetector(object):
         used.
         '''
         if state == TrafficLight.UNKNOWN:
-            pass
+            # Return last waypoint to stop at
+            self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         elif self.state != state:
             self.state_count = 0
             self.state = state
@@ -182,14 +183,11 @@ class TLDetector(object):
             cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
             # Crop relevant portion of image depending on distance to traffic light
-            '''
             height = cv_image.shape[0]
             if diff > 100:
-                cv_image = cv_image[int(height*.75):height]
-            elif diff > 40:
                 cv_image = cv_image[int(height*.5):height]
-            '''
-            # Check if detects traffic lights
+            
+            # Get classification
             result = self.light_classifier.get_classification(cv_image)
 
             self.last_detected_state = result
@@ -252,7 +250,7 @@ class TLDetector(object):
             # get state of traffic light
 
             state = self.get_light_state(closest_light, diff)
-            rospy.loginfo("Next light is state %d at %d waypoints ahead" % (state,diff))
+            #rospy.loginfo("Next light is state %d at %d waypoints ahead" % (state,diff))
 
             # return line waypoint index & traffic light state
             

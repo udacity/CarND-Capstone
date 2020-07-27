@@ -1,6 +1,6 @@
 import os
 import tarfile
-import wget
+#import wget
 from PIL import ImageDraw
 
 def prepare_tensorflow_object_detection_api(path,
