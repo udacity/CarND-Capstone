@@ -46,6 +46,7 @@ class WaypointUpdater(object):
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
+	#test
         pass
 
     def traffic_cb(self, msg):
