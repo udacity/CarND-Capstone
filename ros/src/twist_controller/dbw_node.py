@@ -79,7 +79,8 @@ class DBWNode(object):
       
 
         self.loop()
-
+        
+    #The loop function allows us to control the frequency of publications
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
@@ -93,17 +94,21 @@ class DBWNode(object):
             if self.dbw_enabled:
                 self.publish(self.throttle, self.brake, self.steering)
             rate.sleep()
-               
+            
+    #Topic callback function /vehicle/dbw_enabled          
     def dbw_enabled_cb(self, msg):
         self.dbw_enabled = msg    
         
+    #Topic callback function /twist_cmd 
     def twist_cb(self, msg):
         self.linear_vel = msg.twist.linear.x
         self.angular_vel = msg.twist.angular.z
         
+    #Topic callback function /current_velocity 
     def velocity_cb(self, msg):
         self.current_vel = msg.twist.linear.x   
-                
+    
+    #Publish throttle, brake, steering of car
     def publish(self, throttle, brake, steer):
         tcmd = ThrottleCmd()
         tcmd.enable = True
