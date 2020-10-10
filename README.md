@@ -1,3 +1,5 @@
+### Project: Program an Autonomous Vehicle
+
 In this project, we have written ROS nodes to implement the basic functionality of the autonomous vehicle system, including traffic light detection, waypoint control and tracking! This code is tested using a simulator, and when everything is ready, we will submit the project to run on Carla.
 
 ### Team INSA
