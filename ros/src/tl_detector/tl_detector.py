@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+
+# Source: Detection Walkthrough
+# Lesson 11 of Project section in Course
+
 import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
