@@ -1,4 +1,8 @@
 #Bibliotheque necessaire 
+
+# Source: DBW Walkthrough
+# Lesson 8 of Project section in Course
+
 from pid import PID
 from lowpass import LowPassFilter
 from yaw_controller import YawController
