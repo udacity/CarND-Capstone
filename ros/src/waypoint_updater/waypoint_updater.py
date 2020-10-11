@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Source: Waypoint Updater Walkthrough and Full Waypoint Walkthrough
+# Lesson 6 of Project section in Course
+
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
