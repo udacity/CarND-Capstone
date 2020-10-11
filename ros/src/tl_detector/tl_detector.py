@@ -26,6 +26,7 @@ class TLDetector(object):
         self.camera_image = None
         self.lights = []
         self.waypoint_tree = None
+        #self.base_waypoints = None
         self.waypoints_2d = None
         
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
@@ -56,19 +57,16 @@ class TLDetector(object):
         self.state_count = 0
 
         rospy.spin()
-    
-    #Topic callback function /current_pose
+
     def pose_cb(self, msg):
         self.pose = msg
-    
-    #Topic callback function /base_waypoints
+
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
 
-    #Topic callback function /traffic_waypoint
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
@@ -101,8 +99,7 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-        
-    #Here we use this function to return the index of the waypoint closest to the...
+
     def get_closest_waypoint(self, x, y):
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
@@ -111,8 +108,8 @@ class TLDetector(object):
 
         Returns:
             int: index of the closest waypoint in self.waypoints
- 
-        """   
+
+        """
         #TODO implement
         closest_idx = self.waypoint_tree.query([x, y], 1)[1]
         # check if closest is ahead or behind car
@@ -129,8 +126,7 @@ class TLDetector(object):
         #    closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
         
         return closest_idx
-    
-    #This function returns the status of the fire according to the learning classifier or from /vehicle/traffic_light which sends the location and status of all the lights in the simulator
+
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
