@@ -12,6 +12,9 @@ import tf
 import cv2
 import yaml
 
+# https://wiki.ros.org/cv_bridge
+from cv_bridge import CvBridge, CvBridgeError
+
 STATE_COUNT_THRESHOLD = 3
 
 class TLDetector(object):
@@ -24,6 +27,11 @@ class TLDetector(object):
         self.waypoint_tree = None
         self.camera_image = None
         self.lights = []
+
+        # Image object from the image_color topic needs to be converted to numpy array for Tensorflow
+        # We are going to send "bgr8" layers to tl_classifier.
+        # http://library.isr.ist.utl.pt/docs/roswiki/cv_bridge(2f)Tutorials(2f)ConvertingBetweenROSImagesAndOpenCVImagesPython.html
+        self.cv_bridge = CvBridge()
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -75,9 +83,11 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
-        #self.has_image = True
-        #self.camera_image = msg
+        self.has_image = True
+        self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
+
+        self.cv_image = self.cv_bridge.imgmsg_to_cv2(msg, "bgr8")
 
         '''
         Publish upcoming red lights at camera frequency.
@@ -85,6 +95,13 @@ class TLDetector(object):
         of times till we start using it. Otherwise the previous stable state is
         used.
         '''
+
+        img_crop = self.light_classifier.detect_traffic_light(self.cv_image)
+
+        if len(img_crop) == 0:
+            state_cv = TrafficLight.UNKNOWN
+
+
         if self.state != state:
             self.state_count = 0
             self.state = state
@@ -98,6 +115,7 @@ class TLDetector(object):
         self.state_count += 1
 
     def get_closest_waypoint(self, x, y):
+
         """Identifies the closest path waypoint to the given position
             https://en.wikipedia.org/wiki/Closest_pair_of_points_problem
         Args:
