@@ -51,6 +51,8 @@ class TLDetector(object):
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
+        self.image_crop = rospy.Publisher('/image_crop', Image, queue_size=1)
+
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
@@ -100,7 +102,9 @@ class TLDetector(object):
 
         if len(img_crop) == 0:
             state_cv = TrafficLight.UNKNOWN
-
+        else:
+            img_msg = self.cv_bridge.cv2_to_imgmsg(img_crop, encoding="bgr8")
+            self.image_crop.publish(img_msg)
 
         if self.state != state:
             self.state_count = 0
@@ -184,7 +188,7 @@ class TLDetector(object):
         if closest_light:
             state = self.get_light_state(closest_light)
             return line_wp_idx, state
-        
+
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
