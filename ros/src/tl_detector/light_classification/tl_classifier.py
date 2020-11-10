@@ -104,7 +104,7 @@ class TLClassifier(object):
         MIN_AREA_FOR_STOP = 3
         MIN_COMPACTNESS_FOR_BULB = 0.04
 
-        mask, area, perimeter = extract_red_area(image)
+        mask, area, perimeter = self.extract_red_area(image)
 
         if area > MIN_AREA_FOR_STOP and area/(perimeter*perimeter)> MIN_COMPACTNESS_FOR_BULB:
             state = TrafficLight.RED  # state = 'stop' >> id = 0
