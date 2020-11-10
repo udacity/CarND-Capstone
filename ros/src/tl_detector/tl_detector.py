@@ -106,7 +106,7 @@ class TLDetector(object):
         else:
             img_msg = self.cv_bridge.cv2_to_imgmsg(img_crop, encoding="bgr8")
             self.image_crop.publish(img_msg)
-            state = self.light_classifier.get_classification(img_msg)
+            state = self.light_classifier.get_classification(img_crop)
 
 
         if self.state != state:
