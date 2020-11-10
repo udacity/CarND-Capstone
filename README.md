@@ -86,3 +86,7 @@ Specific to these libraries, the simulator grader and Carla use the following:
 | OpenMP | N/A | N/A |
 
 We are working on a fix to line up the OpenCV versions between the two.
+
+### Attribution
+
+We make use of data from the LISA Traffic light dataset [repo](https://www.kaggle.com/mbornoe/lisa-traffic-light-dataset) to test traffic light classifier code. This dataset is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
