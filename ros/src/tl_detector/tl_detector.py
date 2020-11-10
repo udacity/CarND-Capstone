@@ -99,16 +99,11 @@ class TLDetector(object):
         img_crop = self.light_classifier.detect_traffic_light(self.cv_image)
 
         if len(img_crop) == 0:
-<<<<<<< Updated upstream
-            state_cv = TrafficLight.UNKNOWN
-
-=======
             state = TrafficLight.UNKNOWN
         else:
             img_msg = self.cv_bridge.cv2_to_imgmsg(img_crop, encoding="bgr8")
             self.image_crop.publish(img_msg)
             state = self.light_classifier.get_classification(img_msg)
->>>>>>> Stashed changes
 
         if self.state != state:
             self.state_count = 0
@@ -192,7 +187,7 @@ class TLDetector(object):
         if closest_light:
             state = self.get_light_state(closest_light)
             return line_wp_idx, state
-        
+
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
