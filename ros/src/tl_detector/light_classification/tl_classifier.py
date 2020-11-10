@@ -2,6 +2,7 @@ from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import os
 import numpy as np
+import cv2
 
 def select_boxes(boxes, classes, scores, score_threshold=0, target_class=10):
     """
@@ -99,7 +100,49 @@ class TLClassifier(object):
 
         """
         # TODO implement light color prediction
-        return TrafficLight.UNKNOWN
+        #Parameters
+        MIN_AREA_FOR_STOP = 3
+        MIN_COMPACTNESS_FOR_BULB = 0.04
+
+        mask, area, perimeter = extract_red_area(image)
+
+        if area > MIN_AREA_FOR_STOP and area/(perimeter*perimeter)> MIN_COMPACTNESS_FOR_BULB:
+            state = TrafficLight.RED  # state = 'stop' >> id = 0
+            #print(area/(perimeter*perimeter))
+        else:
+            state = TrafficLight.GREEN    # state = 'go' >> id = 2
+
+        return state
+
+        #for img in images:
+        #    mask, area, perimeter = extract_red_area(img)
+        #    if area > MIN_AREA_FOR_STOP and area/(perimeter*perimeter)> MIN_COMPACTNESS_FOR_BULB:
+        #        state = 'stop'
+        #        #print(area/(perimeter*perimeter))
+        #    else:
+        #        state = 'go'
+
+
+    def extract_red_area(self, img):
+
+        LOWER_RED = np.array([90-30,30,40])
+        UPPER_RED = np.array([90+30,255,255])
+
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_inv = cv2.bitwise_not(img)
+        hsv=cv2.cvtColor(img_inv, cv2.COLOR_RGB2HSV);
+        mask = cv2.inRange(hsv, LOWER_RED, UPPER_RED)
+        im2, contours,hierarchy = cv2.findContours(mask, 1, 2)
+        largest_area = 0
+        perimeter = 0
+        if(contours):
+            for contour in contours:
+                area = cv2.contourArea(contour)
+                if area>largest_area:
+                    largest_area=area
+                    perimeter = cv2.arcLength(contour, True)
+
+        return mask, largest_area, perimeter
 
     def detect_traffic_light(self, image):
         boxes = self.detect_multi_object(image, score_threshold=0.2)
