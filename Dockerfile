@@ -1,5 +1,5 @@
 # Udacity capstone project dockerfile
-FROM ros:kinetic-robot
+FROM ros:noetic-robot
 LABEL maintainer="olala7846@gmail.com"
 
 # Install Dataspeed DBW https://goo.gl/KFSYi1 from binary
@@ -16,19 +16,21 @@ RUN apt-get upgrade -y
 # end installing Dataspeed DBW
 
 # install python packages
-RUN apt-get install -y python-pip
+RUN apt-get install -y gfortran libopenblas-dev liblapack-dev
+RUN apt-get install -y python3-pip
 COPY requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 # install required ros dependencies
-RUN apt-get install -y ros-$ROS_DISTRO-cv-bridge
-RUN apt-get install -y ros-$ROS_DISTRO-pcl-ros
-RUN apt-get install -y ros-$ROS_DISTRO-image-proc
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ros-$ROS_DISTRO-cv-bridge
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ros-$ROS_DISTRO-pcl-ros
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ros-$ROS_DISTRO-image-proc
 
 # socket io
-RUN apt-get install -y netbase
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y netbase
 
-RUN mkdir /capstone
-VOLUME ["/capstone"]
+
+RUN mkdir /capstone3
+VOLUME ["/capstone3"]
 VOLUME ["/root/.ros/log/"]
-WORKDIR /capstone/ros
+WORKDIR /capstone3/ros
