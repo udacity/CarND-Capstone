@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-
+import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from scipy.spatial import KDTree
 
 import math
 
@@ -37,16 +38,60 @@ class WaypointUpdater(object):
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.pose = None
+        self.base_waypoints = None
+        self.waypoints_2d = None
+        self.waypoint_tree = None
 
-        rospy.spin()
+        self.loop()
+    
+    def loop(self):
+        rate = rospy.Rate(25)    # since the waypoint follower is at 30Hz, so the rate here can be set to 30Hz or even less
+                                 # when waypoint updater is at 50Hz while the follower is at 30Hz, the twist data that follower is not up to date, so the                                         vehicle goes as if it is not following the waypoints, and steers at wrong time, seems as if there is a big delay
+                                 # probably due to the performance of the workspace: it works so slow that the car only reacts to huge latency
+        while not rospy.is_shutdown():
+            if self.pose and self.base_waypoints:
+                # Get closet waypoint
+                closest_waypoint_idx = self.get_closest_waypoint_idx()
+                self.publish_waypoints(closest_waypoint_idx)
+            rate.sleep()
+            
+    def get_closest_waypoint_idx(self):
+        x = self.pose.pose.position.x
+        y = self.pose.pose.position.y
+        closest_idx = self.waypoint_tree.query([x, y], 1)[1]  # first 1: we only want to return 1 item, so the closest in our KD tree to our query item [x,y];   # second 1: query will return the position and the index, which is in the same order as we put in the KD tree. So we're getting the closest point index here
+        
+        # Check if closest waypoint is ahead or behind the vehicle
+        closest_coord = self.waypoints_2d[closest_idx]
+        prev_coord = self.waypoints_2d[closest_idx-1]
+        
+        # Equation for hyperplane through closest_coords
+        cl_vect = np.array(closest_coord)
+        prev_vect = np.array(prev_coord)
+        pos_vect = np.array([x, y])
+        
+        val = np.dot(cl_vect - prev_vect, pos_vect - cl_vect) # use vector dot. to check if two vectors are in opposite direction -> closet waypoint ahead car
+        
+        if val > 0:
+            closest_idx = (closest_idx + 1) % len(self.waypoints_2d)
+        return closest_idx
+    
+    def publish_waypoints(self, closest_idx):
+        lane = Lane()
+        lane.header = self.base_waypoints.header
+        lane.waypoints = self.base_waypoints.waypoints[closest_idx : closest_idx + LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publish(lane)    
 
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        self.pose = msg
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+        self.base_waypoints = waypoints
+        if not self.waypoints_2d:
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+            self.waypoint_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
