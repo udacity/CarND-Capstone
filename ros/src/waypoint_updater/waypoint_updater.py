@@ -3,6 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from sklearn.neighbors import KDTree
 
 import math
 
@@ -32,21 +33,59 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
+        rospy.Subscriber('/traffic_waypoint', Waypoint, self.traffic_cb)
+        rospy.Subscriber('/obstacle_waypoint', Waypoint, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-
-        rospy.spin()
-
+        self.base_waypoints = None
+        self.pose = None
+        self.waypoint_2d = None
+        self.waypoint_tree = None
+        
+        
+        #based on instructiuon we want to loop with 50 herts
+        self.update_rate = rospy.Rate(50)
+        self.loop()
+        
+    def loop(self):
+        while not rospy.is_shutdown():
+            if self.pose and self.waypoints_2d:
+                index = self.get_closest_waypoint_index()
+                self.publish_waypoints(index)
+            self.update_rate.sleep()
+            
+    def get_closest_waypoint_index(self):
+        x = self.pose.pose.position.x
+        y = self.pose.pose.position.y
+        index = self.waypoints_tree.query([x,y],1)[1]
+        closest_point = self.waypoint_2d[index]
+        previous_point = self.waypoint_2d[index-1]
+        
+        #find closest in moving direction
+        closest_point_vec = np.array(closest_point)
+        prev_point_vec = np.array(previous_point)
+        current_point = np.array([x,y])
+        if np.dot(closest_point_vec-prev_point_vec,current_point-closest_point_vec)>0:
+            index = (index+1)%len(self.waypoint_2d)
+        return index
+    def publish_final_waypoints(self,index):
+        lane = Lane()
+        lane.header = self.base_waypoints.header
+        lane.waypoints = self.base_waypoints.waypoints[index:index+LOOKAHEAD_WPS]
+        self.final_waypoints_pub.publis(lane)
     def pose_cb(self, msg):
         # TODO: Implement
-        pass
+        self.pose=msg
 
     def waypoints_cb(self, waypoints):
         # TODO: Implement
-        pass
+
+        self.base_waypoints = waypoints
+        if not self.waypoints_2d:
+            self.waypoints_2d = [[waypoint.pose.pose.x,waypoint.pose.pose.y] for waypoint in waypoints.waypoints]
+            self.waypoints_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
@@ -76,3 +115,4 @@ if __name__ == '__main__':
         WaypointUpdater()
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start waypoint updater node.')
+
