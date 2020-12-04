@@ -9,7 +9,7 @@ import cv2
 
 
 class TLClassifier(object):
-    def __init__(self, pymodel_file):
+    def __init__(self, pymodel_file='tlight.pt'):
         #TODO load classifier
         self.current_light = TrafficLight.UNKNOWN
         cwd = os.path.dirname(os.path.realpath(__file__))
@@ -27,7 +27,7 @@ class TLClassifier(object):
 
         # Load model from saved pt file
         self.model.load_state_dict(
-            torch.load(model_path+'/tlight_90.pt', map_location=torch.device('cpu')))
+            torch.load(model_path, map_location=torch.device('cpu')))
         self.tl_catogeries = {
                 1: TrafficLight.UNKNOWN,
                 2: TrafficLight.GREEN,
