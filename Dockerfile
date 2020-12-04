@@ -18,8 +18,6 @@ RUN apt-get upgrade -y
 # install python packages
 RUN apt-get install -y gfortran libopenblas-dev liblapack-dev
 RUN apt-get install -y python3-pip
-COPY requirements.txt ./requirements.txt
-RUN pip3 install -r requirements.txt
 
 # install required ros dependencies
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ros-$ROS_DISTRO-cv-bridge
@@ -28,6 +26,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ros-$ROS_DISTRO-image-proc
 
 # socket io
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y netbase
+
+COPY requirements.txt ./requirements.txt
+RUN pip3 install -r requirements.txt
 
 
 RUN mkdir /capstone3

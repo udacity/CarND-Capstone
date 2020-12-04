@@ -5,7 +5,7 @@ import numpy as np
 class TLClassifier(object):
     def __init__(self):
         #TODO load classifier
-        pass
+        self.current_light = TrafficLight.UNKNOWN
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -23,4 +23,5 @@ class TLClassifier(object):
             [TrafficLight.UNKNOWN, TrafficLight.RED,
             TrafficLight.GREEN, TrafficLight.YELLOW]
             )
+
         return current_light

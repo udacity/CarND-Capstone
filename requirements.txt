@@ -5,7 +5,7 @@ gevent-websocket==0.10.1
 h5py
 python-socketio==4.4.0
 numpy
-Pillow==2.2.1
+# Pillow==2.2.1
 scipy
 markdown==3.0.1
 mock==3.0.0
@@ -16,3 +16,6 @@ tensorflow
 # keras==2.0.8
 ujson==1.35
 wsaccel==0.6.2
+torch
+torchvision
+onyx
