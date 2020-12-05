@@ -8,6 +8,9 @@ from yaw_controller import YawController
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
+'''
+Below code based on : https://github.com/justinlee007/CarND-Capstone
+'''
 
 class Controller(object):
     def __init__(
