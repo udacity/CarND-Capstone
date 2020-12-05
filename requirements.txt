@@ -1,20 +1,19 @@
-gevent
-gevent-websocket
-attrdict
-python-socketio
-# numpy
-h5py
-# Pillow==2.2.1
-scipy
-markdown
-mock
-# tensorflow==1.3.0
-funcsigs
-# keras
-# tensorflow
-# keras==2.0.8
-ujson
-wsaccel
-torch
-torchvision
-onyx
+Flask==1.1.2
+attrdict==2.0.1
+eventlet==0.29.1
+python-engineio==2.2.0
+python-socketio==2.0.0
+numpy==1.19.4
+h5py==3.1.0
+Pillow==8.0.1
+scipy==1.5.4
+markdown==3.3.3
+mock==4.0.2
+funcsigs==1.0.2
+ujson==4.0.1
+wsaccel==0.6.2
+torch==1.7.0
+torchvision==0.8.1
+onyx==0.8.11
+tensorflow
+keras

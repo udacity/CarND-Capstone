@@ -17,16 +17,20 @@ RUN apt-get upgrade -y
 
 # install python packages
 RUN apt-get install -y gfortran libopenblas-dev liblapack-dev
-RUN apt-get install -y python3-pip
+
 
 # install required ros dependencies
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ros-$ROS_DISTRO-cv-bridge
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ros-$ROS_DISTRO-pcl-ros
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ros-$ROS_DISTRO-image-proc
 
 # socket io
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y netbase
-
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y netbase software-properties-common
+# RUN add-apt-repository -y ppa:deadsnakes/ppa
+# RUN DEBIAN_FRONTEND=noninteractive apt-get update -y
+# RUN DEBIAN_FRONTEND=noninteractive apt-get install -y python3.6 python3.6-dev
+RUN apt-get install -y python3-pip
 COPY requirements.txt ./requirements.txt
 RUN pip3 install -r requirements.txt
 
