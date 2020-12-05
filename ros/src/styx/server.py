@@ -19,7 +19,8 @@ def connect(sid, environ):
     print("connect ", sid)
 
 def send(topic, data):
-    sio.emit(topic, data=data, skip_sid=True)
+    # sio.emit(topic, data=data, skip_sid=True)
+    msgs.append((topic, data))
 
 bridge = Bridge(conf, send)
 
@@ -34,6 +35,9 @@ def telemetry(sid, data):
 @sio.on('control')
 def control(sid, data):
     bridge.publish_controls(data)
+    for i in range(len(msgs)):
+        topic, data = msgs.pop(0)
+        sio.emit(topic, data=data, skip_sid=True)
 
 @sio.on('obstacle')
 def obstacle(sid, data):
