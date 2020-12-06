@@ -3,7 +3,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-from sklearn.neighbors import KDTree
+from scipy.spatial import KDTree
 
 import math
 
@@ -61,15 +61,15 @@ class WaypointUpdater(object):
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
         index = self.waypoints_tree.query([x,y],1)[1]
-        closest_point = self.waypoint_2d[index]
-        previous_point = self.waypoint_2d[index-1]
+        closest_point = self.waypoints_2d[index]
+        previous_point = self.waypoints_2d[index-1]
         
         #find closest in moving direction
         closest_point_vec = np.array(closest_point)
         prev_point_vec = np.array(previous_point)
         current_point = np.array([x,y])
         if np.dot(closest_point_vec-prev_point_vec,current_point-closest_point_vec)>0:
-            index = (index+1)%len(self.waypoint_2d)
+            index = (index+1)%len(self.waypoints_2d)
         return index
     
     def publish_final_waypoints(self,index):
@@ -111,8 +111,8 @@ class WaypointUpdater(object):
         # TODO: Implement
 
         self.base_waypoints = waypoints
-        if not self.waypoints_2d:
-            self.waypoints_2d = [[waypoint.pose.pose.position.x,waypoint.pose.position.pose.y] for waypoint in waypoints.waypoints]
+        if not self.base_waypoints:
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
             self.waypoints_tree = KDTree(self.waypoints_2d)
 
     def traffic_cb(self, msg):
@@ -143,4 +143,5 @@ if __name__ == '__main__':
         WaypointUpdater()
     except rospy.ROSInterruptException:
         rospy.logerr('Could not start waypoint updater node.')
+
 
