@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
@@ -42,7 +42,7 @@ class WaypointUpdater(object):
         self.base_waypoints = None
         self.pose = None
         self.waypoints_2d = None
-        self.waypoint_tree = None
+        self.waypoints_tree = None
         self.stopline_wp_idx = None
         
         
