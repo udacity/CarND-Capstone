@@ -2,6 +2,7 @@ attrdict==2.0.0
 gevent==1.4.0
 gevent-websocket==0.10.1
 h5py==2.6.0
+python-engineio==3.11.2
 python-socketio==4.4.0
 numpy==1.13.1
 Pillow==2.2.1
