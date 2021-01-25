@@ -1,6 +1,22 @@
 This is the project repo for the final project of the Udacity Self-Driving Car Nanodegree: Programming a Real Self-Driving Car. For more information about the project, see the project introduction [here](https://classroom.udacity.com/nanodegrees/nd013/parts/6047fe34-d93c-4f50-8336-b70ef10cb4b2/modules/e1a23b06-329a-4684-a717-ad476f0d8dff/lessons/462c933d-9f24-42d3-8bdc-a08a5fc866e4/concepts/5ab4b122-83e6-436d-850f-9f4d26627fd9).
 
-Please use **one** of the two installation options, either native **or** docker installation.
+### Purpose
+
+The main goal of the project is to implement some basic functionality of an autonomous vehicle system by writing ROS nodes.
+The system architectrue of the used system is shown on the below image.
+
+The project aimed to code the following ROS nodes:
+* Traffic Ligth Detection Node
+* Waypint Updater Node
+* DBW Node
+
+### Team
+
+The project has been completed by the following team.
+* Krisztián Sarnyai (krisztian.sarnyai@nng.com)
+* Attila Sándor (attila.sandor@nng.com)
+* Barnabás Tiegelmann (barnabas.tiegelmann@nng.com)
+* Sándor Füleki (sandor.fuleki@nng.com)
 
 ### Native Installation
 
@@ -71,18 +87,25 @@ roslaunch launch/site.launch
 ```
 5. Confirm that traffic light detection works on real life images
 
-### Other library/driver information
-Outside of `requirements.txt`, here is information on other driver/library versions used in the simulator and Carla:
+### Implementation of the Waypint Updater Node
 
-Specific to these libraries, the simulator grader and Carla use the following:
+First we implemented the Waypint Updater node. This node publishes waypoints from the car's actual position to some distance ahead.
+For this the node needs to know the position of the car and the list of all the waypoints.
+To get this information this node subscribes to the /current_pose and the /base_waypoints topics.
+To consider the traffic lights, subscription to the /traffic_waypoint topic is also necessary.
 
-|        | Simulator | Carla  |
-| :-----------: |:-------------:| :-----:|
-| Nvidia driver | 384.130 | 384.130 |
-| CUDA | 8.0.61 | 8.0.61 |
-| cuDNN | 6.0.21 | 6.0.21 |
-| TensorRT | N/A | N/A |
-| OpenCV | 3.2.0-dev | 2.4.8 |
-| OpenMP | N/A | N/A |
+```
+	rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+	rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+	rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+    
+    self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+```
 
-We are working on a fix to line up the OpenCV versions between the two.
+### Implementation of the DBW Node
+
+### Implementation of the Traffic Ligth Detection Node
+
+
+
+
