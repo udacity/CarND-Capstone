@@ -125,7 +125,7 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        return light.state  ########################################################## TODO: remove this line once the classifier is implemented
+        #return light.state  ########################################################## TODO: remove this line once the classifier is implemented
 
         if(not self.has_image):
             self.prev_light_loc = None
