@@ -106,8 +106,29 @@ To consider the traffic lights, subscription to the /traffic_waypoint topic is a
 
 ### Implementation of the DBW Node
 
+The DBW (drive by wire) node governs the physical operation of the vehicle by sending throttle, brake, and steering commands.
+The input of the node is the /twist_cmd topic, also the /vehicle/dbw_enabled topic is listened to check when we have control of the car.
+
+```
+	rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb)
+	rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
+	rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+	
+	self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
+	self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
+	self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)	
+```	
+
 ### Implementation of the Traffic Ligth Detection Node
 
+The purpose of the Traffic Ligth Detection node is to warn the car if there's a red traffic light ahead so the car can stop. The position of all the traffic lights are known via the /vehicle/traffic_lights topic.
+Considering the current position of the car (/current_pose) the node should send the index of the waypoint for the nearest upcoming red light's stop line (/traffic_waypoint). 
 
+```
+	sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+	sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+	sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
 
+	self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+```	
 
