@@ -3,7 +3,9 @@ This is the project repo for the final project of the Udacity Self-Driving Car N
 ### Purpose
 
 The main goal of the project is to implement some basic functionality of an autonomous vehicle system by writing ROS nodes.
-The system architectrue of the used system is shown on the below image.
+The system architectrue of the used system is shown on the below image:
+
+![system architecture](ros-graph.png)
 
 The project aimed to code the following ROS nodes:
 * Traffic Ligth Detection Node
@@ -99,7 +101,7 @@ To consider the traffic lights, subscription to the /traffic_waypoint topic is a
 	rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 	rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
     
-    self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+	self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 ```
 
 ### Implementation of the DBW Node
