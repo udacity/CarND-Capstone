@@ -23,6 +23,7 @@ class TLDetector(object):
         self.waypoint_tree = None
         self.camera_image = None
         self.lights = []
+        self.image_filename_count = 0
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -65,6 +66,17 @@ class TLDetector(object):
     def traffic_cb(self, msg):
         self.lights = msg.lights
 
+    def save_image(self, msg):
+        start_count = 0
+        end_count = 1000000
+        self.image_filename_count += 1
+        
+        if start_count <= self.image_filename_count and self.image_filename_count <= end_count:
+            image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            fqn = '/media/sf_shared/capstone/ros/images/{:04d}.png'.format(self.image_filename_count)
+            rospy.logwarn(fqn)
+            cv2.imwrite(fqn, image)
+
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
             of the waypoint closest to the red light's stop line to /traffic_waypoint
@@ -73,6 +85,10 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        save_images = True
+        if save_images:
+            self.save_image(msg)
+
         self.has_image = True
         self.camera_image = msg
         if not self.waypoint_tree:
@@ -141,7 +157,7 @@ class TLDetector(object):
             location and color
 
         Returns:
-            int: index of waypoint closes to the upcoming stop line for a traffic light (-1 if none exists)
+            int: index of waypoint closest to the upcoming stop line for a traffic light (-1 if none exists)
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
