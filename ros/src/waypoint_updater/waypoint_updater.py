@@ -88,10 +88,10 @@ class WaypointUpdater(object):
         base_waypoints = self.base_lane.waypoints[closest_idx:farthest_idx]
 
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
-            rospy.logwarn("base_waypoints, stopline_wp_idx = {} (max:{})".format(self.stopline_wp_idx, farthest_idx))
+            #rospy.logwarn("base_waypoints, stopline_wp_idx = {} (max:{})".format(self.stopline_wp_idx, farthest_idx))
             lane.waypoints = base_waypoints
         else:
-            rospy.logwarn("STOP: decelerate waypoints, closest_idx: {}".format(closest_idx))
+            #rospy.logwarn("STOP: decelerate waypoints, closest_idx: {}".format(closest_idx))
             lane.waypoints = self.decelerate_waypoints(base_waypoints, closest_idx)
 
         return lane
