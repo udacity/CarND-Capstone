@@ -1,5 +1,5 @@
 import cv2
-from tl_classifier_cv import detect_red_lights_basic as classify
+#from tl_classifier_cv import detect_red_lights_basic as classify
 from tl_classifier_hough import LightDetector
 from styx_msgs.msg import TrafficLight
 
