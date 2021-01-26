@@ -26,12 +26,13 @@ class TLClassifier(object):
 
         color = self.light_detector.getLightColor(images)
         
+		print("color:", color)
         if color == 'red':
-            print("color:", color)
             return TrafficLight.RED
-        else:
-            print("color:", color)
-            return TrafficLight.GREEN
+        elif color == 'yellow':
+            return TrafficLight.YELLOW
+		else:
+			return TrafficLight.GREEN
 
         # if classify(image):
         #     return TrafficLight.RED

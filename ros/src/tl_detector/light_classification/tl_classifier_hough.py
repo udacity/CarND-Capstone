@@ -3,7 +3,7 @@ import numpy as np
 
 class LightDetector():
     
-    def orange(self,rgb):
+    def yellow(self,rgb):
         return rgb[0]>225 and rgb[1]>100 and rgb[2]<160
     
     def green(self,rgb):
@@ -68,67 +68,60 @@ class LightDetector():
         img = cv2.cvtColor(final_hsv, cv2.COLOR_HSV2BGR)
         return img
     
-    def drawCirclesAndGetImages(self,img,camera=False):
+    def drawCirclesAndGetImages(self,img,camera=False,withImage=False):
         circles,gray,original = self.getCircles(img,camera)
-        output = gray.copy()
+        output=None
+        if withImage:
+            output = gray.copy()
         h,w = img.shape[:2]
         images=[]
         if circles is not None:
             # convert the (x, y) coordinates and radius of the circles to integers
             circles = np.round(circles[0, :]).astype("int")
             # loop over the (x, y) coordinates and radius of the circles
-            index = 0
             for (x, y, r) in circles:
-                h-=1
-                w-=1
-                #if x-r+3>=w or y-r+3>=h:
-                    #print("out")
-                    #continue
-                    
-                    #a = 3
-                rgb = original[y,x]#original[y-r+3,x-r+3]
-
-                #rgb = original[h-((y+r)%h),w-((x+r)%w)]#simulator
-                rgb2 = original[y,x]
-                #rgb = img[y+10,x+10] #on all
-                #rgb = img[y+7,x-7] #on all
-                #rgb2 = img[y-1,x-7]
-                #print (rgb)
+                if(y>=h or x>=w):
+                    continue
+                rgb = original[y,x]
+                #rgb2 = original[y,x] optional 
+                
                 crSize = 20
-                if self.orange(rgb) or self.orange(rgb2):
+                if self.yellow(rgb):# or self.orange(rgb2):
                     #cv2.rectangle(output, (x, y), (x, y), (0, 0, 0), -1)
-                    crop_img = img[y-crSize:y+crSize, x-crSize:x+crSize]
-                    images.append([crop_img,"orange"])
+                    if(withImage):
+                        crop_img = img[y-crSize:y+crSize, x-crSize:x+crSize]
+                        images.append([crop_img,"yellow"])
+                    else:
+                        images.append([None,"yellow"])
                     #cv2.circle(output, (x, y), r+10, (150, 150, 150), 4)
-                    index+=1
-                elif self.green(rgb) or self.green(rgb2):
+                elif self.green(rgb):# or self.green(rgb2):
                     #cv2.rectangle(output, (x, y), (x, y), (0, 0, 0), -1)
-                    crop_img = img[y-crSize:y+crSize, x-crSize:x+crSize]
-                    images.append([crop_img,"green"])
-                    #cv2.circle(output, (x, y), r+10, (150, 150, 150), 4)
-                    index+=1  
-                elif self.red(rgb) or self.red(rgb2):
+                    if(withImage):
+                        crop_img = img[y-crSize:y+crSize, x-crSize:x+crSize]
+                        images.append([crop_img,"green"])
+                    else:
+                        images.append([None,"green"])
+                    #cv2.circle(output, (x, y), r+10, (150, 150, 150), 4) 
+                elif self.red(rgb):# or self.red(rgb2):
                     #cv2.rectangle(output, (x, y), (x, y), (0, 0, 0), -1)
-                    crop_img = img[y-crSize:y+crSize, x-crSize:x+crSize]
-                    images.append([crop_img,"red"])
-                    #cv2.circle(output, (x, y), r+10, (150, 150, 150), 4)
-                    index+=1
-                else:
-                    a=0
-                    #print(rgb)
-
-                # draw the circle in the output image, then draw a rectangle
-                # corresponding to the center of the circle
+                    if(withImage):
+                        crop_img = img[y-crSize:y+crSize, x-crSize:x+crSize]
+                        images.append([crop_img,"red"])
+                    else:
+                        images.append([None,"red"])
+                    break#if red found one enough
+                    
+                # draw the circle in the output image, then draw a grey rectangle
+                #cv2.circle(output, (x, y), r+10, (150, 150, 150), 4)
+                #corresponding to the center of the circle
                 #cv2.rectangle(output, (x, y), (x, y), (0, 0, 0), -1)
-                #num = 1
-                #cv2.rectangle(output, (x, y), (x, y), (0, 128, 255), -1)
         return images,output
     def getLightColor(self,images):
         result = "green"
         for (image,name) in images:
             if name=="red":
                 return "red"
-            elif name=="orange":
-                result="orange"
+            elif name=="yellow":
+                result="yellow"
 
         return result
