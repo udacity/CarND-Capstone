@@ -104,6 +104,13 @@ To consider the traffic lights, subscription to the /traffic_waypoint topic is a
 	self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 ```
 
+The waypoints_cb() callback is called when the /base_waypoints topic provides the waypoint list in a message. The received waypoints are stored in a KDTree.
+The pose_cb() callback is updating the actual car position based on the received message.
+Through the /traffic_waypoint topic the node receives an index which points to the waypoint of the stopline the car needs to stop at.
+
+To publish the limited number of waypoints ahead of the car, in the node loop the publish_waypoints() function is called. This functions prepares the waypoint list to send. In case there's a red light ahead, the decelerate_waypoints() function updates the velocities of the waypoints using a square root shaped function.
+
+
 ### Implementation of the DBW Node
 
 The DBW (drive by wire) node governs the physical operation of the vehicle by sending throttle, brake, and steering commands.
@@ -117,7 +124,10 @@ The input of the node is the /twist_cmd topic, also the /vehicle/dbw_enabled top
 	self.steer_pub = rospy.Publisher('/vehicle/steering_cmd', SteeringCmd, queue_size=1)
 	self.throttle_pub = rospy.Publisher('/vehicle/throttle_cmd', ThrottleCmd, queue_size=1)
 	self.brake_pub = rospy.Publisher('/vehicle/brake_cmd', BrakeCmd, queue_size=1)	
-```	
+```
+
+Through the /twist_cmd topic a linear and angular velocity values arrive. Based on these values the control() method of the Controller class is calculating the necessary throttle, brake and steering control values and they are being published through the /vehicle/steering_cmd, /vehicle/throttle_cmd and /vehicle/brake_cmd topics towards the Simulator or the car itself.
+
 
 ### Implementation of the Traffic Ligth Detection Node
 
