@@ -16,6 +16,7 @@ Please use **one** of the two installation options, either native **or** docker 
   * [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu) if you have Ubuntu 16.04.
   * [ROS Indigo](http://wiki.ros.org/indigo/Installation/Ubuntu) if you have Ubuntu 14.04.
 * Download the [Udacity Simulator](https://github.com/udacity/CarND-Capstone/releases).
+* You can check the Udacity Similator repository [here](https://github.com/udacity/self-driving-car-sim)
 
 ### Docker Installation
 [Install Docker](https://docs.docker.com/engine/installation/)
@@ -86,3 +87,7 @@ Specific to these libraries, the simulator grader and Carla use the following:
 | OpenMP | N/A | N/A |
 
 We are working on a fix to line up the OpenCV versions between the two.
+
+
+### Updating the instructions
+Feel free to submit PRs or issues should you see a scope for improvement.
