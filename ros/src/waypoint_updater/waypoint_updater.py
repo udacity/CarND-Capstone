@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import rospy
+import numpy as np
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
+from scipy import spatial
+from typing import List
 
 import math
 
@@ -25,27 +28,75 @@ LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this 
 
 
 class WaypointUpdater:
+
+    _base_waypoints = None
+    _waypoints_2d = None
+    _waypoints_tree = None
+
+    _pose = None
+    _frequency = 50  # Hertz
+
     def __init__(self):
         rospy.init_node("waypoint_updater")
 
         rospy.Subscriber("/current_pose", PoseStamped, self.pose_cb)
         rospy.Subscriber("/base_waypoints", Lane, self.waypoints_cb)
+        rospy.Subscriber("/traffic_waypoint", Lane, self.traffic_cb)
+        rospy.Subscriber("/obstacle_waypoint", Lane, self.obstacle_cb)
 
-        # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
-
-        self.final_waypoints_pub = rospy.Publisher(
+        # `final_waypoints` are published to way point follower (part of Autoware).
+        self._final_waypoints_pub = rospy.Publisher(
             "final_waypoints", Lane, queue_size=1
         )
 
         # TODO: Add other member variables you need below
+        self.start()
 
-        rospy.spin()
+    def start(self):
+        rate = rospy.Rate(self._frequency)
+        while not rospy.is_shutdown():
+            if self._pose is not None and self._base_waypoints is not None:
+                closest_waypoint_index = self._get_closest_waypoint_index(
+                    point=[self._pose.pose.position.x, self._pose.pose.position.y]
+                )
+                self._publish_waypoints(closest_waypoint_index=closest_waypoint_index)
+            rate.sleep()
+
+    def _publish_waypoints(self, *, closest_waypoint_index: int):
+        lane = Lane()
+        lane.header = self._base_waypoints.header
+        lane.waypoints = self._base_waypoints.waypoints[
+            closest_waypoint_index : closest_waypoint_index + LOOKAHEAD_WPS
+        ]
+        self._final_waypoints_pub.publish(lane)
+
+    def _get_closest_waypoint_index(self, *, point: np.ndarray | List[float]) -> int:
+        closest_index = -1
+        if self._waypoints_tree is not None:
+            _, closest_index = self._waypoints_tree.query(point, k=1)
+            closest_point = self._waypoints_2d[closest_index]
+            prev_point = self._waypoints_2d[closest_index - 1]
+
+            direction = np.dot(closest_point - prev_point, point - closest_point)
+            if direction > 0:
+                closest_index = (closest_index + 1) % len(self._waypoints_2d)
+        return closest_index
 
     def pose_cb(self, msg):
         # TODO: Implement
+        self._pose = msg
         pass
 
     def waypoints_cb(self, waypoints):
+        self._base_waypoints = waypoints
+        if self._waypoints_2d is not None:
+            self._waypoints_2d = np.asarray(
+                [
+                    [p.pose.pose.position.x, p.pose.pose.position.y]
+                    for p in self._base_waypoints.waypoints
+                ]
+            )
+            self._waypoints_tree = spatial.KDTree(self._waypoints_2d)
         # TODO: Implement
         pass
 
