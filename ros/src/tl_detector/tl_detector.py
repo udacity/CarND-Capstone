@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
@@ -14,7 +14,7 @@ import yaml
 STATE_COUNT_THRESHOLD = 3
 
 
-class TLDetector(object):
+class TLDetector:
     def __init__(self):
         rospy.init_node("tl_detector")
 
@@ -144,6 +144,8 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose)
 
         # TODO find the closest visible traffic light (if one exists)
+
+        light_wp = None
 
         if light:
             state = self.get_light_state(light)
