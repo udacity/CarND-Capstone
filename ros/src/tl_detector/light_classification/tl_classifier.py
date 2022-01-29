@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+"""This module implements TLClassifier"""
 
 from styx_msgs.msg import TrafficLight
 
 
 class TLClassifier:
+    """This class implements a traffic light classifier."""
+
     def __init__(self):
         # TODO load classifier
         pass

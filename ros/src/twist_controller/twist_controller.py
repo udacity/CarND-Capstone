@@ -102,7 +102,7 @@ class TwistController:
             throttle = 0.0
             # N*m, to hold the car in place if we are stopped at a light.
             # Acceleration - 1m/s^2
-            brake = 400
+            brake = 700
 
         elif throttle < 0.1 and vel_error < 0.0:
             throttle = 0.0
