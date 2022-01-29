@@ -1,34 +1,37 @@
+"""
+This module implements a basic PID controller.
+"""
 
-MIN_NUM = float('-inf')
-MAX_NUM = float('inf')
+MIN_NUM = float("-inf")
+MAX_NUM = float("inf")
 
 
-class PID(object):
+class PID:
     def __init__(self, kp, ki, kd, mn=MIN_NUM, mx=MAX_NUM):
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.min = mn
-        self.max = mx
+        self._kp = kp
+        self._ki = ki
+        self._kd = kd
+        self._min = mn
+        self._max = mx
 
-        self.int_val = self.last_error = 0.
+        self._int_val = self._last_error = 0.0
 
     def reset(self):
-        self.int_val = 0.0
+        self._int_val = 0.0
 
     def step(self, error, sample_time):
 
-        integral = self.int_val + error * sample_time;
-        derivative = (error - self.last_error) / sample_time;
+        integral = self._int_val + error * sample_time
+        derivative = (error - self._last_error) / sample_time
 
-        val = self.kp * error + self.ki * integral + self.kd * derivative;
+        val = self._kp * error + self._ki * integral + self._kd * derivative
 
-        if val > self.max:
-            val = self.max
-        elif val < self.min:
-            val = self.min
+        if val > self._max:
+            val = self._max
+        elif val < self._min:
+            val = self._min
         else:
-            self.int_val = integral
-        self.last_error = error
+            self._int_val = integral
+        self._last_error = error
 
         return val
