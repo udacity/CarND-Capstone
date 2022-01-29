@@ -8,6 +8,7 @@ import math
 # ROS
 import rospy
 from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Int32
 
 # Utils
 import numpy as np
@@ -15,6 +16,9 @@ from scipy.spatial.kdtree import KDTree
 
 # Local imports
 from styx_msgs.msg import Lane, Waypoint
+
+
+MAX_DECEL = 1.0
 
 
 class WaypointUpdater:
@@ -38,6 +42,8 @@ class WaypointUpdater:
     _pose = None  # Cached ego vehicle pose
     _frequency = None  # Publish frequency
     _num_waypoints_for_controller = None  # Number of `final_waypoints` to be published
+
+    _stopline_waypoint_index = None  # Stop line waypoint index from traffic light detection node
 
     def __init__(self, frequency=50, num_waypoints_for_controller=200):
         if frequency is not None:
@@ -64,7 +70,7 @@ class WaypointUpdater:
         # `traffic_waypoint` is from the traffic light detection node for setting the
         # appropriate quantities like velocity for the final waypoint.
         # TODO
-        rospy.Subscriber("/traffic_waypoint", Lane, self._traffic_cb)
+        rospy.Subscriber("/traffic_waypoint", Int32, self._traffic_light_cb)
 
         # `obstacle_waypoint` is from the obstacle detection node.
         # TODO
@@ -85,24 +91,55 @@ class WaypointUpdater:
         rate = rospy.Rate(self._frequency)
         while not rospy.is_shutdown():
             if self._pose and self._raw_map_waypoints:
-                x = self._pose.pose.position.x
-                y = self._pose.pose.position.y
-                self._publish_waypoints(self._get_closest_waypoint_index(x, y))
+                self._publish_waypoints()
             rate.sleep()
 
-    def _publish_waypoints(self, nearest_waypoint_index):
+    def _publish_waypoints(self):
         """Publish final waypoints in front of the car."""
-        lane = Lane()
+        self._final_waypoints_pub.publish(self._generate_lane())
 
+    def _generate_lane(self):
+        lane = Lane()
         lane.header = self._raw_map_waypoints.header
 
-        start = nearest_waypoint_index
-        end = nearest_waypoint_index + self._num_waypoints_for_controller
-        lane.waypoints = self._raw_map_waypoints.waypoints[start:end]
+        x = self._pose.pose.position.x
+        y = self._pose.pose.position.y
+        nearest_index = self._get_nearest_waypoint_index(x, y)
+        farthest_index = nearest_index + self._num_waypoints_for_controller
 
-        self._final_waypoints_pub.publish(lane)
+        map_waypoints_segment = self._raw_map_waypoints.waypoints[nearest_index:farthest_index]
 
-    def _get_closest_waypoint_index(self, x, y):
+        if (
+            self._stopline_waypoint_index is None
+            or self._stopline_waypoint_index == -1
+            or self._stopline_waypoint_index >= farthest_index
+        ):
+            lane.waypoints = map_waypoints_segment
+        else:
+            lane.waypoints = self._compute_decelerate_waypoints(
+                map_waypoints_segment, nearest_index
+            )
+        return lane
+
+    def _compute_decelerate_waypoints(self, map_waypoints_segment, nearest_index):
+        new_waypoints = []
+        for i, waypoint in enumerate(map_waypoints_segment):
+            new_waypoint = Waypoint()
+            new_waypoint.pose = waypoint.pose
+
+            # HACK: without -2, the car align the center of the car with the waypoint,
+            # which means it will cross the line.
+            stop_index = max(self._stopline_waypoint_index - nearest_index - 3, 0)
+            dist = self._distance(map_waypoints_segment, i, stop_index)
+            vel = math.sqrt(2 * MAX_DECEL * dist)
+            if vel < 1.0:
+                vel = 0.0
+
+            new_waypoint.twist.twist.linear.x = min(vel, waypoint.twist.twist.linear.x)
+            new_waypoints.append(new_waypoint)
+        return new_waypoints
+
+    def _get_nearest_waypoint_index(self, x, y):
         """Compute the nearest waypoint index from the map given x, y of another point."""
         nearest_index = -1
         point = [x, y]
@@ -138,9 +175,9 @@ class WaypointUpdater:
             )
             self._map_waypoints_tree = KDTree(self._map_waypoints)
 
-    def _traffic_cb(self, msg):
+    def _traffic_light_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
-        pass
+        self._stopline_waypoint_index = msg.data
 
     def _obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -154,7 +191,7 @@ class WaypointUpdater:
     def _set_waypoint_velocity(waypoints, index, velocity):
         waypoints[index].twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, start, end):
+    def _distance(self, waypoints, start, end):
         dist = 0
 
         def _compute_dist(a, b):

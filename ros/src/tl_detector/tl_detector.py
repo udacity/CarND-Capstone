@@ -172,16 +172,14 @@ class TLDetector:
         nearest_light = None
         stopping_line_index = None
 
-        if self._pose:
+        if self._pose and self._map_waypoints is not None and len(self._map_waypoints):
             x = self._pose.pose.position.x
             y = self._pose.pose.position.y
             ego_waypoint_index = self._get_nearest_waypoint(x, y)
 
             index_diff = len(self._map_waypoints)
 
-            for i, (light, line) in enumerate(
-                zip(self._lights, self._config["stop_line_positions"])
-            ):
+            for light, line in zip(self._lights, self._config["stop_line_positions"]):
                 waypoint_index = self._get_nearest_waypoint(line[0], line[1])
 
                 curr_index_diff = waypoint_index - ego_waypoint_index
