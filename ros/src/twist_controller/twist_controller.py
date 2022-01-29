@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704

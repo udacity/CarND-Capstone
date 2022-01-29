@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler

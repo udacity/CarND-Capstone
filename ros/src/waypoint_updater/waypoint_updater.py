@@ -1,129 +1,170 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+"""This modules implements WaypointUpdater and can be executed as a separate ROS note.
+"""
 
-import rospy
-import numpy as np
-from geometry_msgs.msg import PoseStamped
-from styx_msgs.msg import Lane, Waypoint
-from scipy import spatial
-from typing import List
-
+# STL
 import math
 
-"""
-This node will publish waypoints from the car's current position to some `x` distance ahead.
+# ROS
+import rospy
+from geometry_msgs.msg import PoseStamped
 
-As mentioned in the doc, you should ideally first implement a version which does not care
-about traffic lights or obstacles.
+# Utils
+import numpy as np
+from scipy.spatial.kdtree import KDTree
 
-Once you have created dbw_node, you will update this node to use the status of traffic lights too.
-
-Please note that our simulator also provides the exact location of traffic lights and their
-current status in `/vehicle/traffic_lights` message. You can use this message to build this node
-as well as to verify your TL classifier.
-
-TODO (for Yousuf and Aaron): Stopline location for each traffic light.
-"""
-
-LOOKAHEAD_WPS = 200  # Number of waypoints we will publish. You can change this number
+# Local imports
+from styx_msgs.msg import Lane, Waypoint
 
 
 class WaypointUpdater:
+    """This class implements a waypoint updater.
 
-    _base_waypoints = None
-    _waypoints_2d = None
-    _waypoints_tree = None
+    This updater takes in a road graph (set of waypoints) from the waypoint loader and the current pose
+    from the simulator and figures out what should be actual waypoints to for controller to follow.
 
-    _pose = None
-    _frequency = 50  # Hertz
+    These waypoints are published in the topic `final_waypoints`, and controller will use these information
+    to control the vehicle.
 
-    def __init__(self):
+    This module also subscribes the topic `traffic_waypoint` and `obstacle_waypoint` from the detection modules,
+    such that the vehicle is enabled to slow down or speed up with respect to the environment.
+
+    """
+
+    _raw_map_waypoints = None  # Cached raw map waypoints
+    _map_waypoints = None  # Cached map waypoints
+    _map_waypoints_tree = None  # KDTree for map waypoints
+
+    _pose = None  # Cached ego vehicle pose
+    _frequency = None  # Publish frequency
+    _num_waypoints_for_controller = None  # Number of `final_waypoints` to be published
+
+    def __init__(self, frequency=50, num_waypoints_for_controller=200):
+        if frequency is not None:
+            self._frequency = frequency
+
+        if num_waypoints_for_controller is not None:
+            self._num_waypoints_for_controller = num_waypoints_for_controller
+
+        self._initialize_node()
+
+    def _initialize_node(self):
+        """Initialize ROS communications and run the node"""
+
         rospy.init_node("waypoint_updater")
 
-        rospy.Subscriber("/current_pose", PoseStamped, self.pose_cb)
-        rospy.Subscriber("/base_waypoints", Lane, self.waypoints_cb)
-        rospy.Subscriber("/traffic_waypoint", Lane, self.traffic_cb)
-        rospy.Subscriber("/obstacle_waypoint", Lane, self.obstacle_cb)
+        # `current_pose` is the current pose of the ego vehicle from simulator,
+        # `geometry_msgs/PoseStamped`.
+        rospy.Subscriber("/current_pose", PoseStamped, self._pose_cb)
+
+        # List of waypoints are for tracking purpose, and only published once.
+        # They are provided by a static `.csv` file and loaded by `waypoint_loader`.
+        rospy.Subscriber("/base_waypoints", Lane, self._waypoints_cb)
+
+        # `traffic_waypoint` is from the traffic light detection node for setting the
+        # appropriate quantities like velocity for the final waypoint.
+        # TODO
+        rospy.Subscriber("/traffic_waypoint", Lane, self._traffic_cb)
+
+        # `obstacle_waypoint` is from the obstacle detection node.
+        # TODO
+        rospy.Subscriber("/obstacle_waypoint", Lane, self._obstacle_cb)
 
         # `final_waypoints` are published to way point follower (part of Autoware).
-        self._final_waypoints_pub = rospy.Publisher(
-            "final_waypoints", Lane, queue_size=1
-        )
+        # This is a subset of `/base_waypoints`. The first waypoint is the one
+        # in `/base_waypoints` which is the closest to the car.
+        self._final_waypoints_pub = rospy.Publisher("final_waypoints", Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
-        self.start()
 
-    def start(self):
+        # Spin the node right after initialization
+        self._spin()
+
+    def _spin(self):
+        """Start the node."""
         rate = rospy.Rate(self._frequency)
         while not rospy.is_shutdown():
-            if self._pose is not None and self._base_waypoints is not None:
-                closest_waypoint_index = self._get_closest_waypoint_index(
-                    point=[self._pose.pose.position.x, self._pose.pose.position.y]
-                )
-                self._publish_waypoints(closest_waypoint_index=closest_waypoint_index)
+            if self._pose and self._raw_map_waypoints:
+                x = self._pose.pose.position.x
+                y = self._pose.pose.position.y
+                self._publish_waypoints(self._get_closest_waypoint_index(x, y))
             rate.sleep()
 
-    def _publish_waypoints(self, *, closest_waypoint_index: int):
+    def _publish_waypoints(self, nearest_waypoint_index):
+        """Publish final waypoints in front of the car."""
         lane = Lane()
-        lane.header = self._base_waypoints.header
-        lane.waypoints = self._base_waypoints.waypoints[
-            closest_waypoint_index : closest_waypoint_index + LOOKAHEAD_WPS
-        ]
+
+        lane.header = self._raw_map_waypoints.header
+
+        start = nearest_waypoint_index
+        end = nearest_waypoint_index + self._num_waypoints_for_controller
+        lane.waypoints = self._raw_map_waypoints.waypoints[start:end]
+
         self._final_waypoints_pub.publish(lane)
 
-    def _get_closest_waypoint_index(self, *, point: np.ndarray | List[float]) -> int:
-        closest_index = -1
-        if self._waypoints_tree is not None:
-            _, closest_index = self._waypoints_tree.query(point, k=1)
-            closest_point = self._waypoints_2d[closest_index]
-            prev_point = self._waypoints_2d[closest_index - 1]
+    def _get_closest_waypoint_index(self, x, y):
+        """Compute the nearest waypoint index from the map given x, y of another point."""
+        nearest_index = -1
+        point = [x, y]
 
-            direction = np.dot(closest_point - prev_point, point - closest_point)
+        if self._map_waypoints_tree:
+            _, nearest_index = self._map_waypoints_tree.query([x, y], k=1)
+
+            nearest_point = self._map_waypoints[nearest_index]
+            prev_point = self._map_waypoints[nearest_index - 1]
+
+            direction = np.dot(nearest_point - prev_point, point - nearest_point)
             if direction > 0:
-                closest_index = (closest_index + 1) % len(self._waypoints_2d)
-        return closest_index
+                nearest_index = (nearest_index + 1) % len(self._map_waypoints)
 
-    def pose_cb(self, msg):
-        # TODO: Implement
+        return nearest_index
+
+    def _pose_cb(self, msg):
+        """Callback function for receiving ego vehicle pose from ROS topic."""
         self._pose = msg
-        pass
 
-    def waypoints_cb(self, waypoints):
-        self._base_waypoints = waypoints
-        if self._waypoints_2d is not None:
-            self._waypoints_2d = np.asarray(
+    def _waypoints_cb(self, map_waypoints):
+        """Callback function for receiving map waypoints from ROS topic.
+
+        This function will convert the map waypoints into a KDTree for later quick searching.
+        """
+        self._raw_map_waypoints = map_waypoints
+        if not self._map_waypoints:
+            self._map_waypoints = np.asarray(
                 [
                     [p.pose.pose.position.x, p.pose.pose.position.y]
-                    for p in self._base_waypoints.waypoints
+                    for p in self._raw_map_waypoints.waypoints
                 ]
             )
-            self._waypoints_tree = spatial.KDTree(self._waypoints_2d)
-        # TODO: Implement
-        pass
+            self._map_waypoints_tree = KDTree(self._map_waypoints)
 
-    def traffic_cb(self, msg):
+    def _traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
         pass
 
-    def obstacle_cb(self, msg):
+    def _obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
-    def get_waypoint_velocity(self, waypoint):
+    @staticmethod
+    def _get_waypoint_velocity(waypoint):
         return waypoint.twist.twist.linear.x
 
-    def set_waypoint_velocity(self, waypoints, waypoint, velocity):
-        waypoints[waypoint].twist.twist.linear.x = velocity
+    @staticmethod
+    def _set_waypoint_velocity(waypoints, index, velocity):
+        waypoints[index].twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, wp1, wp2):
+    def distance(self, waypoints, start, end):
         dist = 0
-        dl = lambda a, b: math.sqrt(
-            (a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2
-        )
-        for i in range(wp1, wp2 + 1):
-            dist += dl(
-                waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position
+
+        def _compute_dist(a, b):
+            return math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+
+        for i in range(start, end + 1):
+            dist += _compute_dist(
+                waypoints[start].pose.pose.position, waypoints[i].pose.pose.position
             )
-            wp1 = i
+            start = i
         return dist
 
 

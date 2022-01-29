@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import rospy
 
@@ -62,8 +62,7 @@ class Bridge:
         ]
 
         self.publishers = {
-            e.name: rospy.Publisher(e.topic, TYPE[e.type], queue_size=1)
-            for e in conf.publishers
+            e.name: rospy.Publisher(e.topic, TYPE[e.type], queue_size=1) for e in conf.publishers
         }
 
     def create_light(self, x, y, z, yaw, state):
@@ -135,17 +134,13 @@ class Bridge:
         pose = self.create_pose(data["x"], data["y"], data["z"], data["yaw"])
 
         position = (data["x"], data["y"], data["z"])
-        orientation = tf.transformations.quaternion_from_euler(
-            0, 0, math.pi * data["yaw"] / 180.0
-        )
+        orientation = tf.transformations.quaternion_from_euler(0, 0, math.pi * data["yaw"] / 180.0)
         self.broadcast_transform("base_link", position, orientation)
 
         self.publishers["current_pose"].publish(pose)
         self.vel = data["velocity"] * 0.44704
         self.angular = self.calc_angular(data["yaw"] * math.pi / 180.0)
-        self.publishers["current_velocity"].publish(
-            self.create_twist(self.vel, self.angular)
-        )
+        self.publishers["current_velocity"].publish(self.create_twist(self.vel, self.angular))
 
     def publish_controls(self, data):
         steering, throttle, brake = (
@@ -169,9 +164,7 @@ class Bridge:
 
     def publish_lidar(self, data):
         self.publishers["lidar"].publish(
-            self.create_point_cloud_message(
-                zip(data["lidar_x"], data["lidar_y"], data["lidar_z"])
-            )
+            self.create_point_cloud_message(zip(data["lidar_x"], data["lidar_y"], data["lidar_z"]))
         )
 
     def publish_traffic(self, data):
@@ -180,10 +173,7 @@ class Bridge:
             data["light_pos_y"],
             data["light_pos_z"],
         )
-        yaw = [
-            math.atan2(dy, dx)
-            for dx, dy in zip(data["light_pos_dx"], data["light_pos_dy"])
-        ]
+        yaw = [math.atan2(dy, dx) for dx, dy in zip(data["light_pos_dx"], data["light_pos_dy"])]
         status = data["light_state"]
 
         lights = TrafficLightArray()
@@ -207,9 +197,7 @@ class Bridge:
             self.img_count = 0
 
     def callback_steering(self, data):
-        self.server(
-            "steer", data={"steering_angle": str(data.steering_wheel_angle_cmd)}
-        )
+        self.server("steer", data={"steering_angle": str(data.steering_wheel_angle_cmd)})
 
     def callback_throttle(self, data):
         self.server("throttle", data={"throttle": str(data.pedal_cmd)})

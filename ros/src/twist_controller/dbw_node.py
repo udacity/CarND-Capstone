@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import rospy
 from std_msgs.msg import Bool
@@ -47,12 +47,8 @@ class DBWNode:
         max_lat_accel = rospy.get_param("~max_lat_accel", 3.0)
         max_steer_angle = rospy.get_param("~max_steer_angle", 8.0)
 
-        self.steer_pub = rospy.Publisher(
-            "/vehicle/steering_cmd", SteeringCmd, queue_size=1
-        )
-        self.throttle_pub = rospy.Publisher(
-            "/vehicle/throttle_cmd", ThrottleCmd, queue_size=1
-        )
+        self.steer_pub = rospy.Publisher("/vehicle/steering_cmd", SteeringCmd, queue_size=1)
+        self.throttle_pub = rospy.Publisher("/vehicle/throttle_cmd", ThrottleCmd, queue_size=1)
         self.brake_pub = rospy.Publisher("/vehicle/brake_cmd", BrakeCmd, queue_size=1)
 
         # TODO: Create `Controller` object
