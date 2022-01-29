@@ -17,10 +17,10 @@ RUN apt-get upgrade -y
 # end installing Dataspeed DBW
 
 # install python packages
-RUN apt-get install -y python-pip
-RUN pip install --upgrade "pip < 21.0"
+RUN apt-get install -y python3-pip
+RUN pip3 install --upgrade "pip < 21.0"
 COPY requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 # install required ros dependencies
 RUN apt-get install -y ros-$ROS_DISTRO-cv-bridge
@@ -28,7 +28,14 @@ RUN apt-get install -y ros-$ROS_DISTRO-pcl-ros
 RUN apt-get install -y ros-$ROS_DISTRO-image-proc
 
 # socket io
-RUN apt-get install -y netbase
+RUN apt-get install -y apt-utils netbase zsh wget curl git vim
+
+# Install omz
+RUN wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh && sh install.sh
+RUN chsh -s `which zsh`
+
+# Install fzf
+RUN git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install
 
 RUN mkdir /capstone
 VOLUME ["/capstone"]
