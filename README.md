@@ -1,6 +1,5 @@
 # Deprecated Repository
-Udacity has launched a newer version of the associated Nanodegree program **XXXXXX XXXXXXXX Nanodegree**; so the current repository is deprecated. We are no longer maintaining this repository.
-We are going to archive this repository. However, learners will be able to fork it to their personal Github account but cannot submit PRs to this repository. If you have any issues or suggestions to make, feel free to:
+Udacity has launched a newer version of the associated Nanodegree program **[Self-Driving Car Engineer](https://www.udacity.com/course/self-driving-car-engineer-nanodegree--nd0013)**; as a result, the current repository is deprecated. We are no longer maintaining this repository and going to archive it. However, learners will be able to fork it to their personal Github account but cannot submit PRs to this repository. If you have any issues or suggestions to make, feel free to:
 - Utilize the https://knowledge.udacity.com/ forum to seek help on content-specific issues.
 - Submit a support ticket along with the link to your forked repository if (learners are) blocked for other reasons. You can find the link to file a support ticket in your classroom home.
 
